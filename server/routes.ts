@@ -20,7 +20,7 @@ export async function registerRoutes(app: Express) {
 
     // Convert custom characters to match Character type
     const formattedCustomChars = customChars.map(char => ({
-      id: String(char.id),
+      id: `custom_${char.id}`, // Add prefix to distinguish custom characters
       name: char.name,
       avatar: char.avatar,
       description: char.description,
@@ -110,20 +110,24 @@ export async function registerRoutes(app: Express) {
       const message = await storage.createMessage(data);
 
       if (data.isUser) {
-        // Try to find character in predefined list first
-        let character = characters.find(c => c.id === data.characterId);
+        // Check if it's a custom character (ID starts with 'custom_')
+        let character;
+        const isCustom = data.characterId.startsWith('custom_');
+        const characterId = isCustom ? Number(data.characterId.replace('custom_', '')) : data.characterId;
 
-        // If not found in predefined list, check custom characters
-        if (!character) {
-          const customChar = await storage.getCustomCharacterById(Number(data.characterId));
-          if (!customChar) throw new Error("Character not found");
+        if (isCustom) {
+          const customChar = await storage.getCustomCharacterById(characterId);
+          if (!customChar) throw new Error("Custom character not found");
           character = {
-            id: String(customChar.id),
+            id: `custom_${customChar.id}`,
             name: customChar.name,
             avatar: customChar.avatar,
             description: customChar.description,
             persona: customChar.persona
           };
+        } else {
+          character = characters.find(c => c.id === characterId);
+          if (!character) throw new Error("Predefined character not found");
         }
 
         const messages = await storage.getMessagesByCharacter(data.characterId);
