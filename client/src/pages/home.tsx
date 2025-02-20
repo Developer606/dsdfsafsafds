@@ -29,9 +29,9 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {characters?.map((character) => (
             <Link key={character.id} href={`/chat/${character.id}`}>
-              <a className="transform transition-transform hover:scale-105">
+              <div className="transform transition-transform hover:scale-105">
                 <CharacterCard character={character} />
-              </a>
+              </div>
             </Link>
           ))}
         </div>
