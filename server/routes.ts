@@ -38,8 +38,12 @@ export async function registerRoutes(app: Express) {
   // Character routes
   app.get("/api/characters/:userId", async (req, res) => {
     try {
-      const characters = await storage.getCharactersByUserId(parseInt(req.params.userId));
-      res.json(characters);
+      // Get user's custom characters
+      const customCharacters = await storage.getCharactersByUserId(parseInt(req.params.userId));
+
+      // Combine with default characters
+      const allCharacters = [...defaultCharacters, ...customCharacters];
+      res.json(allCharacters);
     } catch (error) {
       res.status(400).json({ error: (error as Error).message });
     }

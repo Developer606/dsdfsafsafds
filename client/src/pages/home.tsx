@@ -39,7 +39,7 @@ export default function Home() {
     );
   }
 
-  const characterCount = characters?.length || 0;
+  const characterCount = (characters?.filter(char => !char.isDefault)?.length) || 0;
   const characterLimit = getCharacterLimit();
 
   return (
@@ -60,7 +60,7 @@ export default function Home() {
 
         <div className="mb-4 flex justify-between items-center">
           <p className="text-muted-foreground">
-            Characters: {characterCount} / {characterLimit === Infinity ? "∞" : characterLimit}
+            Custom Characters: {characterCount} / {characterLimit === Infinity ? "∞" : characterLimit}
           </p>
           {isWithinLimit(characterCount) && (
             <Link href="/create-character">
@@ -72,15 +72,35 @@ export default function Home() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {characters?.map((character) => (
-            <Link key={character.id} href={`/chat/${character.id}`}>
-              <a className="transform transition-transform hover:scale-105">
-                <CharacterCard character={character} />
-              </a>
-            </Link>
-          ))}
+        {/* Default Characters Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Default Characters</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {characters?.filter(char => !char.userId)?.map((character) => (
+              <Link key={character.id} href={`/chat/${character.id}`}>
+                <a className="transform transition-transform hover:scale-105">
+                  <CharacterCard character={character} />
+                </a>
+              </Link>
+            ))}
+          </div>
         </div>
+
+        {/* Custom Characters Section */}
+        {characterCount > 0 && (
+          <div>
+            <h2 className="text-2xl font-semibold mb-4">Your Custom Characters</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {characters?.filter(char => char.userId)?.map((character) => (
+                <Link key={character.id} href={`/chat/${character.id}`}>
+                  <a className="transform transition-transform hover:scale-105">
+                    <CharacterCard character={character} />
+                  </a>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <SubscriptionPlans
           isOpen={showPlans}
