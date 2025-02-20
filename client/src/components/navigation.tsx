@@ -1,9 +1,18 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home, Users } from "lucide-react";
+import { Home, Users, Crown } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { type User } from "@shared/schema";
+import { useState } from "react";
+import { SubscriptionDialog } from "@/components/subscription-dialog";
 
 export function Navigation() {
   const [location] = useLocation();
+  const [showSubscription, setShowSubscription] = useState(false);
+
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"]
+  });
 
   return (
     <nav className="border-b">
@@ -25,8 +34,24 @@ export function Navigation() {
               </Button>
             </a>
           </Link>
+
+          {!user?.isPremium && (
+            <Button
+              variant="default"
+              className="ml-auto gap-2"
+              onClick={() => setShowSubscription(true)}
+            >
+              <Crown className="h-4 w-4" />
+              Upgrade to Premium
+            </Button>
+          )}
         </div>
       </div>
+
+      <SubscriptionDialog
+        open={showSubscription}
+        onClose={() => setShowSubscription(false)}
+      />
     </nav>
   );
 }

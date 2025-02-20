@@ -4,13 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type CustomCharacter, type User } from "@shared/schema";
+import { queryClient } from "@/lib/queryClient";
 
 export default function CharacterManagement() {
   const [showSubscription, setShowSubscription] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newCharacter, setNewCharacter] = useState({
+    name: "",
+    avatar: "",
+    description: "",
+    persona: ""
+  });
+
   const { toast } = useToast();
 
   const { data: user } = useQuery<User>({ 
@@ -30,6 +45,24 @@ export default function CharacterManagement() {
       });
       if (!res.ok) throw new Error("Failed to create character");
       return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/custom-characters"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      setShowCreateDialog(false);
+      setNewCharacter({
+        name: "",
+        avatar: "",
+        description: "",
+        persona: ""
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create character"
+      });
     }
   });
 
@@ -39,10 +72,13 @@ export default function CharacterManagement() {
         method: "DELETE"
       });
       if (!res.ok) throw new Error("Failed to delete character");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/custom-characters"] });
     }
   });
 
-  const handleCreateCharacter = () => {
+  const handleCreateClick = () => {
     if (!user) return;
 
     if (!user.isPremium && user.trialCharactersCreated >= 2) {
@@ -50,20 +86,14 @@ export default function CharacterManagement() {
       return;
     }
 
-    // TODO: Add form for character creation
-    createCharacter.mutate({
-      name: "New Character",
-      avatar: "https://api.dicebear.com/7.x/avatars/svg?seed=custom",
-      description: "A custom character",
-      persona: "Character personality and background"
-    });
+    setShowCreateDialog(true);
   };
 
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Character Management</h1>
-        <Button onClick={handleCreateCharacter}>
+        <Button onClick={handleCreateClick}>
           <Plus className="h-4 w-4 mr-2" />
           Create Character
         </Button>
@@ -87,9 +117,10 @@ export default function CharacterManagement() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold text-lg">{character.name}</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mb-2">
                     {character.description}
                   </p>
+                  <p className="text-sm">{character.persona}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -103,6 +134,43 @@ export default function CharacterManagement() {
           </Card>
         ))}
       </div>
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Character</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder="Character Name"
+              value={newCharacter.name}
+              onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
+            />
+            <Input
+              placeholder="Avatar URL"
+              value={newCharacter.avatar}
+              onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
+            />
+            <Textarea
+              placeholder="Character Description"
+              value={newCharacter.description}
+              onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
+            />
+            <Textarea
+              placeholder="Character Persona"
+              value={newCharacter.persona}
+              onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
+            />
+            <Button 
+              className="w-full"
+              onClick={() => createCharacter.mutate(newCharacter)}
+              disabled={createCharacter.isPending}
+            >
+              Create Character
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <SubscriptionDialog
         open={showSubscription}

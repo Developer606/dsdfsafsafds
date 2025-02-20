@@ -1,7 +1,7 @@
 import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter } from "@shared/schema";
 import { db } from "./db";
 import { messages, users, customCharacters } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Message operations
@@ -49,7 +49,9 @@ export class DatabaseStorage implements IStorage {
   async incrementTrialCharacterCount(userId: number): Promise<void> {
     await db
       .update(users)
-      .set({ trialCharactersCreated: users.trialCharactersCreated + 1 })
+      .set({
+        trialCharactersCreated: sql`${users.trialCharactersCreated} + 1`
+      })
       .where(eq(users.id, userId));
   }
 
