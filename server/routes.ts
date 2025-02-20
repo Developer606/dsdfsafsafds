@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
-import { insertMessageSchema, insertCustomCharacterSchema } from "@shared/schema";
+import { insertMessageSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
@@ -47,44 +47,7 @@ export async function registerRoutes(app: Express) {
       } else {
         res.json([message]);
       }
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
-    }
-  });
-
-  app.get("/api/custom-characters", async (req, res) => {
-    try {
-      // For now, using a mock user ID until auth is implemented
-      const userId = 1;
-      const characters = await storage.getCustomCharactersByUser(userId);
-      res.json(characters);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/custom-characters", async (req, res) => {
-    try {
-      // For now, using a mock user ID until auth is implemented
-      const userId = 1;
-      const data = {
-        ...insertCustomCharacterSchema.parse(req.body),
-        userId,
-      };
-      const character = await storage.createCustomCharacter(data);
-      res.json(character);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
-    }
-  });
-
-  app.delete("/api/custom-characters/:id", async (req, res) => {
-    try {
-      // For now, using a mock user ID until auth is implemented
-      const userId = 1;
-      await storage.deleteCustomCharacter(parseInt(req.params.id), userId);
-      res.json({ success: true });
-    } catch (error: any) {
+    } catch (error) {
       res.status(400).json({ error: error.message });
     }
   });
