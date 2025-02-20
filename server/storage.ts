@@ -17,6 +17,7 @@ export interface IStorage {
   // Custom character operations
   createCustomCharacter(character: InsertCustomCharacter): Promise<CustomCharacter>;
   getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
+  getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
   deleteCustomCharacter(id: number, userId: number): Promise<void>;
 }
 
@@ -65,11 +66,16 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(customCharacters).where(eq(customCharacters.userId, userId));
   }
 
+  async getCustomCharacterById(id: number): Promise<CustomCharacter | undefined> {
+    const [character] = await db.select().from(customCharacters).where(eq(customCharacters.id, id));
+    return character;
+  }
+
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {
     await db
       .delete(customCharacters)
       .where(eq(customCharacters.id, id))
-      .where(eq(customCharacters.userId, userId));
+      .and(eq(customCharacters.userId, userId));
   }
 }
 

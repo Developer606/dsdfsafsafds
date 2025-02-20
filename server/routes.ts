@@ -90,8 +90,21 @@ export async function registerRoutes(app: Express) {
       const message = await storage.createMessage(data);
 
       if (data.isUser) {
-        const character = characters.find(c => c.id === data.characterId);
-        if (!character) throw new Error("Character not found");
+        // Try to find character in predefined list first
+        let character = characters.find(c => c.id === data.characterId);
+
+        // If not found in predefined list, check custom characters
+        if (!character) {
+          const customChar = await storage.getCustomCharacterById(Number(data.characterId));
+          if (!customChar) throw new Error("Character not found");
+          character = {
+            id: String(customChar.id),
+            name: customChar.name,
+            avatar: customChar.avatar,
+            description: customChar.description,
+            persona: customChar.persona
+          };
+        }
 
         const messages = await storage.getMessagesByCharacter(data.characterId);
         const chatHistory = messages.map(m =>
