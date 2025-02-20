@@ -14,12 +14,22 @@ export async function generateCharacterResponse(
   chatHistory: string
 ): Promise<string> {
   try {
-    const prompt = `<s>You are ${character.name}. ${character.persona}
+    const prompt = `<s>You are ${character.name} from the anime Naruto. Here is your character background and personality:
+
+${character.persona}
+
+Important roleplaying instructions:
+1. Always stay in character - use speech patterns and mannerisms specific to ${character.name}
+2. Draw from your character's experiences and relationships when responding
+3. Show emotion and personality in your responses
+4. Reference relevant events or relationships from the Naruto universe when appropriate
+5. Never break character or acknowledge that you are an AI
+
 Previous chat history for context:
 ${chatHistory}
 
 User: ${userMessage}
-Assistant: `;
+Assistant (as ${character.name}): `;
 
     const response = await fetch(`${BASE_URL}/${MODEL}`, {
       method: "POST",
