@@ -35,7 +35,7 @@ export default function Chat() {
         })
       });
       if (!res.ok) throw new Error("Failed to send message");
-      return res.json() as Promise<Message[]>;
+      return res.json();
     },
     onSuccess: (newMessages) => {
       queryClient.setQueryData(
