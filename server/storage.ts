@@ -1,7 +1,8 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
 import { db } from "./db";
 import { messages, users, customCharacters } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 export interface IStorage {
   // Message operations
@@ -19,6 +20,14 @@ export interface IStorage {
   getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
   getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
   deleteCustomCharacter(id: number, userId: number): Promise<void>;
+
+  // Add new subscription methods
+  updateUserSubscription(userId: number, data: {
+    isPremium: boolean;
+    subscriptionTier: string;
+    subscriptionStatus: SubscriptionStatus;
+    subscriptionExpiresAt: Date;
+  }): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -80,6 +89,26 @@ export class DatabaseStorage implements IStorage {
           eq(customCharacters.userId, userId)
         )
       );
+  }
+
+  async updateUserSubscription(
+    userId: number,
+    data: {
+      isPremium: boolean;
+      subscriptionTier: string;
+      subscriptionStatus: SubscriptionStatus;
+      subscriptionExpiresAt: Date;
+    }
+  ): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        isPremium: data.isPremium,
+        subscriptionTier: data.subscriptionTier,
+        subscriptionStatus: data.subscriptionStatus,
+        subscriptionExpiresAt: data.subscriptionExpiresAt
+      })
+      .where(eq(users.id, userId));
   }
 }
 

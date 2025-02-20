@@ -3,31 +3,27 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
-import { insertMessageSchema, insertCustomCharacterSchema } from "@shared/schema";
+import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
 
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
 
   app.get("/api/characters", async (_req, res) => {
-    // For demo, get characters for demo user
     let user = await storage.getUserByEmail("demo@example.com");
     if (!user) {
       user = await storage.createUser({ email: "demo@example.com" });
     }
 
-    // Get custom characters
     const customChars = await storage.getCustomCharactersByUser(user.id);
 
-    // Convert custom characters to match Character type
     const formattedCustomChars = customChars.map(char => ({
-      id: `custom_${char.id}`, // Add prefix to distinguish custom characters
+      id: `custom_${char.id}`, 
       name: char.name,
       avatar: char.avatar,
       description: char.description,
       persona: char.persona
     }));
 
-    // Combine predefined and custom characters
     const allCharacters = [...characters, ...formattedCustomChars];
     res.json(allCharacters);
   });
@@ -37,9 +33,7 @@ export async function registerRoutes(app: Express) {
     res.json(messages);
   });
 
-  // Get user details
   app.get("/api/user", async (_req, res) => {
-    // For demo, create a default user if not exists
     let user = await storage.getUserByEmail("demo@example.com");
     if (!user) {
       user = await storage.createUser({ email: "demo@example.com" });
@@ -47,9 +41,7 @@ export async function registerRoutes(app: Express) {
     res.json(user);
   });
 
-  // Get custom characters
   app.get("/api/custom-characters", async (_req, res) => {
-    // For demo, get characters for demo user
     let user = await storage.getUserByEmail("demo@example.com");
     if (!user) {
       user = await storage.createUser({ email: "demo@example.com" });
@@ -58,12 +50,17 @@ export async function registerRoutes(app: Express) {
     res.json(customChars);
   });
 
-  // Create custom character
   app.post("/api/custom-characters", async (req, res) => {
     try {
       const user = await storage.getUserByEmail("demo@example.com");
       if (!user) {
         throw new Error("User not found");
+      }
+
+      if (!user.isPremium && user.trialCharactersCreated >= 3) {
+        return res.status(403).json({
+          error: "Trial limit reached. Please upgrade to create more characters."
+        });
       }
 
       const data = insertCustomCharacterSchema.parse({
@@ -80,7 +77,6 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Delete custom character
   app.delete("/api/custom-characters/:id", async (req, res) => {
     try {
       const user = await storage.getUserByEmail("demo@example.com");
@@ -97,7 +93,6 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/messages", async (req, res) => {
     try {
-      // Get or create demo user
       let user = await storage.getUserByEmail("demo@example.com");
       if (!user) {
         user = await storage.createUser({ email: "demo@example.com" });
@@ -110,7 +105,6 @@ export async function registerRoutes(app: Express) {
       const message = await storage.createMessage(data);
 
       if (data.isUser) {
-        // Check if it's a custom character (ID starts with 'custom_')
         let character;
         const isCustom = data.characterId.startsWith('custom_');
         const characterId = isCustom ? Number(data.characterId.replace('custom_', '')) : data.characterId;
@@ -160,6 +154,35 @@ export async function registerRoutes(app: Express) {
   app.delete("/api/messages/:characterId", async (req, res) => {
     await storage.clearChat(req.params.characterId);
     res.json({ success: true });
+  });
+
+  app.post("/api/subscribe", async (req, res) => {
+    try {
+      const { planId } = req.body;
+      const user = await storage.getUserByEmail("demo@example.com");
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      if (!Object.keys(subscriptionPlans).some(plan => subscriptionPlans[plan as SubscriptionTier].id === planId)) {
+        throw new Error("Invalid subscription plan");
+      }
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30);
+
+      await storage.updateUserSubscription(user.id, {
+        isPremium: true,
+        subscriptionTier: planId,
+        subscriptionStatus: 'active',
+        subscriptionExpiresAt: expiresAt
+      });
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
   });
 
   return httpServer;
