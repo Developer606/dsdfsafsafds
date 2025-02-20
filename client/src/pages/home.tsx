@@ -95,7 +95,7 @@ export default function Home() {
   const handleCreateClick = () => {
     if (!user) return;
 
-    if (!user.isPremium && user.trialCharactersCreated >= 2) {
+    if (!user.isPremium && user.trialCharactersCreated >= 3) {
       setShowSubscription(true);
       return;
     }
@@ -144,7 +144,7 @@ export default function Home() {
           <Card className="mb-6 bg-accent">
             <CardContent className="p-4">
               <p className="text-sm">
-                Free trial: Created {user?.trialCharactersCreated || 0}/2 characters.
+                Free trial: Created {user?.trialCharactersCreated || 0}/3 characters.
                 Upgrade to premium for unlimited characters!
               </p>
             </CardContent>

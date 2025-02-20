@@ -90,7 +90,7 @@ export default function CharacterManagement() {
   const handleCreateClick = () => {
     if (!user) return;
 
-    if (!user.isPremium && user.trialCharactersCreated >= 2) {
+    if (!user.isPremium && user.trialCharactersCreated >= 3) {
       setShowSubscription(true);
       return;
     }
