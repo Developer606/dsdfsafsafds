@@ -8,8 +8,28 @@ import { insertMessageSchema, insertCustomCharacterSchema } from "@shared/schema
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
 
-  app.get("/api/characters", (_req, res) => {
-    res.json(characters);
+  app.get("/api/characters", async (_req, res) => {
+    // For demo, get characters for demo user
+    let user = await storage.getUserByEmail("demo@example.com");
+    if (!user) {
+      user = await storage.createUser({ email: "demo@example.com" });
+    }
+
+    // Get custom characters
+    const customChars = await storage.getCustomCharactersByUser(user.id);
+
+    // Convert custom characters to match Character type
+    const formattedCustomChars = customChars.map(char => ({
+      id: String(char.id),
+      name: char.name,
+      avatar: char.avatar,
+      description: char.description,
+      persona: char.persona
+    }));
+
+    // Combine predefined and custom characters
+    const allCharacters = [...characters, ...formattedCustomChars];
+    res.json(allCharacters);
   });
 
   app.get("/api/messages/:characterId", async (req, res) => {
