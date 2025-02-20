@@ -77,7 +77,16 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/messages", async (req, res) => {
     try {
-      const data = insertMessageSchema.parse(req.body);
+      // Get or create demo user
+      let user = await storage.getUserByEmail("demo@example.com");
+      if (!user) {
+        user = await storage.createUser({ email: "demo@example.com" });
+      }
+
+      const data = insertMessageSchema.parse({
+        ...req.body,
+        userId: user.id
+      });
       const message = await storage.createMessage(data);
 
       if (data.isUser) {
@@ -85,7 +94,7 @@ export async function registerRoutes(app: Express) {
         if (!character) throw new Error("Character not found");
 
         const messages = await storage.getMessagesByCharacter(data.characterId);
-        const chatHistory = messages.map(m => 
+        const chatHistory = messages.map(m =>
           `${m.isUser ? "User" : character.name}: ${m.content}`
         ).join("\n");
 
@@ -96,6 +105,7 @@ export async function registerRoutes(app: Express) {
         );
 
         const aiMessage = await storage.createMessage({
+          userId: user.id,
           characterId: data.characterId,
           content: aiResponse,
           isUser: false

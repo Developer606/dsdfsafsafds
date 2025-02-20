@@ -4,6 +4,7 @@ import { z } from "zod";
 
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
   characterId: text("character_id").notNull(),
   content: text("content").notNull(),
   isUser: boolean("is_user").notNull(),
@@ -30,6 +31,7 @@ export const customCharacters = pgTable("custom_characters", {
 
 // Message schemas
 export const insertMessageSchema = createInsertSchema(messages).pick({
+  userId: true,
   characterId: true,
   content: true,
   isUser: true,
