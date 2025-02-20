@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Crown } from "lucide-react";
+import { Home, Crown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { type User } from "@shared/schema";
 import { useState } from "react";
@@ -23,14 +23,6 @@ export function Navigation() {
               <Button variant="ghost" className="gap-2">
                 <Home className="h-4 w-4" />
                 Home
-              </Button>
-            </a>
-          </Link>
-          <Link href="/characters">
-            <a className={location === "/characters" ? "text-primary" : "text-muted-foreground"}>
-              <Button variant="ghost" className="gap-2">
-                <Users className="h-4 w-4" />
-                Characters
               </Button>
             </a>
           </Link>
