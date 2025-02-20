@@ -38,7 +38,6 @@ export async function registerRoutes(app: Express) {
         );
 
         const aiMessage = await storage.createMessage({
-          userId: data.userId,
           characterId: data.characterId,
           content: aiResponse,
           isUser: false
@@ -48,70 +47,6 @@ export async function registerRoutes(app: Express) {
       } else {
         res.json([message]);
       }
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/subscribe", async (req, res) => {
-    try {
-      const { planId } = req.body;
-      const user = await storage.getUser(req.user?.id);
-
-      if (!user) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      // Set subscription end date to 30 days from now
-      const subscriptionEndDate = new Date();
-      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
-
-      await storage.updateUserSubscription(user.id, {
-        subscriptionType: planId,
-        subscriptionEndDate
-      });
-
-      res.json({ success: true });
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  });
-
-  app.get("/api/custom-characters", async (req, res) => {
-    try {
-      const user = await storage.getUser(req.user?.id);
-      if (!user) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      const characters = await storage.getCustomCharacters(user.id);
-      res.json(characters);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  });
-
-  app.post("/api/custom-characters", async (req, res) => {
-    try {
-      const user = await storage.getUser(req.user?.id);
-      if (!user) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-
-      // Check character limit based on subscription
-      const characterLimit = await storage.getCharacterLimit(user.id);
-      if (user.customCharacterCount >= characterLimit) {
-        return res.status(403).json({ 
-          error: "Character limit reached. Please upgrade your subscription to create more characters." 
-        });
-      }
-
-      const character = await storage.createCustomCharacter({
-        ...req.body,
-        userId: user.id
-      });
-
-      res.json(character);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
