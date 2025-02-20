@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type CustomCharacter, type User } from "@shared/schema";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function CharacterManagement() {
   const [showSubscription, setShowSubscription] = useState(false);
@@ -38,16 +38,12 @@ export default function CharacterManagement() {
 
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
-      const res = await fetch("/api/custom-characters", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) throw new Error("Failed to create character");
+      const res = await apiRequest("POST", "/api/custom-characters", data);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/custom-characters"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/characters"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       setShowCreateDialog(false);
       setNewCharacter({
@@ -55,6 +51,10 @@ export default function CharacterManagement() {
         avatar: "",
         description: "",
         persona: ""
+      });
+      toast({
+        title: "Success",
+        description: "Character created successfully"
       });
     },
     onError: () => {
@@ -68,13 +68,22 @@ export default function CharacterManagement() {
 
   const deleteCharacter = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`/api/custom-characters/${id}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to delete character");
+      await apiRequest("DELETE", `/api/custom-characters/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/custom-characters"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/characters"] });
+      toast({
+        title: "Success",
+        description: "Character deleted successfully"
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete character"
+      });
     }
   });
 
@@ -87,6 +96,18 @@ export default function CharacterManagement() {
     }
 
     setShowCreateDialog(true);
+  };
+
+  const handleSubmit = () => {
+    if (!newCharacter.name || !newCharacter.avatar || !newCharacter.description || !newCharacter.persona) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please fill in all fields"
+      });
+      return;
+    }
+    createCharacter.mutate(newCharacter);
   };
 
   return (
@@ -163,7 +184,7 @@ export default function CharacterManagement() {
             />
             <Button 
               className="w-full"
-              onClick={() => createCharacter.mutate(newCharacter)}
+              onClick={handleSubmit}
               disabled={createCharacter.isPending}
             >
               Create Character

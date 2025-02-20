@@ -1,7 +1,7 @@
 import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter } from "@shared/schema";
 import { db } from "./db";
 import { messages, users, customCharacters } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // Message operations
@@ -74,8 +74,12 @@ export class DatabaseStorage implements IStorage {
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {
     await db
       .delete(customCharacters)
-      .where(eq(customCharacters.id, id))
-      .and(eq(customCharacters.userId, userId));
+      .where(
+        and(
+          eq(customCharacters.id, id),
+          eq(customCharacters.userId, userId)
+        )
+      );
   }
 }
 
