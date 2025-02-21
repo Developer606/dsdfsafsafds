@@ -18,8 +18,8 @@ export function Navigation() {
     <nav className="border-b">
       <div className="container mx-auto px-4">
         <div className="flex h-14 items-center gap-4">
-          <Link href="/">
-            <a className={location === "/" ? "text-primary" : "text-muted-foreground"}>
+          <Link href="/chats">
+            <a className={location === "/chats" ? "text-primary" : "text-muted-foreground"}>
               <Button variant="ghost" className="gap-2">
                 <Home className="h-4 w-4" />
                 Home

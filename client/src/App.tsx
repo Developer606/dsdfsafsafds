@@ -12,7 +12,13 @@ function Router() {
     <>
       <Navigation />
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/chats" component={Home} />
+        <Route path="/">
+          {() => {
+            window.location.href = '/chats';
+            return null;
+          }}
+        </Route>
         <Route path="/chat/:characterId" component={Chat} />
         <Route component={NotFound} />
       </Switch>
