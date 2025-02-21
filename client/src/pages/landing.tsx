@@ -1,9 +1,28 @@
-import { Link } from "wouter";
+import { useState } from "react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageCircle, Users, Sparkles, Crown } from "lucide-react";
+import { AuthDialog } from "@/components/auth-dialog";
+import { useQuery } from "@tanstack/react-query";
+import { type User } from "@shared/schema";
 
 export default function Landing() {
+  const [showAuth, setShowAuth] = useState(false);
+  const [, setLocation] = useLocation();
+
+  const { data: user } = useQuery<User>({ 
+    queryKey: ["/api/user"]
+  });
+
+  const handleStartChatting = () => {
+    if (user) {
+      setLocation("/home");
+    } else {
+      setShowAuth(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-accent">
       <div className="container mx-auto px-4 py-16">
@@ -14,11 +33,9 @@ export default function Landing() {
           <p className="text-xl text-muted-foreground mb-8">
             Create and chat with your favorite anime characters using AI technology
           </p>
-          <Link href="/home">
-            <Button size="lg" className="animate-pulse">
-              Start Chatting Now
-            </Button>
-          </Link>
+          <Button size="lg" className="animate-pulse" onClick={handleStartChatting}>
+            Start Chatting Now
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
@@ -68,13 +85,13 @@ export default function Landing() {
           <p className="text-muted-foreground mb-8">
             Join now and start chatting with your favorite anime characters!
           </p>
-          <Link href="/home">
-            <Button variant="outline" size="lg">
-              Explore Characters
-            </Button>
-          </Link>
+          <Button variant="outline" size="lg" onClick={handleStartChatting}>
+            Explore Characters
+          </Button>
         </div>
       </div>
+
+      <AuthDialog open={showAuth} onOpenChange={setShowAuth} />
     </div>
   );
 }
