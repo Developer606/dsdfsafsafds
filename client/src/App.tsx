@@ -6,20 +6,25 @@ import { Navigation } from "@/components/navigation";
 import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import NotFound from "@/pages/not-found";
+import LandingPage from "@/pages/landing";
 
 function Router() {
   return (
     <>
-      <Navigation />
       <Switch>
-        <Route path="/chats" component={Home} />
-        <Route path="/">
-          {() => {
-            window.location.href = '/chats';
-            return null;
-          }}
+        <Route path="/" component={LandingPage} />
+        <Route path="/chats">
+          <>
+            <Navigation />
+            <Home />
+          </>
         </Route>
-        <Route path="/chat/:characterId" component={Chat} />
+        <Route path="/chat/:characterId">
+          <>
+            <Navigation />
+            <Chat />
+          </>
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </>
