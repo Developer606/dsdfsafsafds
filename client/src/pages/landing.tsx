@@ -30,24 +30,21 @@ export default function LandingPage() {
 
   const handleSubmitFeedback = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically handle the form submission
     toast({
       title: "Feedback Submitted",
       description: "Thank you for your feedback! We'll get back to you soon.",
     });
-    // Reset form
     (e.target as HTMLFormElement).reset();
   };
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Background image */}
+      {/* Background pattern instead of unreliable image */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
-        style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1548181704-76f42e66e33e?auto=format&fit=crop&q=80')"
-        }}
-      />
+        className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-blue-900/20"
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]" />
+      </div>
 
       {/* Animated gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-black/95 to-purple-900/90 animate-gradient-shift" />

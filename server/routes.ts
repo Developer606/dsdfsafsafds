@@ -5,63 +5,72 @@ import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
 
+// Helper function to get or create demo user
+async function getOrCreateDemoUser() {
+  let user = await storage.getUserByEmail("demo@example.com");
+  if (!user) {
+    user = await storage.createUser({ 
+      email: "demo@example.com",
+      username: "demo_user" 
+    });
+  }
+  return user;
+}
+
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
 
   app.get("/api/characters", async (_req, res) => {
-    let user = await storage.getUserByEmail("demo@example.com");
-    if (!user) {
-      user = await storage.createUser({ 
-        email: "demo@example.com",
-        username: "demo_user" 
-      });
+    try {
+      const user = await getOrCreateDemoUser();
+      const customChars = await storage.getCustomCharactersByUser(user.id);
+
+      const formattedCustomChars = customChars.map(char => ({
+        id: `custom_${char.id}`, 
+        name: char.name,
+        avatar: char.avatar,
+        description: char.description,
+        persona: char.persona
+      }));
+
+      const allCharacters = [...characters, ...formattedCustomChars];
+      res.json(allCharacters);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch characters" });
     }
-
-    const customChars = await storage.getCustomCharactersByUser(user.id);
-
-    const formattedCustomChars = customChars.map(char => ({
-      id: `custom_${char.id}`, 
-      name: char.name,
-      avatar: char.avatar,
-      description: char.description,
-      persona: char.persona
-    }));
-
-    const allCharacters = [...characters, ...formattedCustomChars];
-    res.json(allCharacters);
   });
 
   app.get("/api/messages/:characterId", async (req, res) => {
-    const messages = await storage.getMessagesByCharacter(req.params.characterId);
-    res.json(messages);
+    try {
+      const messages = await storage.getMessagesByCharacter(req.params.characterId);
+      res.json(messages);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
   });
 
   app.get("/api/user", async (_req, res) => {
-    let user = await storage.getUserByEmail("demo@example.com");
-    if (!user) {
-      user = await storage.createUser({ 
-        email: "demo@example.com",
-        username: "demo_user" 
-      });
+    try {
+      const user = await getOrCreateDemoUser();
+      res.json(user);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch user" });
     }
-    res.json(user);
   });
 
   app.get("/api/custom-characters", async (_req, res) => {
-    let user = await storage.getUserByEmail("demo@example.com");
-    if (!user) {
-      user = await storage.createUser({ 
-        email: "demo@example.com",
-        username: "demo_user" 
-      });
+    try {
+      const user = await getOrCreateDemoUser();
+      const customChars = await storage.getCustomCharactersByUser(user.id);
+      res.json(customChars);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch custom characters" });
     }
-    const customChars = await storage.getCustomCharactersByUser(user.id);
-    res.json(customChars);
   });
 
   app.post("/api/custom-characters", async (req, res) => {
     try {
-      const user = await storage.getUserByEmail("demo@example.com");
+      const user = await getOrCreateDemoUser();
       if (!user) {
         throw new Error("User not found");
       }
@@ -88,7 +97,7 @@ export async function registerRoutes(app: Express) {
 
   app.delete("/api/custom-characters/:id", async (req, res) => {
     try {
-      const user = await storage.getUserByEmail("demo@example.com");
+      const user = await getOrCreateDemoUser();
       if (!user) {
         throw new Error("User not found");
       }
@@ -102,10 +111,7 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/messages", async (req, res) => {
     try {
-      let user = await storage.getUserByEmail("demo@example.com");
-      if (!user) {
-        user = await storage.createUser({ email: "demo@example.com", username: "demo_user" });
-      }
+      const user = await getOrCreateDemoUser();
 
       const data = insertMessageSchema.parse({
         ...req.body,
@@ -114,47 +120,55 @@ export async function registerRoutes(app: Express) {
       const message = await storage.createMessage(data);
 
       if (data.isUser) {
-        let character;
-        const isCustom = data.characterId.startsWith('custom_');
-        const characterIdNum = isCustom ? parseInt(data.characterId.replace('custom_', ''), 10) : null;
+        try {
+          let character;
+          const isCustom = data.characterId.startsWith('custom_');
+          const characterIdNum = isCustom ? parseInt(data.characterId.replace('custom_', ''), 10) : null;
 
-        if (isCustom && characterIdNum !== null) {
-          const customChar = await storage.getCustomCharacterById(characterIdNum);
-          if (!customChar) throw new Error("Custom character not found");
-          character = {
-            id: `custom_${customChar.id}`,
-            name: customChar.name,
-            avatar: customChar.avatar,
-            description: customChar.description,
-            persona: customChar.persona
-          };
-        } else {
-          character = characters.find(c => c.id === data.characterId);
-          if (!character) throw new Error("Predefined character not found");
+          if (isCustom && characterIdNum !== null) {
+            const customChar = await storage.getCustomCharacterById(characterIdNum);
+            if (!customChar) throw new Error("Custom character not found");
+            character = {
+              id: `custom_${customChar.id}`,
+              name: customChar.name,
+              avatar: customChar.avatar,
+              description: customChar.description,
+              persona: customChar.persona
+            };
+          } else {
+            character = characters.find(c => c.id === data.characterId);
+            if (!character) throw new Error("Predefined character not found");
+          }
+
+          const messages = await storage.getMessagesByCharacter(data.characterId);
+          const chatHistory = messages.map(m =>
+            `${m.isUser ? "User" : character.name}: ${m.content}`
+          ).join("\n");
+
+          const aiResponse = await generateCharacterResponse(
+            character,
+            data.content,
+            chatHistory,
+            data.language
+          );
+
+          const aiMessage = await storage.createMessage({
+            userId: user.id,
+            characterId: data.characterId,
+            content: aiResponse,
+            isUser: false,
+            language: data.language,
+            script: data.script
+          });
+
+          res.json([message, aiMessage]);
+        } catch (error: any) {
+          // If AI response fails, still return the user message but with an error
+          res.status(207).json({
+            messages: [message],
+            error: "Failed to generate AI response"
+          });
         }
-
-        const messages = await storage.getMessagesByCharacter(data.characterId);
-        const chatHistory = messages.map(m =>
-          `${m.isUser ? "User" : character.name}: ${m.content}`
-        ).join("\n");
-
-        const aiResponse = await generateCharacterResponse(
-          character,
-          data.content,
-          chatHistory,
-          data.language
-        );
-
-        const aiMessage = await storage.createMessage({
-          userId: user.id,
-          characterId: data.characterId,
-          content: aiResponse,
-          isUser: false,
-          language: data.language,
-          script: data.script
-        });
-
-        res.json([message, aiMessage]);
       } else {
         res.json([message]);
       }
@@ -171,7 +185,7 @@ export async function registerRoutes(app: Express) {
   app.post("/api/subscribe", async (req, res) => {
     try {
       const { planId } = req.body;
-      const user = await storage.getUserByEmail("demo@example.com");
+      const user = await getOrCreateDemoUser();
 
       if (!user) {
         throw new Error("User not found");
