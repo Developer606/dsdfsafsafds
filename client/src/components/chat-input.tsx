@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Smile, Globe2, Type } from "lucide-react";
+import { Send, Smile } from "lucide-react";
 import EmojiPicker from 'emoji-picker-react';
 import { 
   Popover, 
@@ -74,7 +74,6 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
         onValueChange={setLanguage}
       >
         <SelectTrigger className="w-[140px]">
-          <Globe2 className="h-4 w-4 mr-2" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -85,25 +84,6 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
           ))}
         </SelectContent>
       </Select>
-
-      {showScriptSelector && (
-        <Select
-          value={script}
-          onValueChange={(value) => setScript(value as "devanagari" | "latin")}
-        >
-          <SelectTrigger className="w-[140px]">
-            <Type className="h-4 w-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(supportedLanguages.find(lang => lang.id === "hindi") as any).scripts.map((s: any) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
 
       <div className="flex-1">
         <Input
