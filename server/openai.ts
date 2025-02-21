@@ -12,12 +12,17 @@ export async function generateCharacterResponse(
   character: Character,
   userMessage: string,
   chatHistory: string,
-  language: string = "english" // Default to English if not specified
+  language: string = "english", // Default to English if not specified
+  script?: string // Optional script parameter for Hindi
 ): Promise<string> {
   let retries = 0;
 
   while (retries < MAX_RETRIES) {
     try {
+      const scriptInstruction = language === "hindi" && script === "latin" 
+        ? "Respond in Hindi but use English/Latin alphabet for transliteration. Include the Devanagari script in parentheses after key phrases."
+        : "";
+
       const prompt = `<s>You are ${character.name}. Here is your character background and personality:
 
 ${character.persona}
@@ -31,6 +36,7 @@ Important roleplaying instructions:
 6. Respond in ${language}. Keep the character's personality traits but express them naturally in the specified language
 7. If using Japanese, include some anime-specific expressions when appropriate (like よろしく, がんばって, etc.)
 8. If using Hindi, incorporate appropriate Hindi expressions (like ठीक है, अच्छा, etc.) and maintain character personality while being culturally appropriate
+${scriptInstruction}
 
 Previous chat history for context:
 ${chatHistory}

@@ -39,7 +39,7 @@ export default function Chat() {
   }, [messages.length]);
 
   const sendMessage = useMutation({
-    mutationFn: async ({ content, language }: { content: string; language: string }) => {
+    mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,6 +47,7 @@ export default function Chat() {
           characterId,
           content,
           language,
+          script,
           isUser: true
         })
       });
@@ -146,7 +147,7 @@ export default function Chat() {
 
       <div className="p-4 border-t">
         <ChatInput
-          onSend={(content, language) => sendMessage.mutate({ content, language })}
+          onSend={(content, language, script) => sendMessage.mutate({ content, language, script })}
           isLoading={sendMessage.isPending}
         />
       </div>

@@ -40,7 +40,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
   isUser: true,
 }).extend({
-  language: z.string().default("english")
+  language: z.string().default("english"),
+  script: z.enum(["devanagari", "latin"]).optional()
 });
 
 // User schemas
@@ -117,7 +118,11 @@ export const supportedLanguages = [
   { id: "french", name: "Français" },
   { id: "chinese", name: "中文" },
   { id: "korean", name: "한국어" },
-  { id: "hindi", name: "हिन्दी" }
+  { id: "hindi", name: "हिन्दी", scripts: [
+    { id: "devanagari", name: "देवनागरी" },
+    { id: "latin", name: "Roman" }
+  ]}
 ] as const;
 
 export type SupportedLanguage = typeof supportedLanguages[number]["id"];
+export type ScriptPreference = "devanagari" | "latin";
