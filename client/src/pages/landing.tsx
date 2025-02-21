@@ -18,106 +18,89 @@ const stagger = {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background image with overlay */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&q=80')",
-        }}
-      />
-
+    <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/95 via-indigo-900/95 to-blue-900/95 animate-gradient-shift" />
-
-      {/* Floating particles effect */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDYwIEwgNjAgMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 animate-float" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] via-black to-[#1a1a1a]" />
 
       {/* Content */}
       <motion.div
         initial="initial"
         animate="animate"
         variants={stagger}
-        className="relative z-10 container mx-auto px-4 py-20 min-h-screen flex flex-col justify-center items-center text-center"
+        className="relative z-10 container mx-auto px-4 py-20 min-h-screen flex flex-col items-center"
       >
         <motion.h1 
           variants={fadeIn}
-          className="text-6xl md:text-7xl font-bold text-white mb-6 bg-clip-text text-transparent bg-gradient-to-r from-purple-300 to-pink-200"
+          className="text-6xl md:text-7xl font-bold text-center mb-6 text-white"
         >
-          AI Anime Character Chat
+          Chat with Anime Characters
         </motion.h1>
 
         <motion.p 
           variants={fadeIn}
-          className="text-xl text-gray-200 mb-12 max-w-2xl leading-relaxed"
+          className="text-lg text-center text-gray-300 mb-12"
         >
-          Experience immersive conversations with your favorite anime characters in multiple languages. Our AI-powered chat system brings characters to life with natural, context-aware responses.
+          Experience immersive conversations with your favorite anime characters 
+          powered by advanced AI technology.
         </motion.p>
+
+        <motion.div className="flex justify-center">
+          <Link to="/chats">
+            <Button 
+              size="lg" 
+              className="text-white bg-blue-600 hover:bg-blue-700 transition-colors rounded-md px-8 py-3"
+            >
+              Start Chatting Now 
+            </Button>
+          </Link>
+        </motion.div>
 
         <motion.div 
           variants={fadeIn}
-          className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2 max-w-4xl w-full mb-12"
+          className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-24 w-full max-w-5xl mx-auto"
         >
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            className="space-y-4 text-left bg-white/10 p-8 rounded-xl backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-300"
-          >
-            <h3 className="text-2xl font-semibold text-white">Key Features</h3>
-            <ul className="space-y-3 text-gray-200">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
-                Multiple language support
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
-                Character-authentic responses
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
-                Natural conversations
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-purple-400 rounded-full"></span>
-                Custom character creation
-              </li>
-            </ul>
-          </motion.div>
+          {/* Multiple Characters */}
+          <div className="text-center">
+            <div className="mb-6 flex justify-center">
+              <div className="w-16 h-16 bg-blue-900/30 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">Multiple Characters</h3>
+            <p className="text-gray-400">Chat with a diverse cast of anime characters, each with their own unique personality and backstory.</p>
+          </div>
 
-          <motion.div 
-            whileHover={{ scale: 1.02 }}
-            className="space-y-4 text-left bg-white/10 p-8 rounded-xl backdrop-blur-sm border border-white/20 hover:bg-white/15 transition-all duration-300"
-          >
-            <h3 className="text-2xl font-semibold text-white">Supported Languages</h3>
-            <ul className="space-y-3 text-gray-200">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-pink-400 rounded-full"></span>
-                English
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-pink-400 rounded-full"></span>
-                Japanese
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-pink-400 rounded-full"></span>
-                Chinese
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-pink-400 rounded-full"></span>
-                Korean & more
-              </li>
-            </ul>
-          </motion.div>
-        </motion.div>
+          {/* AI-Powered Responses */}
+          <div className="text-center">
+            <div className="mb-6 flex justify-center">
+              <div className="w-16 h-16 bg-blue-900/30 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8c0-4.418-3.582-8-8-8"></path>
+                  <path d="M12 6v6l4 2"></path>
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">AI-Powered Responses</h3>
+            <p className="text-gray-400">Experience natural conversations powered by advanced language models that maintain character authenticity.</p>
+          </div>
 
-        <motion.div variants={fadeIn}>
-          <Link href="/chats">
-            <Button 
-              size="lg" 
-              className="mt-8 text-lg px-12 py-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-none shadow-lg hover:shadow-xl transition-all duration-300 rounded-full"
-            >
-              Start Chatting Now
-            </Button>
-          </Link>
+          {/* Real-time Chat */}
+          <div className="text-center">
+            <div className="mb-6 flex justify-center">
+              <div className="w-16 h-16 bg-blue-900/30 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">Real-time Chat</h3>
+            <p className="text-gray-400">Enjoy instant responses and seamless conversation flow with our real-time chat interface.</p>
+          </div>
         </motion.div>
       </motion.div>
     </div>
