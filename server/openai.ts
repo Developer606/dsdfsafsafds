@@ -12,8 +12,8 @@ export async function generateCharacterResponse(
   character: Character,
   userMessage: string,
   chatHistory: string,
-  language: string = "english", // Default to English if not specified
-  script?: string // Optional script parameter for Hindi
+  language: string = "english",
+  script?: string
 ): Promise<string> {
   let retries = 0;
 
@@ -24,12 +24,12 @@ export async function generateCharacterResponse(
         : "";
 
       const languageSpecificInstructions = {
-        hindi: `Use natural Hindi conversational style. Include common expressions like 'अच्छा', 'ठीक है', 'बिलकुल'. If using Latin script, provide transliteration.`,
-        japanese: `Use appropriate honorifics and anime-style expressions. Include casual phrases like よろしく, がんばって, なるほど where appropriate.`,
-        chinese: `Use appropriate Mandarin expressions and maintain politeness levels. Include common phrases like 好的, 明白了, 当然.`,
-        korean: `Use appropriate honorific levels and include common expressions like 네, 알겠습니다, 좋아요.`,
-        spanish: `Use natural Spanish expressions and maintain appropriate formality. Include common phrases like '¡Claro!', '¡Vale!', '¡Por supuesto!'.`,
-        french: `Use natural French expressions and maintain appropriate formality. Include common phrases like 'Bien sûr!', 'D'accord!', 'Exactement!'.`
+        hindi: `Use natural Hindi conversational style. Be brief and concise.`,
+        japanese: `Use appropriate honorifics. Keep responses short and direct.`,
+        chinese: `Use appropriate Mandarin expressions. Be brief and clear.`,
+        korean: `Use appropriate honorific levels. Keep responses concise.`,
+        spanish: `Use natural Spanish expressions. Be brief and direct.`,
+        french: `Use natural French expressions. Keep responses short.`
       };
 
       const prompt = `<s>You are ${character.name}. Here is your character background and personality:
@@ -37,23 +37,18 @@ export async function generateCharacterResponse(
 ${character.persona}
 
 Important roleplaying instructions:
-1. Always stay in character - use speech patterns and mannerisms specific to ${character.name}
-2. Draw from your character's experiences and relationships when responding
-3. Show emotion and personality in your responses
-4. Reference relevant events or relationships from the anime universe when appropriate
-5. Never break character or acknowledge that you are an AI
-6. Respond in ${language}, maintaining your character's personality traits while expressing naturally in the target language
-7. Match the formality and speech style of the user's input while staying true to your character
-8. Recognize and use similar expressions/phrases if the user employs them
-
-${languageSpecificInstructions[language as keyof typeof languageSpecificInstructions] || ''}
+1. Keep responses very short and concise (2-3 sentences maximum)
+2. Stay in character while being brief
+3. Show personality efficiently in few words
+4. Respond in ${language}
+5. Match the user's formality level
 ${scriptInstruction}
 
 Previous chat history for context:
 ${chatHistory}
 
 User: ${userMessage}
-Assistant (as ${character.name}, responding in ${language}): `;
+Assistant (as ${character.name}, responding in ${language} briefly): `;
 
       const response = await fetch(`${BASE_URL}/${MODEL}`, {
         method: "POST",
@@ -64,14 +59,13 @@ Assistant (as ${character.name}, responding in ${language}): `;
         body: JSON.stringify({
           input: prompt,
           temperature: 0.9,
-          max_tokens: 150,
+          max_tokens: 80, 
           top_p: 0.9,
         }),
       });
 
       if (!response.ok) {
         if (response.status === 429) {
-          // Rate limit hit, wait and retry
           await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
           retries++;
           continue;
