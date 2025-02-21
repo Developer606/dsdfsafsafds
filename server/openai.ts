@@ -19,8 +19,11 @@ export async function generateCharacterResponse(
 
   while (retries < MAX_RETRIES) {
     try {
-      const scriptInstruction = language === "hindi" && script === "latin" 
-        ? "Respond in Hindi but use English/Latin alphabet for transliteration. Include the Devanagari script in parentheses after key phrases."
+      // Script instructions for both user and character responses
+      const scriptInstruction = language === "hindi" 
+        ? script === "latin"
+          ? "Respond in Hindi but use English/Latin alphabet for transliteration. Include the Devanagari script in parentheses after key phrases. For example: 'Theek hai (ठीक है)', 'Namaste (नमस्ते)'"
+          : "Respond in Hindi using Devanagari script. For example: 'ठीक है', 'नमस्ते'"
         : "";
 
       const prompt = `<s>You are ${character.name}. Here is your character background and personality:
@@ -35,7 +38,7 @@ Important roleplaying instructions:
 5. Never break character or acknowledge that you are an AI
 6. Respond in ${language}. Keep the character's personality traits but express them naturally in the specified language
 7. If using Japanese, include some anime-specific expressions when appropriate (like よろしく, がんばって, etc.)
-8. If using Hindi, incorporate appropriate Hindi expressions (like ठीक है, अच्छा, etc.) and maintain character personality while being culturally appropriate
+8. If using Hindi, incorporate appropriate Hindi expressions and maintain character personality while being culturally appropriate
 ${scriptInstruction}
 
 Previous chat history for context:
