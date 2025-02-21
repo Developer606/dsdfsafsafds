@@ -12,12 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
-import { SubscriptionDialog } from "@/components/subscription-dialog";
-import { type CustomCharacter, type User } from "@shared/schema";
+import { type CustomCharacter } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function CharacterManagement() {
-  const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newCharacter, setNewCharacter] = useState({
     name: "",
@@ -27,10 +25,6 @@ export default function CharacterManagement() {
   });
 
   const { toast } = useToast();
-
-  const { data: user } = useQuery<User>({ 
-    queryKey: ["/api/user"]
-  });
 
   const { data: customCharacters, isLoading } = useQuery<CustomCharacter[]>({ 
     queryKey: ["/api/custom-characters"]
@@ -44,7 +38,6 @@ export default function CharacterManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/custom-characters"] });
       queryClient.invalidateQueries({ queryKey: ["/api/characters"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       setShowCreateDialog(false);
       setNewCharacter({
         name: "",
@@ -87,17 +80,6 @@ export default function CharacterManagement() {
     }
   });
 
-  const handleCreateClick = () => {
-    if (!user) return;
-
-    if (!user.isPremium && user.trialCharactersCreated >= 3) { 
-      setShowSubscription(true);
-      return;
-    }
-
-    setShowCreateDialog(true);
-  };
-
   const handleSubmit = () => {
     if (!newCharacter.name || !newCharacter.avatar || !newCharacter.description || !newCharacter.persona) {
       toast({
@@ -126,22 +108,11 @@ export default function CharacterManagement() {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Character Management</h1>
-        <Button onClick={handleCreateClick}>
+        <Button onClick={() => setShowCreateDialog(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Create Character
         </Button>
       </div>
-
-      {!user?.isPremium && (
-        <Card className="mb-6 bg-accent">
-          <CardContent className="p-4">
-            <p className="text-sm">
-              Free trial: Created {user?.trialCharactersCreated || 0}/3 characters.
-              Upgrade to premium for unlimited characters!
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {customCharacters?.map((character) => (
@@ -205,11 +176,6 @@ export default function CharacterManagement() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <SubscriptionDialog
-        open={showSubscription}
-        onClose={() => setShowSubscription(false)}
-      />
     </div>
   );
 }

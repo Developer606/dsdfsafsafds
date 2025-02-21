@@ -1,8 +1,7 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser } from "@shared/schema";
 import { db } from "./db";
-import { messages, users, customCharacters } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
-import { sql } from "drizzle-orm";
+import { messages, users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Message operations
@@ -13,21 +12,6 @@ export interface IStorage {
   // User operations
   createUser(user: InsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  incrementTrialCharacterCount(userId: number): Promise<void>;
-
-  // Custom character operations
-  createCustomCharacter(character: InsertCustomCharacter): Promise<CustomCharacter>;
-  getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
-  getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
-  deleteCustomCharacter(id: number, userId: number): Promise<void>;
-
-  // Add new subscription methods
-  updateUserSubscription(userId: number, data: {
-    isPremium: boolean;
-    subscriptionTier: string;
-    subscriptionStatus: SubscriptionStatus;
-    subscriptionExpiresAt: Date;
-  }): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -54,61 +38,6 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
-  }
-
-  async incrementTrialCharacterCount(userId: number): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        trialCharactersCreated: sql`${users.trialCharactersCreated} + 1`
-      })
-      .where(eq(users.id, userId));
-  }
-
-  // Custom character operations
-  async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {
-    const [character] = await db.insert(customCharacters).values(insertCharacter).returning();
-    return character;
-  }
-
-  async getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]> {
-    return await db.select().from(customCharacters).where(eq(customCharacters.userId, userId));
-  }
-
-  async getCustomCharacterById(id: number): Promise<CustomCharacter | undefined> {
-    const [character] = await db.select().from(customCharacters).where(eq(customCharacters.id, id));
-    return character;
-  }
-
-  async deleteCustomCharacter(id: number, userId: number): Promise<void> {
-    await db
-      .delete(customCharacters)
-      .where(
-        and(
-          eq(customCharacters.id, id),
-          eq(customCharacters.userId, userId)
-        )
-      );
-  }
-
-  async updateUserSubscription(
-    userId: number,
-    data: {
-      isPremium: boolean;
-      subscriptionTier: string;
-      subscriptionStatus: SubscriptionStatus;
-      subscriptionExpiresAt: Date;
-    }
-  ): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        isPremium: data.isPremium,
-        subscriptionTier: data.subscriptionTier,
-        subscriptionStatus: data.subscriptionStatus,
-        subscriptionExpiresAt: data.subscriptionExpiresAt
-      })
-      .where(eq(users.id, userId));
   }
 }
 
