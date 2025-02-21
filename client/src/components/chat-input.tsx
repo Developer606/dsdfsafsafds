@@ -1,22 +1,35 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Smile, Paperclip } from "lucide-react";
+import { Send, Smile, Paperclip, Globe2 } from "lucide-react";
 import EmojiPicker from 'emoji-picker-react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supportedLanguages } from "@shared/schema";
 
 interface ChatInputProps {
-  onSend: (content: string) => void;
+  onSend: (content: string, language: string) => void;
   isLoading: boolean;
 }
 
 export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  const [language, setLanguage] = useState("english");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !isLoading) {
-      onSend(message);
+      onSend(message, language);
       setMessage("");
     }
   };
@@ -47,14 +60,22 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
         </PopoverContent>
       </Popover>
 
-      <Button 
-        type="button" 
-        size="icon" 
-        variant="ghost"
-        className="h-10 w-10 shrink-0"
+      <Select
+        value={language}
+        onValueChange={setLanguage}
       >
-        <Paperclip className="h-5 w-5 text-muted-foreground" />
-      </Button>
+        <SelectTrigger className="w-[140px]">
+          <Globe2 className="h-4 w-4 mr-2" />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {supportedLanguages.map((lang) => (
+            <SelectItem key={lang.id} value={lang.id}>
+              {lang.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <div className="flex-1">
         <Input

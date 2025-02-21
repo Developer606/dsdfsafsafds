@@ -141,7 +141,8 @@ export async function registerRoutes(app: Express) {
         const aiResponse = await generateCharacterResponse(
           character,
           data.content,
-          chatHistory
+          chatHistory,
+          data.language // Pass the language parameter
         );
 
         const aiMessage = await storage.createMessage({

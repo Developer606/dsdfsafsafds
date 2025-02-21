@@ -1,7 +1,7 @@
 import { type Character } from "@shared/characters";
 
 // Hardcoded API key for DeepInfra - permanent free key
-const API_KEY = "89tjwriGGKhy2EjCTVkhBTl8iJX6dZlG";
+const API_KEY = "1WZBBDgsjNncMEJ1snwHsUP177H2qub9";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
@@ -12,6 +12,7 @@ export async function generateCharacterResponse(
   character: Character,
   userMessage: string,
   chatHistory: string,
+  language: string = "english" // Default to English if not specified
 ): Promise<string> {
   let retries = 0;
 
@@ -27,12 +28,14 @@ Important roleplaying instructions:
 3. Show emotion and personality in your responses
 4. Reference relevant events or relationships from the anime universe when appropriate
 5. Never break character or acknowledge that you are an AI
+6. Respond in ${language}. Keep the character's personality traits but express them naturally in the specified language
+7. If using Japanese, include some anime-specific expressions when appropriate (like よろしく, がんばって, etc.)
 
 Previous chat history for context:
 ${chatHistory}
 
 User: ${userMessage}
-Assistant (as ${character.name}): `;
+Assistant (as ${character.name}, responding in ${language}): `;
 
       const response = await fetch(`${BASE_URL}/${MODEL}`, {
         method: "POST",

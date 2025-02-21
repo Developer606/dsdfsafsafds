@@ -39,6 +39,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   characterId: true,
   content: true,
   isUser: true,
+}).extend({
+  language: z.string().default("english")
 });
 
 // User schemas
@@ -106,3 +108,15 @@ export const subscriptionPlans = {
 
 export type SubscriptionTier = keyof typeof subscriptionPlans;
 export type SubscriptionStatus = 'trial' | 'active' | 'cancelled' | 'expired';
+
+// Add supported languages
+export const supportedLanguages = [
+  { id: "english", name: "English" },
+  { id: "japanese", name: "日本語" },
+  { id: "spanish", name: "Español" },
+  { id: "french", name: "Français" },
+  { id: "chinese", name: "中文" },
+  { id: "korean", name: "한국어" }
+] as const;
+
+export type SupportedLanguage = typeof supportedLanguages[number]["id"];
