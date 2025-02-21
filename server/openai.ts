@@ -1,7 +1,7 @@
 import { type Character } from "@shared/characters";
 
 // Hardcoded API key for DeepInfra - permanent free key
-const API_KEY = "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
+const API_KEY = "1WZBBDgsjNncMEJ1snwHsUP177H2qub9";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
@@ -13,16 +13,15 @@ export async function generateCharacterResponse(
   userMessage: string,
   chatHistory: string,
   language: string = "english",
-  script?: string,
+  script?: string
 ): Promise<string> {
   let retries = 0;
 
   while (retries < MAX_RETRIES) {
     try {
-      const scriptInstruction =
-        language === "hindi" && script === "latin"
-          ? "Respond in Hindi but use English/Latin alphabet for transliteration. Include the Devanagari script in parentheses after key phrases."
-          : "";
+      const scriptInstruction = language === "hindi" && script === "latin" 
+        ? "Respond in Hindi but use English/Latin alphabet for transliteration. Include the Devanagari script in parentheses after key phrases."
+        : "";
 
       const languageSpecificInstructions = {
         hindi: `Use natural Hindi conversational style. Be brief and concise.`,
@@ -30,7 +29,7 @@ export async function generateCharacterResponse(
         chinese: `Use appropriate Mandarin expressions. Be brief and clear.`,
         korean: `Use appropriate honorific levels. Keep responses concise.`,
         spanish: `Use natural Spanish expressions. Be brief and direct.`,
-        french: `Use natural French expressions. Keep responses short.`,
+        french: `Use natural French expressions. Keep responses short.`
       };
 
       const prompt = `<s>You are ${character.name}. Here is your character background and personality:
@@ -60,7 +59,7 @@ Assistant (as ${character.name}, responding in ${language} briefly): `;
         body: JSON.stringify({
           input: prompt,
           temperature: 0.9,
-          max_tokens: 80,
+          max_tokens: 80, 
           top_p: 0.9,
         }),
       });
