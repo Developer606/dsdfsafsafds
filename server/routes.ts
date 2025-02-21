@@ -17,17 +17,24 @@ export async function registerRoutes(app: Express) {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const customChars = await storage.getCustomCharactersByUser(req.user.id);
-    const formattedCustomChars = customChars.map(char => ({
-      id: `custom_${char.id}`, 
-      name: char.name,
-      avatar: char.avatar,
-      description: char.description,
-      persona: char.persona
-    }));
+    try {
+      const customChars = await storage.getCustomCharactersByUser(req.user.id);
+      const formattedCustomChars = customChars.map(char => ({
+        id: `custom_${char.id}`, 
+        name: char.name,
+        avatar: char.avatar,
+        description: char.description,
+        persona: char.persona
+      }));
 
-    const allCharacters = [...characters, ...formattedCustomChars];
-    res.json(allCharacters);
+      // Always include default characters along with custom ones
+      const allCharacters = [...characters, ...formattedCustomChars];
+      console.log("Sending characters:", allCharacters.length); // Debug log
+      res.json(allCharacters);
+    } catch (error) {
+      console.error("Error fetching characters:", error);
+      res.status(500).json({ error: "Failed to fetch characters" });
+    }
   });
 
   app.get("/api/messages/:characterId", async (req, res) => {

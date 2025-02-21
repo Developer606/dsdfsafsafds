@@ -36,7 +36,8 @@ export default function Home() {
   });
 
   const { data: characters, isLoading } = useQuery<Character[]>({ 
-    queryKey: ["/api/characters"]
+    queryKey: ["/api/characters"],
+    retry: 1
   });
 
   const createCharacter = useMutation({
