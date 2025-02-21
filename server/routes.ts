@@ -4,21 +4,24 @@ import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
-
-// Helper function to get or create demo user
-async function getOrCreateDemoUser() {
-  let user = await storage.getUserByEmail("demo@example.com");
-  if (!user) {
-    user = await storage.createUser({ 
-      email: "demo@example.com",
-      username: "demo_user" 
-    });
-  }
-  return user;
-}
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express) {
-  const httpServer = createServer(app);
+  // Set up authentication routes and middleware
+  setupAuth(app);
+
+  // Helper function to get or create demo user
+  async function getOrCreateDemoUser() {
+    let user = await storage.getUserByEmail("demo@example.com");
+    if (!user) {
+      user = await storage.createUser({ 
+        email: "demo@example.com",
+        username: "demo_user",
+        password: "demo_password" // This will be hashed by the auth system
+      });
+    }
+    return user;
+  }
 
   app.get("/api/characters", async (_req, res) => {
     try {
@@ -211,5 +214,6 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  const httpServer = createServer(app);
   return httpServer;
 }

@@ -5,7 +5,8 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  username: text("username").notNull(), // Add username field
+  username: text("username").notNull(), 
+  password: text("password").notNull(), // Add password field
   isPremium: boolean("is_premium").notNull().default(false),
   trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
   subscriptionTier: text("subscription_tier"),
@@ -47,7 +48,13 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
-  username: true, // Include username in insert schema
+  username: true,
+  password: true,
+});
+
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 // Custom character schemas

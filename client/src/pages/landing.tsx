@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { AuthDialog } from "@/components/auth-dialog";
+import type { User } from "@shared/schema";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -27,6 +31,25 @@ const slideIn = {
 
 export default function LandingPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"]
+  });
+
+  const handleStartChatting = () => {
+    if (user) {
+      setLocation("/chats");
+    } else {
+      setShowAuthDialog(true);
+    }
+  };
+
+  const handleSuccessfulAuth = () => {
+    setShowAuthDialog(false);
+    setLocation("/chats");
+  };
 
   const handleSubmitFeedback = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,20 +62,16 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Background pattern instead of unreliable image */}
       <div 
         className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-blue-900/20"
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]" />
       </div>
 
-      {/* Animated gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-black/95 to-purple-900/90 animate-gradient-shift" />
 
-      {/* Particle effect overlay */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDYwIEwgNjAgMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 animate-float" />
 
-      {/* Content */}
       <motion.div
         initial="initial"
         animate="animate"
@@ -84,21 +103,19 @@ export default function LandingPage() {
           whileHover={{ scale: 1.05 }}
           className="mb-20"
         >
-          <Link to="/chats">
-            <Button 
-              size="lg" 
-              className="text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:shadow-lg hover:shadow-blue-500/25 rounded-xl px-8 py-4 text-lg"
-            >
-              Start Chatting Now 
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            className="text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:shadow-lg hover:shadow-blue-500/25 rounded-xl px-8 py-4 text-lg"
+            onClick={handleStartChatting}
+          >
+            Start Chatting Now 
+          </Button>
         </motion.div>
 
         <motion.div 
           variants={fadeIn}
           className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-12 w-full max-w-5xl mx-auto"
         >
-          {/* Multiple Characters */}
           <motion.div 
             className="text-center"
             whileHover={{ y: -10 }}
@@ -118,7 +135,6 @@ export default function LandingPage() {
             <p className="text-gray-400">Chat with a diverse cast of anime characters, each with their own unique personality and backstory.</p>
           </motion.div>
 
-          {/* AI-Powered Responses */}
           <motion.div 
             className="text-center"
             whileHover={{ y: -10 }}
@@ -136,7 +152,6 @@ export default function LandingPage() {
             <p className="text-gray-400">Experience natural conversations powered by advanced language models that maintain character authenticity.</p>
           </motion.div>
 
-          {/* Real-time Chat */}
           <motion.div 
             className="text-center"
             whileHover={{ y: -10 }}
@@ -154,7 +169,6 @@ export default function LandingPage() {
           </motion.div>
         </motion.div>
 
-        {/* Feedback Form Section */}
         <motion.div
           variants={fadeIn}
           className="w-full max-w-2xl mx-auto mt-32 bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10"
@@ -212,6 +226,11 @@ export default function LandingPage() {
           </form>
         </motion.div>
       </motion.div>
+      <AuthDialog
+        open={showAuthDialog}
+        onOpenChange={setShowAuthDialog}
+        onSuccess={handleSuccessfulAuth}
+      />
     </div>
   );
 }
