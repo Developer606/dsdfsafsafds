@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -23,6 +26,19 @@ const slideIn = {
 };
 
 export default function LandingPage() {
+  const { toast } = useToast();
+
+  const handleSubmitFeedback = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Here you would typically handle the form submission
+    toast({
+      title: "Feedback Submitted",
+      description: "Thank you for your feedback! We'll get back to you soon.",
+    });
+    // Reset form
+    (e.target as HTMLFormElement).reset();
+  };
+
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Background image */}
@@ -139,6 +155,64 @@ export default function LandingPage() {
             <h3 className="text-xl font-semibold text-white mb-3">Real-time Chat</h3>
             <p className="text-gray-400">Enjoy instant responses and seamless conversation flow with our real-time chat interface.</p>
           </motion.div>
+        </motion.div>
+
+        {/* Feedback Form Section */}
+        <motion.div
+          variants={fadeIn}
+          className="w-full max-w-2xl mx-auto mt-32 bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10"
+        >
+          <h2 className="text-3xl font-bold text-white text-center mb-8">Share Your Feedback</h2>
+          <form onSubmit={handleSubmitFeedback} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+                  Name
+                </label>
+                <Input
+                  id="name"
+                  placeholder="Your name"
+                  required
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  required
+                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-2">
+                Message
+              </label>
+              <Textarea
+                id="message"
+                placeholder="Share your thoughts..."
+                required
+                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 min-h-[120px]"
+              />
+            </div>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex justify-center"
+            >
+              <Button
+                type="submit"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-xl transition-all duration-300"
+              >
+                Submit Feedback
+              </Button>
+            </motion.div>
+          </form>
         </motion.div>
       </motion.div>
     </div>
