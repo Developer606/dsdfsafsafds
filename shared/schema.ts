@@ -116,7 +116,8 @@ export const supportedLanguages = [
   { id: "spanish", name: "Español" },
   { id: "french", name: "Français" },
   { id: "chinese", name: "中文" },
-  { id: "korean", name: "한국어" }
+  { id: "korean", name: "한국어" },
+  { id: "hindi", name: "हिन्दी" }
 ] as const;
 
 export type SupportedLanguage = typeof supportedLanguages[number]["id"];
