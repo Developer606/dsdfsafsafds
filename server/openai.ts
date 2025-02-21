@@ -23,6 +23,15 @@ export async function generateCharacterResponse(
         ? "Respond in Hindi but use English/Latin alphabet for transliteration. Include the Devanagari script in parentheses after key phrases."
         : "";
 
+      const languageSpecificInstructions = {
+        hindi: `Use natural Hindi conversational style. Include common expressions like 'अच्छा', 'ठीक है', 'बिलकुल'. If using Latin script, provide transliteration.`,
+        japanese: `Use appropriate honorifics and anime-style expressions. Include casual phrases like よろしく, がんばって, なるほど where appropriate.`,
+        chinese: `Use appropriate Mandarin expressions and maintain politeness levels. Include common phrases like 好的, 明白了, 当然.`,
+        korean: `Use appropriate honorific levels and include common expressions like 네, 알겠습니다, 좋아요.`,
+        spanish: `Use natural Spanish expressions and maintain appropriate formality. Include common phrases like '¡Claro!', '¡Vale!', '¡Por supuesto!'.`,
+        french: `Use natural French expressions and maintain appropriate formality. Include common phrases like 'Bien sûr!', 'D'accord!', 'Exactement!'.`
+      };
+
       const prompt = `<s>You are ${character.name}. Here is your character background and personality:
 
 ${character.persona}
@@ -33,9 +42,11 @@ Important roleplaying instructions:
 3. Show emotion and personality in your responses
 4. Reference relevant events or relationships from the anime universe when appropriate
 5. Never break character or acknowledge that you are an AI
-6. Respond in ${language}. Keep the character's personality traits but express them naturally in the specified language
-7. If using Japanese, include some anime-specific expressions when appropriate (like よろしく, がんばって, etc.)
-8. If using Hindi, incorporate appropriate Hindi expressions (like ठीक है, अच्छा, etc.) and maintain character personality while being culturally appropriate
+6. Respond in ${language}, maintaining your character's personality traits while expressing naturally in the target language
+7. Match the formality and speech style of the user's input while staying true to your character
+8. Recognize and use similar expressions/phrases if the user employs them
+
+${languageSpecificInstructions[language as keyof typeof languageSpecificInstructions] || ''}
 ${scriptInstruction}
 
 Previous chat history for context:
