@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home } from "lucide-react";
+import { Home, Crown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { type User } from "@shared/schema";
 
@@ -29,7 +29,7 @@ export function Navigation() {
             <Button
               variant="default"
               className="ml-auto gap-2"
-              onClick={() => {}} // Removed setShowSubscription
+              onClick={() => {}} 
             >
               <Crown className="h-4 w-4" />
               Upgrade to Premium
