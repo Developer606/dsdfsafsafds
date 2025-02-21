@@ -2,6 +2,18 @@ import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  username: text("username").notNull(), // Add username field
+  isPremium: boolean("is_premium").notNull().default(false),
+  trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
+  subscriptionTier: text("subscription_tier"),
+  subscriptionStatus: text("subscription_status").default('trial'),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -9,17 +21,6 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   isUser: boolean("is_user").notNull(),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
-});
-
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  isPremium: boolean("is_premium").notNull().default(false),
-  trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
-  subscriptionTier: text("subscription_tier"),
-  subscriptionStatus: text("subscription_status").default('trial'),
-  subscriptionExpiresAt: timestamp("subscription_expires_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 export const customCharacters = pgTable("custom_characters", {
@@ -43,6 +44,7 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
+  username: true, // Include username in insert schema
 });
 
 // Custom character schemas

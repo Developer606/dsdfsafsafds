@@ -11,7 +11,10 @@ export async function registerRoutes(app: Express) {
   app.get("/api/characters", async (_req, res) => {
     let user = await storage.getUserByEmail("demo@example.com");
     if (!user) {
-      user = await storage.createUser({ email: "demo@example.com" });
+      user = await storage.createUser({ 
+        email: "demo@example.com",
+        username: "demo_user" 
+      });
     }
 
     const customChars = await storage.getCustomCharactersByUser(user.id);
@@ -36,7 +39,10 @@ export async function registerRoutes(app: Express) {
   app.get("/api/user", async (_req, res) => {
     let user = await storage.getUserByEmail("demo@example.com");
     if (!user) {
-      user = await storage.createUser({ email: "demo@example.com" });
+      user = await storage.createUser({ 
+        email: "demo@example.com",
+        username: "demo_user" 
+      });
     }
     res.json(user);
   });
@@ -44,7 +50,10 @@ export async function registerRoutes(app: Express) {
   app.get("/api/custom-characters", async (_req, res) => {
     let user = await storage.getUserByEmail("demo@example.com");
     if (!user) {
-      user = await storage.createUser({ email: "demo@example.com" });
+      user = await storage.createUser({ 
+        email: "demo@example.com",
+        username: "demo_user" 
+      });
     }
     const customChars = await storage.getCustomCharactersByUser(user.id);
     res.json(customChars);
@@ -95,7 +104,7 @@ export async function registerRoutes(app: Express) {
     try {
       let user = await storage.getUserByEmail("demo@example.com");
       if (!user) {
-        user = await storage.createUser({ email: "demo@example.com" });
+        user = await storage.createUser({ email: "demo@example.com", username: "demo_user" });
       }
 
       const data = insertMessageSchema.parse({
