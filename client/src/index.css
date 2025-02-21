@@ -22,6 +22,10 @@
     animation: float 20s linear infinite;
     background-size: 60px 60px;
   }
+
+  .animate-pulse {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 }
 
 @keyframes gradient-shift {
@@ -42,5 +46,14 @@
   }
   100% {
     background-position: 60px 60px;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
   }
 }

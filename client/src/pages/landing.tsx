@@ -16,11 +16,28 @@ const stagger = {
   }
 };
 
+const slideIn = {
+  initial: { x: -60, opacity: 0 },
+  animate: { x: 0, opacity: 1 },
+  transition: { duration: 0.8, ease: "easeOut" }
+};
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Background image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+        style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1548181704-76f42e66e33e?auto=format&fit=crop&q=80')"
+        }}
+      />
+
       {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1a] via-black to-[#1a1a1a]" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-black/95 to-purple-900/90 animate-gradient-shift" />
+
+      {/* Particle effect overlay */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDYwIEwgNjAgMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 animate-float" />
 
       {/* Content */}
       <motion.div
@@ -29,26 +46,35 @@ export default function LandingPage() {
         variants={stagger}
         className="relative z-10 container mx-auto px-4 py-20 min-h-screen flex flex-col items-center"
       >
-        <motion.h1 
-          variants={fadeIn}
-          className="text-6xl md:text-7xl font-bold text-center mb-6 text-white"
+        <motion.div
+          variants={slideIn}
+          className="text-center mb-8"
         >
-          Chat with Anime Characters
-        </motion.h1>
+          <motion.h1 
+            variants={fadeIn}
+            className="text-6xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 animate-pulse"
+          >
+            Chat with Anime Characters
+          </motion.h1>
 
-        <motion.p 
+          <motion.p 
+            variants={fadeIn}
+            className="text-lg text-center text-gray-300 mb-12 max-w-2xl mx-auto"
+          >
+            Experience immersive conversations with your favorite anime characters 
+            powered by advanced AI technology.
+          </motion.p>
+        </motion.div>
+
+        <motion.div 
           variants={fadeIn}
-          className="text-lg text-center text-gray-300 mb-12"
+          whileHover={{ scale: 1.05 }}
+          className="mb-20"
         >
-          Experience immersive conversations with your favorite anime characters 
-          powered by advanced AI technology.
-        </motion.p>
-
-        <motion.div className="flex justify-center">
           <Link to="/chats">
             <Button 
               size="lg" 
-              className="text-white bg-blue-600 hover:bg-blue-700 transition-colors rounded-md px-8 py-3"
+              className="text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:shadow-lg hover:shadow-blue-500/25 rounded-xl px-8 py-4 text-lg"
             >
               Start Chatting Now 
             </Button>
@@ -57,13 +83,17 @@ export default function LandingPage() {
 
         <motion.div 
           variants={fadeIn}
-          className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-24 w-full max-w-5xl mx-auto"
+          className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-12 w-full max-w-5xl mx-auto"
         >
           {/* Multiple Characters */}
-          <div className="text-center">
+          <motion.div 
+            className="text-center"
+            whileHover={{ y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="mb-6 flex justify-center">
-              <div className="w-16 h-16 bg-blue-900/30 rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-blue-500/30 transform hover:rotate-12 transition-transform duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                   <circle cx="9" cy="7" r="4"></circle>
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
@@ -73,13 +103,17 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-semibold text-white mb-3">Multiple Characters</h3>
             <p className="text-gray-400">Chat with a diverse cast of anime characters, each with their own unique personality and backstory.</p>
-          </div>
+          </motion.div>
 
           {/* AI-Powered Responses */}
-          <div className="text-center">
+          <motion.div 
+            className="text-center"
+            whileHover={{ y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="mb-6 flex justify-center">
-              <div className="w-16 h-16 bg-blue-900/30 rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-purple-500/30 transform hover:rotate-12 transition-transform duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8c0-4.418-3.582-8-8-8"></path>
                   <path d="M12 6v6l4 2"></path>
                 </svg>
@@ -87,20 +121,24 @@ export default function LandingPage() {
             </div>
             <h3 className="text-xl font-semibold text-white mb-3">AI-Powered Responses</h3>
             <p className="text-gray-400">Experience natural conversations powered by advanced language models that maintain character authenticity.</p>
-          </div>
+          </motion.div>
 
           {/* Real-time Chat */}
-          <div className="text-center">
+          <motion.div 
+            className="text-center"
+            whileHover={{ y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
             <div className="mb-6 flex justify-center">
-              <div className="w-16 h-16 bg-blue-900/30 rounded-full flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-blue-500/30 transform hover:rotate-12 transition-transform duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                 </svg>
               </div>
             </div>
             <h3 className="text-xl font-semibold text-white mb-3">Real-time Chat</h3>
             <p className="text-gray-400">Enjoy instant responses and seamless conversation flow with our real-time chat interface.</p>
-          </div>
+          </motion.div>
         </motion.div>
       </motion.div>
     </div>
