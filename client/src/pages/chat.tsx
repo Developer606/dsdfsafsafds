@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { type Message } from "@shared/schema";
 import { type Character } from "@shared/characters";
 import { queryClient } from "@/lib/queryClient";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Chat() {
@@ -43,13 +43,13 @@ export default function Chat() {
       const optimisticId = Date.now();
       const optimisticMessage: Message = {
         id: optimisticId,
-        userId: 1,
         characterId: characterId || "",
         content,
         isUser: true,
-        timestamp: new Date()
+        createdAt: new Date().toISOString()
       };
 
+      // Add optimistic message
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
         (old = []) => [...old, optimisticMessage]
@@ -71,12 +71,14 @@ export default function Chat() {
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
         (old = []) => {
+          // Remove optimistic message and add real messages
           const filteredOld = old.filter(msg => typeof msg.id === 'number');
           return [...filteredOld, ...newMessages];
         }
       );
     },
     onError: () => {
+      // Remove optimistic message on error
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
         (old = []) => old.filter(msg => typeof msg.id === 'number')
@@ -89,32 +91,64 @@ export default function Chat() {
     }
   });
 
+  const clearChat = useMutation({
+    mutationFn: async () => {
+      if (!characterId) throw new Error("No character ID");
+      const res = await fetch(`/api/messages/${characterId}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Failed to clear chat");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.setQueryData([`/api/messages/${characterId}`], []);
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to clear chat history"
+      });
+    }
+  });
+
   if (!character) return null;
 
   return (
-    <div className="flex flex-col h-screen bg-black">
-      {/* Header */}
-      <div className="flex items-center p-4 bg-gray-900/50 backdrop-blur-sm">
+    <div className="flex flex-col h-screen bg-background">
+      <div className="flex items-center p-4 border-b">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setLocation("/chats")}
-          className="text-white"
+          onClick={() => setLocation("/")}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-
-        <div className="ml-4">
-          <h2 className="font-semibold text-white">{character.name}</h2>
+        <img
+          src={character.avatar}
+          alt={character.name}
+          className="w-10 h-10 rounded-full mx-4"
+        />
+        <div>
+          <h2 className="font-semibold">{character.name}</h2>
+          <p className="text-sm text-muted-foreground">{character.description}</p>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="ml-auto"
+          onClick={() => clearChat.mutate()}
+          disabled={clearChat.isPending}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
 
-      {/* Chat messages */}
-      <div className="flex-1 overflow-y-auto p-4 bg-black">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messagesLoading ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-800/50 animate-pulse rounded-lg" />
+              <div key={i} className="h-16 bg-card animate-pulse rounded-lg" />
             ))}
           </div>
         ) : (
@@ -131,8 +165,7 @@ export default function Chat() {
         )}
       </div>
 
-      {/* Input area */}
-      <div className="p-4 bg-gray-900/50 backdrop-blur-sm">
+      <div className="p-4 border-t">
         <ChatInput
           onSend={(content) => sendMessage.mutate(content)}
           isLoading={sendMessage.isPending}

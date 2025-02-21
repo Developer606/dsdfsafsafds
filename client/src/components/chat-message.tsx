@@ -11,14 +11,25 @@ export function ChatMessage({ message, character }: ChatMessageProps) {
   const isUser = message.isUser;
 
   return (
-    <div className={cn(
-      "flex justify-center w-full mb-4",
-      isUser ? "justify-end" : "justify-start"
-    )}>
-      <div className={cn(
-        "max-w-[80%] rounded-lg px-4 py-2",
-        isUser ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground"
-      )}>
+    <div
+      className={cn(
+        "flex gap-3 max-w-[80%]",
+        isUser ? "ml-auto flex-row-reverse" : "mr-auto"
+      )}
+    >
+      <img
+        src={isUser ? "https://api.dicebear.com/7.x/avatars/svg?seed=user" : character.avatar}
+        alt={isUser ? "User" : character.name}
+        className="w-8 h-8 rounded-full"
+      />
+      <div
+        className={cn(
+          "rounded-lg p-3",
+          isUser
+            ? "bg-primary text-primary-foreground"
+            : "bg-secondary text-secondary-foreground"
+        )}
+      >
         {message.content}
       </div>
     </div>
