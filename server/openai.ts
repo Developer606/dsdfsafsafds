@@ -21,9 +21,7 @@ export async function generateCharacterResponse(
     try {
       // Script instructions for both user and character responses
       const scriptInstruction = language === "hindi" 
-        ? script === "latin"
-          ? "Respond in Hindi but use English/Latin alphabet for transliteration. Include the Devanagari script in parentheses after key phrases. For example: 'Theek hai (ठीक है)', 'Namaste (नमस्ते)'"
-          : "Respond in Hindi using Devanagari script. For example: 'ठीक है', 'नमस्ते'"
+        ? "Always respond in Hindi using Latin/Roman script (transliteration) and include the Devanagari script in parentheses. For example: 'Main Naruto hoon (मैं नारुटो हूं)', 'Bahut badhiya (बहुत बढ़िया)'. Make sure to maintain the character's personality while using appropriate Hindi expressions."
         : "";
 
       const prompt = `<s>You are ${character.name}. Here is your character background and personality:
