@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,6 +112,11 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
           <DialogTitle>
             {isLogin ? "Welcome Back!" : "Create an Account"}
           </DialogTitle>
+          <DialogDescription>
+            {isLogin 
+              ? "Sign in to your account to continue"
+              : "Fill in your details to create a new account"}
+          </DialogDescription>
         </DialogHeader>
 
         {isLogin ? (
@@ -123,7 +129,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="Enter your username" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -136,7 +142,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="password" placeholder="Enter your password" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -157,7 +163,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="Choose a username" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -170,7 +176,11 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" {...field} />
+                      <Input 
+                        type="email" 
+                        placeholder="Enter your email"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -183,7 +193,11 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input 
+                        type="password" 
+                        placeholder="Choose a password (min. 6 characters)"
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
