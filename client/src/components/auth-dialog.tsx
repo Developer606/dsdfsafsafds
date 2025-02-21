@@ -102,6 +102,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
   };
 
   const onRegisterSubmit = (data: InsertUser) => {
+    console.log("Registration data:", data); // Debug log
     registerMutation.mutate(data);
   };
 
@@ -177,9 +178,13 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input 
-                        type="email" 
+                        type="email"
                         placeholder="Enter your email"
-                        {...field} 
+                        {...field}
+                        onChange={(e) => {
+                          console.log("Email change:", e.target.value); // Debug log
+                          field.onChange(e);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
