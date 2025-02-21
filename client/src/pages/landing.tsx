@@ -6,7 +6,7 @@ export default function LandingPage() {
     <div className="min-h-screen relative">
       {/* Background gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-purple-900/90 to-indigo-900/90" />
-      
+
       {/* Background pattern */}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDYwIEwgNjAgMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20" />
 
@@ -15,7 +15,7 @@ export default function LandingPage() {
         <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
           AI Anime Character Chat
         </h1>
-        
+
         <p className="text-xl text-gray-200 mb-8 max-w-2xl">
           Experience immersive conversations with your favorite anime characters in multiple languages. Our AI-powered chat system brings characters to life with natural, context-aware responses.
         </p>
@@ -42,7 +42,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <Link href="/chat">
+        <Link href="/chats">
           <Button size="lg" className="mt-12 text-lg px-8 py-6 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white border-none">
             Start Chatting Now
           </Button>
