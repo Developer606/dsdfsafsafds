@@ -5,10 +5,8 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser } from "@shared/schema";
+import { User as SelectUser, insertUserSchema } from "@shared/schema";
 import connectPg from "connect-pg-simple";
-
-const PostgresSessionStore = connectPg(session);
 
 declare global {
   namespace Express {
@@ -74,25 +72,44 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res) => {
     try {
+      // Validate input using schema
+      const parsedInput = insertUserSchema.safeParse(req.body);
+      if (!parsedInput.success) {
+        return res.status(400).json({ 
+          error: "Invalid input",
+          details: parsedInput.error.errors 
+        });
+      }
+
+      // Check if user exists
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).json({ error: "Username already exists" });
       }
 
+      const existingEmail = await storage.getUserByEmail(req.body.email);
+      if (existingEmail) {
+        return res.status(400).json({ error: "Email already exists" });
+      }
+
+      // Hash password and create user
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
       });
 
+      // Log in the user after registration
       req.login(user, (err) => {
         if (err) {
+          console.error("Login after registration failed:", err);
           return res.status(500).json({ error: "Login failed after registration" });
         }
-        res.status(201).json(user);
+        return res.status(201).json(user);
       });
-    } catch (error) {
-      res.status(500).json({ error: "Registration failed" });
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      res.status(500).json({ error: "Registration failed", details: error.message });
     }
   });
 
