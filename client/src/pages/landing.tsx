@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { AuthDialog } from "@/components/auth-dialog";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -27,6 +29,7 @@ const slideIn = {
 
 export default function LandingPage() {
   const { toast } = useToast();
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
   const handleSubmitFeedback = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,15 +90,19 @@ export default function LandingPage() {
           whileHover={{ scale: 1.05 }}
           className="mb-20"
         >
-          <Link to="/chats">
-            <Button 
-              size="lg" 
-              className="text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:shadow-lg hover:shadow-blue-500/25 rounded-xl px-8 py-4 text-lg"
-            >
-              Start Chatting Now 
-            </Button>
-          </Link>
+          <Button 
+            size="lg" 
+            className="text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:shadow-lg hover:shadow-blue-500/25 rounded-xl px-8 py-4 text-lg"
+            onClick={() => setAuthDialogOpen(true)}
+          >
+            Start Chatting Now 
+          </Button>
         </motion.div>
+
+        <AuthDialog 
+          open={authDialogOpen} 
+          onOpenChange={setAuthDialogOpen} 
+        />
 
         <motion.div 
           variants={fadeIn}

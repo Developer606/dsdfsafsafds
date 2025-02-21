@@ -7,6 +7,7 @@ import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
+import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
   return (
@@ -34,8 +35,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
