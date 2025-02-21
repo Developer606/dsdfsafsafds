@@ -115,7 +115,6 @@ export default function Home() {
     createCharacter.mutate(newCharacter);
   };
 
-  const showControls = !location.startsWith("/chat/");
 
   if (isLoading) {
     return (
@@ -132,54 +131,19 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4">
-        {showControls && (
-          <>
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
-                Anime Characters
-              </h1>
-              <Button onClick={handleCreateClick}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Character
-              </Button>
-            </div>
-
-            {!user?.isPremium && (
-              <Card className="mb-6 bg-accent">
-                <CardContent className="p-4">
-                  <p className="text-sm">
-                    Free trial: Created {user?.trialCharactersCreated || 0}/3 characters.
-                    Upgrade to premium for unlimited characters!
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text mb-6">
+          Anime Characters
+        </h1>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {characters?.map((character) => (
-            <div key={character.id} className="relative group">
+            <div key={character.id}>
               <Link href={`/chat/${character.id}`}>
                 <CharacterCard character={character} />
               </Link>
-              {showControls && character.id.startsWith('custom_') && (
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    deleteCharacter.mutate(character.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
             </div>
           ))}
         </div>
-
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogContent>
             <DialogHeader>

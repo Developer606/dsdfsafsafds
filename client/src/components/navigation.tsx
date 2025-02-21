@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home, Crown } from "lucide-react";
+import { Home } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { type User } from "@shared/schema";
 
@@ -10,8 +10,6 @@ export function Navigation() {
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"]
   });
-
-  const showPremiumButton = !location.startsWith("/chat/") && !user?.isPremium;
 
   return (
     <nav className="border-b">
@@ -25,16 +23,6 @@ export function Navigation() {
               </Button>
             </a>
           </Link>
-          {showPremiumButton && (
-            <Button
-              variant="default"
-              className="ml-auto gap-2"
-              onClick={() => {}} 
-            >
-              <Crown className="h-4 w-4" />
-              Upgrade to Premium
-            </Button>
-          )}
         </div>
       </div>
     </nav>
