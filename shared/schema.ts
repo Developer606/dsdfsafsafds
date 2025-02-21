@@ -1,12 +1,12 @@
-import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  username: text("username").notNull(), 
-  password: text("password").notNull(), // Add password field
+  username: text("username").notNull(),
+  password: text("password").notNull(),
   isPremium: boolean("is_premium").notNull().default(false),
   trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
   subscriptionTier: text("subscription_tier"),
