@@ -19,9 +19,8 @@ export async function generateCharacterResponse(
 
   while (retries < MAX_RETRIES) {
     try {
-      // Script instructions for both user and character responses
-      const scriptInstruction = language === "hindi" 
-        ? "Always respond in Hindi using Latin/Roman script (transliteration) and include the Devanagari script in parentheses. For example: 'Main Naruto hoon (मैं नारुटो हूं)', 'Bahut badhiya (बहुत बढ़िया)'. Make sure to maintain the character's personality while using appropriate Hindi expressions."
+      const scriptInstruction = language === "hindi" && script === "latin" 
+        ? "Respond in Hindi but use English/Latin alphabet for transliteration. Include the Devanagari script in parentheses after key phrases."
         : "";
 
       const prompt = `<s>You are ${character.name}. Here is your character background and personality:
@@ -36,7 +35,7 @@ Important roleplaying instructions:
 5. Never break character or acknowledge that you are an AI
 6. Respond in ${language}. Keep the character's personality traits but express them naturally in the specified language
 7. If using Japanese, include some anime-specific expressions when appropriate (like よろしく, がんばって, etc.)
-8. If using Hindi, incorporate appropriate Hindi expressions and maintain character personality while being culturally appropriate
+8. If using Hindi, incorporate appropriate Hindi expressions (like ठीक है, अच्छा, etc.) and maintain character personality while being culturally appropriate
 ${scriptInstruction}
 
 Previous chat history for context:
