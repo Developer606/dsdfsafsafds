@@ -1,16 +1,22 @@
 import { type Character } from "@shared/characters";
 
-// Hardcoded API key for DeepInfra
-const API_KEY = "ESGI0qwerty1234567";
+// Hardcoded API key for DeepInfra - REPLACE THIS WITH A VALID KEY
+const API_KEY = "YOUR_ACTUAL_API_KEY"; 
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
 export async function generateCharacterResponse(
   character: Character,
   userMessage: string,
-  chatHistory: string
+  chatHistory: string,
 ): Promise<string> {
   try {
+    if (!API_KEY) {
+      throw new Error(
+        "API Key is missing! Please add your API key in the code.",
+      );
+    }
+
     const prompt = `<s>You are ${character.name} from the anime Naruto. Here is your character background and personality:
 
 ${character.persona}
@@ -32,24 +38,26 @@ Assistant (as ${character.name}): `;
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${API_KEY}`
+        Authorization: `Bearer ${API_KEY}`,
       },
       body: JSON.stringify({
         input: prompt,
         temperature: 0.9,
         max_tokens: 150,
-        top_p: 0.9
-      })
+        top_p: 0.9,
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.statusText}`);
+      //Improved error handling - include status code for better debugging
+      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
-    return data.results[0].generated_text || "Sorry, I couldn't respond.";
+    return data.results?.[0]?.generated_text || "Sorry, I couldn't respond.";
   } catch (error) {
     console.error("LLM API error:", error);
-    return "I apologize, but I'm having trouble responding right now. Please try again later.";
+    //More informative error message
+    return `I apologize, but I'm having trouble responding right now.  The error was: ${error.message}. Please try again later.`;
   }
 }
