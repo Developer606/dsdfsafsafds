@@ -11,7 +11,8 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, character }: ChatMessageProps) {
   const isUser = message.isUser;
-  const time = format(new Date(message.timestamp), "h:mm a");
+  // Safely format the timestamp with a fallback
+  const time = message.timestamp ? format(new Date(message.timestamp), "h:mm a") : "";
 
   return (
     <div
@@ -45,15 +46,16 @@ export function ChatMessage({ message, character }: ChatMessageProps) {
           )}
         >
           {message.content}
-          <div className="flex items-center justify-end gap-1 mt-1">
-            <span className="text-[10px] opacity-70">{time}</span>
-            {isUser && (
-              <div className="text-[10px] opacity-70">
-                {/* Show double check for delivered messages */}
-                <CheckCheck className="h-3 w-3 inline" />
-              </div>
-            )}
-          </div>
+          {time && (
+            <div className="flex items-center justify-end gap-1 mt-1">
+              <span className="text-[10px] opacity-70">{time}</span>
+              {isUser && (
+                <div className="text-[10px] opacity-70">
+                  <CheckCheck className="h-3 w-3 inline" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
