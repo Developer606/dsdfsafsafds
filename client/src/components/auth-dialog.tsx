@@ -102,13 +102,12 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
   };
 
   const onRegisterSubmit = (data: InsertUser) => {
-    console.log("Registration data:", data); // Debug log
     registerMutation.mutate(data);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-background">
         <DialogHeader>
           <DialogTitle>
             {isLogin ? "Welcome Back!" : "Create an Account"}
@@ -164,7 +163,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="Choose a username" {...field} />
+                      <Input placeholder="Choose a username" className="bg-background" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -180,11 +179,8 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                       <Input 
                         type="email"
                         placeholder="Enter your email"
+                        className="bg-background"
                         {...field}
-                        onChange={(e) => {
-                          console.log("Email change:", e.target.value); // Debug log
-                          field.onChange(e);
-                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -199,9 +195,10 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input 
-                        type="password" 
+                        type="password"
                         placeholder="Choose a password (min. 6 characters)"
-                        {...field} 
+                        className="bg-background"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
