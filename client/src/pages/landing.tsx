@@ -30,30 +30,20 @@ export default function LandingPage() {
 
   const handleSubmitFeedback = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically handle the form submission
     toast({
       title: "Feedback Submitted",
       description: "Thank you for your feedback! We'll get back to you soon.",
     });
-    // Reset form
     (e.target as HTMLFormElement).reset();
   };
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Background image */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
-        style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1548181704-76f42e66e33e?auto=format&fit=crop&q=80')"
-        }}
-      />
+      {/* Remove background image and enhance gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-purple-900/95 to-indigo-900/90 animate-gradient-shift" />
 
-      {/* Animated gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-black/95 to-purple-900/90 animate-gradient-shift" />
-
-      {/* Particle effect overlay */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDYwIEwgNjAgMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 animate-float" />
+      {/* Enhanced particle effect overlay */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/5 to-transparent opacity-20" />
 
       {/* Content */}
       <motion.div

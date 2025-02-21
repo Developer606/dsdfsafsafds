@@ -4,31 +4,39 @@ import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
+import * as z from 'zod';
 
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
 
   app.get("/api/characters", async (_req, res) => {
-    let user = await storage.getUserByEmail("demo@example.com");
-    if (!user) {
-      user = await storage.createUser({ 
-        email: "demo@example.com",
-        username: "demo_user" 
+    try {
+      let user = await storage.getUserByEmail("demo@example.com");
+      if (!user) {
+        user = await storage.createUser({ 
+          email: "demo@example.com",
+          username: "demo_user" 
+        });
+      }
+
+      const customChars = await storage.getCustomCharactersByUser(user.id);
+      const formattedCustomChars = customChars.map(char => ({
+        id: `custom_${char.id}`, 
+        name: char.name,
+        avatar: char.avatar,
+        description: char.description,
+        persona: char.persona
+      }));
+
+      const allCharacters = [...characters, ...formattedCustomChars];
+      res.json(allCharacters);
+    } catch (error) {
+      console.error('Error fetching characters:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch characters',
+        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
-
-    const customChars = await storage.getCustomCharactersByUser(user.id);
-
-    const formattedCustomChars = customChars.map(char => ({
-      id: `custom_${char.id}`, 
-      name: char.name,
-      avatar: char.avatar,
-      description: char.description,
-      persona: char.persona
-    }));
-
-    const allCharacters = [...characters, ...formattedCustomChars];
-    res.json(allCharacters);
   });
 
   app.get("/api/messages/:characterId", async (req, res) => {
@@ -63,12 +71,15 @@ export async function registerRoutes(app: Express) {
     try {
       const user = await storage.getUserByEmail("demo@example.com");
       if (!user) {
-        throw new Error("User not found");
+        return res.status(404).json({ error: "User not found" });
       }
 
       if (!user.isPremium && user.trialCharactersCreated >= 3) {
         return res.status(403).json({
-          error: "Trial limit reached. Please upgrade to create more characters."
+          error: "Trial limit reached",
+          message: "Please upgrade to create more characters.",
+          limit: 3,
+          created: user.trialCharactersCreated
         });
       }
 
@@ -81,8 +92,18 @@ export async function registerRoutes(app: Express) {
       await storage.incrementTrialCharacterCount(user.id);
 
       res.json(character);
-    } catch (error: any) {
-      res.status(400).json({ error: error.message });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "Validation error",
+          details: error.errors
+        });
+      }
+      console.error('Error creating character:', error);
+      res.status(500).json({ 
+        error: "Failed to create character",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
