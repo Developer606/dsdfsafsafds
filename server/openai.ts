@@ -1,10 +1,7 @@
 import { type Character } from "@shared/characters";
 
-if (!process.env.DEEPINFRA_API_KEY) {
-  throw new Error("Missing DEEPINFRA_API_KEY environment variable");
-}
-
-const API_KEY = process.env.DEEPINFRA_API_KEY;
+// Hardcoded API key for DeepInfra
+const API_KEY = "ESGI0qwerty1234567";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
@@ -53,6 +50,6 @@ Assistant (as ${character.name}): `;
     return data.results[0].generated_text || "Sorry, I couldn't respond.";
   } catch (error) {
     console.error("LLM API error:", error);
-    throw new Error("Failed to generate response");
+    return "I apologize, but I'm having trouble responding right now. Please try again later.";
   }
 }

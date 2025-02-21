@@ -107,10 +107,10 @@ export async function registerRoutes(app: Express) {
       if (data.isUser) {
         let character;
         const isCustom = data.characterId.startsWith('custom_');
-        const characterId = isCustom ? Number(data.characterId.replace('custom_', '')) : data.characterId;
+        const characterIdNum = isCustom ? parseInt(data.characterId.replace('custom_', ''), 10) : null;
 
-        if (isCustom) {
-          const customChar = await storage.getCustomCharacterById(characterId);
+        if (isCustom && characterIdNum !== null) {
+          const customChar = await storage.getCustomCharacterById(characterIdNum);
           if (!customChar) throw new Error("Custom character not found");
           character = {
             id: `custom_${customChar.id}`,
@@ -120,7 +120,7 @@ export async function registerRoutes(app: Express) {
             persona: customChar.persona
           };
         } else {
-          character = characters.find(c => c.id === characterId);
+          character = characters.find(c => c.id === data.characterId);
           if (!character) throw new Error("Predefined character not found");
         }
 

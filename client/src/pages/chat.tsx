@@ -14,10 +14,11 @@ export default function Chat() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: character } = useQuery<Character>({ 
-    queryKey: ["/api/characters"],
-    select: (chars) => chars.find((c) => c.id === characterId)
+  const { data: characters } = useQuery<Character[]>({ 
+    queryKey: ["/api/characters"]
   });
+
+  const character = characters?.find((c: Character) => c.id === characterId);
 
   const { data: messages, isLoading: messagesLoading } = useQuery<Message[]>({ 
     queryKey: [`/api/messages/${characterId}`]
