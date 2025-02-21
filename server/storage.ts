@@ -4,10 +4,9 @@ import { messages, users, customCharacters } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { pool } from "./db";
+import createMemoryStore from "memorystore";
 
-const PostgresSessionStore = connectPg(session);
+const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
   // Message operations
@@ -44,45 +43,63 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({
-      pool,
-      createTableIfMissing: true,
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
     });
   }
 
-  // Message operations
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
-    return await db.select().from(messages).where(eq(messages.characterId, characterId));
+    const result = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.characterId, characterId));
+    return result;
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const [message] = await db.insert(messages).values(insertMessage).returning();
-    return message;
+    const [result] = await db
+      .insert(messages)
+      .values(insertMessage)
+      .returning();
+    return result;
   }
 
   async clearChat(characterId: string): Promise<void> {
-    await db.delete(messages).where(eq(messages.characterId, characterId));
+    await db
+      .delete(messages)
+      .where(eq(messages.characterId, characterId));
   }
 
-  // User operations
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+    const [result] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return result;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    const [result] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+    return result;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
+    const [result] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
+    return result;
   }
 
   async getUserById(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    const [result] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id));
+    return result;
   }
 
   async incrementTrialCharacterCount(userId: number): Promise<void> {
@@ -94,19 +111,28 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  // Custom character operations
   async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {
-    const [character] = await db.insert(customCharacters).values(insertCharacter).returning();
-    return character;
+    const [result] = await db
+      .insert(customCharacters)
+      .values(insertCharacter)
+      .returning();
+    return result;
   }
 
   async getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]> {
-    return await db.select().from(customCharacters).where(eq(customCharacters.userId, userId));
+    const result = await db
+      .select()
+      .from(customCharacters)
+      .where(eq(customCharacters.userId, userId));
+    return result;
   }
 
   async getCustomCharacterById(id: number): Promise<CustomCharacter | undefined> {
-    const [character] = await db.select().from(customCharacters).where(eq(customCharacters.id, id));
-    return character;
+    const [result] = await db
+      .select()
+      .from(customCharacters)
+      .where(eq(customCharacters.id, id));
+    return result;
   }
 
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {
