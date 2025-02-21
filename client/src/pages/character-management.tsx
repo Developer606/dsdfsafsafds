@@ -32,7 +32,7 @@ export default function CharacterManagement() {
     queryKey: ["/api/user"]
   });
 
-  const { data: customCharacters } = useQuery<CustomCharacter[]>({ 
+  const { data: customCharacters, isLoading } = useQuery<CustomCharacter[]>({ 
     queryKey: ["/api/custom-characters"]
   });
 
@@ -90,7 +90,7 @@ export default function CharacterManagement() {
   const handleCreateClick = () => {
     if (!user) return;
 
-    if (!user.isPremium && user.trialCharactersCreated >= 3) {
+    if (!user.isPremium && user.trialCharactersCreated >= 3) { 
       setShowSubscription(true);
       return;
     }
@@ -110,6 +110,18 @@ export default function CharacterManagement() {
     createCharacter.mutate(newCharacter);
   };
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-32 bg-card animate-pulse rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
@@ -124,7 +136,7 @@ export default function CharacterManagement() {
         <Card className="mb-6 bg-accent">
           <CardContent className="p-4">
             <p className="text-sm">
-              Free trial: Created {user?.trialCharactersCreated || 0}/2 characters.
+              Free trial: Created {user?.trialCharactersCreated || 0}/3 characters.
               Upgrade to premium for unlimited characters!
             </p>
           </CardContent>
@@ -147,6 +159,7 @@ export default function CharacterManagement() {
                   variant="ghost"
                   size="icon"
                   onClick={() => deleteCharacter.mutate(character.id)}
+                  disabled={deleteCharacter.isPending}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

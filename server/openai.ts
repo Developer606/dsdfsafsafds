@@ -5,13 +5,19 @@ const API_KEY = "6oT2EuMgLmEq1ZF78mir8gpDOq6BuvYW";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
+
 export async function generateCharacterResponse(
   character: Character,
   userMessage: string,
   chatHistory: string,
 ): Promise<string> {
-  try {
-    const prompt = `<s>You are ${character.name}. Here is your character background and personality:
+  let retries = 0;
+
+  while (retries < MAX_RETRIES) {
+    try {
+      const prompt = `<s>You are ${character.name}. Here is your character background and personality:
 
 ${character.persona}
 
@@ -28,28 +34,48 @@ ${chatHistory}
 User: ${userMessage}
 Assistant (as ${character.name}): `;
 
-    const response = await fetch(`${BASE_URL}/${MODEL}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify({
-        input: prompt,
-        temperature: 0.9,
-        max_tokens: 150,
-        top_p: 0.9,
-      }),
-    });
+      const response = await fetch(`${BASE_URL}/${MODEL}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
+        body: JSON.stringify({
+          input: prompt,
+          temperature: 0.9,
+          max_tokens: 150,
+          top_p: 0.9,
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Rate limit hit, wait and retry
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          retries++;
+          continue;
+        }
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const generatedText = data.results?.[0]?.generated_text;
+
+      if (!generatedText || typeof generatedText !== 'string') {
+        throw new Error("Invalid response format from API");
+      }
+
+      return generatedText.trim() || "I apologize, but I seem to be having trouble forming a response right now.";
+    } catch (error: any) {
+      if (retries < MAX_RETRIES - 1) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        retries++;
+        continue;
+      }
+      console.error("LLM API error:", error);
+      return `I apologize, but I'm having trouble responding right now. Error: ${error.message}. Please try again later.`;
     }
-
-    const data = await response.json();
-    return data.results?.[0]?.generated_text || "Sorry, I couldn't respond.";
-  } catch (error: any) {
-    console.error("LLM API error:", error);
-    return `I apologize, but I'm having trouble responding right now. Error: ${error.message}. Please try again later.`;
   }
+
+  return "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.";
 }

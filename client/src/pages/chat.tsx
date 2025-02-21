@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { ChatMessage } from "@/components/chat-message";
@@ -13,6 +14,11 @@ export default function Chat() {
   const { characterId } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const { data: characters } = useQuery<Character[]>({ 
     queryKey: ["/api/characters"]
@@ -20,12 +26,35 @@ export default function Chat() {
 
   const character = characters?.find((c: Character) => c.id === characterId);
 
-  const { data: messages, isLoading: messagesLoading } = useQuery<Message[]>({ 
-    queryKey: [`/api/messages/${characterId}`]
+  const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({ 
+    queryKey: [`/api/messages/${characterId}`],
+    enabled: !!characterId
   });
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages.length]);
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
+      const optimisticId = Date.now();
+      const optimisticMessage: Message = {
+        id: optimisticId,
+        characterId: characterId || "",
+        content,
+        isUser: true,
+        createdAt: new Date().toISOString()
+      };
+
+      // Add optimistic message
+      queryClient.setQueryData<Message[]>(
+        [`/api/messages/${characterId}`],
+        (old = []) => [...old, optimisticMessage]
+      );
+
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -38,13 +67,22 @@ export default function Chat() {
       if (!res.ok) throw new Error("Failed to send message");
       return res.json();
     },
-    onSuccess: (newMessages) => {
-      queryClient.setQueryData(
+    onSuccess: (newMessages: Message[]) => {
+      queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
-        (old: Message[] = []) => [...old, ...newMessages]
+        (old = []) => {
+          // Remove optimistic message and add real messages
+          const filteredOld = old.filter(msg => typeof msg.id === 'number');
+          return [...filteredOld, ...newMessages];
+        }
       );
     },
     onError: () => {
+      // Remove optimistic message on error
+      queryClient.setQueryData<Message[]>(
+        [`/api/messages/${characterId}`],
+        (old = []) => old.filter(msg => typeof msg.id === 'number')
+      );
       toast({
         variant: "destructive",
         title: "Error",
@@ -55,6 +93,7 @@ export default function Chat() {
 
   const clearChat = useMutation({
     mutationFn: async () => {
+      if (!characterId) throw new Error("No character ID");
       const res = await fetch(`/api/messages/${characterId}`, {
         method: "DELETE"
       });
@@ -63,6 +102,13 @@ export default function Chat() {
     },
     onSuccess: () => {
       queryClient.setQueryData([`/api/messages/${characterId}`], []);
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to clear chat history"
+      });
     }
   });
 
@@ -92,6 +138,7 @@ export default function Chat() {
           size="icon"
           className="ml-auto"
           onClick={() => clearChat.mutate()}
+          disabled={clearChat.isPending}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -105,13 +152,16 @@ export default function Chat() {
             ))}
           </div>
         ) : (
-          messages?.map((message) => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              character={character}
-            />
-          ))
+          <>
+            {messages.map((message: Message) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                character={character}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </>
         )}
       </div>
 
