@@ -40,7 +40,7 @@ export function ChatMessage({ message, character }: ChatMessageProps) {
               isUser ? "text-primary-foreground/70" : "text-secondary-foreground/70"
             )}
           >
-            {format(new Date(message.createdAt), "h:mm a")}
+            {format(new Date(message.timestamp), "h:mm a")}
             {isUser && (
               <div className="flex">
                 <Check className="h-3 w-3" />
