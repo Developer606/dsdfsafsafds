@@ -3,10 +3,6 @@ import { db } from "./db";
 import { messages, users, customCharacters } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { sql } from "drizzle-orm";
-import session from "express-session";
-import createMemoryStore from "memorystore";
-
-const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
   // Message operations
@@ -17,8 +13,6 @@ export interface IStorage {
   // User operations
   createUser(user: InsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  getUserById(id: number): Promise<User | undefined>;
   incrementTrialCharacterCount(userId: number): Promise<void>;
 
   // Custom character operations
@@ -27,79 +21,39 @@ export interface IStorage {
   getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
   deleteCustomCharacter(id: number, userId: number): Promise<void>;
 
-  // Subscription operations
+  // Add new subscription methods
   updateUserSubscription(userId: number, data: {
     isPremium: boolean;
     subscriptionTier: string;
     subscriptionStatus: SubscriptionStatus;
     subscriptionExpiresAt: Date;
   }): Promise<void>;
-
-  // Session store
-  sessionStore: session.Store;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.Store;
-
-  constructor() {
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
-    });
-  }
-
+  // Message operations
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
-    const result = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.characterId, characterId));
-    return result;
+    return await db.select().from(messages).where(eq(messages.characterId, characterId));
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const [result] = await db
-      .insert(messages)
-      .values(insertMessage)
-      .returning();
-    return result;
+    const [message] = await db.insert(messages).values(insertMessage).returning();
+    return message;
   }
 
   async clearChat(characterId: string): Promise<void> {
-    await db
-      .delete(messages)
-      .where(eq(messages.characterId, characterId));
+    await db.delete(messages).where(eq(messages.characterId, characterId));
   }
 
+  // User operations
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [result] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return result;
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [result] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email));
-    return result;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [result] = await db
-      .select()
-      .from(users)
-      .where(eq(users.username, username));
-    return result;
-  }
-
-  async getUserById(id: number): Promise<User | undefined> {
-    const [result] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, id));
-    return result;
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async incrementTrialCharacterCount(userId: number): Promise<void> {
@@ -111,28 +65,19 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
+  // Custom character operations
   async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {
-    const [result] = await db
-      .insert(customCharacters)
-      .values(insertCharacter)
-      .returning();
-    return result;
+    const [character] = await db.insert(customCharacters).values(insertCharacter).returning();
+    return character;
   }
 
   async getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]> {
-    const result = await db
-      .select()
-      .from(customCharacters)
-      .where(eq(customCharacters.userId, userId));
-    return result;
+    return await db.select().from(customCharacters).where(eq(customCharacters.userId, userId));
   }
 
   async getCustomCharacterById(id: number): Promise<CustomCharacter | undefined> {
-    const [result] = await db
-      .select()
-      .from(customCharacters)
-      .where(eq(customCharacters.id, id));
-    return result;
+    const [character] = await db.select().from(customCharacters).where(eq(customCharacters.id, id));
+    return character;
   }
 
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {

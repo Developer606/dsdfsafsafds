@@ -14,8 +14,6 @@ export const messages = pgTable("messages", {
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
   isPremium: boolean("is_premium").notNull().default(false),
   trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
   subscriptionTier: text("subscription_tier"),
@@ -43,22 +41,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
 });
 
 // User schemas
-export const insertUserSchema = createInsertSchema(users)
-  .pick({
-    email: true,
-    username: true,
-    password: true,
-  })
-  .extend({
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    email: z.string().email("Invalid email address"),
-    username: z.string().min(3, "Username must be at least 3 characters"),
-  });
-
-// Auth schemas
-export const loginSchema = z.object({
-  username: z.string(),
-  password: z.string(),
+export const insertUserSchema = createInsertSchema(users).pick({
+  email: true,
 });
 
 // Custom character schemas
@@ -77,7 +61,6 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type LoginUser = z.infer<typeof loginSchema>;
 
 export type CustomCharacter = typeof customCharacters.$inferSelect;
 export type InsertCustomCharacter = z.infer<typeof insertCustomCharacterSchema>;
