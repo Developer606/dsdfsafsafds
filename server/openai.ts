@@ -1,8 +1,7 @@
 import { type Character } from "@shared/characters";
 
-// Manually set the API key here
-const API_KEY = "Y3AVLhzw4pRJhw4KlGrQtoYDyrTryzf3"; // <-- Replace this with your actual API key
-
+// Hardcoded API key for DeepInfra - REPLACE THIS WITH A VALID KEY
+const API_KEY = "YOUR_ACTUAL_API_KEY"; 
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
@@ -50,14 +49,15 @@ Assistant (as ${character.name}): `;
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.statusText}`);
+      //Improved error handling - include status code for better debugging
+      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
-
     return data.results?.[0]?.generated_text || "Sorry, I couldn't respond.";
   } catch (error) {
     console.error("LLM API error:", error);
-    return "I apologize, but I'm having trouble responding right now. Please try again later.";
+    //More informative error message
+    return `I apologize, but I'm having trouble responding right now.  The error was: ${error.message}. Please try again later.`;
   }
 }
