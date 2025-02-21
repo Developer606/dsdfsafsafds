@@ -1,7 +1,7 @@
 import { type Character } from "@shared/characters";
 
 // Hardcoded API key for DeepInfra - permanent free key
-const API_KEY = "6oT2EuMgLmEq1ZF78mir8gpDOq6BuvYW";
+const API_KEY = "89tjwriGGKhy2EjCTVkhBTl8iJX6dZlG";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
@@ -51,24 +51,29 @@ Assistant (as ${character.name}): `;
       if (!response.ok) {
         if (response.status === 429) {
           // Rate limit hit, wait and retry
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
           retries++;
           continue;
         }
-        throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+        throw new Error(
+          `API request failed with status ${response.status}: ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
       const generatedText = data.results?.[0]?.generated_text;
 
-      if (!generatedText || typeof generatedText !== 'string') {
+      if (!generatedText || typeof generatedText !== "string") {
         throw new Error("Invalid response format from API");
       }
 
-      return generatedText.trim() || "I apologize, but I seem to be having trouble forming a response right now.";
+      return (
+        generatedText.trim() ||
+        "I apologize, but I seem to be having trouble forming a response right now."
+      );
     } catch (error: any) {
       if (retries < MAX_RETRIES - 1) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
         retries++;
         continue;
       }

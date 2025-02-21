@@ -34,27 +34,12 @@ export default function Chat() {
   // Scroll to bottom when messages change
   useEffect(() => {
     if (messages.length > 0) {
-      setTimeout(scrollToBottom, 100);
+      scrollToBottom();
     }
   }, [messages.length]);
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
-      const optimisticId = Date.now();
-      const optimisticMessage: Message = {
-        id: optimisticId,
-        characterId: characterId || "",
-        content,
-        isUser: true,
-        createdAt: new Date().toISOString()
-      };
-
-      // Add optimistic message
-      queryClient.setQueryData<Message[]>(
-        [`/api/messages/${characterId}`],
-        (old = []) => [...old, optimisticMessage]
-      );
-
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,25 +49,18 @@ export default function Chat() {
           isUser: true
         })
       });
+
       if (!res.ok) throw new Error("Failed to send message");
       return res.json();
     },
     onSuccess: (newMessages: Message[]) => {
+      // Update messages in the cache
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
-        (old = []) => {
-          // Remove optimistic message and add real messages
-          const filteredOld = old.filter(msg => typeof msg.id === 'number');
-          return [...filteredOld, ...newMessages];
-        }
+        (old = []) => [...old, ...newMessages]
       );
     },
     onError: () => {
-      // Remove optimistic message on error
-      queryClient.setQueryData<Message[]>(
-        [`/api/messages/${characterId}`],
-        (old = []) => old.filter(msg => typeof msg.id === 'number')
-      );
       toast({
         variant: "destructive",
         title: "Error",
@@ -120,7 +98,7 @@ export default function Chat() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setLocation("/")}
+          onClick={() => setLocation("/chats")}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
