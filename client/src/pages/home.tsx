@@ -128,8 +128,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4">
+    <div className="min-h-screen bg-gradient-to-b from-background to-accent relative">
+      <div className="absolute inset-0 bg-[url('/anime-bg-pattern.svg')] opacity-5 pointer-events-none" />
+      <div className="container mx-auto p-4 relative">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
             Anime Characters
@@ -141,7 +142,7 @@ export default function Home() {
         </div>
 
         {!user?.isPremium && (
-          <Card className="mb-6 bg-accent">
+          <Card className="mb-6 bg-card/50 backdrop-blur">
             <CardContent className="p-4">
               <p className="text-sm">
                 Free trial: Created {user?.trialCharactersCreated || 0}/3 characters.
@@ -153,7 +154,7 @@ export default function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {characters?.map((character) => (
-            <div key={character.id} className="relative group">
+            <div key={character.id} className="relative group transform transition-all duration-200 hover:scale-105">
               <Link href={`/chat/${character.id}`}>
                 <CharacterCard character={character} />
               </Link>
