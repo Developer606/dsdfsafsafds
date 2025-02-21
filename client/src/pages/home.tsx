@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { CharacterCard } from "@/components/character-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import { type CustomCharacter, type User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function Home() {
+  const [location] = useLocation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newCharacter, setNewCharacter] = useState({
@@ -71,7 +72,6 @@ export default function Home() {
 
   const deleteCharacter = useMutation({
     mutationFn: async (id: string) => {
-      // Extract the numeric ID from custom_X format
       const numericId = id.replace('custom_', '');
       await apiRequest("DELETE", `/api/custom-characters/${numericId}`);
     },
@@ -115,6 +115,8 @@ export default function Home() {
     createCharacter.mutate(newCharacter);
   };
 
+  const showControls = !location.startsWith("/chat/");
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4">
@@ -130,25 +132,29 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
-            Anime Characters
-          </h1>
-          <Button onClick={handleCreateClick}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Character
-          </Button>
-        </div>
+        {showControls && (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
+                Anime Characters
+              </h1>
+              <Button onClick={handleCreateClick}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Character
+              </Button>
+            </div>
 
-        {!user?.isPremium && (
-          <Card className="mb-6 bg-accent">
-            <CardContent className="p-4">
-              <p className="text-sm">
-                Free trial: Created {user?.trialCharactersCreated || 0}/3 characters.
-                Upgrade to premium for unlimited characters!
-              </p>
-            </CardContent>
-          </Card>
+            {!user?.isPremium && (
+              <Card className="mb-6 bg-accent">
+                <CardContent className="p-4">
+                  <p className="text-sm">
+                    Free trial: Created {user?.trialCharactersCreated || 0}/3 characters.
+                    Upgrade to premium for unlimited characters!
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -157,7 +163,7 @@ export default function Home() {
               <Link href={`/chat/${character.id}`}>
                 <CharacterCard character={character} />
               </Link>
-              {character.id.startsWith('custom_') && (
+              {showControls && character.id.startsWith('custom_') && (
                 <Button
                   variant="destructive"
                   size="icon"
