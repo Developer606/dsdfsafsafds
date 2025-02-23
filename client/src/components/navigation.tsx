@@ -1,16 +1,24 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home, LogOut } from "lucide-react";
+import { Home, LogOut, User as UserIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { type User } from "@shared/schema";
+import { type User as UserType } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Navigation() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: user } = useQuery<User>({
+  const { data: user } = useQuery<UserType>({
     queryKey: ["/api/user"]
   });
 
@@ -56,14 +64,37 @@ export function Navigation() {
           </div>
 
           {user && (
-            <Button
-              variant="ghost"
-              className="gap-2 text-muted-foreground hover:text-primary"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="rounded-full h-8 w-8 bg-primary/10"
+                  >
+                    <UserIcon className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled>
+                    Email: {user.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    Username: {user.username}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    Status: {user.subscriptionStatus}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           )}
         </div>
       </div>
