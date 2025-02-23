@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { AuthDialog } from "@/components/auth-dialog";
 import type { User } from "@shared/schema";
+import { FaEnvelope, FaGithub, FaTwitter } from "react-icons/fa";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -226,6 +227,63 @@ export default function LandingPage() {
           </form>
         </motion.div>
       </motion.div>
+
+      {/* Footer Section */}
+      <motion.footer 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="relative z-10 w-full bg-black/30 backdrop-blur-sm border-t border-white/10 py-8 mt-20"
+      >
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
+            <div className="text-center md:text-left">
+              <h3 className="text-lg font-semibold text-white mb-2">Contact Us</h3>
+              <div className="flex flex-col space-y-2 items-center md:items-start">
+                <a 
+                  href="mailto:support@animechat.ai" 
+                  className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+                >
+                  <FaEnvelope className="w-4 h-4" />
+                  support@animechat.ai
+                </a>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <p className="text-sm text-gray-400">
+                © {new Date().getFullYear()} AnimeChat AI. All rights reserved.
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Powered by advanced language models and anime passion
+              </p>
+            </div>
+
+            <div className="text-center md:text-right">
+              <h3 className="text-lg font-semibold text-white mb-2">Follow Us</h3>
+              <div className="flex justify-center md:justify-end space-x-4">
+                <a 
+                  href="https://twitter.com/animechat_ai" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <FaTwitter className="w-5 h-5" />
+                </a>
+                <a 
+                  href="https://github.com/animechat-ai" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <FaGithub className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.footer>
+
       <AuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}
