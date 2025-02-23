@@ -1,43 +1,43 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 
 // Users table with optimized indexes for high-traffic login/signup
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   email: text("email").notNull().unique(),
   username: text("username").notNull(),
   password: text("password").notNull(),
-  isPremium: integer("is_premium", { mode: "boolean" }).notNull().default(false),
+  isPremium: integer("is_premium").notNull().default(0),
   trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
   subscriptionTier: text("subscription_tier"),
   subscriptionStatus: text("subscription_status", { length: 20 }).default('trial'),
-  subscriptionExpiresAt: integer("subscription_expires_at", { mode: "timestamp_ms" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Messages table optimized for chat history retrieval
-export const messages = sqliteTable("messages", {
+export const messages = pgTable("messages", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   characterId: text("character_id").notNull(),
   content: text("content").notNull(),
-  isUser: integer("is_user", { mode: "boolean" }).notNull(),
+  isUser: integer("is_user").notNull(),
   language: text("language").default("english"),
   script: text("script"),
-  timestamp: integer("timestamp", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
 });
 
 // Custom characters table
-export const customCharacters = sqliteTable("custom_characters", {
+export const customCharacters = pgTable("custom_characters", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text("name").notNull(),
   avatar: text("avatar").notNull(),
   description: text("description").notNull(),
   persona: text("persona").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Message schemas
