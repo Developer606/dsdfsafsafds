@@ -11,13 +11,20 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Info } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type Character } from "@shared/characters";
 import { type CustomCharacter, type User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function Home() {
   const [location] = useLocation();
@@ -135,13 +142,31 @@ export default function Home() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
             Anime Characters
           </h1>
-          <Button
-            onClick={handleCreateClick}
-            className="bg-[#00a884] hover:bg-[#00946e] text-white"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Create Character
-          </Button>
+          <div className="flex items-center gap-4">
+            {!user?.isPremium && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Info className="h-4 w-4 mr-1" />
+                      {user?.trialCharactersCreated || 0}/3 free characters used
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Free users can create up to 3 custom characters.</p>
+                    <p>Upgrade to premium for unlimited characters!</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <Button
+              onClick={handleCreateClick}
+              className="bg-[#00a884] hover:bg-[#00946e] text-white"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Create Character
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -172,6 +197,11 @@ export default function Home() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Character</DialogTitle>
+              {!user?.isPremium && (
+                <DialogDescription className="text-yellow-600">
+                  Free Trial: {user?.trialCharactersCreated || 0}/3 characters created
+                </DialogDescription>
+              )}
             </DialogHeader>
             <div className="space-y-4">
               <Input
