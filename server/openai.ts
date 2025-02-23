@@ -1,6 +1,7 @@
 import { type Character } from "@shared/characters";
 
-const API_KEY = process.env.DEEPINFRA_API_KEY || "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
+const API_KEY =
+  process.env.DEEPINFRA_API_KEY || "LIflLBIWVD7Dz2ixK7dtVZ4y7xNyOlud";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
@@ -29,13 +30,13 @@ export async function generateCharacterResponse(
     try {
       const scriptInstruction =
         language === "hindi" && script === "latin"
-          ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
+          ? "Respond in Hindi using Latin alphabet (include Devanagari in parentheses)."
           : language === "japanese" && script === "latin"
-          ? "Respond in Japanese but include Romaji in parentheses."
+            ? "Respond in Japanese using Latin alphabet (include Japanese characters in parentheses)."
           : language === "chinese" && script === "latin"
-          ? "Respond in Chinese but include Pinyin in parentheses."
+            ? "Respond in Chinese using Pinyin (include Chinese characters in parentheses)."
           : language === "korean" && script === "latin"
-          ? "Respond in Korean but include Romanization in parentheses."
+            ? "Respond in Korean using Latin alphabet (include Hangul in parentheses)."
           : "";
 
       // Enhanced language-specific instructions
@@ -51,7 +52,7 @@ export async function generateCharacterResponse(
 
       const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.english;
 
-      const prompt = `<s> [INST] You are ${character.name}, with this background:
+      const prompt = `<s>[INST] You are ${character.name}, with this background:
 
 ${character.persona}
 
@@ -102,12 +103,16 @@ Assistant (${character.name}): `;
       // Clean up the response
       if (generatedText) {
         // Remove any "Assistant:" or similar prefixes
-        generatedText = generatedText.replace(/^(Assistant|Character|[^:]+):\s*/i, '');
+        generatedText = generatedText.replace(
+          /^(Assistant|Character|[^:]+):\s*/i,
+          "",
+        );
         // Trim any quotes that might wrap the entire response
-        generatedText = generatedText.replace(/^["']|["']$/g, '');
-        // Remove any English translations that might have been added
-        if (language !== 'english') {
-          generatedText = generatedText.replace(/\(.*?\)/g, '').trim();
+        generatedText = generatedText.replace(/^["']|["']$/g, "");
+
+        // Only remove parentheses content if we're not using Latin script
+        if (script !== "latin") {
+          generatedText = generatedText.replace(/\(.*?\)/g, "").trim();
         }
       }
 

@@ -47,8 +47,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
   isUser: true,
 }).extend({
-  language: z.string().default("english"),
-  script: z.enum(["devanagari", "latin"]).optional()
+  language: z.enum(['english', 'japanese', 'spanish', 'french', 'chinese', 'korean', 'hindi']).default("english"),
+  script: z.enum(['devanagari', 'latin', 'japanese', 'chinese', 'korean']).optional()
 });
 
 // User schemas
