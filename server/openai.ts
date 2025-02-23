@@ -1,7 +1,7 @@
 import { type Character } from "@shared/characters";
-import { SunMoon } from "lucide-react";
 
-const API_KEY = process.env.DEEPINFRA_API_KEY || "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
+const API_KEY =
+  process.env.DEEPINFRA_API_KEY || "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
@@ -37,10 +37,20 @@ export async function generateCharacterResponse(
       const languageInstructions: Record<string, string> = {
         english: "Respond naturally in English.",
         hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
-        // Additional languages to be added in future updates
+        japanese:
+          "自然な日本語で応答してください。敬語を適切に使用してください。",
+        chinese: "用自然的中文回应。注意使用适当的敬语。",
+        korean:
+          "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
+        spanish:
+          "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
+        french:
+          "Répondez naturellement en français. Utilisez le niveau de formalité approprié.",
       };
 
-      const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.english;
+      const languageInstruction =
+        languageInstructions[language as keyof typeof languageInstructions] ||
+        languageInstructions.english;
 
       const prompt = `<s> [INST] You are ${character.name}, with this background:
 
@@ -92,9 +102,12 @@ Assistant (${character.name}): `;
       // Clean up the response
       if (generatedText) {
         // Remove any "Assistant:" or similar prefixes
-        generatedText = generatedText.replace(/^(Assistant|Character|[^:]+):\s*/i, '');
+        generatedText = generatedText.replace(
+          /^(Assistant|Character|[^:]+):\s*/i,
+          "",
+        );
         // Trim any quotes that might wrap the entire response
-        generatedText = generatedText.replace(/^["']|["']$/g, '');
+        generatedText = generatedText.replace(/^["']|["']$/g, "");
       }
 
       return generatedText || "I'm having trouble responding right now.";
