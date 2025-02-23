@@ -44,6 +44,7 @@ export async function runMigrations() {
         is_user INTEGER NOT NULL,
         language TEXT DEFAULT 'english',
         script TEXT,
+        model TEXT DEFAULT 'DEFAULT',
         timestamp INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )`,
