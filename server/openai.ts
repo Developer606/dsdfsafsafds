@@ -35,12 +35,12 @@ export async function generateCharacterResponse(
       // Enhanced language-specific instructions
       const languageInstructions: Record<string, string> = {
         english: "Respond naturally in English.",
-        hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
-        japanese: "自然な日本語で応答してください。敬語を適切に使用してください。",
-        chinese: "用自然的中文回应。注意使用适当的敬语。",
-        korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
-        spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
-        french: "Répondez naturellement en français. Utilisez le niveau de formalité approprié."
+        hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise and natural.",
+        japanese: "自然な日本語で応答してください。敬語を適切に使用し、キャラクターの性格に合わせた話し方をしてください。",
+        chinese: "用自然的中文回应。注意使用适当的敬语，保持角色特点。回答要简洁自然。",
+        korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용하고 캐릭터의 성격에 맞게 대화해주세요.",
+        spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado y mantén la personalidad del personaje.",
+        french: "Réponds naturellement en français. Utilise le niveau de formalité approprié et garde la personnalité du personnage."
       };
 
       const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.english;
@@ -52,9 +52,10 @@ ${character.persona}
 Instructions:
 1. ${languageInstruction}
 2. ${scriptInstruction}
-3. Stay in character
-4. Be concise (2-3 sentences)
-5. Match conversation tone
+3. Stay true to ${character.name}'s personality and background
+4. Keep responses concise (2-3 sentences)
+5. Match the conversation tone and cultural context of ${language}
+6. Use appropriate honorifics and politeness levels for ${language}
 
 Chat history:
 ${chatHistory}
@@ -98,6 +99,10 @@ Assistant (${character.name}): `;
         generatedText = generatedText.replace(/^(Assistant|Character|[^:]+):\s*/i, '');
         // Trim any quotes that might wrap the entire response
         generatedText = generatedText.replace(/^["']|["']$/g, '');
+        // Remove any English translations that might have been added
+        if (language !== 'english') {
+          generatedText = generatedText.replace(/\(.*?\)/g, '').trim();
+        }
       }
 
       return generatedText || "I'm having trouble responding right now.";
