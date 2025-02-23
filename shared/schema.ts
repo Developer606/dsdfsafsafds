@@ -26,6 +26,7 @@ export const messages = sqliteTable("messages", {
   isUser: integer("is_user", { mode: "boolean" }).notNull(),
   language: text("language").default("english"),
   script: text("script"),
+  model: text("model").default("DEFAULT"),
   timestamp: integer("timestamp", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -48,7 +49,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   isUser: true,
 }).extend({
   language: z.string().default("english"),
-  script: z.enum(["devanagari", "latin"]).optional()
+  script: z.enum(["devanagari", "latin"]).optional(),
+  model: z.enum(["DEFAULT", "RESEARCH"]).default("DEFAULT")
 });
 
 // User schemas
