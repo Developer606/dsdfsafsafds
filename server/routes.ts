@@ -152,9 +152,7 @@ export async function registerRoutes(app: Express) {
             character,
             data.content,
             chatHistory,
-            data.language,
-            data.script,
-            data.model
+            data.language
           );
 
           const aiMessage = await storage.createMessage({
@@ -163,8 +161,7 @@ export async function registerRoutes(app: Express) {
             content: aiResponse,
             isUser: false,
             language: data.language,
-            script: data.script,
-            model: data.model
+            script: data.script
           });
 
           res.json([message, aiMessage]);
