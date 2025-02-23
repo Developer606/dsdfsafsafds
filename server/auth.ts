@@ -53,8 +53,6 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid credentials" });
         }
-        // Update last login timestamp
-        await storage.updateUserLastLogin(user.id);
         return done(null, user);
       } catch (error) {
         return done(error);
@@ -71,14 +69,6 @@ export function setupAuth(app: Express) {
       done(error);
     }
   });
-
-  // Admin middleware
-  const requireAdmin = (req: Express.Request, res: Express.Response, next: Express.NextFunction) => {
-    if (!req.isAuthenticated() || !req.user?.isAdmin) {
-      return res.status(403).json({ error: "Access denied" });
-    }
-    next();
-  };
 
   app.post("/api/register", async (req, res) => {
     try {
@@ -109,13 +99,6 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
       });
 
-      // Log user activity
-      await storage.createActivity({
-        userId: user.id,
-        activityType: 'LOGIN',
-        details: 'User registered and logged in'
-      });
-
       // Log in the user after registration
       req.login(user, (err) => {
         if (err) {
@@ -131,49 +114,26 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", async (err: Error, user: Express.User) => {
+    passport.authenticate("local", (err: Error, user: Express.User) => {
       if (err) {
         return res.status(500).json({ error: "Login failed" });
       }
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
-
-      // Check if user is blocked
-      if (user.isBlocked) {
-        return res.status(403).json({ error: "Account is blocked" });
-      }
-
-      req.login(user, async (err) => {
+      req.login(user, (err) => {
         if (err) {
           return res.status(500).json({ error: "Login failed" });
         }
-
-        // Log user activity
-        await storage.createActivity({
-          userId: user.id,
-          activityType: 'LOGIN',
-          details: 'User logged in'
-        });
-
         res.json(user);
       });
     })(req, res, next);
   });
 
   app.post("/api/logout", (req, res) => {
-    const userId = req.user?.id;
     req.logout((err) => {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
-      }
-      // Log user activity if we have the userId
-      if (userId) {
-        storage.createActivity({
-          userId,
-          activityType: 'LOGIN',
-          details: 'User logged out'
-        });
       }
       res.sendStatus(200);
     });
@@ -184,44 +144,5 @@ export function setupAuth(app: Express) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     res.json(req.user);
-  });
-
-  // Admin routes
-  app.get("/api/admin/users", requireAdmin, async (req, res) => {
-    try {
-      const users = await storage.getAllUsers();
-      res.json(users);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch users" });
-    }
-  });
-
-  app.get("/api/admin/activities", requireAdmin, async (req, res) => {
-    try {
-      const activities = await storage.getAllActivities();
-      res.json(activities);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch activities" });
-    }
-  });
-
-  app.post("/api/admin/users/:id/toggle-block", requireAdmin, async (req, res) => {
-    try {
-      const userId = parseInt(req.params.id);
-      const { isBlocked } = req.body;
-
-      await storage.updateUserBlockStatus(userId, isBlocked);
-
-      // Log admin activity
-      await storage.createActivity({
-        userId: req.user!.id,
-        activityType: 'ADMIN',
-        details: `${isBlocked ? 'Blocked' : 'Unblocked'} user ${userId}`
-      });
-
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update user status" });
-    }
   });
 }

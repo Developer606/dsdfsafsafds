@@ -1,6 +1,6 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type UserActivity, type InsertUserActivity } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
 import { db } from "./db";
-import { messages, users, customCharacters, userActivities } from "@shared/schema";
+import { messages, users, customCharacters } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -20,13 +20,6 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUser(id: number): Promise<User | undefined>;
   incrementTrialCharacterCount(userId: number): Promise<void>;
-  updateUserLastLogin(userId: number): Promise<void>;
-  getAllUsers(): Promise<User[]>;
-  updateUserBlockStatus(userId: number, isBlocked: boolean): Promise<void>;
-
-  // Activity operations
-  createActivity(activity: InsertUserActivity): Promise<UserActivity>;
-  getAllActivities(): Promise<UserActivity[]>;
 
   // Custom character operations
   createCustomCharacter(character: InsertCustomCharacter): Promise<CustomCharacter>;
@@ -103,29 +96,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async updateUserLastLogin(userId: number): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        lastLoginAt: sql`CURRENT_TIMESTAMP`,
-        lastActivityAt: sql`CURRENT_TIMESTAMP`
-      })
-      .where(eq(users.id, userId));
-  }
-
-  async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users);
-  }
-
-  async updateUserBlockStatus(userId: number, isBlocked: boolean): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        isBlocked: Boolean(isBlocked)
-      })
-      .where(eq(users.id, userId));
-  }
-
   async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {
     const [character] = await db.insert(customCharacters).values(insertCharacter).returning();
     return character;
@@ -164,25 +134,12 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(users)
       .set({
-        isPremium: Boolean(data.isPremium),
+        isPremium: Boolean(data.isPremium), // Fix the type conversion
         subscriptionTier: data.subscriptionTier,
         subscriptionStatus: data.subscriptionStatus,
         subscriptionExpiresAt: sql`${data.subscriptionExpiresAt.getTime()}`
       })
       .where(eq(users.id, userId));
-  }
-
-  async createActivity(activity: InsertUserActivity): Promise<UserActivity> {
-    const [newActivity] = await db.insert(userActivities).values(activity).returning();
-    return newActivity;
-  }
-
-  async getAllActivities(): Promise<UserActivity[]> {
-    return await db
-      .select()
-      .from(userActivities)
-      .orderBy(sql`${userActivities.timestamp} DESC`)
-      .limit(100);
   }
 }
 

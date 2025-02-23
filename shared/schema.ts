@@ -3,31 +3,18 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 
-// Users table with optimized indexes and admin support
+// Users table with optimized indexes for high-traffic login/signup
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey(),
   email: text("email").notNull().unique(),
   username: text("username").notNull(),
   password: text("password").notNull(),
-  isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
   isPremium: integer("is_premium", { mode: "boolean" }).notNull().default(false),
   trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
   subscriptionTier: text("subscription_tier"),
   subscriptionStatus: text("subscription_status").default('trial'),
   subscriptionExpiresAt: integer("subscription_expires_at", { mode: "timestamp_ms" }),
-  isBlocked: integer("is_blocked", { mode: "boolean" }).notNull().default(false),
-  lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
-  lastActivityAt: integer("last_activity_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
-// User activity tracking
-export const userActivities = sqliteTable("user_activities", {
-  id: integer("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  activityType: text("activity_type").notNull(), // 'login', 'message', 'character_creation', etc.
-  details: text("details"), // JSON string with activity details
-  timestamp: integer("timestamp", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Messages table optimized for chat history retrieval
@@ -69,8 +56,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   username: true,
   password: true,
-}).extend({
-  isAdmin: z.boolean().optional(),
 });
 
 export const loginSchema = z.object({
@@ -154,24 +139,3 @@ export const supportedLanguages = [
 
 export type SupportedLanguage = typeof supportedLanguages[number]["id"];
 export type ScriptPreference = "devanagari" | "latin";
-
-// Add activity type enum
-export const ActivityType = {
-  LOGIN: 'login',
-  MESSAGE: 'message',
-  CHARACTER_CREATION: 'character_creation',
-  CHARACTER_DELETION: 'character_deletion',
-  SUBSCRIPTION_CHANGE: 'subscription_change',
-} as const;
-
-export type ActivityType = keyof typeof ActivityType;
-
-// Add activity schema
-export const insertActivitySchema = createInsertSchema(userActivities).pick({
-  userId: true,
-  activityType: true,
-  details: true,
-});
-
-export type UserActivity = typeof userActivities.$inferSelect;
-export type InsertUserActivity = z.infer<typeof insertActivitySchema>;
