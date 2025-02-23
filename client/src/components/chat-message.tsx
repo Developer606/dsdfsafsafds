@@ -3,6 +3,7 @@ import { type Character } from "@shared/characters";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Check } from "lucide-react";
+import { stickers } from "@shared/schema";
 
 interface ChatMessageProps {
   message: Message;
@@ -11,6 +12,35 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, character }: ChatMessageProps) {
   const isUser = message.isUser;
+
+  const renderMessageContent = () => {
+    switch (message.messageType) {
+      case 'sticker':
+        const stickerData = stickers.categories
+          .flatMap(cat => cat.stickers)
+          .find(s => s.id === message.stickerId);
+
+        if (!stickerData) return null;
+
+        return (
+          <img 
+            src={stickerData.url}
+            alt={stickerData.keywords.join(', ')}
+            className="w-32 h-32 object-contain"
+          />
+        );
+
+      case 'emoji':
+        return (
+          <span className="text-3xl">{message.content}</span>
+        );
+
+      default:
+        return (
+          <div className="text-sm">{message.content}</div>
+        );
+    }
+  };
 
   return (
     <div
@@ -25,10 +55,11 @@ export function ChatMessage({ message, character }: ChatMessageProps) {
             "px-3 py-2 rounded-2xl relative",
             isUser
               ? "bg-[#dcf8c6] text-gray-800 rounded-br-none" 
-              : "bg-white text-gray-800 rounded-bl-none" 
+              : "bg-white text-gray-800 rounded-bl-none",
+            message.messageType === 'sticker' && "bg-transparent"
           )}
         >
-          <div className="text-sm">{message.content}</div>
+          {renderMessageContent()}
           <div 
             className="text-[11px] text-gray-500 flex items-center gap-1 mt-1"
           >

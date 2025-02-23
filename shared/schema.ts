@@ -22,6 +22,8 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   isUser: boolean("is_user").notNull(),
   timestamp: timestamp("timestamp").notNull().defaultNow(),
+  messageType: text("message_type").notNull().default('text'), // New field
+  stickerId: text("sticker_id"), // New field
 });
 
 export const customCharacters = pgTable("custom_characters", {
@@ -35,6 +37,44 @@ export const customCharacters = pgTable("custom_characters", {
 });
 
 // Message schemas
+export const messageTypeSchema = z.enum(['text', 'emoji', 'sticker']);
+
+export const stickerSchema = z.object({
+  id: z.string(),
+  url: z.string().url(),
+  category: z.string(),
+  keywords: z.array(z.string())
+});
+
+export const stickers = {
+  categories: [
+    {
+      id: 'anime',
+      name: 'Anime',
+      stickers: [
+        {
+          id: 'anime_happy',
+          url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=happy',
+          category: 'anime',
+          keywords: ['happy', 'smile', 'joy']
+        },
+        {
+          id: 'anime_sad',
+          url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=sad',
+          category: 'anime',
+          keywords: ['sad', 'cry', 'tears']
+        },
+        {
+          id: 'anime_love',
+          url: 'https://api.dicebear.com/7.x/adventurer/svg?seed=love',
+          category: 'anime',
+          keywords: ['love', 'heart', 'affection']
+        }
+      ]
+    }
+  ]
+} as const;
+
 export const insertMessageSchema = createInsertSchema(messages).pick({
   userId: true,
   characterId: true,
@@ -42,7 +82,9 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   isUser: true,
 }).extend({
   language: z.string().default("english"),
-  script: z.enum(["devanagari", "latin"]).optional()
+  script: z.enum(["devanagari", "latin"]).optional(),
+  messageType: messageTypeSchema.default('text'),
+  stickerId: z.string().optional()
 });
 
 // User schemas
@@ -70,6 +112,8 @@ export const insertCustomCharacterSchema = createInsertSchema(customCharacters)
 // Types
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type MessageType = z.infer<typeof messageTypeSchema>;
+export type Sticker = z.infer<typeof stickerSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
