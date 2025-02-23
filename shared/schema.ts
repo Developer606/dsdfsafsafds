@@ -10,20 +10,10 @@ export const users = sqliteTable("users", {
   username: text("username").notNull(),
   password: text("password").notNull(),
   isPremium: integer("is_premium", { mode: "boolean" }).notNull().default(false),
-  isVerified: integer("is_verified", { mode: "boolean" }).notNull().default(false),
   trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
   subscriptionTier: text("subscription_tier"),
   subscriptionStatus: text("subscription_status").default('trial'),
   subscriptionExpiresAt: integer("subscription_expires_at", { mode: "timestamp_ms" }),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`),
-});
-
-// Email verification OTP table
-export const otpVerifications = sqliteTable("otp_verifications", {
-  id: integer("id").primaryKey(),
-  email: text("email").notNull(),
-  otp: text("otp").notNull(),
-  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -66,8 +56,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   username: true,
   password: true,
-}).extend({
-  isVerified: z.boolean().default(false),
 });
 
 export const loginSchema = z.object({
@@ -84,14 +72,6 @@ export const insertCustomCharacterSchema = createInsertSchema(customCharacters)
     description: true,
     persona: true,
   });
-
-// Add OTP verification schema
-export const insertOTPSchema = createInsertSchema(otpVerifications).pick({
-  email: true,
-  otp: true,
-  expiresAt: true,
-});
-
 
 // Types
 export type Message = typeof messages.$inferSelect;

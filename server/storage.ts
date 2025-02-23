@@ -1,7 +1,7 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, otpVerifications } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
 import { db } from "./db";
 import { messages, users, customCharacters } from "@shared/schema";
-import { eq, and, sql, gt } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import session from "express-session";
 import MemoryStore from "memorystore";
 
@@ -20,12 +20,6 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUser(id: number): Promise<User | undefined>;
   incrementTrialCharacterCount(userId: number): Promise<void>;
-  verifyUser(userId: number): Promise<void>;
-
-  // OTP operations
-  createOTP(email: string, otp: string, expiresAt: Date): Promise<void>;
-  verifyOTP(email: string, otp: string): Promise<boolean>;
-  deleteExpiredOTPs(): Promise<void>;
 
   // Custom character operations
   createCustomCharacter(character: InsertCustomCharacter): Promise<CustomCharacter>;
@@ -100,60 +94,6 @@ export class DatabaseStorage implements IStorage {
         trialCharactersCreated: sql`${users.trialCharactersCreated} + 1`
       })
       .where(eq(users.id, userId));
-  }
-
-  async verifyUser(userId: number): Promise<void> {
-    await db
-      .update(users)
-      .set({ isVerified: true })
-      .where(eq(users.id, userId));
-  }
-
-  async createOTP(email: string, otp: string, expiresAt: Date): Promise<void> {
-    // Delete any existing OTPs for this email
-    await db
-      .delete(otpVerifications)
-      .where(eq(otpVerifications.email, email));
-
-    // Create new OTP
-    await db
-      .insert(otpVerifications)
-      .values({
-        email,
-        otp,
-        expiresAt: expiresAt.getTime(),
-      });
-  }
-
-  async verifyOTP(email: string, otp: string): Promise<boolean> {
-    const now = new Date().getTime();
-    const [result] = await db
-      .select()
-      .from(otpVerifications)
-      .where(
-        and(
-          eq(otpVerifications.email, email),
-          eq(otpVerifications.otp, otp),
-          gt(otpVerifications.expiresAt, now)
-        )
-      );
-
-    if (result) {
-      // Delete the used OTP
-      await db
-        .delete(otpVerifications)
-        .where(eq(otpVerifications.id, result.id));
-      return true;
-    }
-
-    return false;
-  }
-
-  async deleteExpiredOTPs(): Promise<void> {
-    const now = new Date().getTime();
-    await db
-      .delete(otpVerifications)
-      .where(sql`${otpVerifications.expiresAt} <= ${now}`);
   }
 
   async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {

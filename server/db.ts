@@ -30,7 +30,6 @@ export async function runMigrations() {
         username TEXT NOT NULL,
         password TEXT NOT NULL,
         is_premium INTEGER NOT NULL DEFAULT 0,
-        is_verified INTEGER NOT NULL DEFAULT 0,
         trial_characters_created INTEGER NOT NULL DEFAULT 0,
         subscription_tier TEXT,
         subscription_status TEXT DEFAULT 'trial',
@@ -57,13 +56,6 @@ export async function runMigrations() {
         persona TEXT NOT NULL,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      )`,
-      `CREATE TABLE IF NOT EXISTS otp_verifications (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        email TEXT NOT NULL,
-        otp TEXT NOT NULL,
-        expires_at INTEGER NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`
     ];
 
@@ -99,10 +91,6 @@ function createIndexes() {
 
       // Custom character indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_custom_chars_user ON custom_characters(user_id)').run();
-
-      // OTP verification indexes
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_otp_verifications_email ON otp_verifications(email)').run();
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_otp_verifications_expires ON otp_verifications(expires_at)').run();
     })();
 
     console.log('Database indexes created successfully');
