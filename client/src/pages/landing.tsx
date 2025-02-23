@@ -225,6 +225,39 @@ export default function LandingPage() {
             </motion.div>
           </form>
         </motion.div>
+
+        <motion.footer
+          variants={fadeIn}
+          className="w-full mt-20 py-8 border-t border-white/10 text-center"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <h4 className="text-white font-semibold mb-4">Contact Us</h4>
+              <p className="text-gray-400">
+                Email: support@animechat.ai<br />
+                Twitter: @AnimeCharChat
+              </p>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Legal</h4>
+              <p className="text-gray-400">
+                <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a><br />
+                <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
+              </p>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Community</h4>
+              <p className="text-gray-400">
+                <a href="https://discord.gg/animechat" className="hover:text-white transition-colors">Join Discord</a><br />
+                <a href="https://github.com/animechat" className="hover:text-white transition-colors">GitHub</a>
+              </p>
+            </div>
+          </div>
+          <div className="text-gray-500 text-sm">
+            © {new Date().getFullYear()} AnimeChat AI. All rights reserved.<br />
+            <span className="text-gray-600">Anime character representations are for demonstration purposes only.</span>
+          </div>
+        </motion.footer>
       </motion.div>
       <AuthDialog
         open={showAuthDialog}
