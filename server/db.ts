@@ -1,55 +1,70 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { migrate } from 'drizzle-orm/neon-serverless/migrator';
-import { sql } from 'drizzle-orm';
-import ws from "ws";
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from "@shared/schema";
+import { sql } from 'drizzle-orm';
 
-neonConfig.webSocketConstructor = ws;
+// Configure SQLite with WAL mode for better concurrency
+const sqlite = new Database('database.sqlite', {
+  // WAL mode for better concurrent access
+  fileMustExist: false,
+});
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+// Enable WAL mode and other optimizations
+sqlite.pragma('journal_mode = WAL');
+sqlite.pragma('synchronous = NORMAL');
+sqlite.pragma('cache_size = -64000'); // 64MB cache
+sqlite.pragma('foreign_keys = ON');
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle(pool, { schema });
+// Create connection pool
+export const db = drizzle(sqlite, { schema });
 
 // Run migrations on startup
 export async function runMigrations() {
   console.log('Running database migrations...');
   try {
-    // Check if tables exist first
-    const tablesExist = await checkTablesExist();
+    // Drop existing tables and run fresh migration
+    const tables = ['messages', 'users', 'custom_characters'];
+    for (const table of tables) {
+      try {
+        sqlite.prepare(`DROP TABLE IF EXISTS ${table}`).run();
+      } catch (error) {
+        console.error(`Error dropping table ${table}:`, error);
+      }
+    }
 
-    if (!tablesExist) {
-      await migrate(db, { migrationsFolder: './migrations' });
-      console.log('Database migrations completed successfully');
-    } else {
-      console.log('Tables already exist, skipping initial migration');
-    }
+    // Run migration after tables are dropped
+    await migrate(db, { migrationsFolder: './migrations' });
+    console.log('Database migrations completed successfully');
+
+    // Create indexes after tables are created
+    createIndexes();
   } catch (error: any) {
-    // Ignore specific error about relations already existing
-    if (error.code === '42P07') {
-      console.log('Tables already exist, continuing startup...');
-      return;
-    }
     console.error('Database migration failed:', error);
     throw error;
   }
 }
 
+// Create indexes for high-performance queries
+function createIndexes() {
+  // Create indexes in a transaction for atomicity
+  sqlite.transaction(() => {
+    sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);').run();
+    sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);').run();
+    sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_user_char ON messages(user_id, character_id);').run();
+  })();
+}
+
 async function checkTablesExist() {
   try {
-    const result = await db.execute(sql`
+    const result = sqlite.prepare(`
       SELECT EXISTS (
         SELECT 1 
-        FROM information_schema.tables 
-        WHERE table_name = 'users'
+        FROM sqlite_master 
+        WHERE type='table' AND name='users'
       );
-    `);
-    return result[0]?.exists || false;
+    `).get();
+    return result?.exists || false;
   } catch (error) {
     console.error('Error checking tables:', error);
     return false;
