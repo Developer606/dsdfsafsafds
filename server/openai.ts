@@ -1,6 +1,6 @@
 import { type Character } from "@shared/characters";
 
-const API_KEY = "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
+const API_KEY = process.env.DEEPINFRA_API_KEY || "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
@@ -32,31 +32,37 @@ export async function generateCharacterResponse(
           ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
           : "";
 
+      // Enhanced language-specific instructions
       const languageInstructions: Record<string, string> = {
-        hindi: "Respond naturally in Hindi, keep it short.",
-        japanese: "Use honorifics, be concise.",
-        chinese: "Use Mandarin expressions, be brief.",
-        korean: "Respect honorifics, concise response.",
-        spanish: "Use natural Spanish, keep it short.",
-        french: "Use natural French, brief reply.",
+        english: "Respond naturally in English.",
+        hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
+        japanese: "自然な日本語で応答してください。敬語を適切に使用してください。",
+        chinese: "用自然的中文回应。注意使用适当的敬语。",
+        korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
+        spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
+        french: "Répondez naturellement en français. Utilisez le niveau de formalité approprié."
       };
 
-      const prompt = `<s> You are ${character.name}, a character with this background:
+      const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.english;
+
+      const prompt = `<s> [INST] You are ${character.name}, with this background:
 
 ${character.persona}
 
-Roleplaying rules:
-1. Respond in ${language}
-2. Stay in character, be brief (2-3 sentences max)
-3. Show personality efficiently
-4. Match user's formality
-${scriptInstruction}
+Instructions:
+1. ${languageInstruction}
+2. ${scriptInstruction}
+3. Stay in character
+4. Be concise (2-3 sentences)
+5. Match conversation tone
 
 Chat history:
 ${chatHistory}
 
 User: ${userMessage}
-Assistant (${character.name} in ${language}): `;
+[/INST]
+
+Assistant (${character.name}): `;
 
       const response = await fetch(`${BASE_URL}/${MODEL}`, {
         method: "POST",
@@ -67,8 +73,8 @@ Assistant (${character.name} in ${language}): `;
         body: JSON.stringify({
           input: prompt,
           temperature: 0.8,
-          max_tokens: 60,
-          top_p: 0.8,
+          max_tokens: 150,
+          top_p: 0.9,
         }),
       });
 
@@ -84,17 +90,24 @@ Assistant (${character.name} in ${language}): `;
       }
 
       const data = await response.json();
-      const generatedText = data.results?.[0]?.generated_text?.trim();
+      let generatedText = data.results?.[0]?.generated_text?.trim();
+
+      // Clean up the response
+      if (generatedText) {
+        // Remove any "Assistant:" or similar prefixes
+        generatedText = generatedText.replace(/^(Assistant|Character|[^:]+):\s*/i, '');
+        // Trim any quotes that might wrap the entire response
+        generatedText = generatedText.replace(/^["']|["']$/g, '');
+      }
 
       return generatedText || "I'm having trouble responding right now.";
     } catch (error: any) {
+      console.error("LLM API error:", error);
       if (++retries < MAX_RETRIES) {
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
         continue;
       }
-      console.error("LLM API error:", error);
 
-      // Return a random exhaustion message on failure
       return exhaustionMessages[
         Math.floor(Math.random() * exhaustionMessages.length)
       ];
