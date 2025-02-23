@@ -4,6 +4,8 @@ import { messages, users, customCharacters } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import { z } from "zod";
+import { updateProfileSchema } from "@shared/schema";
 
 // Create a memory store with a 24-hour TTL
 const MemoryStoreSession = MemoryStore(session);
@@ -34,6 +36,9 @@ export interface IStorage {
     subscriptionStatus: SubscriptionStatus;
     subscriptionExpiresAt: Date;
   }): Promise<void>;
+
+  // Add profile update method
+  updateUserProfile(userId: number, data: z.infer<typeof updateProfileSchema>): Promise<void>;
 
   // Session store
   sessionStore: session.Store;
@@ -138,6 +143,21 @@ export class DatabaseStorage implements IStorage {
         subscriptionTier: data.subscriptionTier,
         subscriptionStatus: data.subscriptionStatus,
         subscriptionExpiresAt: sql`${data.subscriptionExpiresAt.getTime()}`
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserProfile(
+    userId: number,
+    data: z.infer<typeof updateProfileSchema>
+  ): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        displayName: data.displayName,
+        bio: data.bio,
+        age: data.age,
+        gender: data.gender,
       })
       .where(eq(users.id, userId));
   }

@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
-import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
+import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, updateProfileSchema } from "@shared/schema";
 import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express) {
@@ -209,6 +209,24 @@ export async function registerRoutes(app: Express) {
       });
 
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/profile", async (req, res) => {
+    try {
+      const user = await getOrCreateDemoUser();
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const data = updateProfileSchema.parse(req.body);
+
+      await storage.updateUserProfile(user.id, data);
+
+      const updatedUser = await storage.getUser(user.id);
+      res.json(updatedUser);
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }

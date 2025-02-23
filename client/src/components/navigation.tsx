@@ -13,10 +13,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
+import { ProfileEditor } from "@/components/profile-editor";
 
 export function Navigation() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
 
   const { data: user } = useQuery<UserType>({
     queryKey: ["/api/user"]
@@ -79,21 +82,35 @@ export function Navigation() {
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem disabled>
-                    Email: {user.email}
+                    Display Name: {user.displayName || user.username}
                   </DropdownMenuItem>
                   <DropdownMenuItem disabled>
-                    Username: {user.username}
+                    Email: {user.email}
                   </DropdownMenuItem>
+                  {user.bio && (
+                    <DropdownMenuItem disabled>
+                      Bio: {user.bio}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem disabled>
                     Status: {user.subscriptionStatus}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowProfileEditor(true)}>
+                    <UserIcon className="mr-2 h-4 w-4" />
+                    Edit Profile
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              <ProfileEditor
+                user={user}
+                open={showProfileEditor}
+                onOpenChange={setShowProfileEditor}
+              />
             </div>
           )}
         </div>
