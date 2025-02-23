@@ -7,6 +7,21 @@ import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
+import AdminDashboard from "@/pages/admin/dashboard";
+import { useQuery } from "@tanstack/react-query";
+import { type User } from "@shared/schema";
+
+function ProtectedAdminRoute({ component: Component }: { component: React.ComponentType }) {
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"],
+  });
+
+  if (!user?.isAdmin) {
+    return <NotFound />;
+  }
+
+  return <Component />;
+}
 
 function Router() {
   return (
@@ -20,6 +35,9 @@ function Router() {
           </>
         </Route>
         <Route path="/chat/:characterId" component={Chat} />
+        <Route path="/admin">
+          <ProtectedAdminRoute component={AdminDashboard} />
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </>
