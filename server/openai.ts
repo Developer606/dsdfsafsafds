@@ -1,12 +1,20 @@
 import { type Character } from "@shared/characters";
 
-// Hardcoded API key for DeepInfra - permanent free key
 const API_KEY = "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 500;
+
+// Exhaustion messages for a more immersive failure response
+const exhaustionMessages = [
+  "Hey, I'm feeling really exhausted, so I'm going to rest now. Talk to you soon!",
+  "I'm super tired and need some rest. I'll catch up with you later. Take care!",
+  "Feeling drained, so I'm heading to rest. See you soon!",
+  "Hey, I'm really worn out and need to sleep. Let's chat later!",
+  "Totally exhausted right now, so I'm off to rest. Talk soon!",
+];
 
 export async function generateCharacterResponse(
   character: Character,
@@ -21,35 +29,34 @@ export async function generateCharacterResponse(
     try {
       const scriptInstruction =
         language === "hindi" && script === "latin"
-          ? "Respond in Hindi but use English/Latin alphabet for transliteration. Include the Devanagari script in parentheses after key phrases."
+          ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
           : "";
 
-      const languageSpecificInstructions = {
-        hindi: `Use natural Hindi conversational style. Be brief and concise.`,
-        japanese: `Use appropriate honorifics. Keep responses short and direct.`,
-        chinese: `Use appropriate Mandarin expressions. Be brief and clear.`,
-        korean: `Use appropriate honorific levels. Keep responses concise.`,
-        spanish: `Use natural Spanish expressions. Be brief and direct.`,
-        french: `Use natural French expressions. Keep responses short.`,
+      const languageInstructions: Record<string, string> = {
+        hindi: "Respond naturally in Hindi, keep it short.",
+        japanese: "Use honorifics, be concise.",
+        chinese: "Use Mandarin expressions, be brief.",
+        korean: "Respect honorifics, concise response.",
+        spanish: "Use natural Spanish, keep it short.",
+        french: "Use natural French, brief reply.",
       };
 
-      const prompt = `<s>You are ${character.name}. Here is your character background and personality:
+      const prompt = `<s> You are ${character.name}, a character with this background:
 
 ${character.persona}
 
-Important roleplaying instructions:
-1. Keep responses very short and concise (2-3 sentences maximum)
-2. Stay in character while being brief
-3. Show personality efficiently in few words
-4. Respond in ${language}
-5. Match the user's formality level
+Roleplaying rules:
+1. Respond in ${language}
+2. Stay in character, be brief (2-3 sentences max)
+3. Show personality efficiently
+4. Match user's formality
 ${scriptInstruction}
 
-Previous chat history for context:
+Chat history:
 ${chatHistory}
 
 User: ${userMessage}
-Assistant (as ${character.name}, responding in ${language} briefly): `;
+Assistant (${character.name} in ${language}): `;
 
       const response = await fetch(`${BASE_URL}/${MODEL}`, {
         method: "POST",
@@ -59,9 +66,9 @@ Assistant (as ${character.name}, responding in ${language} briefly): `;
         },
         body: JSON.stringify({
           input: prompt,
-          temperature: 0.9,
-          max_tokens: 80,
-          top_p: 0.9,
+          temperature: 0.8,
+          max_tokens: 60,
+          top_p: 0.8,
         }),
       });
 
@@ -72,31 +79,29 @@ Assistant (as ${character.name}, responding in ${language} briefly): `;
           continue;
         }
         throw new Error(
-          `API request failed with status ${response.status}: ${response.statusText}`,
+          `API request failed: ${response.status} ${response.statusText}`,
         );
       }
 
       const data = await response.json();
-      const generatedText = data.results?.[0]?.generated_text;
+      const generatedText = data.results?.[0]?.generated_text?.trim();
 
-      if (!generatedText || typeof generatedText !== "string") {
-        throw new Error("Invalid response format from API");
-      }
-
-      return (
-        generatedText.trim() ||
-        "I apologize, but I seem to be having trouble forming a response right now."
-      );
+      return generatedText || "I'm having trouble responding right now.";
     } catch (error: any) {
-      if (retries < MAX_RETRIES - 1) {
+      if (++retries < MAX_RETRIES) {
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-        retries++;
         continue;
       }
       console.error("LLM API error:", error);
-      return `I apologize, but I'm having trouble responding right now. Error: ${error.message}. Please try again later.`;
+
+      // Return a random exhaustion message on failure
+      return exhaustionMessages[
+        Math.floor(Math.random() * exhaustionMessages.length)
+      ];
     }
   }
 
-  return "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.";
+  return exhaustionMessages[
+    Math.floor(Math.random() * exhaustionMessages.length)
+  ];
 }
