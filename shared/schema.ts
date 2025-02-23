@@ -47,8 +47,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   content: true,
   isUser: true,
 }).extend({
-  language: z.enum(['english', 'japanese', 'spanish', 'french', 'chinese', 'korean', 'hindi']).default("english"),
-  script: z.enum(['devanagari', 'latin', 'japanese', 'chinese', 'korean']).optional()
+  language: z.string().default("english"),
+  script: z.enum(["devanagari", "latin"]).optional()
 });
 
 // User schemas
@@ -126,20 +126,11 @@ export type SubscriptionStatus = 'trial' | 'active' | 'cancelled' | 'expired';
 // Add supported languages
 export const supportedLanguages = [
   { id: "english", name: "English" },
-  { id: "japanese", name: "日本語", scripts: [
-    { id: "japanese", name: "日本語" },
-    { id: "latin", name: "Romaji" }
-  ]},
+  { id: "japanese", name: "日本語" },
   { id: "spanish", name: "Español" },
   { id: "french", name: "Français" },
-  { id: "chinese", name: "中文", scripts: [
-    { id: "chinese", name: "汉字" },
-    { id: "latin", name: "Pinyin" }
-  ]},
-  { id: "korean", name: "한국어", scripts: [
-    { id: "korean", name: "한글" },
-    { id: "latin", name: "Romanization" }
-  ]},
+  { id: "chinese", name: "中文" },
+  { id: "korean", name: "한국어" },
   { id: "hindi", name: "हिन्दी", scripts: [
     { id: "devanagari", name: "देवनागरी" },
     { id: "latin", name: "Roman" }
@@ -147,4 +138,4 @@ export const supportedLanguages = [
 ] as const;
 
 export type SupportedLanguage = typeof supportedLanguages[number]["id"];
-export type ScriptPreference = "devanagari" | "latin" | "japanese" | "chinese" | "korean";
+export type ScriptPreference = "devanagari" | "latin";

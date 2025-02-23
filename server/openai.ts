@@ -1,7 +1,6 @@
 import { type Character } from "@shared/characters";
 
-const API_KEY =
-  process.env.DEEPINFRA_API_KEY || "LIflLBIWVD7Dz2ixK7dtVZ4y7xNyOlud";
+const API_KEY = process.env.DEEPINFRA_API_KEY || "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
@@ -30,39 +29,32 @@ export async function generateCharacterResponse(
     try {
       const scriptInstruction =
         language === "hindi" && script === "latin"
-          ? "Respond in Hindi using Latin alphabet (include Devanagari in parentheses)."
-          : language === "japanese" && script === "latin"
-            ? "Respond in Japanese using Latin alphabet (include Japanese characters in parentheses)."
-          : language === "chinese" && script === "latin"
-            ? "Respond in Chinese using Pinyin (include Chinese characters in parentheses)."
-          : language === "korean" && script === "latin"
-            ? "Respond in Korean using Latin alphabet (include Hangul in parentheses)."
+          ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
           : "";
 
       // Enhanced language-specific instructions
       const languageInstructions: Record<string, string> = {
         english: "Respond naturally in English.",
-        hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise and natural.",
-        japanese: "自然な日本語で応答してください。敬語を適切に使用し、キャラクターの性格に合わせた話し方をしてください。",
-        chinese: "用自然的中文回应。注意使用适当的敬语，保持角色特点。回答要简洁自然。",
-        korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용하고 캐릭터의 성격에 맞게 대화해주세요。",
-        spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado y mantén la personalidad del personaje.",
-        french: "Réponds naturellement en français. Utilise le niveau de formalité approprié et garde la personnalité du personnage."
+        hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
+        japanese: "自然な日本語で応答してください。敬語を適切に使用してください。",
+        chinese: "用自然的中文回应。注意使用适当的敬语。",
+        korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
+        spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
+        french: "Répondez naturellement en français. Utilisez le niveau de formalité approprié."
       };
 
       const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.english;
 
-      const prompt = `<s>[INST] You are ${character.name}, with this background:
+      const prompt = `<s> [INST] You are ${character.name}, with this background:
 
 ${character.persona}
 
 Instructions:
 1. ${languageInstruction}
 2. ${scriptInstruction}
-3. Stay true to ${character.name}'s personality and background
-4. Keep responses concise (2-3 sentences)
-5. Match the conversation tone and cultural context of ${language}
-6. Use appropriate honorifics and politeness levels for ${language}
+3. Stay in character
+4. Be concise (2-3 sentences)
+5. Match conversation tone
 
 Chat history:
 ${chatHistory}
@@ -103,17 +95,9 @@ Assistant (${character.name}): `;
       // Clean up the response
       if (generatedText) {
         // Remove any "Assistant:" or similar prefixes
-        generatedText = generatedText.replace(
-          /^(Assistant|Character|[^:]+):\s*/i,
-          "",
-        );
+        generatedText = generatedText.replace(/^(Assistant|Character|[^:]+):\s*/i, '');
         // Trim any quotes that might wrap the entire response
-        generatedText = generatedText.replace(/^["']|["']$/g, "");
-
-        // Only remove parentheses content if we're not using Latin script
-        if (script !== "latin") {
-          generatedText = generatedText.replace(/\(.*?\)/g, "").trim();
-        }
+        generatedText = generatedText.replace(/^["']|["']$/g, '');
       }
 
       return generatedText || "I'm having trouble responding right now.";
