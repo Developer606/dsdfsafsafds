@@ -5,7 +5,7 @@ import { ChatMessage } from "@/components/chat-message";
 import { ChatInput } from "@/components/chat-input";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { Button } from "@/components/ui/button";
-import { type Message, type MessageType } from "@shared/schema";
+import { type Message } from "@shared/schema";
 import { type Character } from "@shared/characters";
 import { queryClient } from "@/lib/queryClient";
 import { ArrowLeft, MoreVertical } from "lucide-react";
@@ -40,33 +40,19 @@ export default function Chat() {
   }, [messages.length]);
 
   const sendMessage = useMutation({
-    mutationFn: async ({ 
-      content, 
-      language, 
-      script, 
-      messageType = 'text',
-      stickerId 
-    }: { 
-      content: string; 
-      language: string; 
-      script?: string;
-      messageType?: MessageType;
-      stickerId?: string;
-    }) => {
+    mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {
       // First, optimistically add the user's message
-      const userMessage: Partial<Message> = {
+      const userMessage: Message = {
         id: Date.now(),
         content,
         isUser: true,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         characterId,
-        messageType,
-        stickerId
       };
 
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
-        (old = []) => [...old, userMessage as Message]
+        (old = []) => [...old, userMessage]
       );
 
       // Show typing indicator
@@ -82,9 +68,7 @@ export default function Chat() {
           content,
           language,
           script,
-          isUser: true,
-          messageType,
-          stickerId
+          isUser: true
         })
       });
 
@@ -180,8 +164,7 @@ export default function Chat() {
 
       <div className="p-2 bg-[#f0f2f5]">
         <ChatInput
-          onSend={(content, language, script, messageType, stickerId) => 
-            sendMessage.mutate({ content, language, script, messageType, stickerId })}
+          onSend={(content, language, script) => sendMessage.mutate({ content, language, script })}
           isLoading={sendMessage.isPending}
         />
       </div>

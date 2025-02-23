@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Smile } from "lucide-react";
-import { StickerIcon } from "lucide-react"; // Renamed to avoid conflict
 import EmojiPicker from 'emoji-picker-react';
 import { 
   Popover, 
@@ -16,11 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supportedLanguages, type Sticker as StickerType } from "@shared/schema"; // Renamed to avoid conflict
-import { StickerPicker } from "./sticker-picker";
+import { supportedLanguages } from "@shared/schema";
 
 interface ChatInputProps {
-  onSend: (content: string, language: string, script?: string, messageType?: 'text' | 'emoji' | 'sticker', stickerId?: string) => void;
+  onSend: (content: string, language: string, script?: string) => void;
   isLoading: boolean;
 }
 
@@ -40,26 +38,18 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !isLoading) {
-      onSend(message, language, language === "hindi" ? script : undefined, 'text');
+      onSend(message, language, language === "hindi" ? script : undefined);
       setMessage("");
     }
   };
 
   const onEmojiClick = (emojiObject: any) => {
-    if (message.length > 0) {
-      setMessage(prevMsg => prevMsg + emojiObject.emoji);
-    } else {
-      onSend(emojiObject.emoji, language, undefined, 'emoji');
-    }
-  };
-
-  const onStickerSelect = (sticker: StickerType) => {
-    onSend('', language, undefined, 'sticker', sticker.id);
+    setMessage(prevMsg => prevMsg + emojiObject.emoji);
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex items-end gap-2">
-      <div className="flex items-center gap-2 flex-1 bg-white rounded-full px-4 py-2">
+      <div className="flex items-center gap-2 flex-1 bg-white rounded-full px-4 py-2"> {/* WhatsApp-style input container */}
         <Popover>
           <PopoverTrigger asChild>
             <Button 
@@ -77,26 +67,6 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
             align="start"
           >
             <EmojiPicker onEmojiClick={onEmojiClick} />
-          </PopoverContent>
-        </Popover>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button 
-              type="button" 
-              size="icon" 
-              variant="ghost"
-              className="h-8 w-8 rounded-full hover:bg-gray-100"
-            >
-              <StickerIcon className="h-5 w-5 text-gray-500" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent 
-            className="p-0" 
-            side="top" 
-            align="start"
-          >
-            <StickerPicker onStickerSelect={onStickerSelect} />
           </PopoverContent>
         </Popover>
 
@@ -129,7 +99,7 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
         type="submit" 
         size="icon"
         disabled={isLoading || !message.trim()}
-        className="h-10 w-10 rounded-full bg-[#00a884] hover:bg-[#00946e]"
+        className="h-10 w-10 rounded-full bg-[#00a884] hover:bg-[#00946e]" // WhatsApp send button color
       >
         <Send className="h-5 w-5" />
       </Button>
