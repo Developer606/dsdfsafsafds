@@ -1,7 +1,7 @@
 import { type Character } from "@shared/characters";
 
 const API_KEY =
-  process.env.DEEPINFRA_API_KEY || "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
+  process.env.DEEPINFRA_API_KEY || "stM8x3slv4iexaxgVkjmh9CIrlGxIxlr";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 

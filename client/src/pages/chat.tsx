@@ -17,6 +17,7 @@ export default function Chat() {
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const tempMessageIdRef = useRef<string>("");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -41,13 +42,20 @@ export default function Chat() {
 
   const sendMessage = useMutation({
     mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {
+      // Generate a unique temporary ID
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      tempMessageIdRef.current = tempId;
+
       // First, optimistically add the user's message
       const userMessage: Message = {
-        id: Date.now(),
+        id: tempId,
         content,
         isUser: true,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
         characterId,
+        userId: 0, // Will be set by server
+        language,
+        script
       };
 
       queryClient.setQueryData<Message[]>(
@@ -85,14 +93,23 @@ export default function Chat() {
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
         (old = []) => {
-          const filtered = old?.filter(msg => msg.id !== Date.now()) || [];
+          // Remove the temporary message
+          const filtered = old.filter(msg => msg.id !== tempMessageIdRef.current);
+          // Add the actual messages from the server
           return [...filtered, ...newMessages];
         }
       );
       scrollToBottom();
+      tempMessageIdRef.current = ""; // Clear the temp ID
     },
     onError: () => {
       setIsTyping(false);
+      // Remove the temporary message on error
+      queryClient.setQueryData<Message[]>(
+        [`/api/messages/${characterId}`],
+        (old = []) => old.filter(msg => msg.id !== tempMessageIdRef.current)
+      );
+      tempMessageIdRef.current = ""; // Clear the temp ID
       toast({
         variant: "destructive",
         title: "Error",
