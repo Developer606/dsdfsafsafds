@@ -20,17 +20,19 @@ export const users = sqliteTable("users", {
 // Messages table optimized for chat history retrieval
 export const messages = sqliteTable("messages", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   characterId: text("character_id").notNull(),
   content: text("content").notNull(),
   isUser: integer("is_user", { mode: "boolean" }).notNull(),
+  language: text("language").default("english"),
+  script: text("script"),
   timestamp: integer("timestamp", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
 });
 
 // Custom characters table
 export const customCharacters = sqliteTable("custom_characters", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id").notNull(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text("name").notNull(),
   avatar: text("avatar").notNull(),
   description: text("description").notNull(),

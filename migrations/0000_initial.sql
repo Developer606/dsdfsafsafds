@@ -19,7 +19,10 @@ CREATE TABLE IF NOT EXISTS messages (
   character_id TEXT NOT NULL,
   content TEXT NOT NULL,
   is_user INTEGER NOT NULL,
-  timestamp INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
+  language TEXT DEFAULT 'english',
+  script TEXT,
+  timestamp INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create Custom Characters table
@@ -30,7 +33,8 @@ CREATE TABLE IF NOT EXISTS custom_characters (
   avatar TEXT NOT NULL,
   description TEXT NOT NULL,
   persona TEXT NOT NULL,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000)
+  created_at INTEGER NOT NULL DEFAULT (unixepoch('now') * 1000),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create indexes for performance
