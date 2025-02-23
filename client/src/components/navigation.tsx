@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type User as UserType } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { SubscriptionManagement } from "@/components/subscription-management";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -65,6 +66,7 @@ export function Navigation() {
 
           {user && (
             <div className="flex items-center gap-2">
+              <SubscriptionManagement user={user} />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
