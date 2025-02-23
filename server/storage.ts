@@ -134,7 +134,7 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(users)
       .set({
-        isPremium: data.isPremium ? 1 : 0,
+        isPremium: Boolean(data.isPremium), // Fix the type conversion
         subscriptionTier: data.subscriptionTier,
         subscriptionStatus: data.subscriptionStatus,
         subscriptionExpiresAt: sql`${data.subscriptionExpiresAt.getTime()}`
