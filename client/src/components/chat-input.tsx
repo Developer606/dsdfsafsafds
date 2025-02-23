@@ -48,58 +48,58 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-end gap-2 bg-background p-2 rounded-lg border">
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button 
-            type="button" 
-            size="icon" 
-            variant="ghost"
-            className="h-10 w-10 shrink-0"
+    <form onSubmit={handleSubmit} className="flex items-end gap-2">
+      <div className="flex items-center gap-2 flex-1 bg-white rounded-full px-4 py-2"> {/* WhatsApp-style input container */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button 
+              type="button" 
+              size="icon" 
+              variant="ghost"
+              className="h-8 w-8 rounded-full hover:bg-gray-100"
+            >
+              <Smile className="h-5 w-5 text-gray-500" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent 
+            className="p-0 w-full" 
+            side="top" 
+            align="start"
           >
-            <Smile className="h-5 w-5 text-muted-foreground" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="p-0 w-full" 
-          side="top" 
-          align="start"
+            <EmojiPicker onEmojiClick={onEmojiClick} />
+          </PopoverContent>
+        </Popover>
+
+        <Select
+          value={language}
+          onValueChange={setLanguage}
         >
-          <EmojiPicker onEmojiClick={onEmojiClick} />
-        </PopoverContent>
-      </Popover>
+          <SelectTrigger className="w-[100px] h-8 border-0 focus:ring-0 bg-transparent">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {supportedLanguages.map((lang) => (
+              <SelectItem key={lang.id} value={lang.id}>
+                {lang.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      <Select
-        value={language}
-        onValueChange={setLanguage}
-      >
-        <SelectTrigger className="w-[140px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {supportedLanguages.map((lang) => (
-            <SelectItem key={lang.id} value={lang.id}>
-              {lang.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <div className="flex-1">
         <Input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a message"
           disabled={isLoading}
-          className="min-h-10 w-full"
+          className="flex-1 border-0 focus-visible:ring-0 bg-transparent px-0"
         />
       </div>
 
       <Button 
         type="submit" 
-        size="icon" 
+        size="icon"
         disabled={isLoading || !message.trim()}
-        className="h-10 w-10 shrink-0"
+        className="h-10 w-10 rounded-full bg-[#00a884] hover:bg-[#00946e]" // WhatsApp send button color
       >
         <Send className="h-5 w-5" />
       </Button>

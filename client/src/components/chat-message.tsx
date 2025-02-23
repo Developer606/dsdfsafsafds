@@ -15,36 +15,28 @@ export function ChatMessage({ message, character }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 max-w-[80%]",
+        "flex gap-2 max-w-[80%]",
         isUser ? "ml-auto flex-row-reverse" : "mr-auto"
       )}
     >
-      <img
-        src={isUser ? "https://api.dicebear.com/7.x/avatars/svg?seed=user" : character.avatar}
-        alt={isUser ? "User" : character.name}
-        className="w-8 h-8 rounded-full"
-      />
       <div className="flex flex-col">
         <div
           className={cn(
-            "rounded-lg p-3 relative",
+            "px-3 py-2 rounded-2xl relative",
             isUser
-              ? "bg-primary text-primary-foreground rounded-tr-none"
-              : "bg-secondary text-secondary-foreground rounded-tl-none"
+              ? "bg-[#dcf8c6] text-gray-800 rounded-br-none" 
+              : "bg-white text-gray-800 rounded-bl-none" 
           )}
         >
-          {message.content}
+          <div className="text-sm">{message.content}</div>
           <div 
-            className={cn(
-              "text-xs mt-1 flex items-center gap-1",
-              isUser ? "text-primary-foreground/70" : "text-secondary-foreground/70"
-            )}
+            className="text-[11px] text-gray-500 flex items-center gap-1 mt-1"
           >
             {format(new Date(message.timestamp), "h:mm a")}
             {isUser && (
-              <div className="flex">
-                <Check className="h-3 w-3" />
-                <Check className="h-3 w-3 -ml-1" />
+              <div className="flex ml-1">
+                <Check className="h-3 w-3 text-[#4fc3f7]" /> 
+                <Check className="h-3 w-3 text-[#4fc3f7] -ml-2" />
               </div>
             )}
           </div>
