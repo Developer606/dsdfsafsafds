@@ -19,12 +19,7 @@ function Router() {
             <Home />
           </>
         </Route>
-        <Route path="/chat/:characterId">
-          <>
-            <Navigation />
-            <Chat />
-          </>
-        </Route>
+        <Route path="/chat/:characterId" component={Chat} />
         <Route component={NotFound} />
       </Switch>
     </>
