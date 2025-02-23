@@ -30,6 +30,12 @@ export async function generateCharacterResponse(
       const scriptInstruction =
         language === "hindi" && script === "latin"
           ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
+          : language === "japanese" && script === "latin"
+          ? "Respond in Japanese but include Romaji in parentheses."
+          : language === "chinese" && script === "latin"
+          ? "Respond in Chinese but include Pinyin in parentheses."
+          : language === "korean" && script === "latin"
+          ? "Respond in Korean but include Romanization in parentheses."
           : "";
 
       // Enhanced language-specific instructions
@@ -38,7 +44,7 @@ export async function generateCharacterResponse(
         hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise and natural.",
         japanese: "自然な日本語で応答してください。敬語を適切に使用し、キャラクターの性格に合わせた話し方をしてください。",
         chinese: "用自然的中文回应。注意使用适当的敬语，保持角色特点。回答要简洁自然。",
-        korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용하고 캐릭터의 성격에 맞게 대화해주세요.",
+        korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용하고 캐릭터의 성격에 맞게 대화해주세요。",
         spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado y mantén la personalidad del personaje.",
         french: "Réponds naturellement en français. Utilise le niveau de formalité approprié et garde la personnalité du personnage."
       };
