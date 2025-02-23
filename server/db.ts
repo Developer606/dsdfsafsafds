@@ -76,15 +76,24 @@ export async function runMigrations() {
   }
 }
 
-// Create indexes for high-performance queries
+// Enhanced indexes for better query performance
 function createIndexes() {
   try {
     // Create indexes in a transaction for atomicity
     sqlite.transaction(() => {
+      // User indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)').run();
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)').run();
+
+      // Message indexes - Added compound index for character_id + timestamp
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_user_char ON messages(user_id, character_id)').run();
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_char_time ON messages(character_id, timestamp)').run();
+
+      // Custom character indexes
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_custom_chars_user ON custom_characters(user_id)').run();
     })();
+
+    console.log('Database indexes created successfully');
   } catch (error) {
     console.error('Error creating indexes:', error);
     // Don't throw, as indexes are optional for functionality

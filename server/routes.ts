@@ -10,24 +10,15 @@ export async function registerRoutes(app: Express) {
   // Set up authentication routes and middleware
   setupAuth(app);
 
-  // Helper function to get or create demo user
-  async function getOrCreateDemoUser() {
-    let user = await storage.getUserByEmail("demo@example.com");
-    if (!user) {
-      user = await storage.createUser({ 
-        email: "demo@example.com",
-        username: "demo_user",
-        password: "demo_password" // This will be hashed by the auth system
-      });
-    }
-    return user;
-  }
+  // Helper function to get or create demo user - REMOVED
 
-  app.get("/api/characters", async (_req, res) => {
+  app.get("/api/characters", async (req, res) => {
     try {
-      const user = await getOrCreateDemoUser();
-      const customChars = await storage.getCustomCharactersByUser(user.id);
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
 
+      const customChars = await storage.getCustomCharactersByUser(req.user.id);
       const formattedCustomChars = customChars.map(char => ({
         id: `custom_${char.id}`, 
         name: char.name,
@@ -45,26 +36,32 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/messages/:characterId", async (req, res) => {
     try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
       const messages = await storage.getMessagesByCharacter(req.params.characterId);
-      res.json(messages);
+      // Only return messages belonging to the authenticated user
+      const userMessages = messages.filter(msg => msg.userId === req.user.id);
+      res.json(userMessages);
     } catch (error: any) {
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
 
-  app.get("/api/user", async (_req, res) => {
-    try {
-      const user = await getOrCreateDemoUser();
-      res.json(user);
-    } catch (error: any) {
-      res.status(500).json({ error: "Failed to fetch user" });
+  app.get("/api/user", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Authentication required" });
     }
+    res.json(req.user);
   });
 
-  app.get("/api/custom-characters", async (_req, res) => {
+  app.get("/api/custom-characters", async (req, res) => {
     try {
-      const user = await getOrCreateDemoUser();
-      const customChars = await storage.getCustomCharactersByUser(user.id);
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const customChars = await storage.getCustomCharactersByUser(req.user.id);
       res.json(customChars);
     } catch (error: any) {
       res.status(500).json({ error: "Failed to fetch custom characters" });
@@ -73,7 +70,10 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/custom-characters", async (req, res) => {
     try {
-      const user = await getOrCreateDemoUser();
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const user = req.user;
       if (!user) {
         throw new Error("User not found");
       }
@@ -100,7 +100,10 @@ export async function registerRoutes(app: Express) {
 
   app.delete("/api/custom-characters/:id", async (req, res) => {
     try {
-      const user = await getOrCreateDemoUser();
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const user = req.user;
       if (!user) {
         throw new Error("User not found");
       }
@@ -114,7 +117,10 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/messages", async (req, res) => {
     try {
-      const user = await getOrCreateDemoUser();
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const user = req.user;
 
       const data = insertMessageSchema.parse({
         ...req.body,
@@ -187,8 +193,11 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/subscribe", async (req, res) => {
     try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const user = req.user;
       const { planId } = req.body;
-      const user = await getOrCreateDemoUser();
 
       if (!user) {
         throw new Error("User not found");
@@ -211,6 +220,22 @@ export async function registerRoutes(app: Express) {
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Add feedback endpoint
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      const { name, email, message } = req.body;
+      if (!name || !email || !message) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // For now, just log the feedback
+      console.log('Feedback received:', { name, email, message });
+      res.json({ success: true, message: "Feedback received" });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to submit feedback" });
     }
   });
 
