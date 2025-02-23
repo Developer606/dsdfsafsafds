@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { AuthDialog } from "@/components/auth-dialog";
 import type { User } from "@shared/schema";
-import { Mail, Phone, MapPin } from "lucide-react";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -62,7 +61,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-black relative overflow-hidden">
       <div 
         className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-blue-900/20"
       >
@@ -77,7 +76,7 @@ export default function LandingPage() {
         initial="initial"
         animate="animate"
         variants={stagger}
-        className="relative z-10 container mx-auto px-4 py-20 flex-grow flex flex-col items-center"
+        className="relative z-10 container mx-auto px-4 py-20 min-h-screen flex flex-col items-center"
       >
         <motion.div
           variants={slideIn}
@@ -227,75 +226,6 @@ export default function LandingPage() {
           </form>
         </motion.div>
       </motion.div>
-      <footer className="relative z-10 w-full bg-black/60 backdrop-blur-lg border-t border-white/10 mt-auto">
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">About Us</h3>
-              <p className="text-gray-400 text-sm">
-                Creating immersive AI-powered anime character interactions for fans worldwide.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">Contact</h3>
-              <ul className="space-y-2">
-                <li className="flex items-center text-gray-400 text-sm">
-                  <Mail className="w-4 h-4 mr-2" />
-                  contact@animecharacter.chat
-                </li>
-                <li className="flex items-center text-gray-400 text-sm">
-                  <Phone className="w-4 h-4 mr-2" />
-                  +1 (555) 123-4567
-                </li>
-                <li className="flex items-center text-gray-400 text-sm">
-                  <MapPin className="w-4 h-4 mr-2" />
-                  San Francisco, CA
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">Quick Links</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors">
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="/faq" className="text-gray-400 hover:text-white text-sm transition-colors">
-                    FAQ
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-white">Follow Us</h3>
-              <div className="flex space-x-4">
-                <a href="https://twitter.com/animecharacterchat" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                  Twitter
-                </a>
-                <a href="https://discord.gg/animecharacterchat" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                  Discord
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 pt-8 border-t border-white/10 text-center">
-            <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} Anime Character Chat. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
       <AuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}
