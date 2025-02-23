@@ -12,7 +12,7 @@ export const users = sqliteTable("users", {
   isPremium: integer("is_premium", { mode: "boolean" }).notNull().default(false),
   trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
   subscriptionTier: text("subscription_tier"),
-  subscriptionStatus: text("subscription_status").default('trial'),
+  subscriptionStatus: text("subscription_status", { length: 20 }).default('trial'),
   subscriptionExpiresAt: integer("subscription_expires_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().default(sql`(unixepoch('now') * 1000)`),
 });
