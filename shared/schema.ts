@@ -9,12 +9,6 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   username: text("username").notNull(),
   password: text("password").notNull(),
-  // Add profile fields
-  displayName: text("display_name"),
-  bio: text("bio"),
-  age: integer("age"),
-  gender: text("gender"),
-  // Existing subscription fields remain unchanged
   isPremium: integer("is_premium", { mode: "boolean" }).notNull().default(false),
   trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
   subscriptionTier: text("subscription_tier"),
@@ -62,17 +56,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   username: true,
   password: true,
-  displayName: true,
-  bio: true,
-  age: true,
-  gender: true,
-});
-
-export const updateProfileSchema = z.object({
-  displayName: z.string().min(1, "Display name is required"),
-  bio: z.string().max(500, "Bio must be less than 500 characters"),
-  age: z.number().min(13, "Must be at least 13 years old").optional(),
-  gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
 });
 
 export const loginSchema = z.object({
