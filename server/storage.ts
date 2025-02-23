@@ -49,12 +49,10 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  // Message operations with prepared statements for better performance
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
-    return db.select().from(messages)
+    return await db.select().from(messages)
       .where(eq(messages.characterId, characterId))
-      .orderBy(messages.timestamp)
-      .all();
+      .orderBy(messages.timestamp);
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
@@ -66,28 +64,27 @@ export class DatabaseStorage implements IStorage {
     await db.delete(messages).where(eq(messages.characterId, characterId));
   }
 
-  // User operations with prepared statements
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return db.select().from(users)
-      .where(eq(users.email, email))
-      .get();
+    const [user] = await db.select().from(users)
+      .where(eq(users.email, email));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return db.select().from(users)
-      .where(eq(users.username, username))
-      .get();
+    const [user] = await db.select().from(users)
+      .where(eq(users.username, username));
+    return user;
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return db.select().from(users)
-      .where(eq(users.id, id))
-      .get();
+    const [user] = await db.select().from(users)
+      .where(eq(users.id, id));
+    return user;
   }
 
   async incrementTrialCharacterCount(userId: number): Promise<void> {
@@ -99,7 +96,6 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  // Custom character operations
   async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {
     const [character] = await db.insert(customCharacters).values(insertCharacter).returning();
     return character;
@@ -110,9 +106,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getCustomCharacterById(id: number): Promise<CustomCharacter | undefined> {
-    return db.select().from(customCharacters)
-      .where(eq(customCharacters.id, id))
-      .get();
+    const [character] = await db.select().from(customCharacters)
+      .where(eq(customCharacters.id, id));
+    return character;
   }
 
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {
@@ -138,10 +134,10 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(users)
       .set({
-        isPremium: data.isPremium,
+        isPremium: data.isPremium ? 1 : 0,
         subscriptionTier: data.subscriptionTier,
         subscriptionStatus: data.subscriptionStatus,
-        subscriptionExpiresAt: data.subscriptionExpiresAt
+        subscriptionExpiresAt: sql`${data.subscriptionExpiresAt.getTime()}`
       })
       .where(eq(users.id, userId));
   }
