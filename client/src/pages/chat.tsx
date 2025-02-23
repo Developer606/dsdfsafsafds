@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { ChatMessage } from "@/components/chat-message";
 import { ChatInput } from "@/components/chat-input";
+import { TypingIndicator } from "@/components/typing-indicator";
 import { Button } from "@/components/ui/button";
 import { type Message } from "@shared/schema";
 import { type Character } from "@shared/characters";
@@ -15,6 +16,7 @@ export default function Chat() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -39,6 +41,25 @@ export default function Chat() {
 
   const sendMessage = useMutation({
     mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {
+      // First, optimistically add the user's message
+      const userMessage: Message = {
+        id: Date.now(),
+        content,
+        isUser: true,
+        timestamp: new Date().toISOString(),
+        characterId,
+      };
+
+      queryClient.setQueryData<Message[]>(
+        [`/api/messages/${characterId}`],
+        (old = []) => [...old, userMessage]
+      );
+
+      // Show typing indicator
+      setIsTyping(true);
+      scrollToBottom();
+
+      // Send the actual request
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,15 +73,26 @@ export default function Chat() {
       });
 
       if (!res.ok) throw new Error("Failed to send message");
+
+      // Simulate typing delay before showing bot response
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsTyping(false);
+
       return res.json();
     },
     onSuccess: (newMessages: Message[]) => {
+      // Update with the actual response from the server
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
-        (old = []) => [...old, ...newMessages]
+        (old = []) => {
+          const filtered = old?.filter(msg => msg.id !== Date.now()) || [];
+          return [...filtered, ...newMessages];
+        }
       );
+      scrollToBottom();
     },
     onError: () => {
+      setIsTyping(false);
       toast({
         variant: "destructive",
         title: "Error",
@@ -69,32 +101,11 @@ export default function Chat() {
     }
   });
 
-  const clearChat = useMutation({
-    mutationFn: async () => {
-      if (!characterId) throw new Error("No character ID");
-      const res = await fetch(`/api/messages/${characterId}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to clear chat");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.setQueryData([`/api/messages/${characterId}`], []);
-    },
-    onError: () => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to clear chat history"
-      });
-    }
-  });
-
   if (!character) return null;
 
   return (
-    <div className="flex flex-col h-screen bg-[#efeae2]"> {/* WhatsApp background color */}
-      <div className="flex items-center px-4 py-2 bg-[#075e54] text-white"> {/* WhatsApp green header */}
+    <div className="flex flex-col h-screen bg-[#efeae2]">
+      <div className="flex items-center px-4 py-2 bg-[#075e54] text-white">
         <Button
           variant="ghost"
           size="icon"
@@ -110,7 +121,9 @@ export default function Chat() {
         />
         <div className="flex-1">
           <h2 className="font-semibold text-lg">{character.name}</h2>
-          <p className="text-sm text-white/80">online</p>
+          <p className="text-sm text-white/80">
+            {isTyping ? "typing..." : "online"}
+          </p>
         </div>
         <Button
           variant="ghost"
@@ -143,12 +156,13 @@ export default function Chat() {
                 character={character}
               />
             ))}
+            {isTyping && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </>
         )}
       </div>
 
-      <div className="p-2 bg-[#f0f2f5]"> {/* WhatsApp input background */}
+      <div className="p-2 bg-[#f0f2f5]">
         <ChatInput
           onSend={(content, language, script) => sendMessage.mutate({ content, language, script })}
           isLoading={sendMessage.isPending}
