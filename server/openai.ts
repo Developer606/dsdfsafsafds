@@ -1,4 +1,5 @@
 import { type Character } from "@shared/characters";
+import { SunMoon } from "lucide-react";
 
 const API_KEY = process.env.DEEPINFRA_API_KEY || "GmdQljdKk4Xpy2AsI2KTJpAN9R9oLSdT";
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
@@ -36,11 +37,7 @@ export async function generateCharacterResponse(
       const languageInstructions: Record<string, string> = {
         english: "Respond naturally in English.",
         hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
-        japanese: "自然な日本語で応答してください。敬語を適切に使用してください。",
-        chinese: "用自然的中文回应。注意使用适当的敬语。",
-        korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
-        spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
-        french: "Répondez naturellement en français. Utilisez le niveau de formalité approprié."
+        // Additional languages to be added in future updates
       };
 
       const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions.english;
