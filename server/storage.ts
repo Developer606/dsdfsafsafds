@@ -18,7 +18,6 @@ async function hashPassword(password: string) {
 }
 
 export interface IStorage {
-  // Interface remains the same
   getMessagesByCharacter(characterId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
   clearChat(characterId: string): Promise<void>;
@@ -60,6 +59,8 @@ export class DatabaseStorage implements IStorage {
       checkPeriod: 86400000, // 24 hours
       max: 10000 // Store up to 10000 sessions in memory
     });
+    // Initialize admin user when storage is created
+    this.initializeAdmin();
   }
 
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
@@ -215,20 +216,35 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
   private async initializeAdmin() {
-    const hashedPassword = await hashPassword("admin123");
-    this.createUser({
-      email: "admin@system.local",
-      username: "SysRoot_99",
-      password: hashedPassword,
-      role: "admin",
-      isAdmin: true,
-      subscriptionTier: null,
-      subscriptionStatus: null,
-      subscriptionExpiresAt: null,
-      isEmailVerified: true, 
-      verificationToken: null, 
-      verificationTokenExpiry: null 
-    });
+    try {
+      // Check if admin already exists
+      const existingAdmin = await this.getUserByUsername("SysRoot_99");
+      if (!existingAdmin) {
+        const hashedPassword = await hashPassword("admin123");
+        await db.insert(users).values({
+          email: "admin@system.local",
+          username: "SysRoot_99",
+          password: hashedPassword,
+          role: "admin",
+          isAdmin: true,
+          isPremium: false,
+          isBlocked: false,
+          isRestricted: false,
+          isEmailVerified: true,
+          verificationToken: null,
+          verificationTokenExpiry: null,
+          trialCharactersCreated: 0,
+          subscriptionTier: null,
+          subscriptionStatus: "trial",
+          subscriptionExpiresAt: null,
+          createdAt: new Date(),
+          lastLoginAt: null
+        });
+        console.log("Admin user created successfully");
+      }
+    } catch (error) {
+      console.error("Error creating admin user:", error);
+    }
   }
 }
 
