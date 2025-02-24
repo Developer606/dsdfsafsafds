@@ -64,6 +64,44 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.post("/api/admin/users/:userId/subscription", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { planId } = req.body;
+
+      // Handle free plan
+      if (planId === 'free') {
+        await storage.updateUserSubscription(userId, {
+          isPremium: false,
+          subscriptionTier: null,
+          subscriptionStatus: 'cancelled',
+          subscriptionExpiresAt: new Date()
+        });
+        return res.json({ success: true });
+      }
+
+      // Handle premium plans
+      if (!Object.keys(subscriptionPlans).some(plan => subscriptionPlans[plan as SubscriptionTier].id === planId)) {
+        return res.status(400).json({ error: "Invalid subscription plan" });
+      }
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 30); // Set expiration to 30 days from now
+
+      await storage.updateUserSubscription(userId, {
+        isPremium: true,
+        subscriptionTier: planId,
+        subscriptionStatus: 'active',
+        subscriptionExpiresAt: expiresAt
+      });
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to update user subscription" });
+    }
+  });
+
+
   app.get("/api/characters", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {

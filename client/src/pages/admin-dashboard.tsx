@@ -10,9 +10,17 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users } from "lucide-react";
+import { User, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +77,20 @@ export default function AdminDashboard() {
     },
   });
 
+  const updateSubscription = useMutation({
+    mutationFn: async ({ userId, planId }: { userId: number; planId: string }) => {
+      const res = await apiRequest("POST", `/api/admin/users/${userId}/subscription`, { planId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "User subscription updated successfully",
+      });
+    },
+  });
+
   if (statsLoading || usersLoading) {
     return <div className="p-8">Loading...</div>;
   }
@@ -95,7 +117,7 @@ export default function AdminDashboard() {
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium mb-2">Premium Users</h3>
-            <Ban className="h-5 w-5 text-muted-foreground" />
+            <Crown className="h-5 w-5 text-muted-foreground" />
           </div>
           <p className="text-3xl font-bold">{stats?.premiumUsers ?? 0}</p>
         </Card>
@@ -143,20 +165,47 @@ export default function AdminDashboard() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {user.isPremium ? (
-                        <div className="flex flex-col gap-1">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            Premium
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {user.subscriptionTier}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          Free
-                        </span>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" className="w-full justify-start">
+                            <div className="flex flex-col items-start gap-1">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                user.isPremium ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {user.isPremium ? 'Premium' : 'Free'}
+                              </span>
+                              {user.subscriptionTier && (
+                                <span className="text-xs text-muted-foreground">
+                                  {user.subscriptionTier}
+                                </span>
+                              )}
+                            </div>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[200px]">
+                          <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => updateSubscription.mutate({ 
+                              userId: user.id, 
+                              planId: 'free'
+                            })}
+                          >
+                            Free Plan
+                          </DropdownMenuItem>
+                          {(Object.keys(subscriptionPlans) as SubscriptionTier[]).map((tier) => (
+                            <DropdownMenuItem
+                              key={subscriptionPlans[tier].id}
+                              onClick={() => updateSubscription.mutate({
+                                userId: user.id,
+                                planId: subscriptionPlans[tier].id
+                              })}
+                            >
+                              {subscriptionPlans[tier].name}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
