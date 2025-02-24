@@ -42,6 +42,13 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
     }
   });
 
+  // Get current plan name safely
+  const getCurrentPlanName = () => {
+    if (!user.subscriptionTier) return "Free";
+    const tier = user.subscriptionTier as SubscriptionTier;
+    return tier in subscriptionPlans ? subscriptionPlans[tier].name : "Unknown Plan";
+  };
+
   return (
     <>
       <Button 
@@ -62,9 +69,7 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
 
           <div className="py-3">
             <div className="text-sm mb-4 p-3 bg-accent/50 rounded-lg">
-              <p>
-                Current Plan: {user.subscriptionTier ? subscriptionPlans[user.subscriptionTier as SubscriptionTier].name : "Free"}
-              </p>
+              <p>Current Plan: {getCurrentPlanName()}</p>
               {user.subscriptionExpiresAt && (
                 <p className="text-muted-foreground mt-1">
                   Expires: {new Date(user.subscriptionExpiresAt).toLocaleDateString()}
