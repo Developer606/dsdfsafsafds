@@ -1,11 +1,12 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, insertUserSchema, adminLoginSchema } from "@shared/schema";
+import cryptoRandomString from 'crypto-random-string';
 
 declare global {
   namespace Express {
@@ -15,10 +16,23 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 
-async function hashPassword(password: string) {
+// Export hash password utility
+export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
+}
+
+// Add OTP generation utility
+export function generateOTP() {
+  return cryptoRandomString({ length: 6, type: 'numeric' });
+}
+
+// Add email verification utility
+export async function sendVerificationEmail(email: string, token: string) {
+  // Implementation will be added when email service is set up
+  console.log(`Verification email would be sent to ${email} with token ${token}`);
+  return true;
 }
 
 async function comparePasswords(supplied: string, stored: string) {
@@ -29,7 +43,7 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 // Middleware to check if user is admin
-export function isAdmin(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+export function isAdmin(req: Request, res: Response, next: NextFunction) {
   if (req.isAuthenticated() && req.user.isAdmin) {
     return next();
   }
@@ -155,7 +169,6 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Regular user login
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", async (err: Error, user: Express.User) => {
       if (err) {
