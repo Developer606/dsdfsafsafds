@@ -5,8 +5,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser, insertUserSchema } from "@shared/schema";
-import connectPg from "connect-pg-simple";
+import { User as SelectUser, insertUserSchema, adminLoginSchema } from "@shared/schema";
 
 declare global {
   namespace Express {
@@ -27,6 +26,14 @@ async function comparePasswords(supplied: string, stored: string) {
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
+// Middleware to check if user is admin
+export function isAdmin(req: Express.Request, res: Express.Response, next: Express.NextFunction) {
+  if (req.isAuthenticated() && req.user.isAdmin) {
+    return next();
+  }
+  res.status(403).json({ error: "Admin access required" });
 }
 
 export function setupAuth(app: Express) {
@@ -53,6 +60,7 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid credentials" });
         }
+        await storage.updateLastLogin(user.id);
         return done(null, user);
       } catch (error) {
         return done(error);
@@ -70,6 +78,7 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Regular user registration
   app.post("/api/register", async (req, res) => {
     try {
       // Validate input using schema
@@ -79,6 +88,11 @@ export function setupAuth(app: Express) {
           error: "Invalid input",
           details: parsedInput.error.errors 
         });
+      }
+
+      // Don't allow registering as admin
+      if (req.body.isAdmin || req.body.role === 'admin') {
+        return res.status(400).json({ error: "Cannot register as admin" });
       }
 
       // Check if user exists
@@ -97,6 +111,8 @@ export function setupAuth(app: Express) {
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
+        role: 'user',
+        isAdmin: false,
       });
 
       // Log in the user after registration
@@ -113,14 +129,49 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Admin-specific login endpoint
+  app.post("/api/admin/login", async (req, res, next) => {
+    try {
+      const { username, password } = req.body;
+
+      // Verify admin credentials
+      const user = await storage.getUserByUsername(username);
+      if (!user || !user.isAdmin || !(await comparePasswords(password, user.password))) {
+        return res.status(401).json({ error: "Invalid admin credentials" });
+      }
+
+      // Update last login time
+      await storage.updateLastLogin(user.id);
+
+      // Log in the admin
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Admin login failed" });
+        }
+        res.json(user);
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Regular user login
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err: Error, user: Express.User) => {
+    passport.authenticate("local", async (err: Error, user: Express.User) => {
       if (err) {
         return res.status(500).json({ error: "Login failed" });
       }
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
+
+      // Don't allow admin login through regular endpoint
+      if (user.isAdmin) {
+        return res.status(401).json({ error: "Please use admin login" });
+      }
+
+      await storage.updateLastLogin(user.id);
+
       req.login(user, (err) => {
         if (err) {
           return res.status(500).json({ error: "Login failed" });

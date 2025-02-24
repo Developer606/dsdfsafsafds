@@ -4,13 +4,30 @@ import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
-import { setupAuth } from "./auth";
+import { setupAuth, isAdmin } from "./auth";
 
 export async function registerRoutes(app: Express) {
   // Set up authentication routes and middleware
   setupAuth(app);
 
-  // Helper function to get or create demo user - REMOVED
+  // Admin dashboard endpoints
+  app.get("/api/admin/dashboard/stats", isAdmin, async (req, res) => {
+    try {
+      const stats = await storage.getUserStats();
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  app.get("/api/admin/users", isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
 
   app.get("/api/characters", async (req, res) => {
     try {

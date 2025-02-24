@@ -9,6 +9,10 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   username: text("username").notNull(),
   password: text("password").notNull(),
+  role: text("role").notNull().default("user"),
+  isAdmin: integer("is_admin", { mode: "boolean" })
+    .notNull()
+    .default(false),
   isPremium: integer("is_premium", { mode: "boolean" })
     .notNull()
     .default(false),
@@ -23,6 +27,7 @@ export const users = sqliteTable("users", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
+  lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
 });
 
 // Messages table optimized for chat history retrieval
@@ -74,11 +79,18 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   username: true,
   password: true,
+  role: true,
+  isAdmin: true,
 });
 
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+// Add admin login schema
+export const adminLoginSchema = loginSchema.extend({
+  isAdmin: z.literal(true),
 });
 
 // Custom character schemas
@@ -98,6 +110,7 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Role = "user" | "admin";
 
 export type CustomCharacter = typeof customCharacters.$inferSelect;
 export type InsertCustomCharacter = z.infer<typeof insertCustomCharacterSchema>;
