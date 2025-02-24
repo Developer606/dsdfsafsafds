@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -13,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -80,15 +79,24 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">
-          <h3 className="text-lg font-medium mb-2">Total Users</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium mb-2">Total Users</h3>
+            <Users className="h-5 w-5 text-muted-foreground" />
+          </div>
           <p className="text-3xl font-bold">{stats?.totalUsers ?? 0}</p>
         </Card>
         <Card className="p-6">
-          <h3 className="text-lg font-medium mb-2">Active Users (24h)</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium mb-2">Active Users (24h)</h3>
+            <UserPlus className="h-5 w-5 text-muted-foreground" />
+          </div>
           <p className="text-3xl font-bold">{stats?.activeUsers ?? 0}</p>
         </Card>
         <Card className="p-6">
-          <h3 className="text-lg font-medium mb-2">Premium Users</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium mb-2">Premium Users</h3>
+            <Ban className="h-5 w-5 text-muted-foreground" />
+          </div>
           <p className="text-3xl font-bold">{stats?.premiumUsers ?? 0}</p>
         </Card>
       </div>
@@ -100,24 +108,50 @@ export default function AdminDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Username</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Last Login</TableHead>
-                  <TableHead>Characters Created</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="w-[150px]">Username</TableHead>
+                  <TableHead className="w-[200px]">Email</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[150px]">Subscription</TableHead>
+                  <TableHead className="w-[150px]">Last Login</TableHead>
+                  <TableHead className="w-[100px]">Characters</TableHead>
+                  <TableHead className="w-[100px]">Created</TableHead>
+                  <TableHead className="w-[150px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users?.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell>{user.username}</TableCell>
+                    <TableCell className="font-medium">{user.username}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
+                      <div className="flex flex-col gap-1">
+                        {user.isBlocked && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Blocked
+                          </span>
+                        )}
+                        {user.isRestricted && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            Restricted
+                          </span>
+                        )}
+                        {!user.isBlocked && !user.isRestricted && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       {user.isPremium ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Premium
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            Premium
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {user.subscriptionTier}
+                          </span>
+                        </div>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           Free
@@ -125,11 +159,30 @@ export default function AdminDashboard() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {user.lastLoginAt
-                        ? new Date(user.lastLoginAt).toLocaleDateString()
-                        : "Never"}
+                      <div className="flex flex-col">
+                        <span>
+                          {user.lastLoginAt
+                            ? new Date(user.lastLoginAt).toLocaleDateString()
+                            : "Never"}
+                        </span>
+                        {user.lastLoginAt && (
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(user.lastLoginAt).toLocaleTimeString()}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{user.trialCharactersCreated}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(user.createdAt).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Switch
@@ -165,6 +218,7 @@ export default function AdminDashboard() {
                               <AlertDialogTitle>Delete User</AlertDialogTitle>
                               <AlertDialogDescription>
                                 Are you sure you want to delete this user? This action cannot be undone.
+                                All user data including messages and custom characters will be deleted.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

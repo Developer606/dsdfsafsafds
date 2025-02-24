@@ -16,6 +16,12 @@ export const users = sqliteTable("users", {
   isPremium: integer("is_premium", { mode: "boolean" })
     .notNull()
     .default(false),
+  isBlocked: integer("is_blocked", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  isRestricted: integer("is_restricted", { mode: "boolean" })
+    .notNull()
+    .default(false),
   trialCharactersCreated: integer("trial_characters_created")
     .notNull()
     .default(0),
