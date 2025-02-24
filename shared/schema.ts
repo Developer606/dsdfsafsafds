@@ -186,25 +186,3 @@ export const supportedLanguages = [
 
 export type SupportedLanguage = (typeof supportedLanguages)[number]["id"];
 export type ScriptPreference = "devanagari" | "latin";
-
-// Add feedback table schema
-export const feedback = sqliteTable("feedback", {
-  id: integer("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  message: text("message").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
-
-// Add feedback schemas
-export const insertFeedbackSchema = createInsertSchema(feedback).pick({
-  name: true,
-  email: true,
-  message: true,
-});
-
-// Add feedback types
-export type Feedback = typeof feedback.$inferSelect;
-export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;

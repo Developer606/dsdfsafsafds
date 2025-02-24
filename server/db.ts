@@ -3,30 +3,20 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from "@shared/schema";
 
-// Configure main SQLite database with WAL mode for better concurrency
+// Configure SQLite with WAL mode for better concurrency
 const sqlite = new Database('sqlite.db', {
+  // WAL mode for better concurrent access
   fileMustExist: false,
 });
 
-// Configure separate feedback database
-const feedbackDb = new Database('feedback.db', {
-  fileMustExist: false,
-});
-
-// Enable WAL mode and other optimizations for main database
+// Enable WAL mode and other optimizations
 sqlite.pragma('journal_mode = WAL');
 sqlite.pragma('synchronous = NORMAL');
 sqlite.pragma('cache_size = -64000'); // 64MB cache
 sqlite.pragma('foreign_keys = ON');
 
-// Enable WAL mode for feedback database
-feedbackDb.pragma('journal_mode = WAL');
-feedbackDb.pragma('synchronous = NORMAL');
-feedbackDb.pragma('foreign_keys = ON');
-
-// Create connections
+// Create connection
 export const db = drizzle(sqlite, { schema });
-export const feedbackDatabase = drizzle(feedbackDb, { schema });
 
 // Function to check and add missing columns
 async function ensureColumns() {
@@ -63,26 +53,6 @@ async function ensureColumns() {
     console.log('All required columns are now present');
   } catch (error: any) {
     console.error('Error ensuring columns:', error);
-    throw error;
-  }
-}
-
-// Initialize feedback database schema
-async function initializeFeedbackDb() {
-  console.log('Initializing feedback database...');
-  try {
-    feedbackDb.exec(`
-      CREATE TABLE IF NOT EXISTS feedback (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        message TEXT NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('Feedback table created successfully');
-  } catch (error) {
-    console.error('Error creating feedback table:', error);
     throw error;
   }
 }
@@ -134,9 +104,6 @@ export async function runMigrations() {
 
     // Ensure all columns exist
     await ensureColumns();
-
-    // Initialize feedback database
-    await initializeFeedbackDb();
 
     // Create indexes for better performance
     createIndexes();
