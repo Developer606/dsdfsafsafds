@@ -1,20 +1,12 @@
 import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { scrypt, randomBytes } from "crypto";
-import { promisify } from "util";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { db } from "./db";
+import { users, messages, customCharacters } from "@shared/schema";
 
 // Create a memory store with a 24-hour TTL for sessions only
 const MemoryStoreSession = MemoryStore(session);
-
-const scryptAsync = promisify(scrypt);
-
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
 
 export interface IStorage {
   getMessagesByCharacter(characterId: string): Promise<Message[]>;
@@ -61,198 +53,158 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
-    const messages = await db.prepare(
-      'SELECT * FROM messages WHERE character_id = ? ORDER BY timestamp ASC'
-    ).all(characterId);
-    return messages.map(msg => ({
-      id: msg.id,
-      userId: msg.user_id,
-      characterId: msg.character_id,
-      content: msg.content,
-      isUser: Boolean(msg.is_user),
-      language: msg.language || null,
-      script: msg.script || null,
-      timestamp: new Date(msg.timestamp)
-    }));
+    const result = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.characterId, characterId))
+      .orderBy(messages.timestamp);
+
+    return result;
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const result = await db.prepare(`
-      INSERT INTO messages (user_id, character_id, content, is_user, language, script, timestamp)
-      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      RETURNING *
-    `).get(
-      message.userId,
-      message.characterId,
-      message.content,
-      message.isUser ? 1 : 0,
-      message.language || null,
-      message.script || null
-    );
+    const [result] = await db
+      .insert(messages)
+      .values({
+        userId: message.userId,
+        characterId: message.characterId,
+        content: message.content,
+        isUser: message.isUser,
+        language: message.language,
+        script: message.script,
+        timestamp: new Date()
+      })
+      .returning();
 
-    return {
-      id: result.id,
-      userId: result.user_id,
-      characterId: result.character_id,
-      content: result.content,
-      isUser: Boolean(result.is_user),
-      language: result.language || null,
-      script: result.script || null,
-      timestamp: new Date(result.timestamp)
-    };
+    return result;
   }
 
   async clearChat(characterId: string): Promise<void> {
-    await db.prepare('DELETE FROM messages WHERE character_id = ?').run(characterId);
+    await db
+      .delete(messages)
+      .where(eq(messages.characterId, characterId));
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.prepare(`
-      INSERT INTO users (
-        email, username, password, role, is_admin, is_premium,
-        subscription_tier, subscription_status, subscription_expires_at,
-        trial_characters_created, is_blocked, is_restricted,
-        is_email_verified, verification_token, verification_token_expiry,
-        created_at, last_login_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, NULL)
-      RETURNING *
-    `).get(
-      insertUser.email,
-      insertUser.username,
-      insertUser.password,
-      insertUser.role || 'user',
-      insertUser.isAdmin ? 1 : 0,
-      0, // isPremium
-      null, // subscriptionTier
-      'trial', // subscriptionStatus
-      null, // subscriptionExpiresAt
-      0, // trialCharactersCreated
-      0, // isBlocked
-      0, // isRestricted
-      0, // isEmailVerified
-      null, // verificationToken
-      null // verificationTokenExpiry
-    );
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        isPremium: false,
+        trialCharactersCreated: 0,
+        lastLoginAt: null,
+        isBlocked: false,
+        isRestricted: false,
+        isEmailVerified: false,
+        verificationToken: null,
+        verificationTokenExpiry: null,
+        createdAt: new Date()
+      })
+      .returning();
 
-    return this.mapUserFromDb(result);
-  }
-
-  private mapUserFromDb(dbUser: any): User {
-    return {
-      id: dbUser.id,
-      email: dbUser.email,
-      username: dbUser.username,
-      password: dbUser.password,
-      role: dbUser.role,
-      isAdmin: Boolean(dbUser.is_admin),
-      isPremium: Boolean(dbUser.is_premium),
-      subscriptionTier: dbUser.subscription_tier,
-      subscriptionStatus: dbUser.subscription_status,
-      subscriptionExpiresAt: dbUser.subscription_expires_at ? new Date(dbUser.subscription_expires_at) : null,
-      trialCharactersCreated: dbUser.trial_characters_created,
-      lastLoginAt: dbUser.last_login_at ? new Date(dbUser.last_login_at) : null,
-      isBlocked: Boolean(dbUser.is_blocked),
-      isRestricted: Boolean(dbUser.is_restricted),
-      isEmailVerified: Boolean(dbUser.is_email_verified),
-      verificationToken: dbUser.verification_token,
-      verificationTokenExpiry: dbUser.verification_token_expiry ? new Date(dbUser.verification_token_expiry) : null,
-      createdAt: new Date(dbUser.created_at)
-    };
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-    return user ? this.mapUserFromDb(user) : undefined;
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const user = await db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-    return user ? this.mapUserFromDb(user) : undefined;
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
+    return user;
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const user = await db.prepare('SELECT * FROM users WHERE id = ?').get(id);
-    return user ? this.mapUserFromDb(user) : undefined;
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id));
+    return user;
   }
 
   async getAllUsers(): Promise<User[]> {
-    const users = await db.prepare('SELECT * FROM users WHERE is_admin = 0').all();
-    return users.map(user => this.mapUserFromDb(user));
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.isAdmin, false));
   }
 
   async getUserStats(): Promise<{ totalUsers: number; activeUsers: number; premiumUsers: number; }> {
-    const stats = await db.prepare(`
-      SELECT 
-        COUNT(*) as total,
-        SUM(CASE WHEN last_login_at > datetime('now', '-1 day') THEN 1 ELSE 0 END) as active,
-        SUM(CASE WHEN is_premium = 1 THEN 1 ELSE 0 END) as premium
-      FROM users 
-      WHERE is_admin = 0
-    `).get();
+    const [result] = await db
+      .select({
+        total: sql<number>`count(*)`,
+        active: sql<number>`sum(case when ${users.lastLoginAt} > datetime('now', '-1 day') then 1 else 0 end)`,
+        premium: sql<number>`sum(case when ${users.isPremium} = true then 1 else 0 end)`
+      })
+      .from(users)
+      .where(eq(users.isAdmin, false));
 
     return {
-      totalUsers: stats.total,
-      activeUsers: stats.active,
-      premiumUsers: stats.premium
+      totalUsers: result.total || 0,
+      activeUsers: result.active || 0,
+      premiumUsers: result.premium || 0
     };
   }
 
   async incrementTrialCharacterCount(userId: number): Promise<void> {
-    await db.prepare(`
-      UPDATE users 
-      SET trial_characters_created = trial_characters_created + 1 
-      WHERE id = ?
-    `).run(userId);
+    await db
+      .update(users)
+      .set({
+        trialCharactersCreated: sql`${users.trialCharactersCreated} + 1`
+      })
+      .where(eq(users.id, userId));
   }
 
   async updateLastLogin(userId: number): Promise<void> {
-    await db.prepare(`
-      UPDATE users 
-      SET last_login_at = CURRENT_TIMESTAMP 
-      WHERE id = ?
-    `).run(userId);
+    await db
+      .update(users)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(users.id, userId));
   }
 
   async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {
-    const result = await db.prepare(`
-        INSERT INTO custom_characters (user_id, name, description, created_at)
-        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-        RETURNING *
-      `).get(insertCharacter.userId, insertCharacter.name, insertCharacter.description);
-    return {
-      id: result.id,
-      userId: result.user_id,
-      name: result.name,
-      description: result.description,
-      createdAt: new Date(result.created_at)
-    };
+    const [character] = await db
+      .insert(customCharacters)
+      .values({
+        ...insertCharacter,
+        createdAt: new Date()
+      })
+      .returning();
+
+    return character;
   }
 
   async getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]> {
-    const characters = await db.prepare('SELECT * FROM custom_characters WHERE user_id = ?').all(userId);
-    return characters.map(char => ({
-      id: char.id,
-      userId: char.user_id,
-      name: char.name,
-      description: char.description,
-      createdAt: new Date(char.created_at)
-    }));
+    return await db
+      .select()
+      .from(customCharacters)
+      .where(eq(customCharacters.userId, userId));
   }
 
   async getCustomCharacterById(id: number): Promise<CustomCharacter | undefined> {
-    const character = await db.prepare('SELECT * FROM custom_characters WHERE id = ?').get(id);
-    return character ? {
-      id: character.id,
-      userId: character.user_id,
-      name: character.name,
-      description: character.description,
-      createdAt: new Date(character.created_at)
-    } : undefined;
+    const [character] = await db
+      .select()
+      .from(customCharacters)
+      .where(eq(customCharacters.id, id));
+    return character;
   }
 
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {
-    await db.prepare('DELETE FROM custom_characters WHERE id = ? AND user_id = ?').run(id, userId);
+    await db
+      .delete(customCharacters)
+      .where(
+        and(
+          eq(customCharacters.id, id),
+          eq(customCharacters.userId, userId)
+        )
+      );
   }
 
   async updateUserSubscription(
@@ -264,49 +216,60 @@ export class DatabaseStorage implements IStorage {
       subscriptionExpiresAt: Date;
     }
   ): Promise<void> {
-    await db.prepare(`
-      UPDATE users
-      SET is_premium = ?, subscription_tier = ?, subscription_status = ?, subscription_expires_at = ?
-      WHERE id = ?
-    `).run(data.isPremium ? 1 : 0, data.subscriptionTier, data.subscriptionStatus, data.subscriptionExpiresAt, userId);
+    await db
+      .update(users)
+      .set(data)
+      .where(eq(users.id, userId));
   }
 
   async updateUserStatus(userId: number, status: { isBlocked?: boolean; isRestricted?: boolean; }): Promise<void> {
-    await db.prepare(`
-      UPDATE users
-      SET is_blocked = COALESCE(?, is_blocked), is_restricted = COALESCE(?, is_restricted)
-      WHERE id = ?
-    `).run(status.isBlocked ? 1 : 0, status.isRestricted ? 1 : 0, userId);
+    await db
+      .update(users)
+      .set(status)
+      .where(eq(users.id, userId));
   }
 
   async deleteUser(userId: number): Promise<void> {
-    await db.prepare('DELETE FROM users WHERE id = ?').run(userId);
-    await db.prepare('DELETE FROM messages WHERE user_id = ?').run(userId);
-    await db.prepare('DELETE FROM custom_characters WHERE user_id = ?').run(userId);
+    await db.transaction(async (tx) => {
+      await tx.delete(users).where(eq(users.id, userId));
+      await tx.delete(messages).where(eq(messages.userId, userId));
+      await tx.delete(customCharacters).where(eq(customCharacters.userId, userId));
+    });
   }
+
   async verifyEmail(userId: number, token: string): Promise<boolean> {
-    const user = await this.getUser(userId);
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+
     if (!user) return false;
+
     const now = new Date();
     if (user.verificationToken === token &&
       user.verificationTokenExpiry &&
-      new Date(user.verificationTokenExpiry) > now) {
-      await db.prepare(`
-        UPDATE users
-        SET is_email_verified = 1, verification_token = NULL, verification_token_expiry = NULL
-        WHERE id = ?
-      `).run(userId);
+      user.verificationTokenExpiry > now) {
+      await db
+        .update(users)
+        .set({
+          isEmailVerified: true,
+          verificationToken: null,
+          verificationTokenExpiry: null
+        })
+        .where(eq(users.id, userId));
       return true;
     }
     return false;
   }
 
   async updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void> {
-    await db.prepare(`
-      UPDATE users
-      SET verification_token = ?, verification_token_expiry = ?
-      WHERE id = ?
-    `).run(token, expiry, userId);
+    await db
+      .update(users)
+      .set({
+        verificationToken: token,
+        verificationTokenExpiry: expiry
+      })
+      .where(eq(users.id, userId));
   }
 }
 
