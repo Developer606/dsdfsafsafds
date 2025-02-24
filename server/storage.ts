@@ -1,4 +1,4 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type Feedback, type InsertFeedback, feedback } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
@@ -49,6 +49,8 @@ export interface IStorage {
   deleteUser(userId: number): Promise<void>;
   verifyEmail(userId: number, token: string): Promise<boolean>;
   updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void>;
+  createFeedback(insertFeedback: InsertFeedback): Promise<Feedback>;
+  getAllFeedback(): Promise<Feedback[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -214,6 +216,17 @@ export class DatabaseStorage implements IStorage {
         verificationTokenExpiry: expiry
       })
       .where(eq(users.id, userId));
+  }
+  async createFeedback(insertFeedback: InsertFeedback): Promise<Feedback> {
+    const [newFeedback] = await db.insert(feedback).values({
+      ...insertFeedback,
+      createdAt: new Date()
+    }).returning();
+    return newFeedback;
+  }
+
+  async getAllFeedback(): Promise<Feedback[]> {
+    return await db.select().from(feedback);
   }
   private async initializeAdmin() {
     try {
