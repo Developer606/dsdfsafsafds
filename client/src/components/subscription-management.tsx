@@ -42,12 +42,8 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
     }
   });
 
-  // Get current plan name safely
-  const getCurrentPlanName = () => {
-    if (!user.subscriptionTier) return "Free";
-    const tier = user.subscriptionTier as SubscriptionTier;
-    return tier in subscriptionPlans ? subscriptionPlans[tier].name : "Unknown Plan";
-  };
+  const planDetails = user.subscriptionTier ? subscriptionPlans[user.subscriptionTier as SubscriptionTier] : null;
+  const tiers = Object.entries(subscriptionPlans);
 
   return (
     <>
@@ -60,41 +56,63 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
+            <DialogTitle className="text-2xl font-bold text-center">
               Subscription Management
             </DialogTitle>
           </DialogHeader>
 
-          <div className="py-3">
-            <div className="text-sm mb-4 p-3 bg-accent/50 rounded-lg">
-              <p>Current Plan: {getCurrentPlanName()}</p>
+          <div className="mt-6">
+            <div className="text-center mb-8 p-6 bg-accent/50 rounded-lg">
+              <h3 className="text-xl font-semibold mb-2">
+                Current Plan: {user.isPremium ? planDetails?.name || "Premium" : "Free"}
+              </h3>
               {user.subscriptionExpiresAt && (
-                <p className="text-muted-foreground mt-1">
+                <p className="text-muted-foreground">
                   Expires: {new Date(user.subscriptionExpiresAt).toLocaleDateString()}
                 </p>
               )}
             </div>
 
-            <div className="space-y-3">
-              {Object.entries(subscriptionPlans).map(([tier, plan]) => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {tiers.map(([tier, plan]) => (
                 <div
                   key={tier}
                   className={`
-                    p-3 rounded-lg border transition-all duration-200
+                    relative p-6 rounded-xl border-2 transition-all duration-200
                     ${user.subscriptionTier === tier ? 
                       'border-primary bg-primary/5' : 
                       'border-border hover:border-primary/50'}
                   `}
                 >
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-semibold">{plan.name}</h4>
-                    <p className="font-bold">{plan.price}<span className="text-xs text-muted-foreground">/mo</span></p>
+                  <div className="text-center mb-4">
+                    <h4 className="text-xl font-bold">{plan.name}</h4>
+                    <p className="text-3xl font-bold mt-2">{plan.price}</p>
+                    <p className="text-sm text-muted-foreground mt-1">/month</p>
                   </div>
+
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <svg
+                          className="h-5 w-5 text-primary flex-shrink-0"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+
                   <Button
-                    size="sm"
-                    className="w-full mt-2"
+                    className="w-full"
                     variant={user.subscriptionTier === tier ? "secondary" : "default"}
                     disabled={upgradePlan.isPending || (user.subscriptionTier === tier && user.isPremium)}
                     onClick={() => upgradePlan.mutate(plan.id)}
@@ -107,7 +125,7 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
               ))}
             </div>
 
-            <p className="text-xs text-muted-foreground text-center mt-4">
+            <p className="text-sm text-muted-foreground text-center mt-6">
               You can cancel or change your subscription at any time.
             </p>
           </div>
