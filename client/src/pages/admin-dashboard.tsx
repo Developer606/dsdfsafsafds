@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2 } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -29,8 +29,6 @@ import {
   Bar,
   PieChart,
   Pie,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -42,16 +40,32 @@ import {
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+
+  // Enhanced stats query to include more metrics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   });
 
+  // Query for users with enhanced information
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 30000,
   });
 
+  // New query for recent messages
+  const { data: recentMessages, isLoading: messagesLoading } = useQuery({
+    queryKey: ["/api/admin/messages/recent"],
+    refetchInterval: 30000,
+  });
+
+  // New query for character stats
+  const { data: characterStats, isLoading: charactersLoading } = useQuery({
+    queryKey: ["/api/admin/characters/stats"],
+    refetchInterval: 30000,
+  });
+
+  // Existing mutations...
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/block`, { blocked });
@@ -66,6 +80,7 @@ export default function AdminDashboard() {
     },
   });
 
+  // Other existing mutations remain unchanged...
   const deleteUser = useMutation({
     mutationFn: async (userId: number) => {
       const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
@@ -108,7 +123,7 @@ export default function AdminDashboard() {
     },
   });
 
-  // Prepare chart data
+  // Enhanced data preparation for charts
   const subscriptionData = users ? [
     { name: 'Free', value: users.filter(u => !u.isPremium).length },
     { name: 'Premium', value: users.filter(u => u.isPremium).length },
@@ -122,7 +137,7 @@ export default function AdminDashboard() {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-  if (statsLoading || usersLoading) {
+  if (statsLoading || usersLoading || messagesLoading || charactersLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -144,7 +159,8 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Enhanced Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium mb-2">Total Users</h3>
@@ -165,6 +181,13 @@ export default function AdminDashboard() {
             <Crown className="h-5 w-5 text-muted-foreground" />
           </div>
           <p className="text-3xl font-bold">{stats?.premiumUsers ?? 0}</p>
+        </Card>
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium mb-2">Total Characters</h3>
+            <Palette className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <p className="text-3xl font-bold">{characterStats?.totalCharacters ?? 0}</p>
         </Card>
       </div>
 
@@ -217,6 +240,38 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Recent Messages Section */}
+      <Card className="mt-8">
+        <div className="p-6">
+          <h2 className="text-xl font-bold mb-4">Recent Messages</h2>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Character</TableHead>
+                  <TableHead>Message</TableHead>
+                  <TableHead>Timestamp</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentMessages?.map((message: any) => (
+                  <TableRow key={message.id}>
+                    <TableCell>{message.username}</TableCell>
+                    <TableCell>{message.characterName}</TableCell>
+                    <TableCell className="max-w-md truncate">{message.content}</TableCell>
+                    <TableCell>
+                      {new Date(message.timestamp).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </Card>
+
+      {/* User Management Section - Enhanced */}
       <Card className="mt-8">
         <div className="p-6">
           <h2 className="text-xl font-bold mb-4">User Management</h2>

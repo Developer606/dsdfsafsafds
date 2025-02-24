@@ -21,12 +21,68 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Enhanced users endpoint with detailed info
   app.get("/api/admin/users", isAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
     } catch (error: any) {
       res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // New endpoint for recent messages
+  app.get("/api/admin/messages/recent", isAdmin, async (req, res) => {
+    try {
+      const messages = await storage.getMessagesByCharacter("all");
+      const enrichedMessages = await Promise.all(
+        messages.slice(-20).map(async (msg) => {
+          const user = await storage.getUser(msg.userId);
+          let characterName = "Unknown";
+
+          if (msg.characterId.startsWith('custom_')) {
+            const customChar = await storage.getCustomCharacterById(
+              parseInt(msg.characterId.replace('custom_', ''))
+            );
+            if (customChar) characterName = customChar.name;
+          } else {
+            const predefinedChar = characters.find(c => c.id === msg.characterId);
+            if (predefinedChar) characterName = predefinedChar.name;
+          }
+
+          return {
+            ...msg,
+            username: user?.username || 'Deleted User',
+            characterName
+          };
+        })
+      );
+
+      res.json(enrichedMessages.reverse()); // Most recent first
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch recent messages" });
+    }
+  });
+
+  // New endpoint for character statistics
+  app.get("/api/admin/characters/stats", isAdmin, async (req, res) => {
+    try {
+      const customCharacters = await Promise.all(
+        (await storage.getAllUsers()).map(user =>
+          storage.getCustomCharactersByUser(user.id)
+        )
+      );
+
+      const stats = {
+        totalCharacters: characters.length + customCharacters.flat().length,
+        customCharactersCount: customCharacters.flat().length,
+        predefinedCharactersCount: characters.length,
+        averageCustomCharactersPerUser: customCharacters.flat().length / Math.max(1, (await storage.getAllUsers()).length)
+      };
+
+      res.json(stats);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch character statistics" });
     }
   });
 
