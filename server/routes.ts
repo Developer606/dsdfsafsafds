@@ -57,6 +57,22 @@ export async function registerRoutes(app: Express) {
   app.delete("/api/admin/users/:userId", isAdmin, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
+
+      // Get all active sessions
+      const sessions = await new Promise((resolve, reject) => {
+        storage.sessionStore.all((err, sessions) => {
+          if (err) reject(err);
+          else resolve(sessions || {});
+        });
+      });
+
+      // Find and destroy session of the deleted user
+      Object.entries(sessions).forEach(([sessionId, session]) => {
+        if (session.passport?.user === userId) {
+          storage.sessionStore.destroy(sessionId);
+        }
+      });
+
       await storage.deleteUser(userId);
       res.json({ success: true });
     } catch (error: any) {

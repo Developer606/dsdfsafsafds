@@ -14,7 +14,11 @@ import type { User } from "@shared/schema";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { data: user } = useQuery<User>({
-    queryKey: ["/api/user"]
+    queryKey: ["/api/user"],
+    retry: false,
+    onError: () => {
+      window.location.href = "/";
+    }
   });
 
   if (!user?.isAdmin) {
@@ -28,6 +32,15 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 }
 
 function Router() {
+  const { data: user, error } = useQuery<User>({
+    queryKey: ["/api/user"],
+    retry: false,
+    onError: () => {
+      // Redirect to home page if session is invalid
+      window.location.href = "/";
+    }
+  });
+
   return (
     <>
       <Switch>
