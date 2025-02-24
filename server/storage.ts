@@ -71,7 +71,7 @@ export class DatabaseStorage implements IStorage {
     const hashedPassword = await hashPassword("admin123");
     this.createUser({
       email: "admin@system.local",
-      username: "admin",
+      username: "SysRoot_99",
       password: hashedPassword,
       role: "admin",
       isAdmin: true,
