@@ -1,7 +1,15 @@
 import { type Character } from "@shared/characters";
-import { DEEPINFRA_API_KEY } from "./api-keys";
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 
-const API_KEY = DEEPINFRA_API_KEY;
+// Get directory name in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Read API key from JSON file
+const apiKeys = JSON.parse(fs.readFileSync(path.join(__dirname, 'api-keys.json'), 'utf8'));
+const API_KEY = apiKeys.DEEPINFRA_API_KEY;
 const BASE_URL = "https://api.deepinfra.com/v1/inference";
 const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
