@@ -29,12 +29,20 @@ export async function runMigrations() {
         email TEXT NOT NULL UNIQUE,
         username TEXT NOT NULL,
         password TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        is_admin INTEGER NOT NULL DEFAULT 0,
         is_premium INTEGER NOT NULL DEFAULT 0,
+        is_blocked INTEGER NOT NULL DEFAULT 0,
+        is_restricted INTEGER NOT NULL DEFAULT 0,
+        is_email_verified INTEGER NOT NULL DEFAULT 0,
+        verification_token TEXT,
+        verification_token_expiry INTEGER,
         trial_characters_created INTEGER NOT NULL DEFAULT 0,
         subscription_tier TEXT,
         subscription_status TEXT DEFAULT 'trial',
         subscription_expires_at INTEGER,
-        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        last_login_at INTEGER
       )`,
       `CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
