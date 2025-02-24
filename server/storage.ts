@@ -89,7 +89,10 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db
       .insert(users)
       .values({
-        ...insertUser,
+        email: insertUser.email,
+        username: insertUser.username,
+        password: insertUser.password,
+        isAdmin: insertUser.isAdmin || false,
         isPremium: false,
         trialCharactersCreated: 0,
         lastLoginAt: null,
@@ -98,6 +101,9 @@ export class DatabaseStorage implements IStorage {
         isEmailVerified: false,
         verificationToken: null,
         verificationTokenExpiry: null,
+        subscriptionTier: null,
+        subscriptionStatus: 'trial',
+        subscriptionExpiresAt: null,
         createdAt: new Date()
       })
       .returning();
