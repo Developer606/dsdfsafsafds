@@ -7,9 +7,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { subscriptionPlans, type SubscriptionTier, type User } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 interface SubscriptionManagementProps {
   user: User;
@@ -18,7 +18,6 @@ interface SubscriptionManagementProps {
 export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const upgradePlan = useMutation({
     mutationFn: async (planId: string) => {
@@ -55,7 +54,7 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="w-[95vw] max-w-[800px] p-4 md:p-6">
+        <DialogContent className="w-[95vw] max-w-[800px] p-4 md:p-6 overflow-y-auto max-h-[90vh]">
           <DialogHeader>
             <DialogTitle className="text-xl md:text-2xl font-bold text-center">
               Subscription Management
@@ -74,13 +73,14 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              <div className="p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              {/* Basic Plan */}
+              <div className="flex flex-col p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
                 <div className="text-center mb-3 md:mb-4">
                   <h4 className="text-lg md:text-xl font-bold">Basic Plan</h4>
                   <p className="text-2xl md:text-3xl font-bold mt-2">$4.99<span className="text-sm">/month</span></p>
                 </div>
-                <ul className="space-y-2 md:space-y-3 mb-4 md:mb-6">
+                <ul className="space-y-2 md:space-y-3 flex-grow">
                   <li className="flex items-start gap-2 text-xs md:text-sm">
                     <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
@@ -101,7 +101,7 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
                   </li>
                 </ul>
                 <Button 
-                  className="w-full text-sm md:text-base"
+                  className="w-full text-sm md:text-base mt-4"
                   onClick={() => upgradePlan.mutate("basic")}
                   disabled={upgradePlan.isPending || (user.subscriptionTier === "basic" && user.isPremium)}
                 >
@@ -109,12 +109,13 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
                 </Button>
               </div>
 
-              <div className="p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
+              {/* Premium Plan */}
+              <div className="flex flex-col p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
                 <div className="text-center mb-3 md:mb-4">
                   <h4 className="text-lg md:text-xl font-bold">Premium Plan</h4>
                   <p className="text-2xl md:text-3xl font-bold mt-2">$9.99<span className="text-sm">/month</span></p>
                 </div>
-                <ul className="space-y-2 md:space-y-3 mb-4 md:mb-6">
+                <ul className="space-y-2 md:space-y-3 flex-grow">
                   <li className="flex items-start gap-2 text-xs md:text-sm">
                     <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
@@ -141,7 +142,7 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
                   </li>
                 </ul>
                 <Button 
-                  className="w-full text-sm md:text-base"
+                  className="w-full text-sm md:text-base mt-4"
                   onClick={() => upgradePlan.mutate("premium")}
                   disabled={upgradePlan.isPending || (user.subscriptionTier === "premium" && user.isPremium)}
                 >
@@ -149,12 +150,13 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
                 </Button>
               </div>
 
-              <div className="p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
+              {/* Pro Plan */}
+              <div className="flex flex-col p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
                 <div className="text-center mb-3 md:mb-4">
                   <h4 className="text-lg md:text-xl font-bold">Pro Plan</h4>
                   <p className="text-2xl md:text-3xl font-bold mt-2">$19.99<span className="text-sm">/month</span></p>
                 </div>
-                <ul className="space-y-2 md:space-y-3 mb-4 md:mb-6">
+                <ul className="space-y-2 md:space-y-3 flex-grow">
                   <li className="flex items-start gap-2 text-xs md:text-sm">
                     <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
@@ -181,7 +183,7 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
                   </li>
                 </ul>
                 <Button 
-                  className="w-full text-sm md:text-base"
+                  className="w-full text-sm md:text-base mt-4"
                   onClick={() => upgradePlan.mutate("pro")}
                   disabled={upgradePlan.isPending || (user.subscriptionTier === "pro" && user.isPremium)}
                 >
