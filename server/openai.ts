@@ -1,81 +1,12 @@
 import { type Character } from "@shared/characters";
-import OpenAI from "openai";
-import { writeFile, readFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
 
-const CONFIG_DIR = join(process.cwd(), 'config');
-const KEYS_FILE = join(CONFIG_DIR, 'keys.json');
+const API_KEY =
+  process.env.DEEPINFRA_API_KEY || "stM8x3slv4iexaxgVkjmh9CIrlGxIxlr";
+const BASE_URL = "https://api.deepinfra.com/v1/inference";
+const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
-// Initialize OpenAI with stored API key
-async function initializeOpenAI() {
-  try {
-    // Create config directory if it doesn't exist
-    if (!existsSync(CONFIG_DIR)) {
-      await mkdir(CONFIG_DIR);
-    }
-
-    // Try to read existing keys
-    let apiKey = "YOUR-DEFAULT-API-KEY";
-    try {
-      const keysData = await readFile(KEYS_FILE, 'utf-8');
-      const keys = JSON.parse(keysData);
-      apiKey = keys.openaiKey || apiKey;
-    } catch (error) {
-      // If file doesn't exist, create it with default key
-      await writeFile(KEYS_FILE, JSON.stringify({ openaiKey: apiKey }), 'utf-8');
-    }
-
-    return new OpenAI({ apiKey });
-  } catch (error) {
-    console.error('Error initializing OpenAI:', error);
-    return new OpenAI({ apiKey: "YOUR-DEFAULT-API-KEY" });
-  }
-}
-
-// Initialize OpenAI instance
-let openai: OpenAI;
-initializeOpenAI().then(instance => {
-  openai = instance;
-});
-
-// Function to update API key
-export async function updateApiKey(newApiKey: string): Promise<void> {
-  try {
-    // Create config directory if it doesn't exist
-    if (!existsSync(CONFIG_DIR)) {
-      await mkdir(CONFIG_DIR);
-    }
-
-    // Read existing keys or create new object
-    let keys = { openaiKey: newApiKey };
-    try {
-      const existingData = await readFile(KEYS_FILE, 'utf-8');
-      keys = { ...JSON.parse(existingData), openaiKey: newApiKey };
-    } catch (error) {
-      // File doesn't exist or is invalid, use new object
-    }
-
-    // Save updated keys
-    await writeFile(KEYS_FILE, JSON.stringify(keys, null, 2), 'utf-8');
-
-    // Update OpenAI instance
-    openai = new OpenAI({ apiKey: newApiKey });
-
-    console.log('API key updated successfully');
-  } catch (error) {
-    console.error('Failed to update API key:', error);
-    throw error;
-  }
-}
-
-// Export the OpenAI instance getter
-export function getOpenAIClient() {
-  if (!openai) {
-    throw new Error('OpenAI client not initialized');
-  }
-  return openai;
-}
+const MAX_RETRIES = 2;
+const RETRY_DELAY = 500;
 
 // Exhaustion messages for a more immersive failure response
 const exhaustionMessages = [
@@ -87,61 +18,113 @@ const exhaustionMessages = [
 ];
 
 export async function generateCharacterResponse(
-  character: any,
+  character: Character,
   userMessage: string,
   chatHistory: string,
   language: string = "english",
   script?: string,
 ): Promise<string> {
-  try {
-    const scriptInstruction =
-      language === "hindi" && script === "latin"
-        ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
-        : "";
+  let retries = 0;
 
-    const languageInstructions: Record<string, string> = {
-      english: "Respond naturally in English.",
-      hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
-      japanese: "自然な日本語で応答してください。敬語を適切に使用してください。",
-      chinese: "用自然的中文回应。注意使用适当的敬语。",
-      korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요。",
-      spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
-      french: "Répondez naturellement en français. Utilisez le niveau de formalité approprié.",
-    };
+  while (retries < MAX_RETRIES) {
+    try {
+      const scriptInstruction =
+        language === "hindi" && script === "latin"
+          ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
+          : "";
 
-    const languageInstruction =
-      languageInstructions[language as keyof typeof languageInstructions] ||
-      languageInstructions.english;
+      // Enhanced language-specific instructions
+      const languageInstructions: Record<string, string> = {
+        english: "Respond naturally in English.",
+        hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
+        japanese:
+          "自然な日本語で応答してください。敬語を適切に使用してください。",
+        chinese: "用自然的中文回应。注意使用适当的敬语。",
+        korean:
+          "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
+        spanish:
+          "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
+        french:
+          "Répondez naturellement en français. Utilisez le niveau de formalité approprié.",
+      };
 
-    const response = await getOpenAIClient().chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: `You are ${character.name}, with this background:\n\n${character.persona}\n\nInstructions:\n1. ${languageInstruction}\n2. ${scriptInstruction}\n3. Stay in character\n4. Be concise (2-3 sentences)\n5. Match conversation tone`
+      const languageInstruction =
+        languageInstructions[language as keyof typeof languageInstructions] ||
+        languageInstructions.english;
+
+      const prompt = `<s> [INST] You are ${character.name}, with this background:
+
+${character.persona}
+
+Instructions:
+1. ${languageInstruction}
+2. ${scriptInstruction}
+3. Stay in character
+4. Be concise (2-3 sentences)
+5. Match conversation tone
+
+Chat history:
+${chatHistory}
+
+User: ${userMessage}
+[/INST]
+
+Assistant (${character.name}): `;
+
+      const response = await fetch(`${BASE_URL}/${MODEL}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
         },
-        {
-          role: "user",
-          content: `Chat history:\n${chatHistory}\n\nUser: ${userMessage}`
+        body: JSON.stringify({
+          input: prompt,
+          temperature: 0.8,
+          max_tokens: 150,
+          top_p: 0.9,
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+          retries++;
+          continue;
         }
-      ],
-      temperature: 0.8,
-      max_tokens: 150,
-    });
+        throw new Error(
+          `API request failed: ${response.status} ${response.statusText}`,
+        );
+      }
 
-    let generatedText = response.choices[0].message.content?.trim() || "";
+      const data = await response.json();
+      let generatedText = data.results?.[0]?.generated_text?.trim();
 
-    // Clean up the response
-    if (generatedText) {
-      // Remove any "Assistant:" or similar prefixes
-      generatedText = generatedText.replace(/^(Assistant|Character|[^:]+):\s*/i, "");
-      // Trim any quotes that might wrap the entire response
-      generatedText = generatedText.replace(/^["']|["']$/g, "");
+      // Clean up the response
+      if (generatedText) {
+        // Remove any "Assistant:" or similar prefixes
+        generatedText = generatedText.replace(
+          /^(Assistant|Character|[^:]+):\s*/i,
+          "",
+        );
+        // Trim any quotes that might wrap the entire response
+        generatedText = generatedText.replace(/^["']|["']$/g, "");
+      }
+
+      return generatedText || "I'm having trouble responding right now.";
+    } catch (error: any) {
+      console.error("LLM API error:", error);
+      if (++retries < MAX_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+        continue;
+      }
+
+      return exhaustionMessages[
+        Math.floor(Math.random() * exhaustionMessages.length)
+      ];
     }
-
-    return generatedText || "I'm having trouble responding right now.";
-  } catch (error) {
-    console.error("OpenAI API error:", error);
-    return exhaustionMessages[Math.floor(Math.random() * exhaustionMessages.length)];
   }
+
+  return exhaustionMessages[
+    Math.floor(Math.random() * exhaustionMessages.length)
+  ];
 }

@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -21,7 +20,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, Settings, Key } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -37,34 +37,35 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
 
-  // All queries
+  // Enhanced stats query to include more metrics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
     refetchInterval: 30000,
   });
 
+  // Query for users with enhanced information
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     refetchInterval: 30000,
   });
 
+  // New query for recent messages
   const { data: recentMessages, isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
     refetchInterval: 30000,
   });
 
+  // New query for character stats
   const { data: characterStats, isLoading: charactersLoading } = useQuery({
     queryKey: ["/api/admin/characters/stats"],
     refetchInterval: 30000,
   });
 
-  // All mutations
+  // Existing mutations...
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/block`, { blocked });
@@ -79,6 +80,7 @@ export default function AdminDashboard() {
     },
   });
 
+  // Other existing mutations remain unchanged...
   const deleteUser = useMutation({
     mutationFn: async (userId: number) => {
       const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
@@ -121,27 +123,7 @@ export default function AdminDashboard() {
     },
   });
 
-  const updateApiKey = useMutation({
-    mutationFn: async (apiKey: string) => {
-      const res = await apiRequest("POST", "/api/admin/settings/apikey", { apiKey });
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "API key updated successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    },
-  });
-
-  // Data preparation
+  // Enhanced data preparation for charts
   const subscriptionData = users ? [
     { name: 'Free', value: users.filter(u => !u.isPremium).length },
     { name: 'Premium', value: users.filter(u => u.isPremium).length },
@@ -165,7 +147,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="container mx-auto p-8 space-y-8">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <div className="flex items-center gap-2">
@@ -178,7 +159,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Statistics Cards */}
+      {/* Enhanced Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-6">
           <div className="flex items-center justify-between">
@@ -354,8 +335,8 @@ export default function AdminDashboard() {
                           <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => updateSubscription.mutate({
-                              userId: user.id,
+                            onClick={() => updateSubscription.mutate({ 
+                              userId: user.id, 
                               planId: 'free'
                             })}
                           >
@@ -430,8 +411,8 @@ export default function AdminDashboard() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
+                            <Button 
+                              variant="destructive" 
                               size="icon"
                               disabled={deleteUser.isPending}
                             >
@@ -467,56 +448,6 @@ export default function AdminDashboard() {
               </TableBody>
             </Table>
           </div>
-        </div>
-      </Card>
-
-      {/* API Key Management Section */}
-      <Card className="mt-8">
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <Key className="h-5 w-5" />
-            <h2 className="text-xl font-bold">API Key Management</h2>
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const apiKey = formData.get('apiKey') as string;
-              if (apiKey) {
-                updateApiKey.mutate(apiKey);
-              }
-            }}
-            className="space-y-4"
-          >
-            <div className="space-y-2">
-              <Label htmlFor="apiKey">OpenAI API Key</Label>
-              <Input
-                id="apiKey"
-                name="apiKey"
-                type="password"
-                placeholder="Enter new API key"
-                defaultValue="stM8x3slv4iexaxgVkjmh9CIrlGxIxlr"
-              />
-              <p className="text-sm text-muted-foreground">
-                Current API key will be replaced with the new key
-              </p>
-            </div>
-            <Button
-              type="submit"
-              disabled={updateApiKey.isPending}
-              className="w-full md:w-auto"
-            >
-              {updateApiKey.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update API Key"
-              )}
-            </Button>
-          </form>
         </div>
       </Card>
     </div>
