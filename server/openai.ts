@@ -1,34 +1,81 @@
 import { type Character } from "@shared/characters";
 import OpenAI from "openai";
-import { writeFile } from 'fs/promises';
+import { writeFile, readFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { existsSync } from 'fs';
 
-// Initialize OpenAI with the environment variable
-let openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "YOUR-DEFAULT-API-KEY"
+const CONFIG_DIR = join(process.cwd(), 'config');
+const KEYS_FILE = join(CONFIG_DIR, 'keys.json');
+
+// Initialize OpenAI with stored API key
+async function initializeOpenAI() {
+  try {
+    // Create config directory if it doesn't exist
+    if (!existsSync(CONFIG_DIR)) {
+      await mkdir(CONFIG_DIR);
+    }
+
+    // Try to read existing keys
+    let apiKey = "YOUR-DEFAULT-API-KEY";
+    try {
+      const keysData = await readFile(KEYS_FILE, 'utf-8');
+      const keys = JSON.parse(keysData);
+      apiKey = keys.openaiKey || apiKey;
+    } catch (error) {
+      // If file doesn't exist, create it with default key
+      await writeFile(KEYS_FILE, JSON.stringify({ openaiKey: apiKey }), 'utf-8');
+    }
+
+    return new OpenAI({ apiKey });
+  } catch (error) {
+    console.error('Error initializing OpenAI:', error);
+    return new OpenAI({ apiKey: "YOUR-DEFAULT-API-KEY" });
+  }
+}
+
+// Initialize OpenAI instance
+let openai: OpenAI;
+initializeOpenAI().then(instance => {
+  openai = instance;
 });
 
 // Function to update API key
 export async function updateApiKey(newApiKey: string): Promise<void> {
   try {
-    // Update the OpenAI instance
+    // Create config directory if it doesn't exist
+    if (!existsSync(CONFIG_DIR)) {
+      await mkdir(CONFIG_DIR);
+    }
+
+    // Read existing keys or create new object
+    let keys = { openaiKey: newApiKey };
+    try {
+      const existingData = await readFile(KEYS_FILE, 'utf-8');
+      keys = { ...JSON.parse(existingData), openaiKey: newApiKey };
+    } catch (error) {
+      // File doesn't exist or is invalid, use new object
+    }
+
+    // Save updated keys
+    await writeFile(KEYS_FILE, JSON.stringify(keys, null, 2), 'utf-8');
+
+    // Update OpenAI instance
     openai = new OpenAI({ apiKey: newApiKey });
 
-    // Update environment variable
-    process.env.OPENAI_API_KEY = newApiKey;
-
-    // Update .env file
-    const envFilePath = join(process.cwd(), '.env');
-    const envContent = `OPENAI_API_KEY=${newApiKey}\n`;
-    await writeFile(envFilePath, envContent, 'utf-8');
+    console.log('API key updated successfully');
   } catch (error) {
     console.error('Failed to update API key:', error);
     throw error;
   }
 }
 
-// Export the OpenAI instance
-export const openaiClient = openai;
+// Export the OpenAI instance getter
+export function getOpenAIClient() {
+  if (!openai) {
+    throw new Error('OpenAI client not initialized');
+  }
+  return openai;
+}
 
 // Exhaustion messages for a more immersive failure response
 const exhaustionMessages = [
@@ -57,7 +104,7 @@ export async function generateCharacterResponse(
       hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
       japanese: "自然な日本語で応答してください。敬語を適切に使用してください。",
       chinese: "用自然的中文回应。注意使用适当的敬语。",
-      korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
+      korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요。",
       spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
       french: "Répondez naturellement en français. Utilisez le niveau de formalité approprié.",
     };
@@ -66,7 +113,7 @@ export async function generateCharacterResponse(
       languageInstructions[language as keyof typeof languageInstructions] ||
       languageInstructions.english;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: "gpt-4",
       messages: [
         {

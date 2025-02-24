@@ -2,12 +2,10 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
-import { generateCharacterResponse, updateApiKey } from "./openai"; // Added updateApiKey import
+import { generateCharacterResponse, updateApiKey, getOpenAIClient } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
-import { generateOTP, sendVerificationEmail, hashPassword } from './auth'; // Assuming these functions are defined elsewhere
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { generateOTP, sendVerificationEmail, hashPassword } from './auth';
 
 export async function registerRoutes(app: Express) {
   // Set up authentication routes and middleware
@@ -458,7 +456,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Update the API key management endpoint
+  // Update the API key management endpoint with better error handling
   app.post("/api/admin/settings/apikey", isAdmin, async (req, res) => {
     try {
       const { apiKey } = req.body;
@@ -467,7 +465,20 @@ export async function registerRoutes(app: Express) {
       }
 
       await updateApiKey(apiKey);
-      res.json({ success: true });
+
+      // Verify the key works by making a test API call
+      try {
+        const openai = getOpenAIClient();
+        await openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [{ role: "user", content: "Test" }],
+          max_tokens: 5
+        });
+
+        res.json({ success: true });
+      } catch (apiError: any) {
+        throw new Error(`Invalid API key: ${apiError.message}`);
+      }
     } catch (error: any) {
       console.error('API key update error:', error);
       res.status(500).json({
