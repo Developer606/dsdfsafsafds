@@ -1,9 +1,9 @@
 import { type Character } from "@shared/characters";
-import { config } from "./config";
+import { DEEPINFRA_API_KEY } from "./api-keys";
 
-const API_KEY = config.deepInfra.apiKey;
-const BASE_URL = config.deepInfra.baseUrl;
-const MODEL = config.deepInfra.model;
+const API_KEY = DEEPINFRA_API_KEY;
+const BASE_URL = "https://api.deepinfra.com/v1/inference";
+const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 500;
