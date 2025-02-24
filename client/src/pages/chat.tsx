@@ -8,8 +8,14 @@ import { Button } from "@/components/ui/button";
 import { type Message } from "@shared/schema";
 import { type Character } from "@shared/characters";
 import { queryClient } from "@/lib/queryClient";
-import { ArrowLeft, MoreVertical } from "lucide-react";
+import { ArrowLeft, MoreVertical, Trash2, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Chat() {
   const { characterId } = useParams();
@@ -34,6 +40,69 @@ export default function Chat() {
     enabled: !!characterId
   });
 
+  // Add clear chat mutation
+  const clearChat = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/messages/${characterId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to clear chat history");
+      return res.json();
+    },
+    onSuccess: () => {
+      // Invalidate messages query to refetch
+      queryClient.invalidateQueries({ queryKey: [`/api/messages/${characterId}`] });
+      toast({
+        title: "Chat Cleared",
+        description: "Your chat history has been cleared successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to clear chat history",
+      });
+    },
+  });
+
+  // Add logout mutation
+  const logout = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+      if (!res.ok) throw new Error("Failed to logout");
+      return res.json();
+    },
+    onSuccess: () => {
+      // Clear all queries from cache
+      queryClient.clear();
+      // Navigate to landing page
+      setLocation("/");
+      toast({
+        title: "Logged out successfully",
+        description: "Come back soon!"
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to logout. Please try again."
+      });
+    },
+  });
+
+  const handleClearChat = () => {
+    clearChat.mutate();
+  };
+
+  const handleLogout = () => {
+    logout.mutate();
+  };
+
   useEffect(() => {
     if (messages.length > 0) {
       scrollToBottom();
@@ -42,20 +111,18 @@ export default function Chat() {
 
   const sendMessage = useMutation({
     mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {
-      // Generate a unique temporary ID
       const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       tempMessageIdRef.current = tempId;
 
-      // First, optimistically add the user's message
       const userMessage: Message = {
         id: tempId,
         content,
         isUser: true,
         timestamp: new Date(),
         characterId,
-        userId: 0, // Will be set by server
+        userId: 0,
         language,
-        script
+        script: script || null
       };
 
       queryClient.setQueryData<Message[]>(
@@ -63,11 +130,9 @@ export default function Chat() {
         (old = []) => [...old, userMessage]
       );
 
-      // Show typing indicator
       setIsTyping(true);
       scrollToBottom();
 
-      // Send the actual request
       const res = await fetch("/api/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,34 +147,29 @@ export default function Chat() {
 
       if (!res.ok) throw new Error("Failed to send message");
 
-      // Simulate typing delay before showing bot response
       await new Promise(resolve => setTimeout(resolve, 1000));
       setIsTyping(false);
 
       return res.json();
     },
     onSuccess: (newMessages: Message[]) => {
-      // Update with the actual response from the server
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
         (old = []) => {
-          // Remove the temporary message
           const filtered = old.filter(msg => msg.id !== tempMessageIdRef.current);
-          // Add the actual messages from the server
           return [...filtered, ...newMessages];
         }
       );
       scrollToBottom();
-      tempMessageIdRef.current = ""; // Clear the temp ID
+      tempMessageIdRef.current = "";
     },
     onError: () => {
       setIsTyping(false);
-      // Remove the temporary message on error
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
         (old = []) => old.filter(msg => msg.id !== tempMessageIdRef.current)
       );
-      tempMessageIdRef.current = ""; // Clear the temp ID
+      tempMessageIdRef.current = "";
       toast({
         variant: "destructive",
         title: "Error",
@@ -142,13 +202,28 @@ export default function Chat() {
             {isTyping ? "typing..." : "online"}
           </p>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-white hover:bg-white/10"
-        >
-          <MoreVertical className="h-6 w-6" />
-        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/10"
+            >
+              <MoreVertical className="h-6 w-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleClearChat}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Clear Chat History
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div 
