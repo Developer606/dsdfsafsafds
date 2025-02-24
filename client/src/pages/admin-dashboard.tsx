@@ -24,6 +24,21 @@ import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2 } from "
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -93,6 +108,20 @@ export default function AdminDashboard() {
     },
   });
 
+  // Prepare chart data
+  const subscriptionData = users ? [
+    { name: 'Free', value: users.filter(u => !u.isPremium).length },
+    { name: 'Premium', value: users.filter(u => u.isPremium).length },
+  ] : [];
+
+  const userStatusData = users ? [
+    { name: 'Active', value: users.filter(u => !u.isBlocked && !u.isRestricted).length },
+    { name: 'Blocked', value: users.filter(u => u.isBlocked).length },
+    { name: 'Restricted', value: users.filter(u => u.isRestricted).length },
+  ] : [];
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
   if (statsLoading || usersLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -136,6 +165,55 @@ export default function AdminDashboard() {
             <Crown className="h-5 w-5 text-muted-foreground" />
           </div>
           <p className="text-3xl font-bold">{stats?.premiumUsers ?? 0}</p>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <h3 className="text-lg font-medium mb-4">Subscription Distribution</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={subscriptionData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {subscriptionData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <h3 className="text-lg font-medium mb-4">User Status Distribution</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={userStatusData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="value" fill="#8884d8">
+                  {userStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
       </div>
 
