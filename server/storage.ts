@@ -1,10 +1,8 @@
-import { db } from "./db";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
-import { eq } from "drizzle-orm";
-import type { Message, InsertMessage, User, InsertUser, CustomCharacter, InsertCustomCharacter, SubscriptionStatus } from "@shared/schema";
 
 // Create a memory store with a 24-hour TTL
 const MemoryStoreSession = MemoryStore(session);
@@ -42,6 +40,7 @@ export interface IStorage {
       subscriptionExpiresAt: Date;
     }
   ): Promise<void>;
+  // New user management methods
   updateUserStatus(userId: number, status: {
     isBlocked?: boolean;
     isRestricted?: boolean;
@@ -53,6 +52,12 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
+  private users: User[] = [];
+  private messages: Message[] = [];
+  private customCharacters: CustomCharacter[] = [];
+  private nextUserId = 1;
+  private nextMessageId = 1;
+  private nextCharacterId = 1;
 
   constructor() {
     this.sessionStore = new MemoryStoreSession({
@@ -65,162 +70,123 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async initializeAdmin() {
-    const existingAdmin = await this.getUserByUsername("SysRoot_99");
-    if (!existingAdmin) {
-      const hashedPassword = await hashPassword("admin123");
-      await this.createUser({
-        email: "admin@system.local",
-        username: "SysRoot_99",
-        password: hashedPassword,
-        role: "admin",
-        isAdmin: true,
-        subscriptionTier: "none",
-        subscriptionStatus: "none",
-        subscriptionExpiresAt: null,
-        isEmailVerified: true,
-        verificationToken: null,
-        verificationTokenExpiry: null
-      });
-    }
+    const hashedPassword = await hashPassword("admin123");
+    this.createUser({
+      email: "admin@system.local",
+      username: "SysRoot_99",
+      password: hashedPassword,
+      role: "admin",
+      isAdmin: true,
+      subscriptionTier: null,
+      subscriptionStatus: null,
+      subscriptionExpiresAt: null,
+      isEmailVerified: true, //added
+      verificationToken: null, //added
+      verificationTokenExpiry: null //added
+
+    });
   }
 
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
-    const messages = await db.query.messages.findMany({
-      where: characterId === "all" ? undefined : eq(db.messages.characterId, characterId),
-      orderBy: (messages, { desc }) => [desc(messages.timestamp)]
-    });
-    return messages;
+    return this.messages.filter(m => m.characterId === characterId);
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const [newMessage] = await db
-      .insert(db.messages)
-      .values({
-        ...message,
-        script: message.script || null,
-        language: message.language || null,
-        timestamp: new Date()
-      })
-      .returning();
+    const newMessage = {
+      id: this.nextMessageId++,
+      ...message,
+      timestamp: new Date(),
+    };
+    this.messages.push(newMessage);
     return newMessage;
   }
 
   async clearChat(characterId: string): Promise<void> {
-    await db.delete(db.messages).where(eq(db.messages.characterId, characterId));
+    this.messages = this.messages.filter(m => m.characterId !== characterId);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [newUser] = await db
-      .insert(db.users)
-      .values({
-        ...insertUser,
-        createdAt: new Date(),
-        isPremium: false,
-        trialCharactersCreated: 0,
-        lastLoginAt: null,
-        isBlocked: false,
-        isRestricted: false,
-        isEmailVerified: false,
-        verificationToken: null,
-        verificationTokenExpiry: null,
-        subscriptionTier: "none",
-        subscriptionStatus: "none",
-        subscriptionExpiresAt: null
-      })
-      .returning();
+    const newUser = {
+      id: this.nextUserId++,
+      ...insertUser,
+      createdAt: new Date(),
+      isPremium: false,
+      trialCharactersCreated: 0,
+      lastLoginAt: null,
+      isBlocked: false,
+      isRestricted: false,
+      isEmailVerified: false, //added
+      verificationToken: null, //added
+      verificationTokenExpiry: null //added
+    };
+    this.users.push(newUser);
     return newUser;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(db.users)
-      .where(eq(db.users.email, email));
-    return user;
+    return this.users.find(u => u.email === email);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(db.users)
-      .where(eq(db.users.username, username));
-    return user;
+    return this.users.find(u => u.username === username);
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db
-      .select()
-      .from(db.users)
-      .where(eq(db.users.id, id));
-    return user;
+    return this.users.find(u => u.id === id);
   }
 
   async getAllUsers(): Promise<User[]> {
-    const users = await db
-      .select()
-      .from(db.users)
-      .where(eq(db.users.isAdmin, false));
-    return users;
+    return this.users.filter(u => !u.isAdmin); // Exclude admin users from the list
   }
 
   async getUserStats(): Promise<{ totalUsers: number; activeUsers: number; premiumUsers: number; }> {
-    const users = await this.getAllUsers();
+    const nonAdminUsers = this.users.filter(u => !u.isAdmin);
     const now = Date.now();
     const activeThreshold = now - (24 * 60 * 60 * 1000); // Active in last 24 hours
 
     return {
-      totalUsers: users.length,
-      activeUsers: users.filter(u => u.lastLoginAt && u.lastLoginAt.getTime() > activeThreshold).length,
-      premiumUsers: users.filter(u => u.isPremium).length,
+      totalUsers: nonAdminUsers.length,
+      activeUsers: nonAdminUsers.filter(u => u.lastLoginAt && u.lastLoginAt.getTime() > activeThreshold).length,
+      premiumUsers: nonAdminUsers.filter(u => u.isPremium).length,
     };
   }
 
   async incrementTrialCharacterCount(userId: number): Promise<void> {
-    await db
-      .update(db.users)
-      .set({ trialCharactersCreated: (u) => u.trialCharactersCreated + 1 })
-      .where(eq(db.users.id, userId));
+    const user = await this.getUser(userId);
+    if (user) {
+      user.trialCharactersCreated++;
+    }
   }
 
   async updateLastLogin(userId: number): Promise<void> {
-    await db
-      .update(db.users)
-      .set({ lastLoginAt: new Date() })
-      .where(eq(db.users.id, userId));
+    const user = await this.getUser(userId);
+    if (user) {
+      user.lastLoginAt = new Date();
+    }
   }
 
   async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {
-    const [newCharacter] = await db
-      .insert(db.customCharacters)
-      .values({
-        ...insertCharacter,
-        createdAt: new Date()
-      })
-      .returning();
+    const newCharacter = {
+      id: this.nextCharacterId++,
+      ...insertCharacter,
+      createdAt: new Date(),
+    };
+    this.customCharacters.push(newCharacter);
     return newCharacter;
   }
 
   async getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]> {
-    const characters = await db
-      .select()
-      .from(db.customCharacters)
-      .where(eq(db.customCharacters.userId, userId));
-    return characters;
+    return this.customCharacters.filter(c => c.userId === userId);
   }
 
   async getCustomCharacterById(id: number): Promise<CustomCharacter | undefined> {
-    const [character] = await db
-      .select()
-      .from(db.customCharacters)
-      .where(eq(db.customCharacters.id, id));
-    return character;
+    return this.customCharacters.find(c => c.id === id);
   }
 
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {
-    await db
-      .delete(db.customCharacters)
-      .where(eq(db.customCharacters.id, id))
-      .where(eq(db.customCharacters.userId, userId));
+    this.customCharacters = this.customCharacters.filter(
+      c => !(c.id === id && c.userId === userId)
+    );
   }
 
   async updateUserSubscription(
@@ -232,60 +198,56 @@ export class DatabaseStorage implements IStorage {
       subscriptionExpiresAt: Date;
     }
   ): Promise<void> {
-    await db
-      .update(db.users)
-      .set(data)
-      .where(eq(db.users.id, userId));
+    const user = await this.getUser(userId);
+    if (user) {
+      Object.assign(user, data);
+    }
   }
 
   async updateUserStatus(userId: number, status: { isBlocked?: boolean; isRestricted?: boolean; }): Promise<void> {
-    if (status.isBlocked !== undefined || status.isRestricted !== undefined) {
-      await db
-        .update(db.users)
-        .set(status)
-        .where(eq(db.users.id, userId));
+    const user = await this.getUser(userId);
+    if (user) {
+      if (status.isBlocked !== undefined) {
+        user.isBlocked = status.isBlocked;
+      }
+      if (status.isRestricted !== undefined) {
+        user.isRestricted = status.isRestricted;
+      }
     }
   }
 
   async deleteUser(userId: number): Promise<void> {
-    // Delete all related data
-    await db.delete(db.messages).where(eq(db.messages.userId, userId));
-    await db.delete(db.customCharacters).where(eq(db.customCharacters.userId, userId));
-    await db.delete(db.users).where(eq(db.users.id, userId));
+    // Remove user from storage
+    this.users = this.users.filter(u => u.id !== userId);
+
+    // Remove associated messages
+    this.messages = this.messages.filter(m => m.userId !== userId);
+
+    // Remove associated custom characters
+    this.customCharacters = this.customCharacters.filter(c => c.userId !== userId);
   }
-
   async verifyEmail(userId: number, token: string): Promise<boolean> {
-    const [user] = await db
-      .select()
-      .from(db.users)
-      .where(eq(db.users.id, userId))
-      .where(eq(db.users.verificationToken, token));
-
-    if (!user || !user.verificationTokenExpiry) return false;
+    const user = await this.getUser(userId);
+    if (!user) return false;
 
     const now = new Date();
-    if (new Date(user.verificationTokenExpiry) > now) {
-      await db
-        .update(db.users)
-        .set({
-          isEmailVerified: true,
-          verificationToken: null,
-          verificationTokenExpiry: null
-        })
-        .where(eq(db.users.id, userId));
+    if (user.verificationToken === token &&
+      user.verificationTokenExpiry &&
+      new Date(user.verificationTokenExpiry) > now) {
+      user.isEmailVerified = true;
+      user.verificationToken = null;
+      user.verificationTokenExpiry = null;
       return true;
     }
     return false;
   }
 
   async updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void> {
-    await db
-      .update(db.users)
-      .set({
-        verificationToken: token,
-        verificationTokenExpiry: expiry
-      })
-      .where(eq(db.users.id, userId));
+    const user = await this.getUser(userId);
+    if (user) {
+      user.verificationToken = token;
+      user.verificationTokenExpiry = expiry;
+    }
   }
 }
 
