@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, Settings, Key } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,8 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -144,6 +146,27 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  // Add new mutation for API key update
+  const updateApiKey = useMutation({
+    mutationFn: async (apiKey: string) => {
+      const res = await apiRequest("POST", "/api/admin/settings/apikey", { apiKey });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "API key updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    },
+  });
 
   return (
     <div className="container mx-auto p-8 space-y-8">
@@ -335,8 +358,8 @@ export default function AdminDashboard() {
                           <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => updateSubscription.mutate({ 
-                              userId: user.id, 
+                            onClick={() => updateSubscription.mutate({
+                              userId: user.id,
                               planId: 'free'
                             })}
                           >
@@ -411,8 +434,8 @@ export default function AdminDashboard() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="icon"
                               disabled={deleteUser.isPending}
                             >
@@ -448,6 +471,56 @@ export default function AdminDashboard() {
               </TableBody>
             </Table>
           </div>
+        </div>
+      </Card>
+
+      {/* API Key Management Section */}
+      <Card className="mt-8">
+        <div className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Key className="h-5 w-5" />
+            <h2 className="text-xl font-bold">API Key Management</h2>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const apiKey = formData.get('apiKey') as string;
+              if (apiKey) {
+                updateApiKey.mutate(apiKey);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="apiKey">OpenAI API Key</Label>
+              <Input
+                id="apiKey"
+                name="apiKey"
+                type="password"
+                placeholder="Enter new API key"
+                defaultValue="stM8x3slv4iexaxgVkjmh9CIrlGxIxlr"
+              />
+              <p className="text-sm text-muted-foreground">
+                Current API key will be replaced with the new key
+              </p>
+            </div>
+            <Button
+              type="submit"
+              disabled={updateApiKey.isPending}
+              className="w-full md:w-auto"
+            >
+              {updateApiKey.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update API Key"
+              )}
+            </Button>
+          </form>
         </div>
       </Card>
     </div>

@@ -6,6 +6,8 @@ import { generateCharacterResponse } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, sendVerificationEmail, hashPassword } from './auth'; // Assuming these functions are defined elsewhere
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
 
 export async function registerRoutes(app: Express) {
   // Set up authentication routes and middleware
@@ -453,6 +455,29 @@ export async function registerRoutes(app: Express) {
       }
     } catch (error) {
       res.status(500).json({ error: "Verification failed" });
+    }
+  });
+
+  // Add new endpoint for API key management
+  app.post("/api/admin/settings/apikey", isAdmin, async (req, res) => {
+    try {
+      const { apiKey } = req.body;
+      if (!apiKey) {
+        return res.status(400).json({ error: "API key is required" });
+      }
+
+      // Update .env file with new API key
+      const envFilePath = join(process.cwd(), '.env');
+      const envContent = `DEEPINFRA_API_KEY=${apiKey}\n`;
+
+      await writeFile(envFilePath, envContent, 'utf-8');
+
+      // Update process.env
+      process.env.DEEPINFRA_API_KEY = apiKey;
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to update API key" });
     }
   });
 
