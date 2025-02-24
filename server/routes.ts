@@ -5,6 +5,7 @@ import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
+import { generateOTP, sendVerificationEmail, hashPassword } from './auth'; // Assuming these functions are defined elsewhere
 
 export async function registerRoutes(app: Express) {
   // Set up authentication routes and middleware
@@ -126,7 +127,7 @@ export async function registerRoutes(app: Express) {
 
       const customChars = await storage.getCustomCharactersByUser(req.user.id);
       const formattedCustomChars = customChars.map(char => ({
-        id: `custom_${char.id}`, 
+        id: `custom_${char.id}`,
         name: char.name,
         avatar: char.avatar,
         description: char.description,
@@ -342,6 +343,60 @@ export async function registerRoutes(app: Express) {
       res.json({ success: true, message: "Feedback received" });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to submit feedback" });
+    }
+  });
+
+  // Added registration endpoint
+  app.post("/api/register", async (req, res, next) => {
+    try {
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+
+      const existingEmail = await storage.getUserByEmail(req.body.email);
+      if (existingEmail) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+
+      const otp = await generateOTP();
+      const expiry = new Date();
+      expiry.setMinutes(expiry.getMinutes() + 10); // OTP expires in 10 minutes
+
+      const user = await storage.createUser({
+        ...req.body,
+        password: await hashPassword(req.body.password),
+        isEmailVerified: false,
+      });
+
+      await storage.updateVerificationToken(user.id, otp, expiry);
+      await sendVerificationEmail(user.email, otp);
+
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(201).json(user);
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Added email verification endpoint
+  app.post("/api/verify-email", async (req, res) => {
+    try {
+      const { otp } = req.body;
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const verified = await storage.verifyEmail(req.user.id, otp);
+      if (verified) {
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ error: "Invalid or expired OTP" });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Verification failed" });
     }
   });
 

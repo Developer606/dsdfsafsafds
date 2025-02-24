@@ -22,6 +22,11 @@ export const users = sqliteTable("users", {
   isRestricted: integer("is_restricted", { mode: "boolean" })
     .notNull()
     .default(false),
+  isEmailVerified: integer("is_email_verified", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  verificationToken: text("verification_token"),
+  verificationTokenExpiry: integer("verification_token_expiry", { mode: "timestamp_ms" }),
   trialCharactersCreated: integer("trial_characters_created")
     .notNull()
     .default(0),

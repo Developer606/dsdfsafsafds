@@ -46,6 +46,8 @@ export interface IStorage {
     isRestricted?: boolean;
   }): Promise<void>;
   deleteUser(userId: number): Promise<void>;
+  verifyEmail(userId: number, token: string): Promise<boolean>;
+  updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -77,7 +79,11 @@ export class DatabaseStorage implements IStorage {
       isAdmin: true,
       subscriptionTier: null,
       subscriptionStatus: null,
-      subscriptionExpiresAt: null
+      subscriptionExpiresAt: null,
+      isEmailVerified: true, //added
+      verificationToken: null, //added
+      verificationTokenExpiry: null //added
+
     });
   }
 
@@ -109,6 +115,9 @@ export class DatabaseStorage implements IStorage {
       lastLoginAt: null,
       isBlocked: false,
       isRestricted: false,
+      isEmailVerified: false, //added
+      verificationToken: null, //added
+      verificationTokenExpiry: null //added
     };
     this.users.push(newUser);
     return newUser;
@@ -216,6 +225,29 @@ export class DatabaseStorage implements IStorage {
 
     // Remove associated custom characters
     this.customCharacters = this.customCharacters.filter(c => c.userId !== userId);
+  }
+  async verifyEmail(userId: number, token: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+
+    const now = new Date();
+    if (user.verificationToken === token &&
+      user.verificationTokenExpiry &&
+      new Date(user.verificationTokenExpiry) > now) {
+      user.isEmailVerified = true;
+      user.verificationToken = null;
+      user.verificationTokenExpiry = null;
+      return true;
+    }
+    return false;
+  }
+
+  async updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void> {
+    const user = await this.getUser(userId);
+    if (user) {
+      user.verificationToken = token;
+      user.verificationTokenExpiry = expiry;
+    }
   }
 }
 
