@@ -4,7 +4,7 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from "@shared/schema";
 
 // Configure SQLite with WAL mode for better concurrency
-const sqlite = new Database('sqlite.db', {
+const sqlite = new Database('user.db', {
   // WAL mode for better concurrent access
   fileMustExist: false,
 });
