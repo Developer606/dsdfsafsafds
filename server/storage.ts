@@ -1,49 +1,18 @@
 import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
-import { db } from "./db";
-import { messages, users, customCharacters } from "@shared/schema";
-import { eq, and, sql } from "drizzle-orm";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
 
 // Create a memory store with a 24-hour TTL
 const MemoryStoreSession = MemoryStore(session);
 
-export interface IStorage {
-  // Message operations
-  getMessagesByCharacter(characterId: string): Promise<Message[]>;
-  createMessage(message: InsertMessage): Promise<Message>;
-  clearChat(characterId: string): Promise<void>;
+const scryptAsync = promisify(scrypt);
 
-  // User operations
-  createUser(user: InsertUser): Promise<User>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  getUser(id: number): Promise<User | undefined>;
-  incrementTrialCharacterCount(userId: number): Promise<void>;
-  updateLastLogin(userId: number): Promise<void>;
-  getAllUsers(): Promise<User[]>;
-  getUserStats(): Promise<{
-    totalUsers: number;
-    activeUsers: number;
-    premiumUsers: number;
-  }>;
-
-  // Custom character operations
-  createCustomCharacter(character: InsertCustomCharacter): Promise<CustomCharacter>;
-  getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
-  getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
-  deleteCustomCharacter(id: number, userId: number): Promise<void>;
-
-  // Subscription operations
-  updateUserSubscription(userId: number, data: {
-    isPremium: boolean;
-    subscriptionTier: string;
-    subscriptionStatus: SubscriptionStatus;
-    subscriptionExpiresAt: Date;
-  }): Promise<void>;
-
-  // Session store
-  sessionStore: session.Store;
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -61,13 +30,21 @@ export class DatabaseStorage implements IStorage {
       max: 10000 // Store up to 10000 sessions in memory
     });
 
-    // Create default admin user
+    // Create default admin user with hashed password
+    this.initializeAdmin();
+  }
+
+  private async initializeAdmin() {
+    const hashedPassword = await hashPassword("admin123");
     this.createUser({
       email: "admin@system.local",
       username: "admin",
-      password: "admin123", // In real app, this should be hashed
+      password: hashedPassword,
       role: "admin",
       isAdmin: true,
+      subscriptionTier: null,
+      subscriptionStatus: null,
+      subscriptionExpiresAt: null
     });
   }
 
