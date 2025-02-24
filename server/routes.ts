@@ -29,6 +29,41 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // New admin user management endpoints
+  app.post("/api/admin/users/:userId/block", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { blocked } = req.body;
+
+      await storage.updateUserStatus(userId, { isBlocked: blocked });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to update user block status" });
+    }
+  });
+
+  app.post("/api/admin/users/:userId/restrict", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { restricted } = req.body;
+
+      await storage.updateUserStatus(userId, { isRestricted: restricted });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to update user restrictions" });
+    }
+  });
+
+  app.delete("/api/admin/users/:userId", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      await storage.deleteUser(userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  });
+
   app.get("/api/characters", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {

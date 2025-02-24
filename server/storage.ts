@@ -15,6 +15,39 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+export interface IStorage {
+  getMessagesByCharacter(characterId: string): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  clearChat(characterId: string): Promise<void>;
+  createUser(insertUser: InsertUser): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  getUser(id: number): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
+  getUserStats(): Promise<{ totalUsers: number; activeUsers: number; premiumUsers: number; }>;
+  incrementTrialCharacterCount(userId: number): Promise<void>;
+  updateLastLogin(userId: number): Promise<void>;
+  createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter>;
+  getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
+  getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
+  deleteCustomCharacter(id: number, userId: number): Promise<void>;
+  updateUserSubscription(
+    userId: number,
+    data: {
+      isPremium: boolean;
+      subscriptionTier: string;
+      subscriptionStatus: SubscriptionStatus;
+      subscriptionExpiresAt: Date;
+    }
+  ): Promise<void>;
+  // New user management methods
+  updateUserStatus(userId: number, status: {
+    isBlocked?: boolean;
+    isRestricted?: boolean;
+  }): Promise<void>;
+  deleteUser(userId: number): Promise<void>;
+}
+
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
   private users: User[] = [];
@@ -30,7 +63,7 @@ export class DatabaseStorage implements IStorage {
       max: 10000 // Store up to 10000 sessions in memory
     });
 
-    // Create default admin user with hashed password
+    // Create default admin user
     this.initializeAdmin();
   }
 
@@ -74,6 +107,8 @@ export class DatabaseStorage implements IStorage {
       isPremium: false,
       trialCharactersCreated: 0,
       lastLoginAt: null,
+      isBlocked: false,
+      isRestricted: false,
     };
     this.users.push(newUser);
     return newUser;
@@ -158,6 +193,29 @@ export class DatabaseStorage implements IStorage {
     if (user) {
       Object.assign(user, data);
     }
+  }
+
+  async updateUserStatus(userId: number, status: { isBlocked?: boolean; isRestricted?: boolean; }): Promise<void> {
+    const user = await this.getUser(userId);
+    if (user) {
+      if (status.isBlocked !== undefined) {
+        user.isBlocked = status.isBlocked;
+      }
+      if (status.isRestricted !== undefined) {
+        user.isRestricted = status.isRestricted;
+      }
+    }
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    // Remove user from storage
+    this.users = this.users.filter(u => u.id !== userId);
+
+    // Remove associated messages
+    this.messages = this.messages.filter(m => m.userId !== userId);
+
+    // Remove associated custom characters
+    this.customCharacters = this.customCharacters.filter(c => c.userId !== userId);
   }
 }
 
