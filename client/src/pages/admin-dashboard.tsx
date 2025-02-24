@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -29,10 +29,12 @@ export default function AdminDashboard() {
   const { toast } = useToast();
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   const blockUser = useMutation({
@@ -92,12 +94,26 @@ export default function AdminDashboard() {
   });
 
   if (statsLoading || usersLoading) {
-    return <div className="p-8">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto p-8 space-y-8">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <div className="flex items-center gap-2">
+          {(statsLoading || usersLoading) && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+          <span className="text-sm text-muted-foreground">
+            Auto-refreshing every 30 seconds
+          </span>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">
@@ -239,6 +255,7 @@ export default function AdminDashboard() {
                           onCheckedChange={(checked) =>
                             blockUser.mutate({ userId: user.id, blocked: checked })
                           }
+                          disabled={blockUser.isPending}
                         />
                         <Button
                           variant="outline"
@@ -249,8 +266,11 @@ export default function AdminDashboard() {
                               restricted: !user.isRestricted,
                             })
                           }
+                          disabled={restrictUser.isPending}
                         >
-                          {user.isRestricted ? (
+                          {restrictUser.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : user.isRestricted ? (
                             <Lock className="h-4 w-4" />
                           ) : (
                             <UnlockIcon className="h-4 w-4" />
@@ -258,8 +278,16 @@ export default function AdminDashboard() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="icon">
-                              <Trash2 className="h-4 w-4" />
+                            <Button 
+                              variant="destructive" 
+                              size="icon"
+                              disabled={deleteUser.isPending}
+                            >
+                              {deleteUser.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
