@@ -3,20 +3,30 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from "@shared/schema";
 
-// Configure SQLite with WAL mode for better concurrency
+// Configure main SQLite database with WAL mode for better concurrency
 const sqlite = new Database('sqlite.db', {
-  // WAL mode for better concurrent access
   fileMustExist: false,
 });
 
-// Enable WAL mode and other optimizations
+// Configure separate feedback database
+const feedbackDb = new Database('feedback.db', {
+  fileMustExist: false,
+});
+
+// Enable WAL mode and other optimizations for main database
 sqlite.pragma('journal_mode = WAL');
 sqlite.pragma('synchronous = NORMAL');
 sqlite.pragma('cache_size = -64000'); // 64MB cache
 sqlite.pragma('foreign_keys = ON');
 
-// Create connection
+// Enable WAL mode for feedback database
+feedbackDb.pragma('journal_mode = WAL');
+feedbackDb.pragma('synchronous = NORMAL');
+feedbackDb.pragma('foreign_keys = ON');
+
+// Create connections
 export const db = drizzle(sqlite, { schema });
+export const feedbackDatabase = drizzle(feedbackDb, { schema });
 
 // Function to check and add missing columns
 async function ensureColumns() {
@@ -57,6 +67,26 @@ async function ensureColumns() {
   }
 }
 
+// Initialize feedback database schema
+async function initializeFeedbackDb() {
+  console.log('Initializing feedback database...');
+  try {
+    feedbackDb.exec(`
+      CREATE TABLE IF NOT EXISTS feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('Feedback table created successfully');
+  } catch (error) {
+    console.error('Error creating feedback table:', error);
+    throw error;
+  }
+}
+
 // Run migrations on startup
 export async function runMigrations() {
   console.log('Running database migrations...');
@@ -90,13 +120,6 @@ export async function runMigrations() {
         persona TEXT NOT NULL,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      )`,
-      `CREATE TABLE IF NOT EXISTS feedback (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        message TEXT NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`
     ];
 
@@ -111,6 +134,9 @@ export async function runMigrations() {
 
     // Ensure all columns exist
     await ensureColumns();
+
+    // Initialize feedback database
+    await initializeFeedbackDb();
 
     // Create indexes for better performance
     createIndexes();

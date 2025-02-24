@@ -1,7 +1,7 @@
 import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type Feedback, type InsertFeedback, feedback } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { db } from "./db";
+import { db, feedbackDatabase } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
@@ -218,7 +218,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
   async createFeedback(insertFeedback: InsertFeedback): Promise<Feedback> {
-    const [newFeedback] = await db.insert(feedback).values({
+    const [newFeedback] = await feedbackDatabase.insert(feedback).values({
       ...insertFeedback,
       createdAt: new Date()
     }).returning();
@@ -226,7 +226,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllFeedback(): Promise<Feedback[]> {
-    return await db.select().from(feedback);
+    return await feedbackDatabase.select().from(feedback);
   }
   private async initializeAdmin() {
     try {
