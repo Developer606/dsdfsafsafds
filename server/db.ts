@@ -18,6 +18,45 @@ sqlite.pragma('foreign_keys = ON');
 // Create connection
 export const db = drizzle(sqlite, { schema });
 
+// Function to check and add missing columns
+async function ensureColumns() {
+  console.log('Checking for missing columns...');
+  try {
+    // Get existing columns for users table
+    const userColumns = sqlite.prepare("PRAGMA table_info(users)").all();
+    const existingColumns = new Set(userColumns.map((col: any) => col.name));
+
+    // Add missing columns if needed
+    const columnsToAdd = [
+      { name: 'role', sql: 'TEXT NOT NULL DEFAULT "user"' },
+      { name: 'is_admin', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'is_premium', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'is_blocked', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'is_restricted', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'is_email_verified', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'verification_token', sql: 'TEXT' },
+      { name: 'verification_token_expiry', sql: 'INTEGER' },
+      { name: 'trial_characters_created', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'subscription_tier', sql: 'TEXT' },
+      { name: 'subscription_status', sql: 'TEXT DEFAULT "trial"' },
+      { name: 'subscription_expires_at', sql: 'INTEGER' },
+      { name: 'last_login_at', sql: 'INTEGER' }
+    ];
+
+    for (const column of columnsToAdd) {
+      if (!existingColumns.has(column.name)) {
+        console.log(`Adding missing column: ${column.name}`);
+        sqlite.prepare(`ALTER TABLE users ADD COLUMN ${column.name} ${column.sql}`).run();
+      }
+    }
+
+    console.log('All required columns are now present');
+  } catch (error: any) {
+    console.error('Error ensuring columns:', error);
+    throw error;
+  }
+}
+
 // Run migrations on startup
 export async function runMigrations() {
   console.log('Running database migrations...');
@@ -29,20 +68,7 @@ export async function runMigrations() {
         email TEXT NOT NULL UNIQUE,
         username TEXT NOT NULL,
         password TEXT NOT NULL,
-        role TEXT NOT NULL DEFAULT 'user',
-        is_admin INTEGER NOT NULL DEFAULT 0,
-        is_premium INTEGER NOT NULL DEFAULT 0,
-        is_blocked INTEGER NOT NULL DEFAULT 0,
-        is_restricted INTEGER NOT NULL DEFAULT 0,
-        is_email_verified INTEGER NOT NULL DEFAULT 0,
-        verification_token TEXT,
-        verification_token_expiry INTEGER,
-        trial_characters_created INTEGER NOT NULL DEFAULT 0,
-        subscription_tier TEXT,
-        subscription_status TEXT DEFAULT 'trial',
-        subscription_expires_at INTEGER,
-        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        last_login_at INTEGER
+        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`,
       `CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,6 +101,9 @@ export async function runMigrations() {
     })();
 
     console.log('Database tables created successfully');
+
+    // Ensure all columns exist
+    await ensureColumns();
 
     // Create indexes for better performance
     createIndexes();
