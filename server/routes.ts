@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
-import { generateCharacterResponse } from "./openai";
+import { generateCharacterResponse, updateApiKey } from "./openai"; // Added updateApiKey import
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, sendVerificationEmail, hashPassword } from './auth'; // Assuming these functions are defined elsewhere
@@ -458,7 +458,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add new endpoint for API key management
+  // Update the API key management endpoint
   app.post("/api/admin/settings/apikey", isAdmin, async (req, res) => {
     try {
       const { apiKey } = req.body;
@@ -469,7 +469,11 @@ export async function registerRoutes(app: Express) {
       await updateApiKey(apiKey);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: "Failed to update API key" });
+      console.error('API key update error:', error);
+      res.status(500).json({
+        error: "Failed to update API key",
+        details: error.message
+      });
     }
   });
 
