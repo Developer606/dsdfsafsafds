@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -21,7 +22,6 @@ import {
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
 import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, Settings, Key } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -43,31 +43,28 @@ import { Label } from "@/components/ui/label";
 export default function AdminDashboard() {
   const { toast } = useToast();
 
-  // Enhanced stats query to include more metrics
+  // All queries
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
     refetchInterval: 30000,
   });
 
-  // Query for users with enhanced information
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     refetchInterval: 30000,
   });
 
-  // New query for recent messages
   const { data: recentMessages, isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
     refetchInterval: 30000,
   });
 
-  // New query for character stats
   const { data: characterStats, isLoading: charactersLoading } = useQuery({
     queryKey: ["/api/admin/characters/stats"],
     refetchInterval: 30000,
   });
 
-  // Existing mutations...
+  // All mutations
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/block`, { blocked });
@@ -82,7 +79,6 @@ export default function AdminDashboard() {
     },
   });
 
-  // Other existing mutations remain unchanged...
   const deleteUser = useMutation({
     mutationFn: async (userId: number) => {
       const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
@@ -125,7 +121,27 @@ export default function AdminDashboard() {
     },
   });
 
-  // Enhanced data preparation for charts
+  const updateApiKey = useMutation({
+    mutationFn: async (apiKey: string) => {
+      const res = await apiRequest("POST", "/api/admin/settings/apikey", { apiKey });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "API key updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    },
+  });
+
+  // Data preparation
   const subscriptionData = users ? [
     { name: 'Free', value: users.filter(u => !u.isPremium).length },
     { name: 'Premium', value: users.filter(u => u.isPremium).length },
@@ -147,29 +163,9 @@ export default function AdminDashboard() {
     );
   }
 
-  // Add new mutation for API key update
-  const updateApiKey = useMutation({
-    mutationFn: async (apiKey: string) => {
-      const res = await apiRequest("POST", "/api/admin/settings/apikey", { apiKey });
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "API key updated successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    },
-  });
-
   return (
     <div className="container mx-auto p-8 space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <div className="flex items-center gap-2">
@@ -182,7 +178,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Enhanced Statistics Cards */}
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-6">
           <div className="flex items-center justify-between">

@@ -466,15 +466,7 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: "API key is required" });
       }
 
-      // Update .env file with new API key
-      const envFilePath = join(process.cwd(), '.env');
-      const envContent = `DEEPINFRA_API_KEY=${apiKey}\n`;
-
-      await writeFile(envFilePath, envContent, 'utf-8');
-
-      // Update process.env
-      process.env.DEEPINFRA_API_KEY = apiKey;
-
+      await updateApiKey(apiKey);
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to update API key" });

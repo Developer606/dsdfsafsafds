@@ -1,12 +1,34 @@
 import { type Character } from "@shared/characters";
+import OpenAI from "openai";
+import { writeFile } from 'fs/promises';
+import { join } from 'path';
 
-const API_KEY =
-  process.env.DEEPINFRA_API_KEY || "stM8x3slv4iexaxgVkjmh9CIrlGxIxlr";
-const BASE_URL = "https://api.deepinfra.com/v1/inference";
-const MODEL = "mistralai/Mixtral-8x7B-Instruct-v0.1";
+// Initialize OpenAI with the environment variable
+let openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || "YOUR-DEFAULT-API-KEY"
+});
 
-const MAX_RETRIES = 2;
-const RETRY_DELAY = 500;
+// Function to update API key
+export async function updateApiKey(newApiKey: string): Promise<void> {
+  try {
+    // Update the OpenAI instance
+    openai = new OpenAI({ apiKey: newApiKey });
+
+    // Update environment variable
+    process.env.OPENAI_API_KEY = newApiKey;
+
+    // Update .env file
+    const envFilePath = join(process.cwd(), '.env');
+    const envContent = `OPENAI_API_KEY=${newApiKey}\n`;
+    await writeFile(envFilePath, envContent, 'utf-8');
+  } catch (error) {
+    console.error('Failed to update API key:', error);
+    throw error;
+  }
+}
+
+// Export the OpenAI instance
+export const openaiClient = openai;
 
 // Exhaustion messages for a more immersive failure response
 const exhaustionMessages = [
@@ -18,113 +40,61 @@ const exhaustionMessages = [
 ];
 
 export async function generateCharacterResponse(
-  character: Character,
+  character: any,
   userMessage: string,
   chatHistory: string,
   language: string = "english",
   script?: string,
 ): Promise<string> {
-  let retries = 0;
+  try {
+    const scriptInstruction =
+      language === "hindi" && script === "latin"
+        ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
+        : "";
 
-  while (retries < MAX_RETRIES) {
-    try {
-      const scriptInstruction =
-        language === "hindi" && script === "latin"
-          ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
-          : "";
+    const languageInstructions: Record<string, string> = {
+      english: "Respond naturally in English.",
+      hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
+      japanese: "自然な日本語で応答してください。敬語を適切に使用してください。",
+      chinese: "用自然的中文回应。注意使用适当的敬语。",
+      korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
+      spanish: "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
+      french: "Répondez naturellement en français. Utilisez le niveau de formalité approprié.",
+    };
 
-      // Enhanced language-specific instructions
-      const languageInstructions: Record<string, string> = {
-        english: "Respond naturally in English.",
-        hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
-        japanese:
-          "自然な日本語で応答してください。敬語を適切に使用してください。",
-        chinese: "用自然的中文回应。注意使用适当的敬语。",
-        korean:
-          "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
-        spanish:
-          "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
-        french:
-          "Répondez naturellement en français. Utilisez le niveau de formalité approprié.",
-      };
+    const languageInstruction =
+      languageInstructions[language as keyof typeof languageInstructions] ||
+      languageInstructions.english;
 
-      const languageInstruction =
-        languageInstructions[language as keyof typeof languageInstructions] ||
-        languageInstructions.english;
-
-      const prompt = `<s> [INST] You are ${character.name}, with this background:
-
-${character.persona}
-
-Instructions:
-1. ${languageInstruction}
-2. ${scriptInstruction}
-3. Stay in character
-4. Be concise (2-3 sentences)
-5. Match conversation tone
-
-Chat history:
-${chatHistory}
-
-User: ${userMessage}
-[/INST]
-
-Assistant (${character.name}): `;
-
-      const response = await fetch(`${BASE_URL}/${MODEL}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${API_KEY}`,
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: `You are ${character.name}, with this background:\n\n${character.persona}\n\nInstructions:\n1. ${languageInstruction}\n2. ${scriptInstruction}\n3. Stay in character\n4. Be concise (2-3 sentences)\n5. Match conversation tone`
         },
-        body: JSON.stringify({
-          input: prompt,
-          temperature: 0.8,
-          max_tokens: 150,
-          top_p: 0.9,
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-          retries++;
-          continue;
+        {
+          role: "user",
+          content: `Chat history:\n${chatHistory}\n\nUser: ${userMessage}`
         }
-        throw new Error(
-          `API request failed: ${response.status} ${response.statusText}`,
-        );
-      }
+      ],
+      temperature: 0.8,
+      max_tokens: 150,
+    });
 
-      const data = await response.json();
-      let generatedText = data.results?.[0]?.generated_text?.trim();
+    let generatedText = response.choices[0].message.content?.trim() || "";
 
-      // Clean up the response
-      if (generatedText) {
-        // Remove any "Assistant:" or similar prefixes
-        generatedText = generatedText.replace(
-          /^(Assistant|Character|[^:]+):\s*/i,
-          "",
-        );
-        // Trim any quotes that might wrap the entire response
-        generatedText = generatedText.replace(/^["']|["']$/g, "");
-      }
-
-      return generatedText || "I'm having trouble responding right now.";
-    } catch (error: any) {
-      console.error("LLM API error:", error);
-      if (++retries < MAX_RETRIES) {
-        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
-        continue;
-      }
-
-      return exhaustionMessages[
-        Math.floor(Math.random() * exhaustionMessages.length)
-      ];
+    // Clean up the response
+    if (generatedText) {
+      // Remove any "Assistant:" or similar prefixes
+      generatedText = generatedText.replace(/^(Assistant|Character|[^:]+):\s*/i, "");
+      // Trim any quotes that might wrap the entire response
+      generatedText = generatedText.replace(/^["']|["']$/g, "");
     }
-  }
 
-  return exhaustionMessages[
-    Math.floor(Math.random() * exhaustionMessages.length)
-  ];
+    return generatedText || "I'm having trouble responding right now.";
+  } catch (error) {
+    console.error("OpenAI API error:", error);
+    return exhaustionMessages[Math.floor(Math.random() * exhaustionMessages.length)];
+  }
 }
