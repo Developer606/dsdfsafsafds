@@ -96,7 +96,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "Userdeleted successfully",
       });
     },
   });
@@ -154,7 +154,7 @@ export default function AdminDashboard() {
   return (
     <div className="container mx-auto p-8 space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Admin Dashboard</h1>
         <div className="flex items-center gap-2">
           {(statsLoading || usersLoading) && (
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -167,33 +167,33 @@ export default function AdminDashboard() {
 
       {/* Enhanced Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="p-6">
+        <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20 hover:border-blue-500/40 transition-colors">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium mb-2">Total Users</h3>
-            <Users className="h-5 w-5 text-muted-foreground" />
+            <Users className="h-5 w-5 text-blue-500" />
           </div>
-          <p className="text-3xl font-bold">{stats?.totalUsers ?? 0}</p>
+          <p className="text-3xl font-bold text-blue-600">{stats?.totalUsers ?? 0}</p>
         </Card>
-        <Card className="p-6">
+        <Card className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20 hover:border-green-500/40 transition-colors">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium mb-2">Active Users (24h)</h3>
-            <UserPlus className="h-5 w-5 text-muted-foreground" />
+            <UserPlus className="h-5 w-5 text-green-500" />
           </div>
-          <p className="text-3xl font-bold">{stats?.activeUsers ?? 0}</p>
+          <p className="text-3xl font-bold text-green-600">{stats?.activeUsers ?? 0}</p>
         </Card>
-        <Card className="p-6">
+        <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20 hover:border-purple-500/40 transition-colors">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium mb-2">Premium Users</h3>
-            <Crown className="h-5 w-5 text-muted-foreground" />
+            <Crown className="h-5 w-5 text-purple-500" />
           </div>
-          <p className="text-3xl font-bold">{stats?.premiumUsers ?? 0}</p>
+          <p className="text-3xl font-bold text-purple-600">{stats?.premiumUsers ?? 0}</p>
         </Card>
-        <Card className="p-6">
+        <Card className="p-6 bg-gradient-to-br from-amber-500/10 to-orange-500/10 border-amber-500/20 hover:border-amber-500/40 transition-colors">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium mb-2">Total Characters</h3>
-            <Palette className="h-5 w-5 text-muted-foreground" />
+            <Palette className="h-5 w-5 text-amber-500" />
           </div>
-          <p className="text-3xl font-bold">{characterStats?.totalCharacters ?? 0}</p>
+          <p className="text-3xl font-bold text-amber-600">{characterStats?.totalCharacters ?? 0}</p>
         </Card>
       </div>
 
@@ -249,7 +249,10 @@ export default function AdminDashboard() {
       {/* Recent Messages Section */}
       <Card className="mt-8">
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">Recent Messages</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Recent Messages</h2>
+            <MessageSquare className="h-5 w-5 text-muted-foreground" />
+          </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -278,25 +281,30 @@ export default function AdminDashboard() {
       </Card>
 
       {/* New Feedback Section */}
-      <Card className="mt-8">
+      <Card className="mt-8 bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">User Feedback</h2>
-            <MessageCircle className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold">User Feedback</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Recent feedback and suggestions from users
+              </p>
+            </div>
+            <MessageCircle className="h-5 w-5 text-blue-500" />
           </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead className="w-[150px]">Name</TableHead>
+                  <TableHead className="w-[200px]">Email</TableHead>
                   <TableHead>Message</TableHead>
-                  <TableHead>Submitted At</TableHead>
+                  <TableHead className="w-[200px]">Submitted At</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {feedback?.map((item) => (
-                  <TableRow key={item.id}>
+                  <TableRow key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.email}</TableCell>
                     <TableCell className="max-w-md">
@@ -307,6 +315,13 @@ export default function AdminDashboard() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {!feedback?.length && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No feedback submissions yet
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -316,7 +331,15 @@ export default function AdminDashboard() {
       {/* User Management Section - Enhanced */}
       <Card className="mt-8">
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-4">User Management</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold">User Management</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Manage user accounts, permissions, and subscriptions
+              </p>
+            </div>
+            <Users className="h-5 w-5 text-muted-foreground" />
+          </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -333,7 +356,7 @@ export default function AdminDashboard() {
               </TableHeader>
               <TableBody>
                 {users?.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
                     <TableCell className="font-medium">{user.username}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
