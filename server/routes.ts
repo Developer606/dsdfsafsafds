@@ -500,26 +500,40 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Update login route to check for blocked status
+  // Update login route to check for blocked status first
   app.post("/api/login", async (req, res, next) => {
     try {
       const user = await storage.getUserByUsername(req.body.username);
+
+      // Check for blocked status before authentication
       if (user?.isBlocked) {
-        return res.status(403).json({ error: "Your account has been blocked. Please contact support." });
+        return res.status(403).json({ 
+          error: "Your account has been blocked. Please contact support." 
+        });
       }
-      // Continue with passport authentication
-      passport.authenticate("local", (err: any, user: any) => {
+
+      // Only proceed with authentication if user is not blocked
+      passport.authenticate("local", async (err: any, authenticatedUser: any) => {
         if (err) return next(err);
-        if (!user) {
-          return res.status(401).json({ error: "Invalid username or password" });
+
+        if (!authenticatedUser) {
+          return res.status(401).json({ 
+            error: "Invalid username or password" 
+          });
         }
-        if (user.isBlocked) {
-          return res.status(403).json({ error: "Your account has been blocked. Please contact support." });
+
+        // Double check block status after authentication
+        const currentUser = await storage.getUserByUsername(authenticatedUser.username);
+        if (currentUser?.isBlocked) {
+          return res.status(403).json({ 
+            error: "Your account has been blocked. Please contact support." 
+          });
         }
-        req.logIn(user, async (err) => {
+
+        req.logIn(authenticatedUser, async (err) => {
           if (err) return next(err);
-          await storage.updateLastLogin(user.id);
-          res.json(user);
+          await storage.updateLastLogin(authenticatedUser.id);
+          res.json(authenticatedUser);
         });
       })(req, res, next);
     } catch (error) {
