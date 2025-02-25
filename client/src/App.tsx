@@ -10,35 +10,53 @@ import LandingPage from "@/pages/landing";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import type { User } from "@shared/schema";
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
     retry: false,
-    onError: () => {
-      window.location.href = "/";
-    }
+    staleTime: 0,
   });
 
   if (!user?.isAdmin) {
-    return <Route path="/admin/*" component={() => {
-      window.location.href = "/admin/login";
-      return null;
-    }} />;
+    window.location.href = "/admin/login";
+    return null;
   }
 
   return <Component />;
 }
 
 function Router() {
-  const { data: user, error } = useQuery<User>({
+  const { toast } = useToast();
+
+  // Check user status periodically
+  useQuery({
+    queryKey: ["/api/check-status"],
+    refetchInterval: 5000, // Check every 5 seconds
+    retry: false,
+    onError: (error: any) => {
+      if (error.response?.status === 403) {
+        // User is blocked, show message and force logout
+        toast({
+          variant: "destructive",
+          title: "Account Blocked",
+          description: "Your account has been blocked. Please contact support."
+        });
+        // Perform logout
+        fetch("/api/logout", { method: "POST" }).finally(() => {
+          queryClient.clear();
+          window.location.href = "/";
+        });
+      }
+    }
+  });
+
+  const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
     retry: false,
-    onError: () => {
-      // Redirect to home page if session is invalid
-      window.location.href = "/";
-    }
+    staleTime: 0,
   });
 
   return (
