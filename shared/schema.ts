@@ -208,3 +208,27 @@ export const insertFeedbackSchema = createInsertSchema(feedback).pick({
 // Feedback types
 export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
+
+// Add complaints table schema
+export const complaints = sqliteTable("complaints", {
+  id: integer("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  message: text("message").notNull(),
+  imageUrl: text("image_url"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Add complaints schema for validation
+export const insertComplaintSchema = createInsertSchema(complaints).pick({
+  name: true,
+  email: true,
+  message: true,
+  imageUrl: true,
+});
+
+// Add complaint types
+export type Complaint = typeof complaints.$inferSelect;
+export type InsertComplaint = z.infer<typeof insertComplaintSchema>;

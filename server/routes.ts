@@ -7,6 +7,10 @@ import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, ty
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, sendVerificationEmail, hashPassword } from './auth'; // Assuming these functions are defined elsewhere
 import { feedbackStorage } from './feedback-storage';
+import { complaintStorage } from './complaint-storage';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 export async function registerRoutes(app: Express) {
   // Set up authentication routes and middleware
@@ -414,6 +418,66 @@ export async function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error('Error fetching feedback:', error);
       res.status(500).json({ error: "Failed to fetch feedback" });
+    }
+  });
+
+  // Configure multer for file uploads
+  const multerStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = 'uploads';
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir);
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, uniqueName + path.extname(file.originalname));
+    }
+  });
+
+  const upload = multer({
+    storage: multerStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+      if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type'));
+      }
+    }
+  });
+
+  // Add complaint submission endpoint
+  app.post("/api/complaints", upload.single('image'), async (req, res) => {
+    try {
+      const { name, email, message } = req.body;
+
+      const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+      const complaint = await complaintStorage.createComplaint({
+        name,
+        email,
+        message,
+        imageUrl
+      });
+
+      res.status(201).json(complaint);
+    } catch (error: any) {
+      console.error('Error saving complaint:', error);
+      res.status(500).json({ error: "Failed to submit complaint" });
+    }
+  });
+
+  // Add endpoint to get all complaints (admin only)
+  app.get("/api/admin/complaints", isAdmin, async (req, res) => {
+    try {
+      const allComplaints = await complaintStorage.getAllComplaints();
+      res.json(allComplaints);
+    } catch (error: any) {
+      console.error('Error fetching complaints:', error);
+      res.status(500).json({ error: "Failed to fetch complaints" });
     }
   });
 
