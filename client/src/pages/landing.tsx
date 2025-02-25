@@ -31,10 +31,87 @@ const slideIn = {
   transition: { duration: 0.8, ease: "easeOut" }
 };
 
+// Move policy content outside component for better performance
+const POLICY_CONTENT = {
+  return: (
+    <>
+      <h2>Return Policy</h2>
+      <p>As AnimeChat AI provides digital services, we do not offer traditional returns. However, if you're experiencing technical issues or have concerns about our service, please contact our support team at support@animechat.ai.</p>
+
+      <h3>Digital Content and Services</h3>
+      <ul>
+        <li>All purchases are considered final once the service is accessed</li>
+        <li>Premium features are non-transferable</li>
+        <li>Account access cannot be returned or transferred</li>
+      </ul>
+    </>
+  ),
+  refund: (
+    <>
+      <h2>Refund Policy</h2>
+      <p>We strive to provide the best possible experience with our AI chat service. Our refund policy is designed to be fair and transparent.</p>
+
+      <h3>Eligibility for Refunds</h3>
+      <ul>
+        <li>Service unavailability exceeding 24 hours</li>
+        <li>Technical issues preventing access to premium features</li>
+        <li>Billing errors or unauthorized charges</li>
+      </ul>
+
+      <p>To request a refund, please contact our support team with your account details and reason for the refund request.</p>
+    </>
+  ),
+  privacy: (
+    <>
+      <h2>Privacy Policy</h2>
+      <p>Your privacy is important to us. This policy outlines how we collect, use, and protect your personal information.</p>
+
+      <h3>Data Collection</h3>
+      <ul>
+        <li>Account information (email, username)</li>
+        <li>Chat history and interactions</li>
+        <li>Usage statistics and preferences</li>
+      </ul>
+
+      <h3>Data Protection</h3>
+      <p>We employ industry-standard security measures to protect your personal information and ensure data privacy.</p>
+    </>
+  ),
+  about: (
+    <>
+      <h2>About AnimeChat AI</h2>
+      <p>AnimeChat AI is an innovative platform that brings your favorite anime characters to life through advanced artificial intelligence.</p>
+
+      <h3>Our Mission</h3>
+      <p>We aim to create meaningful and engaging conversations between users and AI-powered anime characters, providing a unique and immersive experience for anime fans worldwide.</p>
+
+      <h3>Technology</h3>
+      <p>Our platform utilizes state-of-the-art language models and character development techniques to ensure authentic and engaging interactions.</p>
+    </>
+  ),
+  disclaimer: (
+    <>
+      <h2>Disclaimer</h2>
+      <p>Please read this disclaimer carefully before using our service.</p>
+
+      <h3>AI-Generated Content</h3>
+      <ul>
+        <li>Characters and responses are AI-generated and may not always be accurate</li>
+        <li>Conversations are simulated and for entertainment purposes only</li>
+        <li>We do not guarantee specific outcomes or experiences</li>
+      </ul>
+
+      <h3>User Responsibility</h3>
+      <p>Users are responsible for their interactions and should use the service appropriately and in accordance with our terms of service.</p>
+    </>
+  ),
+};
+
 export default function LandingPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [currentPolicy, setCurrentPolicy] = useState<keyof typeof POLICY_CONTENT | null>(null);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"]
@@ -259,7 +336,6 @@ export default function LandingPage() {
         </motion.div>
       </motion.div>
 
-      {/* Updated Footer Section */}
       <motion.footer 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -346,94 +422,12 @@ export default function LandingPage() {
         </div>
       </motion.footer>
 
-      {/* Add dialog state and content */}
-      {(() => {
-        const [currentPolicy, setCurrentPolicy] = useState<string | null>(null);
-
-        const policyContent = {
-          return: (
-            <>
-              <h2>Return Policy</h2>
-              <p>As AnimeChat AI provides digital services, we do not offer traditional returns. However, if you're experiencing technical issues or have concerns about our service, please contact our support team at support@animechat.ai.</p>
-
-              <h3>Digital Content and Services</h3>
-              <ul>
-                <li>All purchases are considered final once the service is accessed</li>
-                <li>Premium features are non-transferable</li>
-                <li>Account access cannot be returned or transferred</li>
-              </ul>
-            </>
-          ),
-          refund: (
-            <>
-              <h2>Refund Policy</h2>
-              <p>We strive to provide the best possible experience with our AI chat service. Our refund policy is designed to be fair and transparent.</p>
-
-              <h3>Eligibility for Refunds</h3>
-              <ul>
-                <li>Service unavailability exceeding 24 hours</li>
-                <li>Technical issues preventing access to premium features</li>
-                <li>Billing errors or unauthorized charges</li>
-              </ul>
-
-              <p>To request a refund, please contact our support team with your account details and reason for the refund request.</p>
-            </>
-          ),
-          privacy: (
-            <>
-              <h2>Privacy Policy</h2>
-              <p>Your privacy is important to us. This policy outlines how we collect, use, and protect your personal information.</p>
-
-              <h3>Data Collection</h3>
-              <ul>
-                <li>Account information (email, username)</li>
-                <li>Chat history and interactions</li>
-                <li>Usage statistics and preferences</li>
-              </ul>
-
-              <h3>Data Protection</h3>
-              <p>We employ industry-standard security measures to protect your personal information and ensure data privacy.</p>
-            </>
-          ),
-          about: (
-            <>
-              <h2>About AnimeChat AI</h2>
-              <p>AnimeChat AI is an innovative platform that brings your favorite anime characters to life through advanced artificial intelligence.</p>
-
-              <h3>Our Mission</h3>
-              <p>We aim to create meaningful and engaging conversations between users and AI-powered anime characters, providing a unique and immersive experience for anime fans worldwide.</p>
-
-              <h3>Technology</h3>
-              <p>Our platform utilizes state-of-the-art language models and character development techniques to ensure authentic and engaging interactions.</p>
-            </>
-          ),
-          disclaimer: (
-            <>
-              <h2>Disclaimer</h2>
-              <p>Please read this disclaimer carefully before using our service.</p>
-
-              <h3>AI-Generated Content</h3>
-              <ul>
-                <li>Characters and responses are AI-generated and may not always be accurate</li>
-                <li>Conversations are simulated and for entertainment purposes only</li>
-                <li>We do not guarantee specific outcomes or experiences</li>
-              </ul>
-
-              <h3>User Responsibility</h3>
-              <p>Users are responsible for their interactions and should use the service appropriately and in accordance with our terms of service.</p>
-            </>
-          ),
-        };
-
-        return (
-          <PolicyDialog
-            open={currentPolicy !== null}
-            onOpenChange={(open) => !open && setCurrentPolicy(null)}
-            title={currentPolicy ? `${currentPolicy.charAt(0).toUpperCase()}${currentPolicy.slice(1)} Policy` : ""}
-            content={currentPolicy ? policyContent[currentPolicy as keyof typeof policyContent] : null}
-          />
-        );
-      })()}
+      <PolicyDialog
+        open={currentPolicy !== null}
+        onOpenChange={(open) => !open && setCurrentPolicy(null)}
+        title={currentPolicy ? `${currentPolicy.charAt(0).toUpperCase()}${currentPolicy.slice(1)} Policy` : ""}
+        content={currentPolicy ? POLICY_CONTENT[currentPolicy] : null}
+      />
 
       <AuthDialog
         open={showAuthDialog}
