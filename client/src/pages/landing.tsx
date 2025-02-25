@@ -358,42 +358,40 @@ export default function LandingPage() {
             </div>
 
             <div className="text-center">
-              <div className="space-y-2">
-                <p className="text-sm text-gray-400">
-                  © {new Date().getFullYear()} AnimeChat AI. All rights reserved.
-                </p>
-                <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-400">
-                  <button 
-                    onClick={() => setCurrentPolicy("return")} 
-                    className="hover:text-white transition-colors"
-                  >
-                    Return Policy
-                  </button>
-                  <button 
-                    onClick={() => setCurrentPolicy("refund")} 
-                    className="hover:text-white transition-colors"
-                  >
-                    Refund Policy
-                  </button>
-                  <button 
-                    onClick={() => setCurrentPolicy("privacy")} 
-                    className="hover:text-white transition-colors"
-                  >
-                    Privacy Policy
-                  </button>
-                  <button 
-                    onClick={() => setCurrentPolicy("about")} 
-                    className="hover:text-white transition-colors"
-                  >
-                    About
-                  </button>
-                  <button 
-                    onClick={() => setCurrentPolicy("disclaimer")} 
-                    className="hover:text-white transition-colors"
-                  >
-                    Disclaimer
-                  </button>
-                </div>
+              <p className="text-sm text-gray-400 mb-4">
+                © {new Date().getFullYear()} AnimeChat AI. All rights reserved.
+              </p>
+              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-400">
+                <button 
+                  onClick={() => setCurrentPolicy("return")} 
+                  className="hover:text-white transition-colors"
+                >
+                  Return Policy
+                </button>
+                <button 
+                  onClick={() => setCurrentPolicy("refund")} 
+                  className="hover:text-white transition-colors"
+                >
+                  Refund Policy
+                </button>
+                <button 
+                  onClick={() => setCurrentPolicy("privacy")} 
+                  className="hover:text-white transition-colors"
+                >
+                  Privacy Policy
+                </button>
+                <button 
+                  onClick={() => setCurrentPolicy("about")} 
+                  className="hover:text-white transition-colors"
+                >
+                  About
+                </button>
+                <button 
+                  onClick={() => setCurrentPolicy("disclaimer")} 
+                  className="hover:text-white transition-colors"
+                >
+                  Disclaimer
+                </button>
               </div>
             </div>
 
