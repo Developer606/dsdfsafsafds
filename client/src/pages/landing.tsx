@@ -36,19 +36,19 @@ const FEATURED_CHARACTERS = [
   {
     name: "Naruto Uzumaki",
     description: "The determined ninja who never gives up!",
-    image: "/characters/naruto.jpg",
+    image: "https://placekitten.com/300/400", // Replace with actual character image
     color: "from-orange-500 to-red-500"
   },
   {
     name: "Sakura Haruno",
     description: "Skilled medical ninja with incredible strength",
-    image: "/characters/sakura.jpg",
+    image: "https://placekitten.com/301/400", // Replace with actual character image
     color: "from-pink-500 to-red-400"
   },
   {
     name: "Sasuke Uchiha",
     description: "Last survivor of the Uchiha clan",
-    image: "/characters/sasuke.jpg",
+    image: "https://placekitten.com/302/400", // Replace with actual character image
     color: "from-purple-600 to-blue-500"
   }
 ];
