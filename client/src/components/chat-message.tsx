@@ -15,28 +15,41 @@ export function ChatMessage({ message, character }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-2 max-w-[80%]",
+        "flex gap-3 max-w-[80%] group",
         isUser ? "ml-auto flex-row-reverse" : "mr-auto"
       )}
     >
+      {!isUser && (
+        <img
+          src={character.avatar}
+          alt={character.name}
+          className="w-8 h-8 rounded-full object-cover mt-1"
+        />
+      )}
       <div className="flex flex-col">
+        {!isUser && (
+          <span className="text-xs text-muted-foreground mb-1">{character.name}</span>
+        )}
         <div
           className={cn(
-            "px-3 py-2 rounded-2xl relative",
+            "px-4 py-2 rounded-2xl text-sm relative break-words",
             isUser
-              ? "bg-[#dcf8c6] text-gray-800 rounded-br-none" 
-              : "bg-white text-gray-800 rounded-bl-none" 
+              ? "bg-[#00a884] text-white rounded-br-none" 
+              : "bg-white text-gray-800 rounded-bl-none dark:bg-slate-800 dark:text-white"
           )}
         >
-          <div className="text-sm">{message.content}</div>
+          <div className="whitespace-pre-wrap">{message.content}</div>
           <div 
-            className="text-[11px] text-gray-500 flex items-center gap-1 mt-1"
+            className={cn(
+              "text-[11px] flex items-center gap-1 mt-1",
+              isUser ? "text-white/70" : "text-gray-500"
+            )}
           >
             {format(new Date(message.timestamp), "h:mm a")}
             {isUser && (
               <div className="flex ml-1">
-                <Check className="h-3 w-3 text-[#4fc3f7]" /> 
-                <Check className="h-3 w-3 text-[#4fc3f7] -ml-2" />
+                <Check className="h-3 w-3" /> 
+                <Check className="h-3 w-3 -ml-2" />
               </div>
             )}
           </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Smile } from "lucide-react";
+import { Send, Smile, Mic, Loader2 } from "lucide-react";
 import EmojiPicker from 'emoji-picker-react';
 import { 
   Popover, 
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supportedLanguages } from "@shared/schema";
+import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
   onSend: (content: string, language: string, script?: string) => void;
@@ -48,17 +49,17 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-end gap-2">
-      <div className="flex items-center gap-2 flex-1 bg-white rounded-full px-4 py-2"> {/* WhatsApp-style input container */}
+    <form onSubmit={handleSubmit} className="flex items-end gap-2 bg-white dark:bg-slate-900 p-4 border-t border-border">
+      <div className="flex items-center gap-2 flex-1 bg-background rounded-full px-4 py-2 border border-input focus-within:ring-1 focus-within:ring-ring"> 
         <Popover>
           <PopoverTrigger asChild>
             <Button 
               type="button" 
               size="icon" 
               variant="ghost"
-              className="h-8 w-8 rounded-full hover:bg-gray-100"
+              className="h-8 w-8 rounded-full hover:bg-accent"
             >
-              <Smile className="h-5 w-5 text-gray-500" />
+              <Smile className="h-5 w-5 text-muted-foreground" />
             </Button>
           </PopoverTrigger>
           <PopoverContent 
@@ -99,9 +100,18 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
         type="submit" 
         size="icon"
         disabled={isLoading || !message.trim()}
-        className="h-10 w-10 rounded-full bg-[#00a884] hover:bg-[#00946e]" // WhatsApp send button color
+        className={cn(
+          "h-10 w-10 rounded-full bg-[#00a884] hover:bg-[#00946e] transition-all duration-200",
+          message.trim() ? "scale-100" : "scale-95 opacity-90"
+        )}
       >
-        <Send className="h-5 w-5" />
+        {isLoading ? (
+          <span className="animate-spin">
+            <Loader2 className="h-5 w-5" />
+          </span>
+        ) : (
+          <Send className="h-5 w-5" />
+        )}
       </Button>
     </form>
   );
