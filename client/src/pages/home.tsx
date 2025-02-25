@@ -15,7 +15,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Info, Search } from "lucide-react";
+import { Plus, Trash2, Info } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type Character } from "@shared/characters";
 import { type CustomCharacter, type User } from "@shared/schema";
@@ -27,11 +27,26 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.3
+    }
+  }
+};
+
+const item = {
+  hidden: { y: 20, opacity: 0 },
+  show: { y: 0, opacity: 1 }
+};
+
 export default function Home() {
   const [location] = useLocation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [newCharacter, setNewCharacter] = useState({
     name: "",
     avatar: "",
@@ -48,11 +63,6 @@ export default function Home() {
   const { data: characters, isLoading } = useQuery<Character[]>({ 
     queryKey: ["/api/characters"]
   });
-
-  const filteredCharacters = characters?.filter(char => 
-    char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    char.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
@@ -131,105 +141,96 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black p-6">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="h-[300px] bg-gray-800/50 rounded-xl animate-pulse"
-              />
-            ))}
-          </div>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="container mx-auto p-4"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: i * 0.1 }}
+              className="h-64 bg-card animate-pulse rounded-lg"
+            />
+          ))}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black">
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex-1"
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-background"
+    >
+      <div className="container mx-auto p-4">
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex items-center justify-between mb-6"
+        >
+          <motion.h1 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text"
           >
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 text-transparent bg-clip-text">
-              Your Anime Characters
-            </h1>
-            <p className="mt-2 text-gray-400">
-              Create and chat with your favorite characters
-            </p>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-4 w-full md:w-auto"
-          >
-            <div className="relative flex-1 md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search characters..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gray-800/50 border-gray-700 text-gray-100"
-              />
-            </div>
-
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            Anime Characters
+          </motion.h1>
+          <div className="flex items-center gap-4">
+            {!user?.isPremium && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center text-sm text-muted-foreground"
+                    >
+                      <Info className="h-4 w-4 mr-1" />
+                      {user?.trialCharactersCreated || 0}/3 free characters used
+                    </motion.div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Free users can create up to 3 custom characters.</p>
+                    <p>Upgrade to premium for unlimited characters!</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <Button
                 onClick={handleCreateClick}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-[#00a884] hover:bg-[#00946e] text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Create Character
               </Button>
             </motion.div>
-          </motion.div>
-        </div>
-
-        {!user?.isPremium && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-4 bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-xl backdrop-blur-sm border border-purple-500/20"
-          >
-            <div className="flex items-center gap-3">
-              <Info className="h-5 w-5 text-purple-400" />
-              <p className="text-gray-300">
-                <span className="font-semibold text-purple-400">{user?.trialCharactersCreated || 0}/3</span> free characters used.
-                <Button
-                  variant="link"
-                  onClick={() => setShowSubscription(true)}
-                  className="text-purple-400 hover:text-purple-300 ml-2"
-                >
-                  Upgrade to Premium
-                </Button>
-              </p>
-            </div>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           <AnimatePresence>
-            {filteredCharacters?.map((character) => (
+            {characters?.map((character, index) => (
               <motion.div
                 key={character.id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                whileHover={{ y: -5 }}
+                variants={item}
+                layoutId={character.id}
                 className="relative group"
+                whileHover={{ y: -5 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
               >
                 <Link href={`/chat/${character.id}`}>
                   <div className="transform transition-all duration-300 hover:scale-[1.02]">
@@ -241,12 +242,11 @@ export default function Home() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="absolute top-2 right-2"
                   >
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity bg-red-600/90 hover:bg-red-700"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -263,11 +263,11 @@ export default function Home() {
         </motion.div>
 
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="sm:max-w-[425px] bg-gray-900/95 backdrop-blur-sm border-gray-800">
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle className="text-gray-100">Create New Character</DialogTitle>
+              <DialogTitle>Create New Character</DialogTitle>
               {!user?.isPremium && (
-                <DialogDescription className="text-yellow-500">
+                <DialogDescription className="text-yellow-600">
                   Free Trial: {user?.trialCharactersCreated || 0}/3 characters created
                 </DialogDescription>
               )}
@@ -275,55 +275,35 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
+              className="space-y-4"
             >
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Name</label>
-                <Input
-                  placeholder="Character Name"
-                  value={newCharacter.name}
-                  onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 text-gray-100"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Avatar URL</label>
-                <Input
-                  placeholder="Avatar URL"
-                  value={newCharacter.avatar}
-                  onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 text-gray-100"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Description</label>
-                <Textarea
-                  placeholder="Character Description"
-                  value={newCharacter.description}
-                  onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 text-gray-100"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Persona</label>
-                <Textarea
-                  placeholder="Character Persona"
-                  value={newCharacter.persona}
-                  onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 text-gray-100"
-                />
-              </div>
-
+              <Input
+                placeholder="Character Name"
+                value={newCharacter.name}
+                onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
+              />
+              <Input
+                placeholder="Avatar URL"
+                value={newCharacter.avatar}
+                onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
+              />
+              <Textarea
+                placeholder="Character Description"
+                value={newCharacter.description}
+                onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
+              />
+              <Textarea
+                placeholder="Character Persona"
+                value={newCharacter.persona}
+                onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
+              />
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button 
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                  className="w-full bg-gradient-to-r from-[#00a884] to-[#008f6f] hover:from-[#008f6f] hover:to-[#007a5f] text-white shadow-lg"
                   onClick={handleSubmit}
                   disabled={createCharacter.isPending}
                 >
-                  {createCharacter.isPending ? "Creating..." : "Create Character"}
+                  Create Character
                 </Button>
               </motion.div>
             </motion.div>
@@ -335,6 +315,6 @@ export default function Home() {
           onClose={() => setShowSubscription(false)}
         />
       </div>
-    </div>
+    </motion.div>
   );
 }
