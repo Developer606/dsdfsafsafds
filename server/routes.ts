@@ -5,12 +5,14 @@ import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
-import { generateOTP, sendVerificationEmail, hashPassword } from './auth'; // Assuming these functions are defined elsewhere
+import { generateOTP, sendVerificationEmail, hashPassword } from './auth'; 
 import { feedbackStorage } from './feedback-storage';
 import { complaintStorage } from './complaint-storage';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import passport from 'passport'; // Added import for passport
+
 
 export async function registerRoutes(app: Express) {
   // Set up authentication routes and middleware
@@ -96,6 +98,23 @@ export async function registerRoutes(app: Express) {
     try {
       const userId = parseInt(req.params.userId);
       const { blocked } = req.body;
+
+      // Get all active sessions
+      const sessions = await new Promise((resolve, reject) => {
+        storage.sessionStore.all((err, sessions) => {
+          if (err) reject(err);
+          else resolve(sessions || {});
+        });
+      });
+
+      // If blocking the user, find and destroy their session
+      if (blocked) {
+        Object.entries(sessions).forEach(([sessionId, session]: [string, any]) => {
+          if (session?.passport?.user === userId) {
+            storage.sessionStore.destroy(sessionId);
+          }
+        });
+      }
 
       await storage.updateUserStatus(userId, { isBlocked: blocked });
       res.json({ success: true });
@@ -480,6 +499,34 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ error: "Failed to fetch complaints" });
     }
   });
+
+  // Update login route to check for blocked status
+  app.post("/api/login", async (req, res, next) => {
+    try {
+      const user = await storage.getUserByUsername(req.body.username);
+      if (user?.isBlocked) {
+        return res.status(403).json({ error: "Your account has been blocked. Please contact support." });
+      }
+      // Continue with passport authentication
+      passport.authenticate("local", (err: any, user: any) => {
+        if (err) return next(err);
+        if (!user) {
+          return res.status(401).json({ error: "Invalid username or password" });
+        }
+        if (user.isBlocked) {
+          return res.status(403).json({ error: "Your account has been blocked. Please contact support." });
+        }
+        req.logIn(user, async (err) => {
+          if (err) return next(err);
+          await storage.updateLastLogin(user.id);
+          res.json(user);
+        });
+      })(req, res, next);
+    } catch (error) {
+      next(error);
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;
