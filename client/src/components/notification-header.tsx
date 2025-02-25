@@ -1,11 +1,21 @@
 import { useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 interface Notification {
@@ -18,7 +28,6 @@ interface Notification {
 }
 
 export function NotificationHeader() {
-  // This would typically come from an API/database
   const [notifications] = useState<Notification[]>([
     {
       id: '1',
@@ -38,7 +47,46 @@ export function NotificationHeader() {
     }
   ]);
 
+  const [showComplaintDialog, setShowComplaintDialog] = useState(false);
+  const [complaint, setComplaint] = useState("");
+  const { toast } = useToast();
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleComplaintSubmit = async () => {
+    if (!complaint.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter your complaint before submitting"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/complaints", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: complaint })
+      });
+
+      if (!response.ok) throw new Error();
+
+      toast({
+        title: "Success",
+        description: "Your complaint has been submitted successfully. We'll review it shortly."
+      });
+      setComplaint("");
+      setShowComplaintDialog(false);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to submit complaint. Please try again."
+      });
+    }
+  };
 
   return (
     <div className="w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800">
@@ -54,64 +102,105 @@ export function NotificationHeader() {
               AnimeChat
             </span>
           </div>
-          
-          <Popover>
-            <PopoverTrigger asChild>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <Bell className="h-6 w-6 text-[#075e54] dark:text-[#00a884]" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 h-5 w-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </motion.button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-0">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-[#075e54] dark:text-[#00a884]">
-                  Notifications
-                </h3>
-              </div>
-              <AnimatePresence>
-                {notifications.length > 0 ? (
-                  <div className="max-h-[300px] overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <motion.div
-                        key={notification.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className={cn(
-                          "p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors",
-                          !notification.read && "bg-blue-50 dark:bg-blue-900/10"
-                        )}
-                      >
-                        <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                          {notification.title}
-                        </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          {notification.message}
-                        </p>
-                        <span className="text-xs text-gray-500 dark:text-gray-500 mt-2 block">
-                          {new Date(notification.timestamp).toLocaleDateString()}
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                    No notifications
-                  </div>
-                )}
-              </AnimatePresence>
-            </PopoverContent>
-          </Popover>
+
+          <div className="flex items-center gap-4">
+            <Popover>
+              <PopoverTrigger asChild>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Bell className="h-6 w-6 text-[#075e54] dark:text-[#00a884]" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 h-5 w-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </motion.button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <h3 className="font-semibold text-[#075e54] dark:text-[#00a884]">
+                    Notifications
+                  </h3>
+                </div>
+                <AnimatePresence>
+                  {notifications.length > 0 ? (
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {notifications.map((notification) => (
+                        <motion.div
+                          key={notification.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className={cn(
+                            "p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors",
+                            !notification.read && "bg-blue-50 dark:bg-blue-900/10"
+                          )}
+                        >
+                          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                            {notification.title}
+                          </h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {notification.message}
+                          </p>
+                          <span className="text-xs text-gray-500 dark:text-gray-500 mt-2 block">
+                            {new Date(notification.timestamp).toLocaleDateString()}
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      No notifications
+                    </div>
+                  )}
+                </AnimatePresence>
+              </PopoverContent>
+            </Popover>
+
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowComplaintDialog(true)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-[#075e54] dark:text-[#00a884]"
+            >
+              <AlertCircle className="h-6 w-6" />
+            </motion.button>
+          </div>
         </div>
       </div>
+
+      <Dialog open={showComplaintDialog} onOpenChange={setShowComplaintDialog}>
+        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900">
+          <DialogHeader>
+            <DialogTitle className="text-[#075e54] dark:text-[#00a884]">Submit a Complaint</DialogTitle>
+            <DialogDescription>
+              Tell us about any issues you're experiencing. We'll review and respond as soon as possible.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <Textarea
+              placeholder="Describe your complaint here..."
+              value={complaint}
+              onChange={(e) => setComplaint(e.target.value)}
+              className="min-h-[150px] border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884]"
+            />
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <Button
+                onClick={handleComplaintSubmit}
+                className="w-full bg-gradient-to-r from-[#00a884] to-[#008f6f] hover:from-[#008f6f] hover:to-[#007a5f] text-white"
+              >
+                Submit Complaint
+              </Button>
+            </motion.div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
