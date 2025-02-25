@@ -165,21 +165,26 @@ export default function Home() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background"
+      className="min-h-screen bg-[#efeae2] dark:bg-slate-950"
     >
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-6">
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="flex items-center justify-between mb-6"
+          className="flex items-center justify-between mb-8"
         >
-          <motion.h1 
+          <motion.div 
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text"
+            className="flex flex-col gap-2"
           >
-            Anime Characters
-          </motion.h1>
+            <h1 className="text-4xl font-bold text-[#075e54] dark:text-[#00a884]">
+              Your Characters
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Choose a character to start chatting
+            </p>
+          </motion.div>
           <div className="flex items-center gap-4">
             {!user?.isPremium && (
               <TooltipProvider>
@@ -188,7 +193,7 @@ export default function Home() {
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center text-sm text-muted-foreground"
+                      className="flex items-center text-sm text-[#075e54] dark:text-gray-400"
                     >
                       <Info className="h-4 w-4 mr-1" />
                       {user?.trialCharactersCreated || 0}/3 free characters used
@@ -207,7 +212,7 @@ export default function Home() {
             >
               <Button
                 onClick={handleCreateClick}
-                className="bg-[#00a884] hover:bg-[#00946e] text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-[#00a884] hover:bg-[#008f6f] text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Create Character
@@ -220,7 +225,7 @@ export default function Home() {
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           <AnimatePresence>
             {characters?.map((character, index) => (
@@ -234,7 +239,10 @@ export default function Home() {
               >
                 <Link href={`/chat/${character.id}`}>
                   <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                    <CharacterCard character={character} />
+                    <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-800">
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#00a884]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <CharacterCard character={character} />
+                    </div>
                   </div>
                 </Link>
                 {character.id.startsWith('custom_') && (
@@ -246,7 +254,7 @@ export default function Home() {
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/90 hover:bg-red-600"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -263,9 +271,9 @@ export default function Home() {
         </motion.div>
 
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-0">
             <DialogHeader>
-              <DialogTitle>Create New Character</DialogTitle>
+              <DialogTitle className="text-[#075e54] dark:text-[#00a884]">Create New Character</DialogTitle>
               {!user?.isPremium && (
                 <DialogDescription className="text-yellow-600">
                   Free Trial: {user?.trialCharactersCreated || 0}/3 characters created
@@ -281,23 +289,31 @@ export default function Home() {
                 placeholder="Character Name"
                 value={newCharacter.name}
                 onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
+                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884]"
               />
               <Input
                 placeholder="Avatar URL"
                 value={newCharacter.avatar}
                 onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
+                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884]"
               />
               <Textarea
                 placeholder="Character Description"
                 value={newCharacter.description}
                 onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
+                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] min-h-[100px]"
               />
               <Textarea
                 placeholder="Character Persona"
                 value={newCharacter.persona}
                 onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
+                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] min-h-[100px]"
               />
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <motion.div 
+                whileHover={{ scale: 1.02 }} 
+                whileTap={{ scale: 0.98 }}
+                className="pt-2"
+              >
                 <Button 
                   className="w-full bg-gradient-to-r from-[#00a884] to-[#008f6f] hover:from-[#008f6f] hover:to-[#007a5f] text-white shadow-lg"
                   onClick={handleSubmit}
