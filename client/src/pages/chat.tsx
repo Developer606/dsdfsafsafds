@@ -82,14 +82,23 @@ export default function Chat() {
     mutationFn: async () => {
       const res = await fetch("/api/logout", {
         method: "POST",
-        credentials: "include"
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json"
+        }
       });
-      if (!res.ok) throw new Error("Failed to logout");
+
+      if (!res.ok) {
+        throw new Error("Failed to logout");
+      }
+
       return res.json();
     },
     onSuccess: () => {
-      // Clear all queries from cache
+      // Clear all queries from cache to ensure no stale data remains
       queryClient.clear();
+      // Remove any stored auth state
+      queryClient.setQueryData(["/api/user"], null);
       // Navigate to landing page
       setLocation("/");
       toast({
@@ -97,13 +106,14 @@ export default function Chat() {
         description: "Come back soon!"
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Logout error:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to logout. Please try again."
       });
-    },
+    }
   });
 
   const handleClearChat = () => {
