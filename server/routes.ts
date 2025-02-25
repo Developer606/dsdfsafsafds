@@ -11,12 +11,32 @@ import { complaintStorage } from './complaint-storage';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import passport from 'passport'; // Added import for passport
+import passport from 'passport';
 
+// Middleware to check if user is blocked
+const checkBlockedStatus = async (req: any, res: any, next: any) => {
+  if (req.isAuthenticated()) {
+    const currentUser = await storage.getUser(req.user.id);
+    if (currentUser?.isBlocked) {
+      req.logout((err: any) => {
+        if (err) {
+          console.error('Error logging out blocked user:', err);
+        }
+      });
+      return res.status(403).json({ 
+        error: "Your account has been blocked. Please contact support." 
+      });
+    }
+  }
+  next();
+};
 
 export async function registerRoutes(app: Express) {
   // Set up authentication routes and middleware
   setupAuth(app);
+
+  // Add blocked status check middleware to all routes
+  app.use(checkBlockedStatus);
 
   // Admin dashboard endpoints
   app.get("/api/admin/dashboard/stats", isAdmin, async (req, res) => {
@@ -108,8 +128,8 @@ export async function registerRoutes(app: Express) {
       });
 
       // If blocking the user, find and destroy their session
-      if (blocked) {
-        Object.entries(sessions).forEach(([sessionId, session]: [string, any]) => {
+      if (blocked && sessions) {
+        Object.entries(sessions as Record<string, any>).forEach(([sessionId, session]) => {
           if (session?.passport?.user === userId) {
             storage.sessionStore.destroy(sessionId);
           }
@@ -500,7 +520,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Update login route to check for blocked status first
+  // Update login route to strictly check blocked status
   app.post("/api/login", async (req, res, next) => {
     try {
       const user = await storage.getUserByUsername(req.body.username);
@@ -540,8 +560,6 @@ export async function registerRoutes(app: Express) {
       next(error);
     }
   });
-
-
 
   const httpServer = createServer(app);
   return httpServer;
