@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, Image as ImageIcon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -37,9 +37,26 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { motion } from "framer-motion";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   // Enhanced stats query to include more metrics
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -71,6 +88,13 @@ export default function AdminDashboard() {
     refetchInterval: 30000,
   });
 
+  // New query for complaints
+  const { data: complaints, isLoading: complaintsLoading } = useQuery<Feedback[]>({
+    queryKey: ["/api/admin/complaints"],
+    refetchInterval: 30000,
+  });
+
+
   // Existing mutations...
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
@@ -96,7 +120,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
-        description: "Userdeleted successfully",
+        description: "User deleted successfully",
       });
     },
   });
@@ -129,6 +153,30 @@ export default function AdminDashboard() {
     },
   });
 
+  const updateComplaintStatus = async (id: number, status: string) => {
+    try {
+      await fetch(`/api/admin/complaints/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+
+      toast({
+        title: "Success",
+        description: "Complaint status updated successfully"
+      });
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/complaints"] });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update complaint status"
+      });
+    }
+  };
+
   // Enhanced data preparation for charts
   const subscriptionData = users ? [
     { name: 'Free', value: users.filter(u => !u.isPremium).length },
@@ -143,7 +191,7 @@ export default function AdminDashboard() {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-  if (statsLoading || usersLoading || messagesLoading || charactersLoading || feedbackLoading) {
+  if (statsLoading || usersLoading || messagesLoading || charactersLoading || feedbackLoading || complaintsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -280,14 +328,132 @@ export default function AdminDashboard() {
         </div>
       </Card>
 
-      {/* New Feedback Section */}
-      <Card className="mt-8 bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+      {/* New Complaints Section */}
+      <Card className="mt-8">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-bold">User Feedback</h2>
+              <h2 className="text-xl font-bold text-[#075e54]">User Complaints</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Recent feedback and suggestions from users
+                Manage and respond to user complaints
+              </p>
+            </div>
+            <MessageCircle className="h-5 w-5 text-[#075e54]" />
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Message</TableHead>
+                  <TableHead>Image</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {complaints?.map((complaint) => (
+                  <TableRow key={complaint.id}>
+                    <TableCell className="font-medium">{complaint.name}</TableCell>
+                    <TableCell>{complaint.email}</TableCell>
+                    <TableCell className="max-w-md">
+                      <div className="truncate">{complaint.message}</div>
+                    </TableCell>
+                    <TableCell>
+                      {complaint.imageUrl && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-0"
+                          onClick={() => setSelectedImageUrl(complaint.imageUrl!)}
+                        >
+                          <ImageIcon className="h-5 w-5 text-blue-500" />
+                        </Button>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        defaultValue={complaint.status}
+                        onValueChange={(value) => updateComplaintStatus(complaint.id, value)}
+                      >
+                        <SelectTrigger className="w-[130px]">
+                          <SelectValue>
+                            <Badge
+                              variant={
+                                complaint.status === 'resolved' ? 'success' :
+                                complaint.status === 'in-progress' ? 'warning' :
+                                'default'
+                              }
+                            >
+                              {complaint.status}
+                            </Badge>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="in-progress">In Progress</SelectItem>
+                          <SelectItem value="resolved">Resolved</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(complaint.createdAt).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Handle viewing full complaint details
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!complaints?.length && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      No complaints submitted yet
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </Card>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!selectedImageUrl} onOpenChange={() => setSelectedImageUrl(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Complaint Image</DialogTitle>
+          </DialogHeader>
+          {selectedImageUrl && (
+            <div className="relative aspect-video">
+              <img
+                src={selectedImageUrl}
+                alt="Complaint"
+                className="rounded-lg object-contain w-full"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Keep existing feedback section with a different style */}
+      <Card className="mt-8 bg-gradient-to-br from-gray-50 to-white dark:from-slate-950 dark:to-slate-900">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold">General Feedback</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                User suggestions and general feedback
               </p>
             </div>
             <MessageCircle className="h-5 w-5 text-blue-500" />
@@ -400,8 +566,8 @@ export default function AdminDashboard() {
                           <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => updateSubscription.mutate({ 
-                              userId: user.id, 
+                            onClick={() => updateSubscription.mutate({
+                              userId: user.id,
                               planId: 'free'
                             })}
                           >
@@ -476,8 +642,8 @@ export default function AdminDashboard() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="icon"
                               disabled={deleteUser.isPending}
                             >
