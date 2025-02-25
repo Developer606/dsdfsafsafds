@@ -133,9 +133,9 @@ export default function Home() {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="container mx-auto px-4 py-6 md:p-6"
+        className="container mx-auto p-4"
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <motion.div
               key={i}
@@ -157,21 +157,21 @@ export default function Home() {
       className="min-h-screen bg-[#efeae2] dark:bg-slate-950"
     >
       <NotificationHeader />
-      <div className="container mx-auto px-4 py-6 md:p-6">
+      <div className="container mx-auto p-6">
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4"
+          className="flex items-center justify-between mb-8"
         >
           <motion.div 
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             className="flex flex-col gap-2"
           >
-            <h1 className="text-3xl md:text-4xl font-bold text-[#075e54] dark:text-[#00a884]">
+            <h1 className="text-4xl font-bold text-[#075e54] dark:text-[#00a884]">
               Your Characters
             </h1>
-            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600 dark:text-gray-400">
               Choose a character to start chatting
             </p>
           </motion.div>
@@ -183,15 +183,15 @@ export default function Home() {
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center text-xs md:text-sm text-[#075e54] dark:text-gray-400"
+                      className="flex items-center text-sm text-[#075e54] dark:text-gray-400"
                     >
                       <Info className="h-4 w-4 mr-1" />
                       {user?.trialCharactersCreated || 0}/3 free characters used
                     </motion.div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="text-xs md:text-sm">Free users can create up to 3 custom characters.</p>
-                    <p className="text-xs md:text-sm">Upgrade to premium for unlimited characters!</p>
+                    <p>Free users can create up to 3 custom characters.</p>
+                    <p>Upgrade to premium for unlimited characters!</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -202,9 +202,9 @@ export default function Home() {
             >
               <Button
                 onClick={handleCreateClick}
-                className="bg-[#00a884] hover:bg-[#008f6f] text-white shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base"
+                className="bg-[#00a884] hover:bg-[#008f6f] text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                <Plus className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                <Plus className="h-5 w-5 mr-2" />
                 Create Character
               </Button>
             </motion.div>
@@ -215,7 +215,7 @@ export default function Home() {
           variants={container}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
         >
           <AnimatePresence>
             {characters?.map((character, index) => (
@@ -244,7 +244,7 @@ export default function Home() {
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/90 hover:bg-red-600 h-8 w-8 md:h-9 md:w-9"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/90 hover:bg-red-600"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -261,11 +261,11 @@ export default function Home() {
         </motion.div>
 
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-0 w-[95vw] md:w-auto mx-4">
+          <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-0">
             <DialogHeader>
-              <DialogTitle className="text-[#075e54] dark:text-[#00a884] text-lg md:text-xl">Create New Character</DialogTitle>
+              <DialogTitle className="text-[#075e54] dark:text-[#00a884]">Create New Character</DialogTitle>
               {!user?.isPremium && (
-                <DialogDescription className="text-yellow-600 text-sm">
+                <DialogDescription className="text-yellow-600">
                   Free Trial: {user?.trialCharactersCreated || 0}/3 characters created
                 </DialogDescription>
               )}
@@ -279,25 +279,25 @@ export default function Home() {
                 placeholder="Character Name"
                 value={newCharacter.name}
                 onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
-                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] text-sm md:text-base"
+                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884]"
               />
               <Input
                 placeholder="Avatar URL"
                 value={newCharacter.avatar}
                 onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
-                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] text-sm md:text-base"
+                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884]"
               />
               <Textarea
                 placeholder="Character Description"
                 value={newCharacter.description}
                 onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
-                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] min-h-[100px] text-sm md:text-base"
+                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] min-h-[100px]"
               />
               <Textarea
                 placeholder="Character Persona"
                 value={newCharacter.persona}
                 onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
-                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] min-h-[100px] text-sm md:text-base"
+                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] min-h-[100px]"
               />
               <motion.div 
                 whileHover={{ scale: 1.02 }} 
@@ -305,7 +305,7 @@ export default function Home() {
                 className="pt-2"
               >
                 <Button 
-                  className="w-full bg-gradient-to-r from-[#00a884] to-[#008f6f] hover:from-[#008f6f] hover:to-[#007a5f] text-white shadow-lg text-sm md:text-base"
+                  className="w-full bg-gradient-to-r from-[#00a884] to-[#008f6f] hover:from-[#008f6f] hover:to-[#007a5f] text-white shadow-lg"
                   onClick={handleSubmit}
                   disabled={createCharacter.isPending}
                 >
