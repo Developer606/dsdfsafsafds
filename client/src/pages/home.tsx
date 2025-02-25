@@ -13,10 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Info, Search, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Info, Search } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type Character } from "@shared/characters";
 import { type CustomCharacter, type User } from "@shared/schema";
@@ -32,12 +31,7 @@ export default function Home() {
   const [location] = useLocation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showComplaintDialog, setShowComplaintDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [complaintData, setComplaintData] = useState({
-    subject: "",
-    description: ""
-  });
   const [newCharacter, setNewCharacter] = useState({
     name: "",
     avatar: "",
@@ -59,28 +53,6 @@ export default function Home() {
     char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     char.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const submitComplaint = useMutation({
-    mutationFn: async (data: { subject: string; description: string }) => {
-      const res = await apiRequest("POST", "/api/complaints", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      setShowComplaintDialog(false);
-      setComplaintData({ subject: "", description: "" });
-      toast({
-        title: "Complaint Submitted",
-        description: "We'll review your complaint and get back to you soon."
-      });
-    },
-    onError: () => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to submit complaint. Please try again."
-      });
-    }
-  });
 
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
@@ -143,18 +115,6 @@ export default function Home() {
     }
 
     setShowCreateDialog(true);
-  };
-
-  const handleSubmitComplaint = () => {
-    if (!complaintData.subject || !complaintData.description) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please fill in all fields"
-      });
-      return;
-    }
-    submitComplaint.mutate(complaintData);
   };
 
   const handleSubmit = () => {
@@ -220,24 +180,6 @@ export default function Home() {
                 className="pl-10 bg-gray-800/50 border-gray-700 text-gray-100"
               />
             </div>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setShowComplaintDialog(true)}
-                    className="bg-gray-800/50 border-gray-700 hover:bg-gray-700/50"
-                  >
-                    <AlertCircle className="h-5 w-5 text-yellow-500" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Raise a Complaint</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
 
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
@@ -384,59 +326,6 @@ export default function Home() {
                   {createCharacter.isPending ? "Creating..." : "Create Character"}
                 </Button>
               </motion.div>
-            </motion.div>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={showComplaintDialog} onOpenChange={setShowComplaintDialog}>
-          <DialogContent className="sm:max-w-[425px] bg-gray-900/95 backdrop-blur-sm border-gray-800">
-            <DialogHeader>
-              <DialogTitle className="text-gray-100">Raise a Complaint</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                Tell us about any issues or concerns you're experiencing.
-              </DialogDescription>
-            </DialogHeader>
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Subject</label>
-                <Input
-                  placeholder="Complaint Subject"
-                  value={complaintData.subject}
-                  onChange={(e) => setComplaintData({ ...complaintData, subject: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 text-gray-100"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Description</label>
-                <Textarea
-                  placeholder="Describe your complaint in detail..."
-                  value={complaintData.description}
-                  onChange={(e) => setComplaintData({ ...complaintData, description: e.target.value })}
-                  className="bg-gray-800/50 border-gray-700 text-gray-100 min-h-[150px]"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3">
-                <DialogClose asChild>
-                  <Button variant="outline" className="bg-gray-800/50 border-gray-700 text-gray-300 hover:bg-gray-700/50">
-                    Cancel
-                  </Button>
-                </DialogClose>
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button 
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                    onClick={handleSubmitComplaint}
-                    disabled={submitComplaint.isPending}
-                  >
-                    {submitComplaint.isPending ? "Submitting..." : "Submit Complaint"}
-                  </Button>
-                </motion.div>
-              </div>
             </motion.div>
           </DialogContent>
         </Dialog>
