@@ -19,8 +19,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette } from "lucide-react";
+import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +62,12 @@ export default function AdminDashboard() {
   // New query for character stats
   const { data: characterStats, isLoading: charactersLoading } = useQuery({
     queryKey: ["/api/admin/characters/stats"],
+    refetchInterval: 30000,
+  });
+
+  // New query for feedback
+  const { data: feedback, isLoading: feedbackLoading } = useQuery<Feedback[]>({
+    queryKey: ["/api/admin/feedback"],
     refetchInterval: 30000,
   });
 
@@ -137,7 +143,7 @@ export default function AdminDashboard() {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-  if (statsLoading || usersLoading || messagesLoading || charactersLoading) {
+  if (statsLoading || usersLoading || messagesLoading || charactersLoading || feedbackLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -262,6 +268,42 @@ export default function AdminDashboard() {
                     <TableCell className="max-w-md truncate">{message.content}</TableCell>
                     <TableCell>
                       {new Date(message.timestamp).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </Card>
+
+      {/* New Feedback Section */}
+      <Card className="mt-8">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">User Feedback</h2>
+            <MessageCircle className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Message</TableHead>
+                  <TableHead>Submitted At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {feedback?.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.name}</TableCell>
+                    <TableCell>{item.email}</TableCell>
+                    <TableCell className="max-w-md">
+                      <div className="truncate">{item.message}</div>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(item.createdAt).toLocaleString()}
                     </TableCell>
                   </TableRow>
                 ))}
