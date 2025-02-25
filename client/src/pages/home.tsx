@@ -122,6 +122,7 @@ export default function Home() {
     createCharacter.mutate(newCharacter);
   };
 
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4">
@@ -135,9 +136,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background/80">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
             Anime Characters
           </h1>
@@ -168,26 +169,11 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {characters?.map((character) => (
-            <div key={character.id} className="relative group transition-transform hover:scale-[1.02]">
+            <div key={character.id} className="relative group">
               <Link href={`/chat/${character.id}`}>
-                <Card className="overflow-hidden hover:shadow-lg transition-shadow border-border/50 hover:border-border">
-                  <CardContent className="p-0">
-                    <div className="aspect-[4/3] relative">
-                      <img
-                        src={character.avatar}
-                        alt={character.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                        <h3 className="text-xl font-semibold mb-1">{character.name}</h3>
-                        <p className="text-sm text-white/80 line-clamp-2">{character.description}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <CharacterCard character={character} />
               </Link>
               {character.id.startsWith('custom_') && (
                 <Button
