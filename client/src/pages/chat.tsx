@@ -71,28 +71,19 @@ export default function Chat() {
 
   const logout = useMutation({
     mutationFn: async () => {
-      const res = await fetch("/api/logout", {
+      const response = await fetch("/api/logout", {
         method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json"
-        }
+        credentials: "include"
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to logout");
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || "Failed to logout");
       }
-
-      return res.json();
     },
     onSuccess: () => {
       queryClient.clear();
-      queryClient.setQueryData(["/api/user"], null);
       setLocation("/");
-      toast({
-        title: "Logged out successfully",
-        description: "Come back soon!"
-      });
     },
     onError: (error) => {
       console.error("Logout error:", error);
