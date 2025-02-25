@@ -3,9 +3,10 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
-import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
+import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, sendVerificationEmail, hashPassword } from './auth'; // Assuming these functions are defined elsewhere
+import { feedbackStorage } from './feedback-storage';
 
 export async function registerRoutes(app: Express) {
   // Set up authentication routes and middleware
@@ -386,73 +387,33 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add feedback endpoint
+  // Update the feedback endpoint to use the new storage
   app.post("/api/feedback", async (req, res) => {
     try {
-      const { name, email, message } = req.body;
-      if (!name || !email || !message) {
-        return res.status(400).json({ error: "Missing required fields" });
+      const parsedInput = insertFeedbackSchema.safeParse(req.body);
+      if (!parsedInput.success) {
+        return res.status(400).json({
+          error: "Invalid input",
+          details: parsedInput.error.errors
+        });
       }
 
-      // For now, just log the feedback
-      console.log('Feedback received:', { name, email, message });
-      res.json({ success: true, message: "Feedback received" });
+      const feedback = await feedbackStorage.createFeedback(parsedInput.data);
+      res.status(201).json(feedback);
     } catch (error: any) {
+      console.error('Error saving feedback:', error);
       res.status(500).json({ error: "Failed to submit feedback" });
     }
   });
 
-  // Added registration endpoint
-  app.post("/api/register", async (req, res, next) => {
+  // Add endpoint to get all feedback (admin only)
+  app.get("/api/admin/feedback", isAdmin, async (req, res) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
-      if (existingUser) {
-        return res.status(400).json({ error: "Username already exists" });
-      }
-
-      const existingEmail = await storage.getUserByEmail(req.body.email);
-      if (existingEmail) {
-        return res.status(400).json({ error: "Email already registered" });
-      }
-
-      const otp = await generateOTP();
-      const expiry = new Date();
-      expiry.setMinutes(expiry.getMinutes() + 10); // OTP expires in 10 minutes
-
-      const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
-        isEmailVerified: false,
-      });
-
-      await storage.updateVerificationToken(user.id, otp, expiry);
-      await sendVerificationEmail(user.email, otp);
-
-      req.login(user, (err) => {
-        if (err) return next(err);
-        res.status(201).json(user);
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Added email verification endpoint
-  app.post("/api/verify-email", async (req, res) => {
-    try {
-      const { otp } = req.body;
-      if (!req.user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      const verified = await storage.verifyEmail(req.user.id, otp);
-      if (verified) {
-        res.json({ success: true });
-      } else {
-        res.status(400).json({ error: "Invalid or expired OTP" });
-      }
-    } catch (error) {
-      res.status(500).json({ error: "Verification failed" });
+      const allFeedback = await feedbackStorage.getAllFeedback();
+      res.json(allFeedback);
+    } catch (error: any) {
+      console.error('Error fetching feedback:', error);
+      res.status(500).json({ error: "Failed to fetch feedback" });
     }
   });
 
