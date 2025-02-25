@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { type Message } from "@shared/schema";
 import { type Character } from "@shared/characters";
 import { queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Trash2, LogOut, MessageCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Trash2, LogOut, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -51,20 +51,20 @@ export default function Chat() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to clear chat history");
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/messages/${characterId}`] });
       toast({
-        title: "Chat Cleared Successfully",
-        description: "Your conversation has been cleared.",
-        variant: "default"
+        title: "Chat Cleared",
+        description: "Your chat history has been cleared successfully.",
       });
     },
     onError: () => {
       toast({
         variant: "destructive",
-        title: "Error Clearing Chat",
-        description: "Unable to clear the chat history. Please try again.",
+        title: "Error",
+        description: "Failed to clear chat history",
       });
     },
   });
@@ -84,18 +84,13 @@ export default function Chat() {
     onSuccess: () => {
       queryClient.clear();
       setLocation("/");
-      toast({
-        title: "Goodbye! 👋",
-        description: "You've been successfully logged out.",
-        variant: "default"
-      });
     },
     onError: (error) => {
       console.error("Logout error:", error);
       toast({
         variant: "destructive",
-        title: "Logout Failed",
-        description: "Please try logging out again.",
+        title: "Error",
+        description: "Failed to logout. Please try again."
       });
     }
   });
@@ -123,17 +118,16 @@ export default function Chat() {
       }
 
       toast({
-        title: "Thank You! 🎉",
-        description: "Your feedback has been received. We appreciate your input!",
-        variant: "default"
+        title: "Success",
+        description: "Thank you for your feedback! We'll get back to you soon.",
       });
       setShowFeedbackDialog(false);
       (e.target as HTMLFormElement).reset();
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Feedback Error",
-        description: "Unable to submit feedback. Please try again later.",
+        title: "Error",
+        description: "Failed to submit feedback. Please try again.",
       });
     }
   };
@@ -154,14 +148,14 @@ export default function Chat() {
 
   const sendMessage = useMutation({
     mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {
-      const tempId = Date.now().toString();
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       tempMessageIdRef.current = tempId;
 
       const userMessage: Message = {
         id: tempId,
         content,
         isUser: true,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
         characterId,
         userId: 0,
         language,
@@ -215,8 +209,8 @@ export default function Chat() {
       tempMessageIdRef.current = "";
       toast({
         variant: "destructive",
-        title: "Message Error",
-        description: "Unable to send your message. Please try again."
+        title: "Error",
+        description: "Failed to send message"
       });
     }
   });
@@ -225,27 +219,22 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen bg-[#efeae2] dark:bg-slate-950">
-      <div className="flex items-center px-4 py-3 bg-[#00a884] dark:bg-slate-900 text-white shadow-md">
+      <div className="flex items-center px-4 py-2 bg-[#00a884] dark:bg-slate-900 text-white shadow-sm">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setLocation("/chats")}
-          className="text-white hover:bg-white/20 transition-colors"
+          className="text-white hover:bg-white/10"
         >
           <ArrowLeft className="h-6 w-6" />
         </Button>
 
         <div className="flex items-center flex-1 min-w-0">
-          <div className="relative">
-            <img
-              src={character?.avatar}
-              alt={character?.name}
-              className="w-10 h-10 rounded-full object-cover mx-3 border-2 border-white/20"
-            />
-            {isTyping && (
-              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse" />
-            )}
-          </div>
+          <img
+            src={character?.avatar}
+            alt={character?.name}
+            className="w-10 h-10 rounded-full object-cover mx-3"
+          />
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-lg truncate">{character?.name}</h2>
             <p className="text-sm text-white/80">
@@ -259,8 +248,7 @@ export default function Chat() {
             variant="ghost"
             size="icon"
             onClick={() => setShowFeedbackDialog(true)}
-            className="text-white hover:bg-white/20 transition-colors"
-            title="Send Feedback"
+            className="text-white hover:bg-white/10"
           >
             <MessageCircle className="h-5 w-5" />
           </Button>
@@ -269,30 +257,18 @@ export default function Chat() {
             variant="ghost"
             size="icon"
             onClick={handleClearChat}
-            className="text-white hover:bg-white/20 transition-colors"
-            disabled={clearChat.isPending}
-            title="Clear Chat"
+            className="text-white hover:bg-white/10"
           >
-            {clearChat.isPending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Trash2 className="h-5 w-5" />
-            )}
+            <Trash2 className="h-5 w-5" />
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            className="text-white hover:bg-white/20 transition-colors"
-            disabled={logout.isPending}
-            title="Logout"
+            className="text-white hover:bg-white/10"
           >
-            {logout.isPending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <LogOut className="h-5 w-5" />
-            )}
+            <LogOut className="h-5 w-5" />
           </Button>
         </div>
       </div>
@@ -336,9 +312,9 @@ export default function Chat() {
       <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>We'd Love Your Feedback! 💭</DialogTitle>
+            <DialogTitle>Send us a message</DialogTitle>
             <DialogDescription>
-              Share your thoughts with us to help improve your experience.
+              Have a question or feedback? We'd love to hear from you.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitFeedback} className="space-y-4">
@@ -351,7 +327,6 @@ export default function Chat() {
                 name="name"
                 placeholder="Your name"
                 required
-                className="focus:ring-2 focus:ring-[#00a884]"
               />
             </div>
             <div className="space-y-2">
@@ -364,7 +339,6 @@ export default function Chat() {
                 type="email"
                 placeholder="your@email.com"
                 required
-                className="focus:ring-2 focus:ring-[#00a884]"
               />
             </div>
             <div className="space-y-2">
@@ -376,18 +350,16 @@ export default function Chat() {
                 name="message"
                 placeholder="Your message..."
                 required
-                className="min-h-[100px] focus:ring-2 focus:ring-[#00a884]"
+                className="min-h-[100px]"
               />
             </div>
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex justify-end gap-3">
               <DialogClose asChild>
                 <Button type="button" variant="outline">
                   Cancel
                 </Button>
               </DialogClose>
-              <Button type="submit" className="bg-[#00a884] hover:bg-[#008f6f]">
-                Send Feedback
-              </Button>
+              <Button type="submit">Send Message</Button>
             </div>
           </form>
         </DialogContent>
