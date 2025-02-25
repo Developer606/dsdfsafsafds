@@ -151,19 +151,19 @@ export default function Home() {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="min-h-screen bg-[#efeae2] dark:bg-slate-950 relative overflow-hidden"
+        className="min-h-screen bg-[#211c2c] relative overflow-hidden"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-[#00a884]/20 via-purple-900/20 to-[#00a884]/20">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-purple-800/20 to-purple-900/30">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]" />
         </div>
         <div className="container mx-auto py-12 relative z-10">
           <div className="flex items-center justify-center min-h-[60vh]">
             <div className="flex flex-col items-center gap-6">
               <div className="relative">
-                <Loader2 className="h-16 w-16 animate-spin text-[#00a884]" />
-                <div className="absolute inset-0 blur-xl bg-[#00a884]/20 rounded-full" />
+                <Loader2 className="h-16 w-16 animate-spin text-purple-500" />
+                <div className="absolute inset-0 blur-xl bg-purple-500/20 rounded-full" />
               </div>
-              <p className="text-xl font-medium text-slate-700 dark:text-slate-300">Loading your characters...</p>
+              <p className="text-xl font-medium text-purple-200">Loading your characters...</p>
             </div>
           </div>
         </div>
@@ -175,9 +175,9 @@ export default function Home() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-[#efeae2] dark:bg-slate-950 relative overflow-hidden"
+      className="min-h-screen bg-[#211c2c] relative overflow-hidden"
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-[#00a884]/20 via-purple-900/20 to-[#00a884]/20">
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-purple-800/20 to-purple-900/30">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]" />
       </div>
 
@@ -193,22 +193,22 @@ export default function Home() {
               animate={{ x: 0, opacity: 1 }}
               className="space-y-2"
             >
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-[#00a884] via-[#008f6f] to-[#00754c] text-transparent bg-clip-text drop-shadow-lg">
-                Your Characters
+              <h1 className="text-5xl font-bold text-purple-100">
+                Your Anime Characters
               </h1>
-              <p className="text-xl text-slate-700 dark:text-slate-300 font-medium">
-                Choose a character to start your conversation
+              <p className="text-xl text-purple-300 font-medium">
+                Create and chat with your favorite characters
               </p>
             </motion.div>
 
             <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="relative flex-1 md:flex-none">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 dark:text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-300" />
                 <Input 
                   placeholder="Search characters..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-white/50 dark:bg-slate-800/50 border-[#00a884]/20 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 w-full md:w-64 focus:ring-2 focus:ring-[#00a884]/50"
+                  className="pl-10 bg-purple-800/30 border-purple-700/50 text-purple-100 placeholder:text-purple-400 w-full md:w-64 focus:ring-2 focus:ring-purple-500/50"
                 />
               </div>
 
@@ -219,35 +219,30 @@ export default function Home() {
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-[#00a884]/20 dark:border-slate-700"
+                        className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-800/30 backdrop-blur-sm border border-purple-700/50"
                       >
-                        <Info className="h-4 w-4 text-[#00a884]" />
-                        <span className="text-sm text-slate-700 dark:text-slate-200 font-medium whitespace-nowrap">
-                          {user?.trialCharactersCreated || 0}/3 characters
+                        <Info className="h-4 w-4 text-purple-400" />
+                        <span className="text-sm text-purple-200 font-medium whitespace-nowrap">
+                          {user?.trialCharactersCreated || 0}/3 characters used
                         </span>
                       </motion.div>
                     </TooltipTrigger>
-                    <TooltipContent className="bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-[#00a884]/20 dark:border-slate-700">
+                    <TooltipContent className="bg-purple-900 text-purple-100 border-purple-700">
                       <p className="font-medium">Free trial: {user?.trialCharactersCreated || 0}/3 characters</p>
-                      <p className="text-slate-600 dark:text-slate-300">Upgrade for unlimited characters!</p>
+                      <p className="text-purple-300">Upgrade to Premium for unlimited!</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               )}
 
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Button
+                onClick={handleCreateClick}
+                size="lg"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium shadow-xl hover:shadow-2xl transition-all duration-300 whitespace-nowrap"
               >
-                <Button
-                  onClick={handleCreateClick}
-                  size="lg"
-                  className="bg-[#00a884] hover:bg-[#008f6f] text-white font-medium shadow-xl hover:shadow-2xl transition-all duration-300 whitespace-nowrap"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  New Character
-                </Button>
-              </motion.div>
+                <Plus className="h-5 w-5 mr-2" />
+                Create Character
+              </Button>
             </div>
           </div>
 
@@ -255,16 +250,16 @@ export default function Home() {
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="md:hidden flex items-center gap-2 p-4 rounded-lg bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-[#00a884]/20 dark:border-slate-700"
+              className="md:hidden flex items-center gap-2 p-4 rounded-lg bg-purple-800/30 backdrop-blur-sm border border-purple-700/50"
             >
-              <Info className="h-5 w-5 text-[#00a884] flex-shrink-0" />
-              <p className="text-sm text-slate-700 dark:text-slate-200">
-                Free trial: Created {user?.trialCharactersCreated || 0}/3 characters. 
+              <Info className="h-5 w-5 text-purple-400 flex-shrink-0" />
+              <p className="text-sm text-purple-200">
+                {user?.trialCharactersCreated || 0}/3 free characters used. 
                 <button 
                   onClick={() => setShowSubscription(true)}
-                  className="text-[#00a884] hover:text-[#008f6f] ml-1 font-medium"
+                  className="text-pink-400 hover:text-pink-300 ml-1 font-medium"
                 >
-                  Upgrade for unlimited!
+                  Upgrade to Premium!
                 </button>
               </p>
             </motion.div>
@@ -276,9 +271,9 @@ export default function Home() {
               animate={{ opacity: 1 }}
               className="flex flex-col items-center justify-center min-h-[40vh] text-center space-y-4"
             >
-              <div className="text-slate-400 text-6xl">🔍</div>
-              <h3 className="text-2xl font-semibold text-slate-700 dark:text-slate-300">No characters found</h3>
-              <p className="text-slate-600 dark:text-slate-400">Try adjusting your search or create a new character</p>
+              <div className="text-purple-400 text-6xl">🔍</div>
+              <h3 className="text-2xl font-semibold text-purple-200">No characters found</h3>
+              <p className="text-purple-300">Try adjusting your search or create a new character</p>
             </motion.div>
           ) : (
             <motion.div
@@ -298,7 +293,7 @@ export default function Home() {
                     transition={{ type: "spring", stiffness: 400, damping: 20 }}
                   >
                     <Link href={`/chat/${character.id}`}>
-                      <Card className="overflow-hidden border-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:ring-2 hover:ring-[#00a884]/50 group">
+                      <Card className="overflow-hidden border-0 bg-purple-800/30 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:ring-2 hover:ring-purple-500/50 group">
                         <div className="p-4 space-y-4">
                           <div className="relative">
                             <img
@@ -309,10 +304,10 @@ export default function Home() {
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg" />
                           </div>
                           <div className="relative z-10">
-                            <h3 className="text-xl font-semibold text-slate-900 dark:text-white group-hover:text-[#00a884] transition-colors drop-shadow-md">
+                            <h3 className="text-xl font-semibold text-purple-100 group-hover:text-pink-400 transition-colors drop-shadow-md">
                               {character.name}
                             </h3>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 font-medium line-clamp-2 drop-shadow">
+                            <p className="text-sm text-purple-300 font-medium line-clamp-2 drop-shadow">
                               {character.description}
                             </p>
                           </div>
@@ -353,11 +348,11 @@ export default function Home() {
 
         {/* Create Character Dialog */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-[425px] bg-purple-900/95 backdrop-blur-sm border-purple-700">
             <DialogHeader>
-              <DialogTitle className="text-2xl">Create New Character</DialogTitle>
+              <DialogTitle className="text-2xl text-purple-100">Create New Character</DialogTitle>
               {!user?.isPremium && (
-                <DialogDescription className="text-[#00a884]">
+                <DialogDescription className="text-purple-300">
                   Free Trial: {user?.trialCharactersCreated || 0}/3 characters created
                 </DialogDescription>
               )}
@@ -368,42 +363,42 @@ export default function Home() {
               className="space-y-6"
             >
               <div className="space-y-2">
-                <label className="text-sm font-medium">Character Name</label>
+                <label className="text-sm font-medium text-purple-200">Character Name</label>
                 <Input
                   placeholder="Enter character name"
                   value={newCharacter.name}
                   onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
-                  className="focus:ring-2 focus:ring-[#00a884]"
+                  className="bg-purple-800/50 border-purple-700 text-purple-100 focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Avatar URL</label>
+                <label className="text-sm font-medium text-purple-200">Avatar URL</label>
                 <Input
                   placeholder="Enter avatar image URL"
                   value={newCharacter.avatar}
                   onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
-                  className="focus:ring-2 focus:ring-[#00a884]"
+                  className="bg-purple-800/50 border-purple-700 text-purple-100 focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
+                <label className="text-sm font-medium text-purple-200">Description</label>
                 <Textarea
                   placeholder="Describe your character"
                   value={newCharacter.description}
                   onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
-                  className="focus:ring-2 focus:ring-[#00a884] min-h-[80px]"
+                  className="bg-purple-800/50 border-purple-700 text-purple-100 focus:ring-2 focus:ring-purple-500 min-h-[80px]"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Character Persona</label>
+                <label className="text-sm font-medium text-purple-200">Character Persona</label>
                 <Textarea
                   placeholder="Define the character's personality and behavior"
                   value={newCharacter.persona}
                   onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
-                  className="focus:ring-2 focus:ring-[#00a884] min-h-[100px]"
+                  className="bg-purple-800/50 border-purple-700 text-purple-100 focus:ring-2 focus:ring-purple-500 min-h-[100px]"
                 />
               </div>
 
@@ -413,7 +408,7 @@ export default function Home() {
                 className="pt-4"
               >
                 <Button 
-                  className="w-full bg-[#00a884] hover:bg-[#008f6f] text-white"
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                   onClick={handleSubmit}
                   disabled={createCharacter.isPending}
                 >
