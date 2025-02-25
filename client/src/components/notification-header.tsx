@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Bell, AlertCircle, Image as ImageIcon, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import {
   Popover,
   PopoverContent,
@@ -85,6 +86,11 @@ export function NotificationHeader() {
     }
   };
 
+  // Add query to get user data
+  const { data: user } = useQuery({ 
+    queryKey: ["/api/user"],
+  });
+
   const handleComplaintSubmit = async () => {
     if (!complaint.trim()) {
       toast({
@@ -95,9 +101,20 @@ export function NotificationHeader() {
       return;
     }
 
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to submit a complaint"
+      });
+      return;
+    }
+
     try {
       const formData = new FormData();
       formData.append('message', complaint);
+      formData.append('name', user.username); // Add user's name
+      formData.append('email', user.email); // Add user's email
       if (selectedImage) {
         formData.append('image', selectedImage);
       }
