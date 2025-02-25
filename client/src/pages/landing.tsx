@@ -52,13 +52,40 @@ export default function LandingPage() {
     setLocation("/chats");
   };
 
-  const handleSubmitFeedback = (e: React.FormEvent) => {
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Feedback Submitted",
-      description: "Thank you for your feedback! We'll get back to you soon.",
-    });
-    (e.target as HTMLFormElement).reset();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const feedbackData = {
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      message: formData.get('message') as string,
+    };
+
+    try {
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit feedback');
+      }
+
+      toast({
+        title: "Success",
+        description: "Thank you for your feedback! We'll get back to you soon.",
+      });
+      (e.target as HTMLFormElement).reset();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to submit feedback. Please try again.",
+      });
+    }
   };
 
   return (
@@ -183,6 +210,7 @@ export default function LandingPage() {
                 </label>
                 <Input
                   id="name"
+                  name="name"
                   placeholder="Your name"
                   required
                   className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
@@ -194,6 +222,7 @@ export default function LandingPage() {
                 </label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="your@email.com"
                   required
@@ -207,6 +236,7 @@ export default function LandingPage() {
               </label>
               <Textarea
                 id="message"
+                name="message"
                 placeholder="Share your thoughts..."
                 required
                 className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 min-h-[120px]"
