@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { CharacterCard } from "@/components/character-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,7 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Info, Loader2 } from "lucide-react";
+import { Plus, Trash2, Info, Loader2, Search } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type Character } from "@shared/characters";
 import { type CustomCharacter, type User } from "@shared/schema";
@@ -47,6 +46,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [newCharacter, setNewCharacter] = useState({
     name: "",
     avatar: "",
@@ -63,6 +63,11 @@ export default function Home() {
   const { data: characters, isLoading } = useQuery<Character[]>({ 
     queryKey: ["/api/characters"]
   });
+
+  const filteredCharacters = characters?.filter(char => 
+    char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    char.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
@@ -146,13 +151,16 @@ export default function Home() {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6"
+        className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 text-white"
       >
-        <div className="container mx-auto">
+        <div className="container mx-auto py-12">
           <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="flex flex-col items-center gap-4">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-lg text-muted-foreground">Loading characters...</p>
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <div className="absolute inset-0 blur-xl bg-primary/20 rounded-full" />
+              </div>
+              <p className="text-xl font-medium text-slate-300">Loading your characters...</p>
             </div>
           </div>
         </div>
@@ -164,135 +172,179 @@ export default function Home() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white"
+      className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 text-white"
     >
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto py-12 px-6">
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="flex items-center justify-between mb-10"
+          className="space-y-8"
         >
-          <motion.div 
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="space-y-2"
-          >
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-transparent bg-clip-text">
-              Choose Your Character
-            </h1>
-            <p className="text-slate-400">
-              Select a character to start your conversation adventure
-            </p>
-          </motion.div>
-
-          <div className="flex items-center gap-4">
-            {!user?.isPremium && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/50 backdrop-blur-sm border border-slate-700"
-                    >
-                      <Info className="h-4 w-4 text-primary" />
-                      <span className="text-sm text-slate-300">
-                        {user?.trialCharactersCreated || 0}/3 free characters
-                      </span>
-                    </motion.div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Free users can create up to 3 custom characters.</p>
-                    <p>Upgrade to premium for unlimited characters!</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <motion.div 
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="space-y-2"
             >
-              <Button
-                onClick={handleCreateClick}
-                size="lg"
-                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-xl hover:shadow-2xl transition-all duration-300"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Create Character
-              </Button>
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-transparent bg-clip-text drop-shadow-lg">
+                Your Characters
+              </h1>
+              <p className="text-xl text-slate-300 font-medium">
+                Choose a character to start your conversation
+              </p>
             </motion.div>
-          </div>
-        </motion.div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-        >
-          <AnimatePresence>
-            {characters?.map((character) => (
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <div className="relative flex-1 md:flex-none">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="Search characters..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-slate-800/50 border-slate-700 text-white placeholder:text-slate-400 w-full md:w-64"
+                />
+              </div>
+
+              {!user?.isPremium && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800/70 backdrop-blur-sm border border-slate-600"
+                      >
+                        <Info className="h-4 w-4 text-pink-500" />
+                        <span className="text-sm text-slate-200 font-medium whitespace-nowrap">
+                          {user?.trialCharactersCreated || 0}/3 characters
+                        </span>
+                      </motion.div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-800 text-white border-slate-700">
+                      <p className="font-medium">Free trial: {user?.trialCharactersCreated || 0}/3 characters</p>
+                      <p className="text-slate-300">Upgrade for unlimited characters!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+
               <motion.div
-                key={character.id}
-                variants={item}
-                layoutId={character.id}
-                className="relative group"
-                whileHover={{ y: -5 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Link href={`/chat/${character.id}`}>
-                  <Card className="overflow-hidden border-0 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:ring-2 hover:ring-primary/50 group">
-                    <div className="p-4 space-y-4">
-                      <div className="relative">
-                        <img
-                          src={character.avatar}
-                          alt={character.name}
-                          className="w-full h-48 object-cover rounded-lg transform group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-lg" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-semibold text-white group-hover:text-primary transition-colors">
-                          {character.name}
-                        </h3>
-                        <p className="text-sm text-slate-400 line-clamp-2">
-                          {character.description}
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-                {character.id.startsWith('custom_') && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        deleteCharacter.mutate(character.id);
-                      }}
-                      disabled={deleteCharacter.isPending}
-                    >
-                      {deleteCharacter.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </motion.div>
-                )}
+                <Button
+                  onClick={handleCreateClick}
+                  size="lg"
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-medium shadow-xl hover:shadow-2xl transition-all duration-300 whitespace-nowrap"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  New Character
+                </Button>
               </motion.div>
-            ))}
-          </AnimatePresence>
+            </div>
+          </div>
+
+          {!user?.isPremium && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="md:hidden flex items-center gap-2 p-4 rounded-lg bg-slate-800/70 backdrop-blur-sm border border-slate-600"
+            >
+              <Info className="h-5 w-5 text-pink-500 flex-shrink-0" />
+              <p className="text-sm text-slate-200">
+                Free trial: Created {user?.trialCharactersCreated || 0}/3 characters. 
+                <button 
+                  onClick={() => setShowSubscription(true)}
+                  className="text-pink-400 hover:text-pink-300 ml-1 font-medium"
+                >
+                  Upgrade for unlimited!
+                </button>
+              </p>
+            </motion.div>
+          )}
+
+          {filteredCharacters?.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col items-center justify-center min-h-[40vh] text-center space-y-4"
+            >
+              <div className="text-slate-400 text-6xl">🔍</div>
+              <h3 className="text-2xl font-semibold text-slate-300">No characters found</h3>
+              <p className="text-slate-400">Try adjusting your search or create a new character</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            >
+              <AnimatePresence>
+                {filteredCharacters?.map((character) => (
+                  <motion.div
+                    key={character.id}
+                    variants={item}
+                    layoutId={character.id}
+                    className="relative group"
+                    whileHover={{ y: -5 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  >
+                    <Link href={`/chat/${character.id}`}>
+                      <Card className="overflow-hidden border-0 bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur-sm hover:shadow-2xl transition-all duration-300 hover:ring-2 hover:ring-pink-500/50 group">
+                        <div className="p-4 space-y-4">
+                          <div className="relative">
+                            <img
+                              src={character.avatar}
+                              alt={character.name}
+                              className="w-full h-48 object-cover rounded-lg transform group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg" />
+                          </div>
+                          <div className="relative z-10">
+                            <h3 className="text-xl font-semibold text-white group-hover:text-pink-400 transition-colors drop-shadow-md">
+                              {character.name}
+                            </h3>
+                            <p className="text-sm text-slate-300 font-medium line-clamp-2 drop-shadow">
+                              {character.description}
+                            </p>
+                          </div>
+                        </div>
+                      </Card>
+                    </Link>
+                    {character.id.startsWith('custom_') && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/90 hover:bg-red-600/90 shadow-lg"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            deleteCharacter.mutate(character.id);
+                          }}
+                          disabled={deleteCharacter.isPending}
+                        >
+                          {deleteCharacter.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
         </motion.div>
 
+        {/* Create Character Dialog */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
