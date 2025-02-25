@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Bell, AlertCircle } from "lucide-react";
+import { useState, useRef } from "react";
+import { Bell, AlertCircle, Image as ImageIcon, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Popover,
@@ -49,8 +49,41 @@ export function NotificationHeader() {
 
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
   const [complaint, setComplaint] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Image size should be less than 5MB"
+        });
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Please select an image file"
+        });
+        return;
+      }
+
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleComplaintSubmit = async () => {
     if (!complaint.trim()) {
@@ -63,12 +96,15 @@ export function NotificationHeader() {
     }
 
     try {
+      const formData = new FormData();
+      formData.append('message', complaint);
+      if (selectedImage) {
+        formData.append('image', selectedImage);
+      }
+
       const response = await fetch("/api/complaints", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ message: complaint })
+        body: formData
       });
 
       if (!response.ok) throw new Error();
@@ -78,6 +114,8 @@ export function NotificationHeader() {
         description: "Your complaint has been submitted successfully. We'll review it shortly."
       });
       setComplaint("");
+      setSelectedImage(null);
+      setImagePreview(null);
       setShowComplaintDialog(false);
     } catch (error) {
       toast({
@@ -85,6 +123,14 @@ export function NotificationHeader() {
         title: "Error",
         description: "Failed to submit complaint. Please try again."
       });
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -187,6 +233,46 @@ export function NotificationHeader() {
               onChange={(e) => setComplaint(e.target.value)}
               className="min-h-[150px] border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884]"
             />
+
+            <div className="space-y-2">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleImageSelect}
+              />
+
+              {imagePreview ? (
+                <div className="relative rounded-lg overflow-hidden">
+                  <img 
+                    src={imagePreview} 
+                    alt="Selected" 
+                    className="w-full h-40 object-cover"
+                  />
+                  <button
+                    onClick={removeImage}
+                    className="absolute top-2 right-2 bg-red-500 rounded-full p-1 hover:bg-red-600 transition-colors"
+                  >
+                    <X className="h-4 w-4 text-white" />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full border-dashed border-2 hover:border-[#00a884] dark:hover:border-[#00a884] text-gray-500 dark:text-gray-400"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImageIcon className="h-5 w-5 mr-2" />
+                  Attach Image
+                </Button>
+              )}
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Supported formats: JPG, PNG, GIF (max 5MB)
+              </p>
+            </div>
+
             <motion.div
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
