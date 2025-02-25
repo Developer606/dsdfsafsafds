@@ -45,7 +45,6 @@ export default function Chat() {
     enabled: !!characterId
   });
 
-  // Add clear chat mutation
   const clearChat = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/messages/${characterId}`, {
@@ -70,7 +69,6 @@ export default function Chat() {
     },
   });
 
-  // Add logout mutation
   const logout = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/logout", {
@@ -88,11 +86,8 @@ export default function Chat() {
       return res.json();
     },
     onSuccess: () => {
-      // Clear all queries from cache to ensure no stale data remains
       queryClient.clear();
-      // Remove any stored auth state
       queryClient.setQueryData(["/api/user"], null);
-      // Navigate to landing page
       setLocation("/");
       toast({
         title: "Logged out successfully",
@@ -108,6 +103,43 @@ export default function Chat() {
       });
     }
   });
+
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const feedbackData = {
+      name: formData.get("name") as string,
+      email: formData.get("email") as string,
+      message: formData.get("message") as string,
+    };
+
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(feedbackData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit feedback");
+      }
+
+      toast({
+        title: "Success",
+        description: "Thank you for your feedback! We'll get back to you soon.",
+      });
+      setShowFeedbackDialog(false);
+      (e.target as HTMLFormElement).reset();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to submit feedback. Please try again.",
+      });
+    }
+  };
 
   const handleClearChat = () => {
     clearChat.mutate();
