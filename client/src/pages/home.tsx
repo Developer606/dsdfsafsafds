@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,22 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.3
+    }
+  }
+};
+
+const item = {
+  hidden: { y: 20, opacity: 0 },
+  show: { y: 0, opacity: 1 }
+};
 
 export default function Home() {
   const [location] = useLocation();
@@ -122,35 +139,60 @@ export default function Home() {
     createCharacter.mutate(newCharacter);
   };
 
-
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="container mx-auto p-4"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-64 bg-card animate-pulse rounded-lg" />
+            <motion.div
+              key={i}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: i * 0.1 }}
+              className="h-64 bg-card animate-pulse rounded-lg"
+            />
           ))}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-background"
+    >
       <div className="container mx-auto p-4">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text">
+        <motion.div 
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex items-center justify-between mb-6"
+        >
+          <motion.h1 
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 text-transparent bg-clip-text"
+          >
             Anime Characters
-          </h1>
+          </motion.h1>
           <div className="flex items-center gap-4">
             {!user?.isPremium && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center text-sm text-muted-foreground">
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center text-sm text-muted-foreground"
+                    >
                       <Info className="h-4 w-4 mr-1" />
                       {user?.trialCharactersCreated || 0}/3 free characters used
-                    </div>
+                    </motion.div>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Free users can create up to 3 custom characters.</p>
@@ -159,42 +201,69 @@ export default function Home() {
                 </Tooltip>
               </TooltipProvider>
             )}
-            <Button
-              onClick={handleCreateClick}
-              className="bg-[#00a884] hover:bg-[#00946e] text-white"
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Plus className="h-5 w-5 mr-2" />
-              Create Character
-            </Button>
+              <Button
+                onClick={handleCreateClick}
+                className="bg-[#00a884] hover:bg-[#00946e] text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Create Character
+              </Button>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {characters?.map((character) => (
-            <div key={character.id} className="relative group">
-              <Link href={`/chat/${character.id}`}>
-                <CharacterCard character={character} />
-              </Link>
-              {character.id.startsWith('custom_') && (
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    deleteCharacter.mutate(character.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          <AnimatePresence>
+            {characters?.map((character, index) => (
+              <motion.div
+                key={character.id}
+                variants={item}
+                layoutId={character.id}
+                className="relative group"
+                whileHover={{ y: -5 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              >
+                <Link href={`/chat/${character.id}`}>
+                  <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                    <CharacterCard character={character} />
+                  </div>
+                </Link>
+                {character.id.startsWith('custom_') && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        deleteCharacter.mutate(character.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </motion.div>
 
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Create New Character</DialogTitle>
               {!user?.isPremium && (
@@ -203,7 +272,11 @@ export default function Home() {
                 </DialogDescription>
               )}
             </DialogHeader>
-            <div className="space-y-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
               <Input
                 placeholder="Character Name"
                 value={newCharacter.name}
@@ -224,14 +297,16 @@ export default function Home() {
                 value={newCharacter.persona}
                 onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
               />
-              <Button 
-                className="w-full"
-                onClick={handleSubmit}
-                disabled={createCharacter.isPending}
-              >
-                Create Character
-              </Button>
-            </div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button 
+                  className="w-full bg-gradient-to-r from-[#00a884] to-[#008f6f] hover:from-[#008f6f] hover:to-[#007a5f] text-white shadow-lg"
+                  onClick={handleSubmit}
+                  disabled={createCharacter.isPending}
+                >
+                  Create Character
+                </Button>
+              </motion.div>
+            </motion.div>
           </DialogContent>
         </Dialog>
 
@@ -240,6 +315,6 @@ export default function Home() {
           onClose={() => setShowSubscription(false)}
         />
       </div>
-    </div>
+    </motion.div>
   );
 }
