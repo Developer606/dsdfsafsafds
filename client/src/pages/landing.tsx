@@ -36,19 +36,19 @@ const FEATURED_CHARACTERS = [
   {
     name: "Naruto Uzumaki",
     description: "The determined ninja who never gives up! Join him on his journey to become the greatest Hokage.",
-    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png", // Replace with actual Naruto image
+    image: "/images/characters/naruto.png",
     color: "from-orange-500 to-red-500"
   },
   {
     name: "Sakura Haruno",
     description: "Skilled medical ninja with incredible strength. A powerful kunoichi from the Hidden Leaf Village.",
-    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png", // Replace with actual Sakura image
+    image: "/images/characters/sakura.png",
     color: "from-pink-500 to-red-400"
   },
   {
     name: "Sasuke Uchiha",
     description: "Last survivor of the Uchiha clan, seeking to restore honor to his family name.",
-    image: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png", // Replace with actual Sasuke image
+    image: "/images/characters/sasuke.png",
     color: "from-purple-600 to-blue-500"
   }
 ];
