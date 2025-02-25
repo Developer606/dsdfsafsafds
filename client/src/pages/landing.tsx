@@ -31,6 +31,28 @@ const slideIn = {
   transition: { duration: 0.8, ease: "easeOut" },
 };
 
+// Featured characters data
+const FEATURED_CHARACTERS = [
+  {
+    name: "Naruto Uzumaki",
+    description: "The determined ninja who never gives up!",
+    image: "https://placekitten.com/300/400", // Replace with actual character image
+    color: "from-orange-500 to-red-500"
+  },
+  {
+    name: "Sakura Haruno",
+    description: "Skilled medical ninja with incredible strength",
+    image: "https://placekitten.com/301/400", // Replace with actual character image
+    color: "from-pink-500 to-red-400"
+  },
+  {
+    name: "Sasuke Uchiha",
+    description: "Last survivor of the Uchiha clan",
+    image: "https://placekitten.com/302/400", // Replace with actual character image
+    color: "from-purple-600 to-blue-500"
+  }
+];
+
 // Move policy content outside component for better performance
 const POLICY_CONTENT = {
   return: (
@@ -338,6 +360,63 @@ export default function LandingPage() {
               Enjoy instant responses and seamless conversation flow with our
               real-time chat interface.
             </p>
+          </motion.div>
+        </motion.div>
+
+        {/* New Featured Characters Section */}
+        <motion.div
+          variants={fadeIn}
+          className="w-full max-w-7xl mx-auto mt-32"
+        >
+          <motion.h2 
+            variants={fadeIn}
+            className="text-4xl font-bold text-center text-white mb-12"
+          >
+            Featured Characters
+          </motion.h2>
+          <motion.div 
+            variants={stagger}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          >
+            {FEATURED_CHARACTERS.map((character, index) => (
+              <motion.div
+                key={character.name}
+                variants={fadeIn}
+                whileHover={{ y: -10, scale: 1.02 }}
+                className="relative group"
+              >
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white/5 to-white/10 p-1">
+                  <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 {character.color}" />
+                  <div className="relative bg-black/40 backdrop-blur-sm rounded-lg p-6 h-full">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: index * 0.2 }}
+                    >
+                      <img
+                        src={character.image}
+                        alt={character.name}
+                        className="w-full h-64 object-cover rounded-lg mb-4 transform group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <h3 className="text-xl font-semibold text-white mb-2">
+                        {character.name}
+                      </h3>
+                      <p className="text-gray-300">
+                        {character.description}
+                      </p>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleStartChatting}
+                        className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg text-white font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300 w-full"
+                      >
+                        Chat Now
+                      </motion.button>
+                    </motion.div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         </motion.div>
 
