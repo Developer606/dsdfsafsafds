@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { type Message } from "@shared/schema";
 import { type Character } from "@shared/characters";
 import { queryClient } from "@/lib/queryClient";
-import { ArrowLeft, MoreVertical, Trash2, LogOut, MessageCircle } from "lucide-react";
+import { ArrowLeft, Trash2, LogOut, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -20,12 +20,6 @@ import {
   DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export default function Chat() {
   const { characterId } = useParams();
@@ -61,7 +55,6 @@ export default function Chat() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate messages query to refetch
       queryClient.invalidateQueries({ queryKey: [`/api/messages/${characterId}`] });
       toast({
         title: "Chat Cleared",
@@ -199,43 +192,6 @@ export default function Chat() {
     }
   });
 
-  const handleSubmitFeedback = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const feedbackData = {
-      name: formData.get("name") as string,
-      email: formData.get("email") as string,
-      message: formData.get("message") as string,
-    };
-
-    try {
-      const response = await fetch("/api/feedback", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(feedbackData),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to submit feedback");
-      }
-
-      toast({
-        title: "Success",
-        description: "Thank you for your feedback! We'll get back to you soon.",
-      });
-      setShowFeedbackDialog(false);
-      (e.target as HTMLFormElement).reset();
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to submit feedback. Please try again.",
-      });
-    }
-  };
-
   if (!character) return null;
 
   return (
@@ -274,27 +230,23 @@ export default function Chat() {
             <MessageCircle className="h-5 w-5" />
           </Button>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-white/10"
-              >
-                <MoreVertical className="h-6 w-6" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleClearChat}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Clear Chat History
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClearChat}
+            className="text-white hover:bg-white/10"
+          >
+            <Trash2 className="h-5 w-5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            className="text-white hover:bg-white/10"
+          >
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
       </div>
 
