@@ -50,7 +50,7 @@ export function isAdmin(req: Request, res: Response, next: NextFunction) {
   res.status(403).json({ error: "Admin access required" });
 }
 
-export function setupAuth(app: Express) {
+export async function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
@@ -73,6 +73,10 @@ export function setupAuth(app: Express) {
         const user = await storage.getUserByUsername(username);
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid credentials" });
+        }
+        // Check if user is blocked
+        if (user.isBlocked) {
+          return done(null, false, { message: "Account is blocked" });
         }
         await storage.updateLastLogin(user.id);
         return done(null, user);
@@ -169,6 +173,23 @@ export function setupAuth(app: Express) {
     }
   });
 
+  // Add a route to check user status
+  app.get("/api/check-status", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    if (req.user.isBlocked) {
+      req.logout((err) => {
+        if (err) {
+          console.error("Logout failed:", err);
+        }
+      });
+      return res.status(403).json({ error: "Account is blocked" });
+    }
+    res.json({ status: "active" });
+  });
+
+  // Modify the login route to handle blocked users
   app.post("/api/login", (req, res, next) => {
     passport.authenticate("local", async (err: Error, user: Express.User) => {
       if (err) {
@@ -177,8 +198,9 @@ export function setupAuth(app: Express) {
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
-
-      // Don't allow admin login through regular endpoint
+      if (user.isBlocked) {
+        return res.status(403).json({ error: "Account is blocked" });
+      }
       if (user.isAdmin) {
         return res.status(401).json({ error: "Please use admin login" });
       }
