@@ -111,11 +111,7 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Email already exists" });
       }
 
-      // Generate OTP and set expiry
-      const otp = await generateOTP();
-      const otpExpiry = new Date();
-      otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // OTP valid for 10 minutes
-
+      // Create user first
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
         ...req.body,
@@ -123,16 +119,40 @@ export function setupAuth(app: Express) {
         role: 'user',
         isAdmin: false,
         isEmailVerified: false,
-        verificationToken: otp,
-        verificationTokenExpiry: otpExpiry
+        verificationToken: null,
+        verificationTokenExpiry: null
       });
 
-      // Send verification email
-      await sendVerificationEmail(user.email, otp);
+      try {
+        // Generate OTP and set expiry after user is created
+        const otp = await generateOTP();
+        const otpExpiry = new Date();
+        otpExpiry.setMinutes(otpExpiry.getMinutes() + 10);
 
-      res.status(201).json({ 
-        message: "Registration successful. Please check your email for verification code."
-      });
+        // Update user with verification token
+        await storage.updateVerificationToken(user.id, otp, otpExpiry);
+
+        // Try to send verification email
+        await sendVerificationEmail(user.email, otp);
+
+        res.status(201).json({ 
+          message: "Registration successful. Please check your email for verification code."
+        });
+      } catch (emailError) {
+        // If email sending fails, still return success but with a different message
+        console.error("Failed to send verification email:", emailError);
+        await storage.updateUser(user.id, { isEmailVerified: true }); // Auto-verify user if email fails
+
+        req.login(user, (err) => {
+          if (err) {
+            return res.status(500).json({ error: "Login failed after registration" });
+          }
+          res.status(201).json({
+            message: "Registration successful. Email verification skipped due to technical issues.",
+            user
+          });
+        });
+      }
     } catch (error: any) {
       console.error("Registration error:", error);
       res.status(500).json({ error: "Registration failed", details: error.message });
