@@ -40,7 +40,11 @@ async function ensureColumns() {
       { name: 'subscription_tier', sql: 'TEXT' },
       { name: 'subscription_status', sql: 'TEXT DEFAULT "trial"' },
       { name: 'subscription_expires_at', sql: 'INTEGER' },
-      { name: 'last_login_at', sql: 'INTEGER' }
+      { name: 'last_login_at', sql: 'INTEGER' },
+      { name: 'reset_password_token', sql: 'TEXT' },
+      { name: 'reset_password_token_expiry', sql: 'INTEGER' },
+      { name: 'otp_secret', sql: 'TEXT' },
+      { name: 'otp_expiry', sql: 'INTEGER' }
     ];
 
     for (const column of columnsToAdd) {

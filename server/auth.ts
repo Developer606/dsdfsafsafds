@@ -5,8 +5,9 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser, insertUserSchema, adminLoginSchema } from "@shared/schema";
+import { User as SelectUser, insertUserSchema, adminLoginSchema, verifyOtpSchema, resetPasswordSchema, resetPasswordConfirmSchema } from "@shared/schema";
 import cryptoRandomString from 'crypto-random-string';
+import { sendVerificationEmail, sendPasswordResetEmail } from "./email";
 
 declare global {
   namespace Express {
@@ -26,13 +27,6 @@ export async function hashPassword(password: string) {
 // Add OTP generation utility
 export function generateOTP() {
   return cryptoRandomString({ length: 6, type: 'numeric' });
-}
-
-// Add email verification utility
-export async function sendVerificationEmail(email: string, token: string) {
-  // Implementation will be added when email service is set up
-  console.log(`Verification email would be sent to ${email} with token ${token}`);
-  return true;
 }
 
 async function comparePasswords(supplied: string, stored: string) {
@@ -120,6 +114,10 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Email already exists" });
       }
 
+      // Generate OTP for email verification
+      const otp = generateOTP();
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
       // Hash password and create user
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
@@ -128,6 +126,10 @@ export function setupAuth(app: Express) {
         role: 'user',
         isAdmin: false,
       });
+
+      // Send verification email
+      await storage.updateOtp(user.email, otp, otpExpiry);
+      await sendVerificationEmail(user.email, otp);
 
       // Log in the user after registration
       req.login(user, (err) => {
@@ -143,7 +145,74 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Admin-specific login endpoint
+  // Email verification endpoint
+  app.post("/api/verify-email", async (req, res) => {
+    try {
+      const { email, otp } = verifyOtpSchema.parse(req.body);
+      const isValid = await storage.verifyOtp(email, otp);
+
+      if (!isValid) {
+        return res.status(400).json({ error: "Invalid or expired OTP" });
+      }
+
+      // Update user as verified
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      await storage.updateVerificationToken(user.id, null, null);
+      res.json({ message: "Email verified successfully" });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Password reset request endpoint
+  app.post("/api/reset-password-request", async (req, res) => {
+    try {
+      const { email } = resetPasswordSchema.parse(req.body);
+      const user = await storage.getUserByEmail(email);
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const token = generateOTP();
+      const tokenExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+      await storage.updateResetToken(email, token, tokenExpiry);
+      await sendPasswordResetEmail(email, token);
+
+      res.json({ message: "Password reset email sent" });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Reset password with token endpoint
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { token, password } = resetPasswordConfirmSchema.parse(req.body);
+
+      // Find user by reset token
+      const user = await storage.getUserByEmail(req.body.email);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const isValid = await storage.verifyResetToken(user.email, token);
+      if (!isValid) {
+        return res.status(400).json({ error: "Invalid or expired reset token" });
+      }
+
+      await storage.updatePassword(user.id, password);
+      res.json({ message: "Password updated successfully" });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  });
+
   app.post("/api/admin/login", async (req, res, next) => {
     try {
       const { username, password } = req.body;

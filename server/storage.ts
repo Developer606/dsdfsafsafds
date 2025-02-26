@@ -1,11 +1,12 @@
 import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
+import { sql } from 'drizzle-orm';
 
 // Create a memory store with a 24-hour TTL for sessions only
 const MemoryStoreSession = MemoryStore(session);
@@ -48,7 +49,12 @@ export interface IStorage {
   }): Promise<void>;
   deleteUser(userId: number): Promise<void>;
   verifyEmail(userId: number, token: string): Promise<boolean>;
-  updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void>;
+  updateVerificationToken(userId: number, token: string | null, expiry: Date | null): Promise<void>;
+  verifyResetToken(email: string, token: string): Promise<boolean>;
+  updateResetToken(email: string, token: string, expiry: Date): Promise<void>;
+  updatePassword(userId: number, newPassword: string): Promise<void>;
+  verifyOtp(email: string, otp: string): Promise<boolean>;
+  updateOtp(email: string, otp: string, expiry: Date): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -90,7 +96,11 @@ export class DatabaseStorage implements IStorage {
       isEmailVerified: false,
       verificationToken: null,
       verificationTokenExpiry: null,
-      lastLoginAt: null
+      lastLoginAt: null,
+      otpSecret: null,
+      otpExpiry: null,
+      resetPasswordToken: null,
+      resetPasswordTokenExpiry: null
     }).returning();
     return newUser;
   }
@@ -129,7 +139,9 @@ export class DatabaseStorage implements IStorage {
   async incrementTrialCharacterCount(userId: number): Promise<void> {
     await db
       .update(users)
-      .set({ trialCharactersCreated: users.trialCharactersCreated + 1 })
+      .set({
+        trialCharactersCreated: sql`${users.trialCharactersCreated} + 1`
+      })
       .where(eq(users.id, userId));
   }
 
@@ -159,8 +171,12 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {
     await db.delete(customCharacters)
-      .where(eq(customCharacters.id, id))
-      .where(eq(customCharacters.userId, userId));
+      .where(
+        and(
+          eq(customCharacters.id, id),
+          eq(customCharacters.userId, userId)
+        )
+      );
   }
 
   async updateUserSubscription(
@@ -207,13 +223,71 @@ export class DatabaseStorage implements IStorage {
     return false;
   }
 
-  async updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void> {
+  async updateVerificationToken(userId: number, token: string | null, expiry: Date | null): Promise<void> {
     await db.update(users)
       .set({
         verificationToken: token,
         verificationTokenExpiry: expiry
       })
       .where(eq(users.id, userId));
+  }
+
+  async verifyResetToken(email: string, token: string): Promise<boolean> {
+    const user = await this.getUserByEmail(email);
+    if (!user) return false;
+
+    const now = new Date();
+    if (user.resetPasswordToken === token &&
+      user.resetPasswordTokenExpiry &&
+      new Date(user.resetPasswordTokenExpiry) > now) {
+      return true;
+    }
+    return false;
+  }
+
+  async updateResetToken(email: string, token: string, expiry: Date): Promise<void> {
+    await db.update(users)
+      .set({
+        resetPasswordToken: token,
+        resetPasswordTokenExpiry: expiry
+      })
+      .where(eq(users.email, email));
+  }
+
+  async updatePassword(userId: number, newPassword: string): Promise<void> {
+    const hashedPassword = await hashPassword(newPassword);
+    await db.update(users)
+      .set({
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordTokenExpiry: null
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async verifyOtp(email: string, otp: string): Promise<boolean> {
+    const user = await this.getUserByEmail(email);
+    if (!user) return false;
+
+    const now = new Date();
+    if (user.otpSecret === otp &&
+      user.otpExpiry &&
+      new Date(user.otpExpiry) > now) {
+      return true;
+    }
+    return false;
+  }
+
+  async updateOtp(email: string, otp: string, expiry: Date): Promise<void> {
+    const user = await this.getUserByEmail(email);
+    if (!user) throw new Error("User not found");
+
+    await db.update(users)
+      .set({
+        otpSecret: otp,
+        otpExpiry: expiry
+      })
+      .where(eq(users.email, email));
   }
   private async initializeAdmin() {
     try {
@@ -238,7 +312,11 @@ export class DatabaseStorage implements IStorage {
           subscriptionStatus: "trial",
           subscriptionExpiresAt: null,
           createdAt: new Date(),
-          lastLoginAt: null
+          lastLoginAt: null,
+          otpSecret: null,
+          otpExpiry: null,
+          resetPasswordToken: null,
+          resetPasswordTokenExpiry: null
         });
         console.log("Admin user created successfully");
       }

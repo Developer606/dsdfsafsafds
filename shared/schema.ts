@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 
-// Users table with optimized indexes for high-traffic login/signup
+// Update users table with OTP fields
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -27,6 +27,10 @@ export const users = sqliteTable("users", {
     .default(false),
   verificationToken: text("verification_token"),
   verificationTokenExpiry: integer("verification_token_expiry", { mode: "timestamp_ms" }),
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordTokenExpiry: integer("reset_password_token_expiry", { mode: "timestamp_ms" }),
+  otpSecret: text("otp_secret"),
+  otpExpiry: integer("otp_expiry", { mode: "timestamp_ms" }),
   trialCharactersCreated: integer("trial_characters_created")
     .notNull()
     .default(0),
@@ -114,6 +118,23 @@ export const insertCustomCharacterSchema = createInsertSchema(
   description: true,
   persona: true,
 });
+
+// Add OTP verification schema
+export const verifyOtpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+});
+
+// Add password reset schema
+export const resetPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+export const resetPasswordConfirmSchema = z.object({
+  token: z.string(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 
 // Types
 export type Message = typeof messages.$inferSelect;
@@ -232,3 +253,22 @@ export const insertComplaintSchema = createInsertSchema(complaints).pick({
 // Add complaint types
 export type Complaint = typeof complaints.$inferSelect;
 export type InsertComplaint = z.infer<typeof insertComplaintSchema>;
+
+// Add these types after the existing interface definitions
+
+// Add dashboard statistics type
+export interface DashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  premiumUsers: number;
+  totalCharacters: number;
+}
+
+// Add recent message type
+export interface RecentMessage {
+  id: number;
+  username: string;
+  characterName: string;
+  content: string;
+  timestamp: number;
+}
