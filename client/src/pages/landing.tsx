@@ -34,23 +34,37 @@ const slideIn = {
 // Featured characters data
 const FEATURED_CHARACTERS = [
   {
+    name: "Sung Jin-Woo",
+    description:
+      "A once-weak hunter who rises to become the world's strongest .",
+    image:
+      "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/7949dcd7-2e53-4f52-b946-a7a99a6dbf4e/dfmsxyz-7b7054ec-2da5-4995-adad-79ed1395909e.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzc5NDlkY2Q3LTJlNTMtNGY1Mi1iOTQ2LWE3YTk5YTZkYmY0ZVwvZGZtc3h5ei03YjcwNTRlYy0yZGE1LTQ5OTUtYWRhZC03OWVkMTM5NTkwOWUuanBnIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.NzFH6Ts-ziay31uD91koTsx5CEzqgvrLj7zUX6wgwGc",
+    color: "from-pink-500 to-red-400",
+  },
+  {
     name: "Naruto Uzumaki",
-    description: "The determined ninja who never gives up! Join him on his journey to become the greatest Hokage.",
-    image: "/images/characters/naruto.png",
-    color: "from-orange-500 to-red-500"
+    description:
+      "The determined ninja who never gives up! Join him on his journey to become the greatest Hokage.",
+    image:
+      "https://img.goodfon.com/original/1920x1080/b/7d/naruto-naruto-naruto-uzumaki-ulybka-paren.jpg",
+    color: "from-orange-500 to-red-500",
   },
   {
-    name: "Sakura Haruno",
-    description: "Skilled medical ninja with incredible strength. A powerful kunoichi from the Hidden Leaf Village.",
-    image: "/images/characters/sakura.png",
-    color: "from-pink-500 to-red-400"
+    name: "Hinata Hyuga",
+    description:
+      "Strong kunoichi of the Hyuga Clan, known for her Byakugan and unwavering love .",
+    image:
+      "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/020774c9-dd75-4ac8-a2b0-c8a7d9a7d58f/ddye43j-5853ab93-8c8e-4465-a853-39e3ebb8ef2e.png/v1/fill/w_1280,h_1600,q_80,strp/hinata_hyuga_by_ballz4artz_ddye43j-fullview.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTYwMCIsInBhdGgiOiJcL2ZcLzAyMDc3NGM5LWRkNzUtNGFjOC1hMmIwLWM4YTdkOWE3ZDU4ZlwvZGR5ZTQzai01ODUzYWI5My04YzhlLTQ0NjUtYTg1My0zOWUzZWJiOGVmMmUucG5nIiwid2lkdGgiOiI8PTEyODAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.cY8suDI-rQYRZtwgkFPRXOK-iDMB2Pceik7_YBLJRP0",
+    color: "from-pink-500 to-red-400",
   },
   {
-    name: "Sasuke Uchiha",
-    description: "Last survivor of the Uchiha clan, seeking to restore honor to his family name.",
-    image: "/images/characters/sasuke.png",
-    color: "from-purple-600 to-blue-500"
-  }
+    name: "Nezuko Kamado",
+    description:
+      "kind-hearted demon protects her brother Tanjiro with unwavering loyalty",
+    image:
+      "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/45c4dd2c-f0f5-4461-bb22-e67440854f67/ddegsi5-b4e7df15-8d8c-4d17-8721-6861adec60f3.png/v1/fill/w_1920,h_2485,q_80,strp/nezuko_kamado_by_sskets_ddegsi5-fullview.jpg?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MjQ4NSIsInBhdGgiOiJcL2ZcLzQ1YzRkZDJjLWYwZjUtNDQ2MS1iYjIyLWU2NzQ0MDg1NGY2N1wvZGRlZ3NpNS1iNGU3ZGYxNS04ZDhjLTRkMTctODcyMS02ODYxYWRlYzYwZjMucG5nIiwid2lkdGgiOiI8PTE5MjAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.RXq0ZVLeKUzTBzh58XdmqFLuRA_cL2AumypQgMomvl8",
+    color: "from-purple-600 to-blue-500",
+  },
 ];
 
 // Move policy content outside component for better performance
@@ -368,13 +382,13 @@ export default function LandingPage() {
           variants={fadeIn}
           className="w-full max-w-7xl mx-auto mt-32"
         >
-          <motion.h2 
+          <motion.h2
             variants={fadeIn}
             className="text-4xl font-bold text-center text-white mb-12"
           >
             Featured Characters
           </motion.h2>
-          <motion.div 
+          <motion.div
             variants={stagger}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
@@ -401,9 +415,7 @@ export default function LandingPage() {
                       <h3 className="text-xl font-semibold text-white mb-2">
                         {character.name}
                       </h3>
-                      <p className="text-gray-300">
-                        {character.description}
-                      </p>
+                      <p className="text-gray-300">{character.description}</p>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

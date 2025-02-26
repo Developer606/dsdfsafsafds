@@ -3,7 +3,23 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 
-// Users table with optimized indexes for high-traffic login/signup
+// Add new schema for OTP verification
+export const verifyEmailSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+// Update users table with reset password fields
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -27,6 +43,8 @@ export const users = sqliteTable("users", {
     .default(false),
   verificationToken: text("verification_token"),
   verificationTokenExpiry: integer("verification_token_expiry", { mode: "timestamp_ms" }),
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordTokenExpiry: integer("reset_password_token_expiry", { mode: "timestamp_ms" }),
   trialCharactersCreated: integer("trial_characters_created")
     .notNull()
     .default(0),
@@ -232,3 +250,8 @@ export const insertComplaintSchema = createInsertSchema(complaints).pick({
 // Add complaint types
 export type Complaint = typeof complaints.$inferSelect;
 export type InsertComplaint = z.infer<typeof insertComplaintSchema>;
+
+// Export the new schema types
+export type VerifyEmail = z.infer<typeof verifyEmailSchema>;
+export type ForgotPassword = z.infer<typeof forgotPasswordSchema>;
+export type ResetPassword = z.infer<typeof resetPasswordSchema>;

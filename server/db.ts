@@ -36,6 +36,8 @@ async function ensureColumns() {
       { name: 'is_email_verified', sql: 'INTEGER NOT NULL DEFAULT 0' },
       { name: 'verification_token', sql: 'TEXT' },
       { name: 'verification_token_expiry', sql: 'INTEGER' },
+      { name: 'reset_password_token', sql: 'TEXT' },
+      { name: 'reset_password_token_expiry', sql: 'INTEGER' },
       { name: 'trial_characters_created', sql: 'INTEGER NOT NULL DEFAULT 0' },
       { name: 'subscription_tier', sql: 'TEXT' },
       { name: 'subscription_status', sql: 'TEXT DEFAULT "trial"' },
