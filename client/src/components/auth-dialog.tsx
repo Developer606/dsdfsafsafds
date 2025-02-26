@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +46,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [registrationData, setRegistrationData] = useState<{ username: string; email: string; password: string } | null>(null);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const loginForm = useForm({
     resolver: zodResolver(loginSchema),
@@ -103,6 +105,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
         description: "Logged in successfully",
       });
       onSuccess();
+      setLocation('/chats'); // Redirect to chats page after login
     },
     onError: (error: Error) => {
       toast({
@@ -173,6 +176,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
         description: "Email verified and account created successfully!",
       });
       onSuccess();
+      setLocation('/chats'); // Redirect to chats page after successful verification
     },
     onError: (error: Error) => {
       toast({
@@ -235,7 +239,6 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
     },
   });
 
-  // When rendering the verify form, we'll use the stored verification email
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
