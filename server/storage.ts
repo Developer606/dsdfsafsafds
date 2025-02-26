@@ -260,38 +260,61 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPendingVerification(data: InsertPendingVerification): Promise<PendingVerification> {
-    // Delete any existing verification for this email
-    await db.delete(pendingVerifications).where(eq(pendingVerifications.email, data.email));
+    try {
+      // Delete any existing verification for this email
+      await db.delete(pendingVerifications).where(eq(pendingVerifications.email, data.email));
 
-    const [newVerification] = await db.insert(pendingVerifications)
-      .values(data)
-      .returning();
-    return newVerification;
+      // Create new verification
+      const [newVerification] = await db.insert(pendingVerifications)
+        .values(data)
+        .returning();
+
+      return newVerification;
+    } catch (error) {
+      console.error('Error creating pending verification:', error);
+      throw new Error('Failed to create pending verification');
+    }
   }
 
   async getPendingVerification(email: string): Promise<PendingVerification | undefined> {
-    const [verification] = await db.select()
-      .from(pendingVerifications)
-      .where(eq(pendingVerifications.email, email));
-    return verification;
+    try {
+      const [verification] = await db.select()
+        .from(pendingVerifications)
+        .where(eq(pendingVerifications.email, email));
+      return verification;
+    } catch (error) {
+      console.error('Error getting pending verification:', error);
+      return undefined;
+    }
   }
 
   async verifyPendingToken(email: string, token: string): Promise<boolean> {
-    const verification = await this.getPendingVerification(email);
-    if (!verification) return false;
+    try {
+      const verification = await this.getPendingVerification(email);
+      if (!verification) return false;
 
-    const now = new Date();
-    if (verification.verificationToken === token &&
-        verification.tokenExpiry > now) {
-      await db.delete(pendingVerifications).where(eq(pendingVerifications.email, email));
-      return true;
+      const now = new Date();
+      if (verification.verificationToken === token &&
+          verification.tokenExpiry > now) {
+        // If verification is successful, delete the verification record
+        await this.deletePendingVerification(email);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error verifying pending token:', error);
+      return false;
     }
-    return false;
   }
 
   async deletePendingVerification(email: string): Promise<void> {
-    await db.delete(pendingVerifications)
-      .where(eq(pendingVerifications.email, email));
+    try {
+      await db.delete(pendingVerifications)
+        .where(eq(pendingVerifications.email, email));
+    } catch (error) {
+      console.error('Error deleting pending verification:', error);
+      throw new Error('Failed to delete pending verification');
+    }
   }
 }
 

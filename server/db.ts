@@ -90,6 +90,14 @@ export async function runMigrations() {
         persona TEXT NOT NULL,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )`,
+      `CREATE TABLE IF NOT EXISTS pending_verifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        verification_token TEXT NOT NULL,
+        token_expiry INTEGER NOT NULL,
+        registration_data TEXT,
+        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`
     ];
 
@@ -128,6 +136,10 @@ function createIndexes() {
 
       // Custom character indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_custom_chars_user ON custom_characters(user_id)').run();
+
+      // Verification indexes
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_email ON pending_verifications(email)').run();
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_token ON pending_verifications(verification_token)').run();
     })();
 
     console.log('Database indexes created successfully');
