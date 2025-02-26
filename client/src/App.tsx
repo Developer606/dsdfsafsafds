@@ -3,7 +3,6 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Navigation } from "@/components/navigation";
-import { ProtectedRoute } from "./lib/protected-route";
 import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import NotFound from "@/pages/not-found";
@@ -16,7 +15,10 @@ import type { User } from "@shared/schema";
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
-    retry: false
+    retry: false,
+    onError: () => {
+      window.location.href = "/";
+    }
   });
 
   if (!user?.isAdmin) {
@@ -30,17 +32,26 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
 }
 
 function Router() {
+  const { data: user, error } = useQuery<User>({
+    queryKey: ["/api/user"],
+    retry: false,
+    onError: () => {
+      // Redirect to home page if session is invalid
+      window.location.href = "/";
+    }
+  });
+
   return (
     <>
       <Switch>
         <Route path="/" component={LandingPage} />
-        <ProtectedRoute path="/chats" component={() => (
+        <Route path="/chats">
           <>
             <Navigation />
             <Home />
           </>
-        )} />
-        <ProtectedRoute path="/chat/:characterId" component={Chat} />
+        </Route>
+        <Route path="/chat/:characterId" component={Chat} />
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin/dashboard">
           <AdminRoute component={AdminDashboard} />
