@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, subscriptionPlans, type SubscriptionTier, type Feedback, type DashboardStats, type RecentMessage } from "@shared/schema";
+import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
 import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -41,33 +41,37 @@ import {
 export default function AdminDashboard() {
   const { toast } = useToast();
 
-  // Query hooks
-  const { data: stats, isLoading: statsLoading } = useQuery<DashboardStats>({
+  // Enhanced stats query to include more metrics
+  const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
     refetchInterval: 30000,
   });
 
+  // Query for users with enhanced information
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     refetchInterval: 30000,
   });
 
-  const { data: recentMessages, isLoading: messagesLoading } = useQuery<RecentMessage[]>({
+  // New query for recent messages
+  const { data: recentMessages, isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
     refetchInterval: 30000,
   });
 
+  // New query for character stats
   const { data: characterStats, isLoading: charactersLoading } = useQuery({
     queryKey: ["/api/admin/characters/stats"],
     refetchInterval: 30000,
   });
 
+  // New query for feedback
   const { data: feedback, isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
     refetchInterval: 30000,
   });
 
-  // Mutations
+  // Existing mutations...
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/block`, { blocked });
@@ -82,6 +86,7 @@ export default function AdminDashboard() {
     },
   });
 
+  // Other existing mutations remain unchanged...
   const deleteUser = useMutation({
     mutationFn: async (userId: number) => {
       const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
@@ -91,7 +96,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "Userdeleted successfully",
       });
     },
   });
@@ -124,7 +129,7 @@ export default function AdminDashboard() {
     },
   });
 
-  // Chart data preparation
+  // Enhanced data preparation for charts
   const subscriptionData = users ? [
     { name: 'Free', value: users.filter(u => !u.isPremium).length },
     { name: 'Premium', value: users.filter(u => u.isPremium).length },
@@ -259,7 +264,7 @@ export default function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentMessages?.map((message) => (
+                {recentMessages?.map((message: any) => (
                   <TableRow key={message.id}>
                     <TableCell>{message.username}</TableCell>
                     <TableCell>{message.characterName}</TableCell>
@@ -395,8 +400,8 @@ export default function AdminDashboard() {
                           <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => updateSubscription.mutate({
-                              userId: user.id,
+                            onClick={() => updateSubscription.mutate({ 
+                              userId: user.id, 
                               planId: 'free'
                             })}
                           >
@@ -471,8 +476,8 @@ export default function AdminDashboard() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
+                            <Button 
+                              variant="destructive" 
                               size="icon"
                               disabled={deleteUser.isPending}
                             >
@@ -512,18 +517,4 @@ export default function AdminDashboard() {
       </Card>
     </div>
   );
-}
-
-interface DashboardStats {
-  totalUsers: number;
-  activeUsers: number;
-  premiumUsers: number;
-}
-
-interface RecentMessage {
-  id: number;
-  username: string;
-  characterName: string;
-  content: string;
-  timestamp: string;
 }
