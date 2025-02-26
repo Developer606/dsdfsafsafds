@@ -49,6 +49,7 @@ export interface IStorage {
   deleteUser(userId: number): Promise<void>;
   verifyEmail(userId: number, token: string): Promise<boolean>;
   updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -245,6 +246,11 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error creating admin user:", error);
     }
+  }
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+    await db.update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, userId));
   }
 }
 

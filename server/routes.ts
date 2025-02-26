@@ -5,13 +5,15 @@ import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
-import { generateOTP, sendVerificationEmail, hashPassword } from './auth'; 
+import { generateOTP, sendVerificationEmail, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
 import { complaintStorage } from './complaint-storage';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import passport from 'passport';
+import { generateOTP as generateOTPemail, sendVerificationEmail, sendPasswordResetEmail, isValidEmail } from './email';
+
 
 // Middleware to check if user is blocked
 const checkBlockedStatus = async (req: any, res: any, next: any) => {
@@ -23,8 +25,8 @@ const checkBlockedStatus = async (req: any, res: any, next: any) => {
           console.error('Error logging out blocked user:', err);
         }
       });
-      return res.status(403).json({ 
-        error: "Your account has been blocked. Please contact support." 
+      return res.status(403).json({
+        error: "Your account has been blocked. Please contact support."
       });
     }
   }
@@ -527,8 +529,8 @@ export async function registerRoutes(app: Express) {
 
       // Check for blocked status before authentication
       if (user?.isBlocked) {
-        return res.status(403).json({ 
-          error: "Your account has been blocked. Please contact support." 
+        return res.status(403).json({
+          error: "Your account has been blocked. Please contact support."
         });
       }
 
@@ -537,16 +539,16 @@ export async function registerRoutes(app: Express) {
         if (err) return next(err);
 
         if (!authenticatedUser) {
-          return res.status(401).json({ 
-            error: "Invalid username or password" 
+          return res.status(401).json({
+            error: "Invalid username or password"
           });
         }
 
         // Double check block status after authentication
         const currentUser = await storage.getUserByUsername(authenticatedUser.username);
         if (currentUser?.isBlocked) {
-          return res.status(403).json({ 
-            error: "Your account has been blocked. Please contact support." 
+          return res.status(403).json({
+            error: "Your account has been blocked. Please contact support."
           });
         }
 
@@ -558,6 +560,122 @@ export async function registerRoutes(app: Express) {
       })(req, res, next);
     } catch (error) {
       next(error);
+    }
+  });
+
+  // New endpoint for sending OTP during registration
+  app.post("/api/verify/send-otp", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({ error: "Invalid email address" });
+      }
+
+      // Check if email already exists and is verified
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser?.isEmailVerified) {
+        return res.status(400).json({ error: "Email already registered and verified" });
+      }
+
+      const otp = await generateOTPemail();
+      const expiry = new Date();
+      expiry.setMinutes(expiry.getMinutes() + 10); // OTP expires in 10 minutes
+
+      if (existingUser) {
+        // Update existing unverified user's OTP
+        await storage.updateVerificationToken(existingUser.id, otp, expiry);
+      }
+
+      await sendVerificationEmail(email, otp);
+      res.json({ message: "OTP sent successfully" });
+    } catch (error: any) {
+      console.error("Error sending OTP:", error);
+      res.status(500).json({ error: "Failed to send OTP" });
+    }
+  });
+
+  // Endpoint for verifying OTP during registration
+  app.post("/api/verify/verify-otp", async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+
+      if (!email || !otp) {
+        return res.status(400).json({ error: "Email and OTP are required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const isValid = await storage.verifyEmail(user.id, otp);
+      if (!isValid) {
+        return res.status(400).json({ error: "Invalid or expired OTP" });
+      }
+
+      res.json({ message: "Email verified successfully" });
+    } catch (error: any) {
+      console.error("Error verifying OTP:", error);
+      res.status(500).json({ error: "Failed to verify OTP" });
+    }
+  });
+
+  // Endpoint for password reset request
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({ error: "Invalid email address" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const otp = await generateOTPemail();
+      const expiry = new Date();
+      expiry.setMinutes(expiry.getMinutes() + 10);
+
+      await storage.updateVerificationToken(user.id, otp, expiry);
+      await sendPasswordResetEmail(email, otp);
+
+      res.json({ message: "Password reset OTP sent successfully" });
+    } catch (error: any) {
+      console.error("Error initiating password reset:", error);
+      res.status(500).json({ error: "Failed to initiate password reset" });
+    }
+  });
+
+  // Endpoint for resetting password with OTP
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { email, otp, newPassword } = req.body;
+
+      if (!email || !otp || !newPassword) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const isValid = await storage.verifyEmail(user.id, otp);
+      if (!isValid) {
+        return res.status(400).json({ error: "Invalid or expired OTP" });
+      }
+
+      // Hash new password and update
+      const hashedPassword = await hashPassword(newPassword);
+      await storage.updateUserPassword(user.id, hashedPassword);
+
+      res.json({ message: "Password reset successfully" });
+    } catch (error: any) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ error: "Failed to reset password" });
     }
   });
 
