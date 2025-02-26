@@ -7,7 +7,6 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, insertUserSchema, adminLoginSchema } from "@shared/schema";
 import cryptoRandomString from 'crypto-random-string';
-import { generateOTP, sendVerificationEmail, sendPasswordResetEmail } from './email';
 
 declare global {
   namespace Express {
@@ -22,6 +21,18 @@ export async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
+}
+
+// Add OTP generation utility
+export function generateOTP() {
+  return cryptoRandomString({ length: 6, type: 'numeric' });
+}
+
+// Add email verification utility
+export async function sendVerificationEmail(email: string, token: string) {
+  // Implementation will be added when email service is set up
+  console.log(`Verification email would be sent to ${email} with token ${token}`);
+  return true;
 }
 
 async function comparePasswords(supplied: string, stored: string) {
@@ -63,12 +74,6 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid credentials" });
         }
-
-        // Check if email is verified
-        if (!user.isEmailVerified) {
-          return done(null, false, { message: "Please verify your email first" });
-        }
-
         await storage.updateLastLogin(user.id);
         return done(null, user);
       } catch (error) {
@@ -115,11 +120,6 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Email already exists" });
       }
 
-      // Generate OTP for email verification
-      const otp = await generateOTP();
-      const otpExpiry = new Date();
-      otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // 10 minutes expiry
-
       // Hash password and create user
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
@@ -127,133 +127,19 @@ export function setupAuth(app: Express) {
         password: hashedPassword,
         role: 'user',
         isAdmin: false,
-        verificationToken: otp,
-        verificationTokenExpiry: otpExpiry,
-        isEmailVerified: false
       });
 
-      // Send verification email
-      await sendVerificationEmail(user.email, otp);
-
-      res.status(201).json({
-        message: "Registration successful. Please check your email for verification code.",
-        userId: user.id
+      // Log in the user after registration
+      req.login(user, (err) => {
+        if (err) {
+          console.error("Login after registration failed:", err);
+          return res.status(500).json({ error: "Login failed after registration" });
+        }
+        return res.status(201).json(user);
       });
     } catch (error: any) {
       console.error("Registration error:", error);
       res.status(500).json({ error: "Registration failed", details: error.message });
-    }
-  });
-
-  // Email verification endpoint
-  app.post("/api/verify-email", async (req, res) => {
-    try {
-      const { email, otp } = req.body;
-      const user = await storage.getUserByEmail(email);
-
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      if (user.isEmailVerified) {
-        return res.status(400).json({ error: "Email already verified" });
-      }
-
-      if (!user.verificationToken || !user.verificationTokenExpiry) {
-        return res.status(400).json({ error: "No verification pending" });
-      }
-
-      if (new Date() > new Date(user.verificationTokenExpiry)) {
-        return res.status(400).json({ error: "Verification code expired" });
-      }
-
-      if (user.verificationToken !== otp) {
-        return res.status(400).json({ error: "Invalid verification code" });
-      }
-
-      // Update user as verified
-      await storage.updateUser(user.id, {
-        isEmailVerified: true,
-        verificationToken: null,
-        verificationTokenExpiry: null
-      });
-
-      // Log in the user after verification
-      req.login(user, (err) => {
-        if (err) {
-          return res.status(500).json({ error: "Login failed after verification" });
-        }
-        return res.json({ message: "Email verified successfully" });
-      });
-    } catch (error: any) {
-      res.status(500).json({ error: "Verification failed", details: error.message });
-    }
-  });
-
-  // Forgot password endpoint
-  app.post("/api/forgot-password", async (req, res) => {
-    try {
-      const { email } = req.body;
-      const user = await storage.getUserByEmail(email);
-
-      if (!user) {
-        // For security, don't reveal if email exists
-        return res.json({ message: "If the email exists, a reset code will be sent" });
-      }
-
-      // Generate OTP and set expiry
-      const otp = await generateOTP();
-      const otpExpiry = new Date();
-      otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // 10 minutes expiry
-
-      // Update user with reset token
-      await storage.updateUser(user.id, {
-        resetPasswordToken: otp,
-        resetPasswordTokenExpiry: otpExpiry
-      });
-
-      // Send password reset email
-      await sendPasswordResetEmail(email, otp);
-
-      res.json({ message: "If the email exists, a reset code will be sent" });
-    } catch (error: any) {
-      res.status(500).json({ error: "Failed to process request" });
-    }
-  });
-
-  // Reset password endpoint
-  app.post("/api/reset-password", async (req, res) => {
-    try {
-      const { email, otp, newPassword } = req.body;
-      const user = await storage.getUserByEmail(email);
-
-      if (!user) {
-        return res.status(404).json({ error: "Invalid reset request" });
-      }
-
-      if (!user.resetPasswordToken || !user.resetPasswordTokenExpiry) {
-        return res.status(400).json({ error: "No reset request pending" });
-      }
-
-      if (new Date() > new Date(user.resetPasswordTokenExpiry)) {
-        return res.status(400).json({ error: "Reset code expired" });
-      }
-
-      if (user.resetPasswordToken !== otp) {
-        return res.status(400).json({ error: "Invalid reset code" });
-      }
-
-      // Update password and clear reset tokens
-      const hashedPassword = await hashPassword(newPassword);
-      await storage.updateUser(user.id, {
-        password: hashedPassword,
-        resetPasswordToken: null,
-        resetPasswordTokenExpiry: null
-      });
-
-      res.json({ message: "Password reset successful" });
-    } catch (error: any) {
-      res.status(500).json({ error: "Failed to reset password" });
     }
   });
 
