@@ -1,4 +1,4 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
@@ -50,6 +50,12 @@ export interface IStorage {
   verifyEmail(userId: number, token: string): Promise<boolean>;
   updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+
+  // Add new methods for pending verifications
+  createPendingVerification(data: InsertPendingVerification): Promise<PendingVerification>;
+  getPendingVerification(email: string): Promise<PendingVerification | undefined>;
+  verifyPendingToken(email: string, token: string): Promise<boolean>;
+  deletePendingVerification(email: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -251,6 +257,41 @@ export class DatabaseStorage implements IStorage {
     await db.update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, userId));
+  }
+
+  async createPendingVerification(data: InsertPendingVerification): Promise<PendingVerification> {
+    // Delete any existing verification for this email
+    await db.delete(pendingVerifications).where(eq(pendingVerifications.email, data.email));
+
+    const [newVerification] = await db.insert(pendingVerifications)
+      .values(data)
+      .returning();
+    return newVerification;
+  }
+
+  async getPendingVerification(email: string): Promise<PendingVerification | undefined> {
+    const [verification] = await db.select()
+      .from(pendingVerifications)
+      .where(eq(pendingVerifications.email, email));
+    return verification;
+  }
+
+  async verifyPendingToken(email: string, token: string): Promise<boolean> {
+    const verification = await this.getPendingVerification(email);
+    if (!verification) return false;
+
+    const now = new Date();
+    if (verification.verificationToken === token &&
+        verification.tokenExpiry > now) {
+      await db.delete(pendingVerifications).where(eq(pendingVerifications.email, email));
+      return true;
+    }
+    return false;
+  }
+
+  async deletePendingVerification(email: string): Promise<void> {
+    await db.delete(pendingVerifications)
+      .where(eq(pendingVerifications.email, email));
   }
 }
 

@@ -3,6 +3,30 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 
+// Add pending verifications table
+export const pendingVerifications = sqliteTable("pending_verifications", {
+  id: integer("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  verificationToken: text("verification_token").notNull(),
+  tokenExpiry: integer("token_expiry", { mode: "timestamp_ms" }).notNull(),
+  registrationData: text("registration_data"), // JSON string of registration data
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Add schema for pending verifications
+export const insertPendingVerificationSchema = createInsertSchema(pendingVerifications).pick({
+  email: true,
+  verificationToken: true,
+  tokenExpiry: true,
+  registrationData: true,
+});
+
+// Add types for pending verifications
+export type PendingVerification = typeof pendingVerifications.$inferSelect;
+export type InsertPendingVerification = z.infer<typeof insertPendingVerificationSchema>;
+
 // Users table with optimized indexes for high-traffic login/signup
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey(),

@@ -113,10 +113,14 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
     },
   });
 
+  // Registration mutation
   const register = useMutation({
     mutationFn: async (data: { username: string; email: string; password: string }) => {
-      // First send OTP
-      const res = await apiRequest("POST", "/api/verify/send-otp", { email: data.email });
+      // Send OTP along with registration data
+      const res = await apiRequest("POST", "/api/verify/send-otp", { 
+        email: data.email,
+        registrationData: data // Include full registration data
+      });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Failed to send verification code");
@@ -146,6 +150,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
     },
   });
 
+  // OTP verification mutation
   const verifyOTP = useMutation({
     mutationFn: async (data: { email: string; otp: string }) => {
       // Ensure we're using the stored verification email
@@ -159,35 +164,15 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
         const error = await res.json();
         throw new Error(error.error || "Invalid verification code");
       }
-
-      // If we have registration data, create the user account
-      if (registrationData) {
-        const registerRes = await apiRequest("POST", "/api/register", registrationData);
-        if (!registerRes.ok) {
-          const error = await registerRes.json();
-          throw new Error(error.error || "Failed to create account");
-        }
-        return registerRes.json();
-      }
-
       return res.json();
     },
     onSuccess: (user) => {
-      if (registrationData) {
-        queryClient.setQueryData(["/api/user"], user);
-        toast({
-          title: "Success",
-          description: "Account created and verified successfully!",
-        });
-        setRegistrationData(null); // Clear stored data
-        onSuccess();
-      } else {
-        toast({
-          title: "Success",
-          description: "Email verified successfully",
-        });
-        setAuthStep("login");
-      }
+      queryClient.setQueryData(["/api/user"], user);
+      toast({
+        title: "Success",
+        description: "Email verified and account created successfully!",
+      });
+      onSuccess();
     },
     onError: (error: Error) => {
       toast({

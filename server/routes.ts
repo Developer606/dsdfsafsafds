@@ -9,8 +9,8 @@ import { generateOTP, sendVerificationEmail, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
 import { complaintStorage } from './complaint-storage';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import path from "path";
+import fs from "fs";
 import passport from 'passport';
 import { generateOTP as generateOTPemail, sendVerificationEmail, sendPasswordResetEmail, isValidEmail } from './email';
 
@@ -566,7 +566,7 @@ export async function registerRoutes(app: Express) {
   // New endpoint for sending OTP during registration
   app.post("/api/verify/send-otp", async (req, res) => {
     try {
-      const { email } = req.body;
+      const { email, registrationData } = req.body;
 
       if (!email || !isValidEmail(email)) {
         return res.status(400).json({ error: "Invalid email address" });
@@ -582,10 +582,13 @@ export async function registerRoutes(app: Express) {
       const expiry = new Date();
       expiry.setMinutes(expiry.getMinutes() + 10); // OTP expires in 10 minutes
 
-      if (existingUser) {
-        // Update existing unverified user's OTP
-        await storage.updateVerificationToken(existingUser.id, otp, expiry);
-      }
+      // Store pending verification with registration data if provided
+      await storage.createPendingVerification({
+        email,
+        verificationToken: otp,
+        tokenExpiry: expiry,
+        registrationData: registrationData ? JSON.stringify(registrationData) : null
+      });
 
       await sendVerificationEmail(email, otp);
       res.json({ message: "OTP sent successfully" });
@@ -604,17 +607,29 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: "Email and OTP are required" });
       }
 
-      const user = await storage.getUserByEmail(email);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
+      const verification = await storage.getPendingVerification(email);
+      if (!verification) {
+        return res.status(400).json({ error: "No pending verification found" });
       }
 
-      const isValid = await storage.verifyEmail(user.id, otp);
+      const isValid = await storage.verifyPendingToken(email, otp);
       if (!isValid) {
         return res.status(400).json({ error: "Invalid or expired OTP" });
       }
 
-      res.json({ message: "Email verified successfully" });
+      // If we have registration data, create the user
+      if (verification.registrationData) {
+        const userData = JSON.parse(verification.registrationData);
+        const user = await storage.createUser({
+          ...userData,
+          isEmailVerified: true
+        });
+        await storage.deletePendingVerification(email);
+        res.json({ message: "Email verified and account created successfully", user });
+      } else {
+        await storage.deletePendingVerification(email);
+        res.json({ message: "Email verified successfully" });
+      }
     } catch (error: any) {
       console.error("Error verifying OTP:", error);
       res.status(500).json({ error: "Failed to verify OTP" });
