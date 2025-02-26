@@ -127,9 +127,11 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
       setVerificationEmail(data.email);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setAuthStep("verify");
-      otpForm.setValue("email", verificationEmail);
+      // Set both the hidden email field and store verification email
+      otpForm.setValue("email", data.email);
+      setVerificationEmail(data.email);
       toast({
         title: "Verification Code Sent",
         description: "Please check your email for the verification code",
@@ -146,7 +148,13 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
 
   const verifyOTP = useMutation({
     mutationFn: async (data: { email: string; otp: string }) => {
-      const res = await apiRequest("POST", "/api/verify/verify-otp", data);
+      // Ensure we're using the stored verification email
+      const verifyData = {
+        email: verificationEmail,
+        otp: data.otp
+      };
+
+      const res = await apiRequest("POST", "/api/verify/verify-otp", verifyData);
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Invalid verification code");
@@ -172,13 +180,14 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
           description: "Account created and verified successfully!",
         });
         setRegistrationData(null); // Clear stored data
+        onSuccess();
       } else {
         toast({
           title: "Success",
           description: "Email verified successfully",
         });
+        setAuthStep("login");
       }
-      onSuccess();
     },
     onError: (error: Error) => {
       toast({
@@ -241,6 +250,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
     },
   });
 
+  // When rendering the verify form, we'll use the stored verification email
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
@@ -380,10 +390,10 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
         )}
 
         {authStep === "verify" && (
-          <form onSubmit={otpForm.handleSubmit((data) => verifyOTP.mutate(data))}>
+          <form onSubmit={otpForm.handleSubmit((data) => verifyOTP.mutate({ ...data, email: verificationEmail }))}>
             <div className="space-y-4">
               <p className="text-sm text-center">
-                We've sent a verification code to your email.
+                We've sent a verification code to {verificationEmail}.<br />
                 Please enter it below to verify your account.
               </p>
               <div>
@@ -412,7 +422,11 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                 <button
                   type="button"
                   className="text-primary hover:underline"
-                  onClick={() => register.mutate(registerForm.getValues())}
+                  onClick={() => {
+                    if (registrationData) {
+                      register.mutate(registrationData);
+                    }
+                  }}
                 >
                   Resend
                 </button>
