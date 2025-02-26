@@ -49,7 +49,6 @@ export interface IStorage {
   deleteUser(userId: number): Promise<void>;
   verifyEmail(userId: number, token: string): Promise<boolean>;
   updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void>;
-  updateUser(userId: number, data: Partial<Omit<User, "id">>): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -214,11 +213,6 @@ export class DatabaseStorage implements IStorage {
         verificationToken: token,
         verificationTokenExpiry: expiry
       })
-      .where(eq(users.id, userId));
-  }
-  async updateUser(userId: number, data: Partial<Omit<User, "id">>): Promise<void> {
-    await db.update(users)
-      .set(data)
       .where(eq(users.id, userId));
   }
   private async initializeAdmin() {

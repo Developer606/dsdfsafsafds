@@ -56,11 +56,6 @@ export function NotificationHeader() {
   const { toast } = useToast();
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Add query to get user data with proper type
-  const { data: user } = useQuery<{ username: string; email: string; }>({ 
-    queryKey: ["/api/user"],
-  });
-
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -91,6 +86,11 @@ export function NotificationHeader() {
     }
   };
 
+  // Add query to get user data
+  const { data: user } = useQuery({ 
+    queryKey: ["/api/user"],
+  });
+
   const handleComplaintSubmit = async () => {
     if (!complaint.trim()) {
       toast({
@@ -113,9 +113,8 @@ export function NotificationHeader() {
     try {
       const formData = new FormData();
       formData.append('message', complaint);
-      // Only add user data if it exists
-      if (user.username) formData.append('name', user.username);
-      if (user.email) formData.append('email', user.email);
+      formData.append('name', user.username); // Add user's name
+      formData.append('email', user.email); // Add user's email
       if (selectedImage) {
         formData.append('image', selectedImage);
       }
