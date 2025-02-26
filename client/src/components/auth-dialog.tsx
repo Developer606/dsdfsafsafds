@@ -21,12 +21,8 @@ type AuthDialogProps = {
   onSuccess: () => void;
 };
 
-type RegistrationStep = 'initial' | 'verify-otp';
-
 export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [isLogin, setIsLogin] = useState(true);
-  const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('initial');
-  const [registrationEmail, setRegistrationEmail] = useState("");
   const { toast } = useToast();
 
   const loginForm = useForm({
@@ -46,12 +42,6 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
     },
   });
 
-  const otpForm = useForm({
-    defaultValues: {
-      otp: "",
-    },
-  });
-
   const login = useMutation({
     mutationFn: async (data: { username: string; password: string }) => {
       const res = await apiRequest("POST", "/api/login", data);
@@ -68,57 +58,6 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
         description: "Logged in successfully",
       });
       onSuccess();
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    },
-  });
-
-  const sendOTP = useMutation({
-    mutationFn: async (email: string) => {
-      const res = await apiRequest("POST", "/api/verify/send-otp", { email });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to send OTP");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "OTP sent to your email",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message,
-      });
-    },
-  });
-
-  const verifyOTP = useMutation({
-    mutationFn: async (data: { email: string; otp: string }) => {
-      const res = await apiRequest("POST", "/api/verify/verify-otp", data);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "OTP verification failed");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Email verified successfully",
-      });
-      // Proceed with registration
-      const formData = registerForm.getValues();
-      register.mutate(formData);
     },
     onError: (error: Error) => {
       toast({
@@ -155,40 +94,12 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
     },
   });
 
-  const handleRegistrationSubmit = async (data: { username: string; email: string; password: string }) => {
-    setRegistrationEmail(data.email);
-    try {
-      await sendOTP.mutateAsync(data.email);
-      setRegistrationStep('verify-otp');
-    } catch (error) {
-      // Error is handled by the mutation
-    }
-  };
-
-  const handleOTPSubmit = async (data: { otp: string }) => {
-    try {
-      await verifyOTP.mutateAsync({ email: registrationEmail, otp: data.otp });
-    } catch (error) {
-      // Error is handled by the mutation
-    }
-  };
-
-  const handleDialogClose = () => {
-    setRegistrationStep('initial');
-    setRegistrationEmail("");
-    registerForm.reset();
-    otpForm.reset();
-    onOpenChange(false);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleDialogClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isLogin ? "Login to Your Account" : (
-              registrationStep === 'initial' ? "Create an Account" : "Verify Email"
-            )}
+            {isLogin ? "Login to Your Account" : "Create an Account"}
           </DialogTitle>
         </DialogHeader>
 
@@ -241,8 +152,8 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
               </p>
             </div>
           </form>
-        ) : registrationStep === 'initial' ? (
-          <form onSubmit={registerForm.handleSubmit(handleRegistrationSubmit)}>
+        ) : (
+          <form onSubmit={registerForm.handleSubmit((data) => register.mutate(data))}>
             <div className="space-y-4">
               <div>
                 <Label htmlFor="username">Username</Label>
@@ -288,9 +199,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={sendOTP.isPending}
+                disabled={register.isPending}
               >
-                {sendOTP.isPending ? "Sending OTP..." : "Create Account"}
+                {register.isPending ? "Creating account..." : "Create Account"}
               </Button>
               <p className="text-center text-sm">
                 Already have an account?{" "}
@@ -300,41 +211,6 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   onClick={() => setIsLogin(true)}
                 >
                   Login
-                </button>
-              </p>
-            </div>
-          </form>
-        ) : (
-          <form onSubmit={otpForm.handleSubmit(handleOTPSubmit)}>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Please enter the verification code sent to your email address
-              </p>
-              <div>
-                <Label htmlFor="otp">Verification Code</Label>
-                <Input
-                  id="otp"
-                  {...otpForm.register("otp")}
-                  className="mt-1 text-center text-2xl tracking-[0.5em] font-mono"
-                  maxLength={6}
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={verifyOTP.isPending}
-              >
-                {verifyOTP.isPending ? "Verifying..." : "Verify Email"}
-              </Button>
-              <p className="text-center text-sm">
-                Didn't receive the code?{" "}
-                <button
-                  type="button"
-                  className="text-primary hover:underline"
-                  onClick={() => sendOTP.mutate(registrationEmail)}
-                  disabled={sendOTP.isPending}
-                >
-                  Resend
                 </button>
               </p>
             </div>
