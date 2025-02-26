@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { insertUserSchema, loginSchema } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { InputOTP, InputOTPGroup } from "@/components/ui/input-otp";
 
 type AuthDialogProps = {
   open: boolean;
@@ -21,8 +22,11 @@ type AuthDialogProps = {
   onSuccess: () => void;
 };
 
+type AuthState = "login" | "register" | "verify-otp" | "forgot-password" | "reset-password";
+
 export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
-  const [isLogin, setIsLogin] = useState(true);
+  const [authState, setAuthState] = useState<AuthState>("login");
+  const [email, setEmail] = useState("");
   const { toast } = useToast();
 
   const loginForm = useForm({
@@ -39,6 +43,25 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
       username: "",
       email: "",
       password: "",
+    },
+  });
+
+  const otpForm = useForm({
+    defaultValues: {
+      otp: "",
+    },
+  });
+
+  const forgotPasswordForm = useForm({
+    defaultValues: {
+      email: "",
+    },
+  });
+
+  const resetPasswordForm = useForm({
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -77,13 +100,94 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
       }
       return res.json();
     },
+    onSuccess: (response) => {
+      setEmail(registerForm.getValues("email"));
+      setAuthState("verify-otp");
+      toast({
+        title: "Success",
+        description: "Please check your email for the verification code",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    },
+  });
+
+  const verifyOTP = useMutation({
+    mutationFn: async (otp: string) => {
+      const res = await apiRequest("POST", "/api/verify-email", { email, otp });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Verification failed");
+      }
+      return res.json();
+    },
     onSuccess: (user) => {
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Success",
-        description: "Registered successfully",
+        description: "Email verified successfully",
       });
       onSuccess();
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    },
+  });
+
+  const requestPasswordReset = useMutation({
+    mutationFn: async (email: string) => {
+      const res = await apiRequest("POST", "/api/request-password-reset", { email });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Password reset request failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setEmail(forgotPasswordForm.getValues("email"));
+      setAuthState("verify-otp");
+      toast({
+        title: "Success",
+        description: "Please check your email for the reset code",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
+    },
+  });
+
+  const resetPassword = useMutation({
+    mutationFn: async (data: { password: string; otp: string }) => {
+      const res = await apiRequest("POST", "/api/reset-password", { 
+        email,
+        password: data.password,
+        otp: data.otp
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Password reset failed");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setAuthState("login");
+      toast({
+        title: "Success",
+        description: "Password reset successfully. Please login with your new password.",
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -99,11 +203,15 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {isLogin ? "Login to Your Account" : "Create an Account"}
+            {authState === "login" && "Login to Your Account"}
+            {authState === "register" && "Create an Account"}
+            {authState === "verify-otp" && "Verify Your Email"}
+            {authState === "forgot-password" && "Reset Your Password"}
+            {authState === "reset-password" && "Enter New Password"}
           </DialogTitle>
         </DialogHeader>
 
-        {isLogin ? (
+        {authState === "login" && (
           <form onSubmit={loginForm.handleSubmit((data) => login.mutate(data))}>
             <div className="space-y-4">
               <div>
@@ -140,19 +248,32 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
               >
                 {login.isPending ? "Logging in..." : "Login"}
               </Button>
-              <p className="text-center text-sm">
-                Don't have an account?{" "}
-                <button
-                  type="button"
-                  className="text-primary hover:underline"
-                  onClick={() => setIsLogin(false)}
-                >
-                  Sign up
-                </button>
-              </p>
+              <div className="text-center space-y-2">
+                <p className="text-sm">
+                  Don't have an account?{" "}
+                  <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    onClick={() => setAuthState("register")}
+                  >
+                    Sign up
+                  </button>
+                </p>
+                <p className="text-sm">
+                  <button
+                    type="button"
+                    className="text-primary hover:underline"
+                    onClick={() => setAuthState("forgot-password")}
+                  >
+                    Forgot password?
+                  </button>
+                </p>
+              </div>
             </div>
           </form>
-        ) : (
+        )}
+
+        {authState === "register" && (
           <form onSubmit={registerForm.handleSubmit((data) => register.mutate(data))}>
             <div className="space-y-4">
               <div>
@@ -208,11 +329,116 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                 <button
                   type="button"
                   className="text-primary hover:underline"
-                  onClick={() => setIsLogin(true)}
+                  onClick={() => setAuthState("login")}
                 >
                   Login
                 </button>
               </p>
+            </div>
+          </form>
+        )}
+
+        {authState === "verify-otp" && (
+          <form onSubmit={otpForm.handleSubmit((data) => verifyOTP.mutate(data.otp))}>
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">
+                  Enter the verification code sent to {email}
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  render={({ slots }) => (
+                    <InputOTPGroup>
+                      {slots.map((slot, index) => (
+                        <Input
+                          key={index}
+                          {...slot}
+                          className="w-10"
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  )}
+                  {...otpForm.register("otp")}
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={verifyOTP.isPending}
+              >
+                {verifyOTP.isPending ? "Verifying..." : "Verify Email"}
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {authState === "forgot-password" && (
+          <form onSubmit={forgotPasswordForm.handleSubmit((data) => requestPasswordReset.mutate(data.email))}>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...forgotPasswordForm.register("email")}
+                  className="mt-1"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={requestPasswordReset.isPending}
+              >
+                {requestPasswordReset.isPending ? "Sending..." : "Send Reset Code"}
+              </Button>
+              <p className="text-center text-sm">
+                <button
+                  type="button"
+                  className="text-primary hover:underline"
+                  onClick={() => setAuthState("login")}
+                >
+                  Back to login
+                </button>
+              </p>
+            </div>
+          </form>
+        )}
+
+        {authState === "reset-password" && (
+          <form onSubmit={resetPasswordForm.handleSubmit((data) => 
+            resetPassword.mutate({ 
+              password: data.password,
+              otp: otpForm.getValues("otp")
+            })
+          )}>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="password">New Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  {...resetPasswordForm.register("password")}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  {...resetPasswordForm.register("confirmPassword")}
+                  className="mt-1"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={resetPassword.isPending}
+              >
+                {resetPassword.isPending ? "Resetting..." : "Reset Password"}
+              </Button>
             </div>
           </form>
         )}

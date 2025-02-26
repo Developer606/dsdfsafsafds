@@ -7,6 +7,7 @@ import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, insertUserSchema, adminLoginSchema } from "@shared/schema";
 import cryptoRandomString from 'crypto-random-string';
+import { generateOTP, sendVerificationEmail } from "./email";
 
 declare global {
   namespace Express {
@@ -16,23 +17,10 @@ declare global {
 
 const scryptAsync = promisify(scrypt);
 
-// Export hash password utility
-export async function hashPassword(password: string) {
+async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const buf = (await scryptAsync(password, salt, 64)) as Buffer;
   return `${buf.toString("hex")}.${salt}`;
-}
-
-// Add OTP generation utility
-export function generateOTP() {
-  return cryptoRandomString({ length: 6, type: 'numeric' });
-}
-
-// Add email verification utility
-export async function sendVerificationEmail(email: string, token: string) {
-  // Implementation will be added when email service is set up
-  console.log(`Verification email would be sent to ${email} with token ${token}`);
-  return true;
 }
 
 async function comparePasswords(supplied: string, stored: string) {
@@ -74,6 +62,12 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid credentials" });
         }
+
+        // Check if email is verified for non-admin users
+        if (!user.isAdmin && !user.isEmailVerified) {
+          return done(null, false, { message: "Please verify your email first" });
+        }
+
         await storage.updateLastLogin(user.id);
         return done(null, user);
       } catch (error) {
@@ -95,7 +89,6 @@ export function setupAuth(app: Express) {
   // Regular user registration
   app.post("/api/register", async (req, res) => {
     try {
-      // Validate input using schema
       const parsedInput = insertUserSchema.safeParse(req.body);
       if (!parsedInput.success) {
         return res.status(400).json({ 
@@ -104,12 +97,10 @@ export function setupAuth(app: Express) {
         });
       }
 
-      // Don't allow registering as admin
       if (req.body.isAdmin || req.body.role === 'admin') {
         return res.status(400).json({ error: "Cannot register as admin" });
       }
 
-      // Check if user exists
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).json({ error: "Username already exists" });
@@ -120,22 +111,27 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Email already exists" });
       }
 
-      // Hash password and create user
+      // Generate OTP and set expiry
+      const otp = await generateOTP();
+      const otpExpiry = new Date();
+      otpExpiry.setMinutes(otpExpiry.getMinutes() + 10); // OTP valid for 10 minutes
+
       const hashedPassword = await hashPassword(req.body.password);
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
         role: 'user',
         isAdmin: false,
+        isEmailVerified: false,
+        verificationToken: otp,
+        verificationTokenExpiry: otpExpiry
       });
 
-      // Log in the user after registration
-      req.login(user, (err) => {
-        if (err) {
-          console.error("Login after registration failed:", err);
-          return res.status(500).json({ error: "Login failed after registration" });
-        }
-        return res.status(201).json(user);
+      // Send verification email
+      await sendVerificationEmail(user.email, otp);
+
+      res.status(201).json({ 
+        message: "Registration successful. Please check your email for verification code."
       });
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -143,21 +139,98 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // Admin-specific login endpoint
+  // Email verification endpoint
+  app.post("/api/verify-email", async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const verified = await storage.verifyEmail(user.id, otp);
+      if (!verified) {
+        return res.status(400).json({ error: "Invalid or expired verification code" });
+      }
+
+      // Log the user in after verification
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Login failed after verification" });
+        }
+        return res.json(user);
+      });
+    } catch (error: any) {
+      console.error("Verification error:", error);
+      res.status(500).json({ error: "Verification failed", details: error.message });
+    }
+  });
+
+  // Password reset request endpoint
+  app.post("/api/request-password-reset", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if email exists
+        return res.json({ message: "If an account exists with this email, you will receive a reset code." });
+      }
+
+      // Generate OTP and set expiry
+      const otp = await generateOTP();
+      const otpExpiry = new Date();
+      otpExpiry.setMinutes(otpExpiry.getMinutes() + 10);
+
+      await storage.updateVerificationToken(user.id, otp, otpExpiry);
+      await sendVerificationEmail(email, otp);
+
+      res.json({ message: "If an account exists with this email, you will receive a reset code." });
+    } catch (error: any) {
+      console.error("Password reset request error:", error);
+      res.status(500).json({ error: "Failed to process request" });
+    }
+  });
+
+  // Reset password endpoint
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { email, password, otp } = req.body;
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const verified = await storage.verifyEmail(user.id, otp);
+      if (!verified) {
+        return res.status(400).json({ error: "Invalid or expired reset code" });
+      }
+
+      // Update password
+      const hashedPassword = await hashPassword(password);
+      await storage.updateUser(user.id, { password: hashedPassword });
+
+      res.json({ message: "Password reset successful" });
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      res.status(500).json({ error: "Failed to reset password" });
+    }
+  });
+
+  // Admin login, regular login, logout, and user endpoints remain unchanged
   app.post("/api/admin/login", async (req, res, next) => {
     try {
       const { username, password } = req.body;
 
-      // Verify admin credentials
       const user = await storage.getUserByUsername(username);
       if (!user || !user.isAdmin || !(await comparePasswords(password, user.password))) {
         return res.status(401).json({ error: "Invalid admin credentials" });
       }
 
-      // Update last login time
       await storage.updateLastLogin(user.id);
 
-      // Log in the admin
       req.login(user, (err) => {
         if (err) {
           return res.status(500).json({ error: "Admin login failed" });
@@ -178,7 +251,6 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      // Don't allow admin login through regular endpoint
       if (user.isAdmin) {
         return res.status(401).json({ error: "Please use admin login" });
       }
