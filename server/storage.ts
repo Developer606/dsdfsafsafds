@@ -17,6 +17,13 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
+async function comparePasswords(supplied: string, stored: string) {
+  const [hashed, salt] = stored.split(".");
+  const hashedBuf = Buffer.from(hashed, "hex");
+  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return hashedBuf.equals(suppliedBuf);
+}
+
 export interface IStorage {
   getMessagesByCharacter(characterId: string): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
@@ -70,6 +77,38 @@ export class DatabaseStorage implements IStorage {
     this.initializeAdmin();
   }
 
+  private async initializeAdmin() {
+    try {
+      // Check if admin already exists
+      const existingAdmin = await this.getUserByUsername("SysRoot_99");
+      if (!existingAdmin) {
+        const hashedPassword = await hashPassword("admin123");
+        await db.insert(users).values({
+          email: "admin@system.local",
+          username: "SysRoot_99",
+          password: hashedPassword,
+          role: "admin",
+          isAdmin: true,
+          isPremium: false,
+          isBlocked: false,
+          isRestricted: false,
+          isEmailVerified: true,
+          verificationToken: null,
+          verificationTokenExpiry: null,
+          trialCharactersCreated: 0,
+          subscriptionTier: null,
+          subscriptionStatus: "trial",
+          subscriptionExpiresAt: null,
+          createdAt: new Date(),
+          lastLoginAt: null
+        });
+        console.log("Admin user created successfully");
+      }
+    } catch (error) {
+      console.error("Error creating admin user:", error);
+    }
+  }
+
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
     return await db.select().from(messages).where(eq(messages.characterId, characterId));
   }
@@ -87,8 +126,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    const hashedPassword = await hashPassword(insertUser.password);
     const [newUser] = await db.insert(users).values({
       ...insertUser,
+      password: hashedPassword,
       createdAt: new Date(),
       isPremium: false,
       trialCharactersCreated: 0,
@@ -222,37 +263,6 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(users.id, userId));
   }
-  private async initializeAdmin() {
-    try {
-      // Check if admin already exists
-      const existingAdmin = await this.getUserByUsername("SysRoot_99");
-      if (!existingAdmin) {
-        const hashedPassword = await hashPassword("admin123");
-        await db.insert(users).values({
-          email: "admin@system.local",
-          username: "SysRoot_99",
-          password: hashedPassword,
-          role: "admin",
-          isAdmin: true,
-          isPremium: false,
-          isBlocked: false,
-          isRestricted: false,
-          isEmailVerified: true,
-          verificationToken: null,
-          verificationTokenExpiry: null,
-          trialCharactersCreated: 0,
-          subscriptionTier: null,
-          subscriptionStatus: "trial",
-          subscriptionExpiresAt: null,
-          createdAt: new Date(),
-          lastLoginAt: null
-        });
-        console.log("Admin user created successfully");
-      }
-    } catch (error) {
-      console.error("Error creating admin user:", error);
-    }
-  }
   async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
     await db.update(users)
       .set({ password: hashedPassword })
@@ -296,7 +306,19 @@ export class DatabaseStorage implements IStorage {
       const now = new Date();
       if (verification.verificationToken === token &&
           verification.tokenExpiry > now) {
-        // If verification is successful, delete the verification record
+        // Process registration data if available
+        if (verification.registrationData) {
+          const regData = JSON.parse(verification.registrationData);
+          // Hash the password before creating the user
+          const hashedPassword = await hashPassword(regData.password);
+          await this.createUser({
+            ...regData,
+            password: hashedPassword,
+            role: 'user',
+            isAdmin: false
+          });
+        }
+        // Delete the verification record
         await this.deletePendingVerification(email);
         return true;
       }
