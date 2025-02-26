@@ -43,6 +43,7 @@ type AuthStep = "login" | "register" | "verify" | "forgot" | "reset";
 export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [authStep, setAuthStep] = useState<AuthStep>("login");
   const [verificationEmail, setVerificationEmail] = useState("");
+  const [registrationData, setRegistrationData] = useState<{ username: string; email: string; password: string } | null>(null);
   const { toast } = useToast();
 
   const loginForm = useForm({
@@ -121,6 +122,8 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
         throw new Error(error.error || "Failed to send verification code");
       }
 
+      // Store registration data for later use
+      setRegistrationData(data);
       setVerificationEmail(data.email);
       return data;
     },
@@ -148,13 +151,33 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
         const error = await res.json();
         throw new Error(error.error || "Invalid verification code");
       }
+
+      // If we have registration data, create the user account
+      if (registrationData) {
+        const registerRes = await apiRequest("POST", "/api/register", registrationData);
+        if (!registerRes.ok) {
+          const error = await registerRes.json();
+          throw new Error(error.error || "Failed to create account");
+        }
+        return registerRes.json();
+      }
+
       return res.json();
     },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Email verified successfully",
-      });
+    onSuccess: (user) => {
+      if (registrationData) {
+        queryClient.setQueryData(["/api/user"], user);
+        toast({
+          title: "Success",
+          description: "Account created and verified successfully!",
+        });
+        setRegistrationData(null); // Clear stored data
+      } else {
+        toast({
+          title: "Success",
+          description: "Email verified successfully",
+        });
+      }
       onSuccess();
     },
     onError: (error: Error) => {
