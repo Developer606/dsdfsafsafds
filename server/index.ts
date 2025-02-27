@@ -1,7 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { runMigrations } from "./db";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 const app = express();
 app.use(express.json());
@@ -58,8 +59,24 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    // Run database migrations before starting the server
-    await runMigrations();
+    // Test database connection before starting the server
+    console.log('Testing database connection...');
+    console.log('Database URL format:', process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@'));
+
+    await db.execute(sql`SELECT 1`);
+    console.log('Database connection successful');
+
+    // Verify essential tables exist
+    try {
+      await db.execute(sql`SELECT 1 FROM users LIMIT 1`);
+      await db.execute(sql`SELECT 1 FROM otp_attempts LIMIT 1`);
+      await db.execute(sql`SELECT 1 FROM pending_verifications LIMIT 1`);
+      console.log('Database schema verification successful');
+    } catch (schemaError) {
+      console.error('Schema verification failed:', schemaError);
+      console.log('Please run npm run db:push to create the required tables');
+      process.exit(1);
+    }
 
     const server = await registerRoutes(app);
 

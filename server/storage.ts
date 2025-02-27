@@ -1,10 +1,10 @@
 import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications, otpAttempts } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
-import { eq, and, gt, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
+import { hashPassword } from "./auth";
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
@@ -323,12 +323,12 @@ export class DatabaseStorage implements IStorage {
       const now = new Date();
       const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
 
-      // Delete old attempts
+      // Delete old attempts first
       await db.delete(otpAttempts)
         .where(
           and(
             eq(otpAttempts.email, email),
-            gt(otpAttempts.timestamp, tenMinutesAgo)
+            sql`${otpAttempts.timestamp} < ${tenMinutesAgo}`
           )
         );
 
@@ -338,14 +338,16 @@ export class DatabaseStorage implements IStorage {
         timestamp: now
       });
 
-      // Get count of attempts
+      // Get count of recent attempts
       const attempts = await db
-        .select({ count: sql`count(*)` })
+        .select({
+          count: sql<number>`cast(count(*) as integer)`
+        })
         .from(otpAttempts)
         .where(
           and(
             eq(otpAttempts.email, email),
-            gt(otpAttempts.timestamp, tenMinutesAgo)
+            sql`${otpAttempts.timestamp} > ${tenMinutesAgo}`
           )
         );
 
@@ -361,12 +363,14 @@ export class DatabaseStorage implements IStorage {
       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
 
       const attempts = await db
-        .select({ count: sql`count(*)` })
+        .select({
+          count: sql<number>`cast(count(*) as integer)`
+        })
         .from(otpAttempts)
         .where(
           and(
             eq(otpAttempts.email, email),
-            gt(otpAttempts.timestamp, tenMinutesAgo)
+            sql`${otpAttempts.timestamp} > ${tenMinutesAgo}`
           )
         );
 
