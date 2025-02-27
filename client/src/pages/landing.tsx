@@ -206,6 +206,7 @@ export default function LandingPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(feedbackData),
+        credentials: "omit" // Don't send auth credentials for feedback
       });
 
       if (!response.ok) {
