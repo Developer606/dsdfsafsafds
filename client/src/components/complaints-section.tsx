@@ -56,6 +56,7 @@ export function ComplaintsSection() {
                 alt="Complaint attachment"
                 className="w-full rounded-lg max-h-[70vh] object-contain"
                 onError={(e) => {
+                  console.error('Failed to load image:', selectedImage);
                   e.currentTarget.src = ""; // Clear the source on error
                   setSelectedImage(null); // Close dialog on error
                 }}
@@ -108,30 +109,38 @@ export function ComplaintsSection() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {complaints?.map((complaint) => (
-                    <TableRow key={complaint.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
-                      <TableCell className="font-medium">{complaint.name}</TableCell>
-                      <TableCell>{complaint.email}</TableCell>
-                      <TableCell className="max-w-md">
-                        <div className="truncate">{complaint.message}</div>
-                      </TableCell>
-                      <TableCell>
-                        {complaint.imageUrl && (
-                          <Button
-                            variant="ghost" 
-                            className="flex items-center gap-2 text-blue-500 hover:text-blue-700"
-                            onClick={() => setSelectedImage(getImageUrl(complaint.imageUrl))}
-                          >
-                            <ImageIcon className="h-4 w-4" />
-                            <span className="underline">View Image</span>
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(complaint.createdAt).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {complaints?.map((complaint) => {
+                    const imageUrl = getImageUrl(complaint.imageUrl);
+                    console.log('Image URL for complaint:', imageUrl);
+
+                    return (
+                      <TableRow key={complaint.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                        <TableCell className="font-medium">{complaint.name}</TableCell>
+                        <TableCell>{complaint.email}</TableCell>
+                        <TableCell className="max-w-md">
+                          <div className="truncate">{complaint.message}</div>
+                        </TableCell>
+                        <TableCell>
+                          {complaint.imageUrl && (
+                            <Button
+                              variant="ghost" 
+                              className="flex items-center gap-2 text-blue-500 hover:text-blue-700"
+                              onClick={() => {
+                                console.log('Opening image:', imageUrl);
+                                setSelectedImage(imageUrl);
+                              }}
+                            >
+                              <ImageIcon className="h-4 w-4" />
+                              <span className="underline">View Image</span>
+                            </Button>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(complaint.createdAt).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                   {!complaints?.length && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
