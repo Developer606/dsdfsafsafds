@@ -462,6 +462,18 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Add endpoint to delete feedback (admin only)
+  app.delete("/api/admin/feedback/:id", isAdmin, async (req, res) => {
+    try {
+      const feedbackId = parseInt(req.params.id);
+      await feedbackStorage.deleteFeedback(feedbackId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting feedback:', error);
+      res.status(500).json({ error: "Failed to delete feedback" });
+    }
+  });
+
   // Configure multer for file uploads
   const multerStorage = multer.diskStorage({
     destination: (req, file, cb) => {

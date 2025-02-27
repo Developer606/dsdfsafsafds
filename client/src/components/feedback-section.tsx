@@ -7,16 +7,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MessageSquare, Loader2, ArrowLeft } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { MessageSquare, Loader2, ArrowLeft, Trash2 } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Feedback } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export function FeedbackSection() {
+  const { toast } = useToast();
+
   const { data: feedback, isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
     refetchInterval: 30000,
+  });
+
+  const deleteFeedback = useMutation({
+    mutationFn: async (feedbackId: number) => {
+      const res = await apiRequest("DELETE", `/api/admin/feedback/${feedbackId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/feedback"] });
+      toast({
+        title: "Success",
+        description: "Feedback deleted successfully",
+      });
+    },
   });
 
   if (feedbackLoading) {
@@ -60,6 +79,7 @@ export function FeedbackSection() {
                   <TableHead>Message</TableHead>
                   <TableHead>Rating</TableHead>
                   <TableHead>Submitted At</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -74,11 +94,44 @@ export function FeedbackSection() {
                     <TableCell>
                       {new Date(item.createdAt).toLocaleString()}
                     </TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            disabled={deleteFeedback.isPending}
+                          >
+                            {deleteFeedback.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Feedback</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this feedback? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteFeedback.mutate(item.id)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {!feedback?.length && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No feedback submissions yet
                     </TableCell>
                   </TableRow>
