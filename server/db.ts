@@ -57,6 +57,38 @@ async function ensureColumns() {
   }
 }
 
+// Enhanced indexes for better query performance
+function createIndexes() {
+  try {
+    // Create indexes in a transaction for atomicity
+    sqlite.transaction(() => {
+      // User indexes
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)').run();
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)').run();
+
+      // Message indexes - Added compound index for character_id + timestamp
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_user_char ON messages(user_id, character_id)').run();
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_char_time ON messages(character_id, timestamp)').run();
+
+      // Custom character indexes
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_custom_chars_user ON custom_characters(user_id)').run();
+
+      // Verification indexes
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_email ON pending_verifications(email)').run();
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_token ON pending_verifications(verification_token)').run();
+
+      // Add notification indexes
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id)').run();
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at)').run();
+    })();
+
+    console.log('Database indexes created successfully');
+  } catch (error) {
+    console.error('Error creating indexes:', error);
+    // Don't throw, as indexes are optional for functionality
+  }
+}
+
 // Run migrations on startup
 export async function runMigrations() {
   console.log('Running database migrations...');
@@ -98,6 +130,15 @@ export async function runMigrations() {
         token_expiry INTEGER NOT NULL,
         registration_data TEXT,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        is_read INTEGER NOT NULL DEFAULT 0,
+        type TEXT NOT NULL DEFAULT 'info',
+        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`
     ];
 
@@ -118,33 +159,5 @@ export async function runMigrations() {
   } catch (error: any) {
     console.error('Database migration failed:', error);
     throw error;
-  }
-}
-
-// Enhanced indexes for better query performance
-function createIndexes() {
-  try {
-    // Create indexes in a transaction for atomicity
-    sqlite.transaction(() => {
-      // User indexes
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)').run();
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)').run();
-
-      // Message indexes - Added compound index for character_id + timestamp
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_user_char ON messages(user_id, character_id)').run();
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_char_time ON messages(character_id, timestamp)').run();
-
-      // Custom character indexes
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_custom_chars_user ON custom_characters(user_id)').run();
-
-      // Verification indexes
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_email ON pending_verifications(email)').run();
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_token ON pending_verifications(verification_token)').run();
-    })();
-
-    console.log('Database indexes created successfully');
-  } catch (error) {
-    console.error('Error creating indexes:', error);
-    // Don't throw, as indexes are optional for functionality
   }
 }
