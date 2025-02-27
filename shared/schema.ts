@@ -217,6 +217,7 @@ export const feedback = sqliteTable("feedback", {
   name: text("name").notNull(),
   email: text("email").notNull(),
   message: text("message").notNull(),
+  rating: integer("rating").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -227,6 +228,7 @@ export const insertFeedbackSchema = createInsertSchema(feedback).pick({
   name: true,
   email: true,
   message: true,
+  rating: true,
 });
 
 // Feedback types

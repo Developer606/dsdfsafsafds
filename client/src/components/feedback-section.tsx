@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { MessageSquare, Loader2, ArrowLeft, Trash2 } from "lucide-react";
+import { MessageSquare, Loader2, ArrowLeft, Trash2, Star } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Feedback } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,15 @@ export function FeedbackSection() {
 
   const { data: feedback, isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
-    refetchInterval: 30000,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const deleteFeedback = useMutation({
     mutationFn: async (feedbackId: number) => {
       const res = await apiRequest("DELETE", `/api/admin/feedback/${feedbackId}`);
+      if (!res.ok) {
+        throw new Error("Failed to delete feedback");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -34,6 +37,13 @@ export function FeedbackSection() {
       toast({
         title: "Success",
         description: "Feedback deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to delete feedback",
       });
     },
   });
@@ -90,7 +100,12 @@ export function FeedbackSection() {
                     <TableCell className="max-w-md">
                       <div className="truncate">{item.message}</div>
                     </TableCell>
-                    <TableCell>{item.rating}/5</TableCell>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Star className="h-4 w-4 text-yellow-400 mr-1" />
+                        {item.rating}/5
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {new Date(item.createdAt).toLocaleString()}
                     </TableCell>
