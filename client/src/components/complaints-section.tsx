@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { AlertCircle, Loader2, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Complaint } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,13 @@ export function ComplaintsSection() {
     queryKey: ["/api/admin/complaints"],
     refetchInterval: 30000,
   });
+
+  const getImageUrl = (path: string | null) => {
+    if (!path) return null;
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    return `${window.location.origin}/${cleanPath}`;
+  };
 
   if (complaintsLoading) {
     return (
@@ -74,12 +81,13 @@ export function ComplaintsSection() {
                     <TableCell>
                       {complaint.imageUrl && (
                         <a 
-                          href={complaint.imageUrl} 
+                          href={getImageUrl(complaint.imageUrl)}
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-blue-500 hover:text-blue-700 underline"
+                          className="flex items-center gap-2 text-blue-500 hover:text-blue-700"
                         >
-                          View Image
+                          <ImageIcon className="h-4 w-4" />
+                          <span className="underline">View Image</span>
                         </a>
                       )}
                     </TableCell>
