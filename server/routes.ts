@@ -816,6 +816,59 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Add notification endpoints before httpServer creation
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const notifications = await storage.getNotifications();
+      res.json(notifications);
+    } catch (error: any) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/notifications/mark-read", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const { notificationId } = req.body;
+      await storage.markNotificationAsRead(notificationId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ error: "Failed to mark notification as read" });
+    }
+  });
+
+  // Add admin routes for managing notifications
+  app.post("/api/admin/notifications", isAdmin, async (req, res) => {
+    try {
+      const data = insertNotificationSchema.parse(req.body);
+      const notification = await storage.createNotification(data);
+      res.json(notification);
+    } catch (error: any) {
+      console.error("Error creating notification:", error);
+      res.status(500).json({ error: "Failed to create notification" });
+    }
+  });
+
+  app.delete("/api/admin/notifications/:id", isAdmin, async (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      await storage.deleteNotification(notificationId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ error: "Failed to delete notification" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

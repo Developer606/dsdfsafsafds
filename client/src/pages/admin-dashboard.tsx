@@ -43,6 +43,7 @@ import {
 } from "recharts";
 import { type Complaint } from "@shared/schema";
 import { Link } from "wouter";
+import { NotificationDropdown } from "@/components/ui/notification-dropdown";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -185,6 +186,7 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Admin Dashboard</h1>
         <div className="flex items-center gap-4">
+          <NotificationDropdown />
           <Link href="/admin/dashboard/complaints">
             <Button variant="outline" className="gap-2">
               <AlertCircle className="h-4 w-4" />
