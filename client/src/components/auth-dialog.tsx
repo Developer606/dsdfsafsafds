@@ -15,13 +15,8 @@ import { insertUserSchema, loginSchema } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
-import { Eye, EyeOff } from "lucide-react";
-
-type AuthDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
-};
+import { Eye, EyeOff, Mail, User, Lock } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Additional schema for OTP verification
 const otpSchema = z.object({
@@ -40,6 +35,12 @@ const resetPasswordSchema = z.object({
 });
 
 type AuthStep = "login" | "register" | "verify" | "forgot" | "reset";
+
+type AuthDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+};
 
 export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [authStep, setAuthStep] = useState<AuthStep>("login");
@@ -121,7 +122,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const register = useMutation({
     mutationFn: async (data: { username: string; email: string; password: string }) => {
       // Send OTP along with registration data
-      const res = await apiRequest("POST", "/api/verify/send-otp", { 
+      const res = await apiRequest("POST", "/api/verify/send-otp", {
         email: data.email,
         registrationData: data // Include full registration data
       });
@@ -239,326 +240,377 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
     },
   });
 
-  // When rendering the verify form, we'll use the stored verification email
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader>
-          <DialogTitle>
-            {authStep === "login" && "Login to Your Account"}
-            {authStep === "register" && "Create an Account"}
-            {authStep === "verify" && "Verify Your Email"}
+      <DialogContent className="sm:max-w-[400px] p-0 gap-0 bg-gradient-to-b from-background/95 to-background/85 backdrop-blur-xl border-none shadow-2xl">
+        <DialogHeader className="p-6 pb-2 bg-gradient-to-b from-primary/10 to-transparent">
+          <DialogTitle className="text-2xl font-bold text-center">
+            {authStep === "login" && "Welcome Back!"}
+            {authStep === "register" && "Create Account"}
+            {authStep === "verify" && "Verify Email"}
             {authStep === "forgot" && "Reset Password"}
-            {authStep === "reset" && "Enter New Password"}
+            {authStep === "reset" && "New Password"}
           </DialogTitle>
         </DialogHeader>
 
-        {authStep === "login" && (
-          <form onSubmit={loginForm.handleSubmit((data) => login.mutate(data))}>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  {...loginForm.register("username")}
-                  className="mt-1"
-                />
-                {loginForm.formState.errors.username && (
-                  <p className="text-sm text-destructive mt-1">
-                    {loginForm.formState.errors.username.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    {...loginForm.register("password")}
-                    className="mt-1 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-[calc(50%-10px)] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
-                  </button>
+        <div className="px-6 pb-6 space-y-6">
+          {authStep === "login" && (
+            <motion.form
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              onSubmit={loginForm.handleSubmit((data) => login.mutate(data))}
+              className="space-y-4"
+            >
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="username" className="text-sm font-medium">Username</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
+                    <Input
+                      id="username"
+                      {...loginForm.register("username")}
+                      className="pl-10 bg-background/50"
+                      placeholder="Enter your username"
+                    />
+                  </div>
+                  {loginForm.formState.errors.username && (
+                    <p className="text-sm text-destructive mt-1">
+                      {loginForm.formState.errors.username.message}
+                    </p>
+                  )}
                 </div>
-                {loginForm.formState.errors.password && (
-                  <p className="text-sm text-destructive mt-1">
-                    {loginForm.formState.errors.password.message}
-                  </p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={login.isPending}
-              >
-                {login.isPending ? "Logging in..." : "Login"}
-              </Button>
-              <div className="text-center space-y-2">
-                <button
-                  type="button"
-                  className="text-sm text-primary hover:underline"
-                  onClick={() => setAuthStep("forgot")}
+                <div>
+                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      {...loginForm.register("password")}
+                      className="pl-10 pr-10 bg-background/50"
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 top-2 text-muted-foreground/50 hover:text-primary transition-colors"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  {loginForm.formState.errors.password && (
+                    <p className="text-sm text-destructive mt-1">
+                      {loginForm.formState.errors.password.message}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  disabled={login.isPending}
                 >
-                  Forgot password?
-                </button>
-                <p className="text-sm">
-                  Don't have an account?{" "}
+                  {login.isPending ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"
+                    />
+                  ) : null}
+                  {login.isPending ? "Logging in..." : "Login"}
+                </Button>
+                <div className="space-y-2 text-center">
                   <button
                     type="button"
-                    className="text-primary hover:underline"
-                    onClick={() => setAuthStep("register")}
+                    className="text-sm text-primary hover:underline transition-colors"
+                    onClick={() => setAuthStep("forgot")}
                   >
-                    Sign up
+                    Forgot password?
+                  </button>
+                  <p className="text-sm text-muted-foreground">
+                    Don't have an account?{" "}
+                    <button
+                      type="button"
+                      className="text-primary hover:underline transition-colors font-medium"
+                      onClick={() => setAuthStep("register")}
+                    >
+                      Sign up
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </motion.form>
+          )}
+
+          {authStep === "register" && (
+            <motion.form
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              onSubmit={registerForm.handleSubmit((data) => register.mutate(data))}
+              className="space-y-4"
+            >
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="username" className="text-sm font-medium">Username</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
+                    <Input
+                      id="username"
+                      {...registerForm.register("username")}
+                      className="pl-10 bg-background/50"
+                      placeholder="Choose a username"
+                    />
+                  </div>
+                  {registerForm.formState.errors.username && (
+                    <p className="text-sm text-destructive mt-1">
+                      {registerForm.formState.errors.username.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
+                    <Input
+                      id="email"
+                      type="email"
+                      {...registerForm.register("email")}
+                      className="pl-10 bg-background/50"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  {registerForm.formState.errors.email && (
+                    <p className="text-sm text-destructive mt-1">
+                      {registerForm.formState.errors.email.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="registerPassword" className="text-sm font-medium">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
+                    <Input
+                      id="registerPassword"
+                      type={showRegisterPassword ? "text" : "password"}
+                      {...registerForm.register("password")}
+                      className="pl-10 pr-10 bg-background/50"
+                      placeholder="Create a password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                      className="absolute right-2 top-2 text-muted-foreground/50 hover:text-primary transition-colors"
+                    >
+                      {showRegisterPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  {registerForm.formState.errors.password && (
+                    <p className="text-sm text-destructive mt-1">
+                      {registerForm.formState.errors.password.message}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  disabled={register.isPending}
+                >
+                  {register.isPending ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"
+                    />
+                  ) : null}
+                  {register.isPending ? "Creating account..." : "Create Account"}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Already have an account?{" "}
+                  <button
+                    type="button"
+                    className="text-primary hover:underline transition-colors font-medium"
+                    onClick={() => setAuthStep("login")}
+                  >
+                    Login
                   </button>
                 </p>
               </div>
-            </div>
-          </form>
-        )}
+            </motion.form>
+          )}
 
-        {authStep === "register" && (
-          <form onSubmit={registerForm.handleSubmit((data) => register.mutate(data))}>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  {...registerForm.register("username")}
-                  className="mt-1"
-                />
-                {registerForm.formState.errors.username && (
-                  <p className="text-sm text-destructive mt-1">
-                    {registerForm.formState.errors.username.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  {...registerForm.register("email")}
-                  className="mt-1"
-                />
-                {registerForm.formState.errors.email && (
-                  <p className="text-sm text-destructive mt-1">
-                    {registerForm.formState.errors.email.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="registerPassword">Password</Label>
-                <div className="relative">
+          {authStep === "verify" && (
+            <form onSubmit={otpForm.handleSubmit((data) => verifyOTP.mutate({ ...data, email: verificationEmail }))}>
+              <div className="space-y-4">
+                <p className="text-sm text-center">
+                  We've sent a verification code to {verificationEmail}.<br />
+                  Please enter it below to verify your account.
+                </p>
+                <div>
+                  <Label htmlFor="otp" className="text-sm font-medium">Verification Code</Label>
                   <Input
-                    id="registerPassword"
-                    type={showRegisterPassword ? "text" : "password"}
-                    {...registerForm.register("password")}
-                    className="mt-1 pr-10"
+                    id="otp"
+                    {...otpForm.register("otp")}
+                    className="mt-1 text-center text-2xl tracking-[0.5em] bg-background/50"
+                    maxLength={6}
+                    placeholder="Enter verification code"
                   />
+                  {otpForm.formState.errors.otp && (
+                    <p className="text-sm text-destructive mt-1">
+                      {otpForm.formState.errors.otp.message}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  disabled={verifyOTP.isPending}
+                >
+                  {verifyOTP.isPending ? "Verifying..." : "Verify Email"}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Didn't receive the code?{" "}
                   <button
                     type="button"
-                    onClick={() => setShowRegisterPassword(!showRegisterPassword)}
-                    className="absolute right-2 top-[calc(50%-10px)] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="text-primary hover:underline transition-colors font-medium"
+                    onClick={() => {
+                      if (registrationData) {
+                        register.mutate(registrationData);
+                      }
+                    }}
                   >
-                    {showRegisterPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
+                    Resend
                   </button>
+                </p>
+              </div>
+            </form>
+          )}
+
+          {authStep === "forgot" && (
+            <form onSubmit={forgotPasswordForm.handleSubmit((data) => forgotPassword.mutate(data))}>
+              <div className="space-y-4">
+                <p className="text-sm text-center">
+                  Enter your email address and we'll send you a code
+                  to reset your password.
+                </p>
+                <div>
+                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
+                    <Input
+                      id="email"
+                      type="email"
+                      {...forgotPasswordForm.register("email")}
+                      className="pl-10 bg-background/50"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  {forgotPasswordForm.formState.errors.email && (
+                    <p className="text-sm text-destructive mt-1">
+                      {forgotPasswordForm.formState.errors.email.message}
+                    </p>
+                  )}
                 </div>
-                {registerForm.formState.errors.password && (
-                  <p className="text-sm text-destructive mt-1">
-                    {registerForm.formState.errors.password.message}
-                  </p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={register.isPending}
-              >
-                {register.isPending ? "Creating account..." : "Create Account"}
-              </Button>
-              <p className="text-center text-sm">
-                Already have an account?{" "}
-                <button
-                  type="button"
-                  className="text-primary hover:underline"
-                  onClick={() => setAuthStep("login")}
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  disabled={forgotPassword.isPending}
                 >
-                  Login
-                </button>
-              </p>
-            </div>
-          </form>
-        )}
-
-        {authStep === "verify" && (
-          <form onSubmit={otpForm.handleSubmit((data) => verifyOTP.mutate({ ...data, email: verificationEmail }))}>
-            <div className="space-y-4">
-              <p className="text-sm text-center">
-                We've sent a verification code to {verificationEmail}.<br />
-                Please enter it below to verify your account.
-              </p>
-              <div>
-                <Label htmlFor="otp">Verification Code</Label>
-                <Input
-                  id="otp"
-                  {...otpForm.register("otp")}
-                  className="mt-1 text-center text-2xl tracking-[0.5em]"
-                  maxLength={6}
-                />
-                {otpForm.formState.errors.otp && (
-                  <p className="text-sm text-destructive mt-1">
-                    {otpForm.formState.errors.otp.message}
-                  </p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={verifyOTP.isPending}
-              >
-                {verifyOTP.isPending ? "Verifying..." : "Verify Email"}
-              </Button>
-              <p className="text-center text-sm">
-                Didn't receive the code?{" "}
-                <button
-                  type="button"
-                  className="text-primary hover:underline"
-                  onClick={() => {
-                    if (registrationData) {
-                      register.mutate(registrationData);
-                    }
-                  }}
-                >
-                  Resend
-                </button>
-              </p>
-            </div>
-          </form>
-        )}
-
-        {authStep === "forgot" && (
-          <form onSubmit={forgotPasswordForm.handleSubmit((data) => forgotPassword.mutate(data))}>
-            <div className="space-y-4">
-              <p className="text-sm text-center">
-                Enter your email address and we'll send you a code
-                to reset your password.
-              </p>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  {...forgotPasswordForm.register("email")}
-                  className="mt-1"
-                />
-                {forgotPasswordForm.formState.errors.email && (
-                  <p className="text-sm text-destructive mt-1">
-                    {forgotPasswordForm.formState.errors.email.message}
-                  </p>
-                )}
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={forgotPassword.isPending}
-              >
-                {forgotPassword.isPending ? "Sending..." : "Send Reset Code"}
-              </Button>
-              <p className="text-center text-sm">
-                Remember your password?{" "}
-                <button
-                  type="button"
-                  className="text-primary hover:underline"
-                  onClick={() => setAuthStep("login")}
-                >
-                  Login
-                </button>
-              </p>
-            </div>
-          </form>
-        )}
-
-        {authStep === "reset" && (
-          <form onSubmit={resetPasswordForm.handleSubmit((data) => resetPassword.mutate(data))}>
-            <div className="space-y-4">
-              <p className="text-sm text-center">
-                Enter the code sent to your email and your new password.
-              </p>
-              <div>
-                <Label htmlFor="otp">Reset Code</Label>
-                <Input
-                  id="otp"
-                  {...resetPasswordForm.register("otp")}
-                  className="mt-1 text-center text-2xl tracking-[0.5em]"
-                  maxLength={6}
-                />
-                {resetPasswordForm.formState.errors.otp && (
-                  <p className="text-sm text-destructive mt-1">
-                    {resetPasswordForm.formState.errors.otp.message}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="newPassword">New Password</Label>
-                <div className="relative">
-                  <Input
-                    id="newPassword"
-                    type={showNewPassword ? "text" : "password"}
-                    {...resetPasswordForm.register("newPassword")}
-                    className="mt-1 pr-10"
-                  />
+                  {forgotPassword.isPending ? "Sending..." : "Send Reset Code"}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Remember your password?{" "}
                   <button
                     type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-2 top-[calc(50%-10px)] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                    className="text-primary hover:underline transition-colors font-medium"
+                    onClick={() => setAuthStep("login")}
                   >
-                    {showNewPassword ? (
-                      <EyeOff className="h-5 w-5" />
-                    ) : (
-                      <Eye className="h-5 w-5" />
-                    )}
+                    Login
                   </button>
-                </div>
-                {resetPasswordForm.formState.errors.newPassword && (
-                  <p className="text-sm text-destructive mt-1">
-                    {resetPasswordForm.formState.errors.newPassword.message}
-                  </p>
-                )}
+                </p>
               </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={resetPassword.isPending}
-              >
-                {resetPassword.isPending ? "Resetting..." : "Reset Password"}
-              </Button>
-              <p className="text-center text-sm">
-                Didn't receive the code?{" "}
-                <button
-                  type="button"
-                  className="text-primary hover:underline"
-                  onClick={() => forgotPassword.mutate(forgotPasswordForm.getValues())}
+            </form>
+          )}
+
+          {authStep === "reset" && (
+            <form onSubmit={resetPasswordForm.handleSubmit((data) => resetPassword.mutate(data))}>
+              <div className="space-y-4">
+                <p className="text-sm text-center">
+                  Enter the code sent to your email and your new password.
+                </p>
+                <div>
+                  <Label htmlFor="otp" className="text-sm font-medium">Reset Code</Label>
+                  <Input
+                    id="otp"
+                    {...resetPasswordForm.register("otp")}
+                    className="mt-1 text-center text-2xl tracking-[0.5em] bg-background/50"
+                    maxLength={6}
+                    placeholder="Enter reset code"
+                  />
+                  {resetPasswordForm.formState.errors.otp && (
+                    <p className="text-sm text-destructive mt-1">
+                      {resetPasswordForm.formState.errors.otp.message}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="newPassword" className="text-sm font-medium">New Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
+                    <Input
+                      id="newPassword"
+                      type={showNewPassword ? "text" : "password"}
+                      {...resetPasswordForm.register("newPassword")}
+                      className="pl-10 pr-10 bg-background/50"
+                      placeholder="Enter new password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-2 top-2 text-muted-foreground/50 hover:text-primary transition-colors"
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                  {resetPasswordForm.formState.errors.newPassword && (
+                    <p className="text-sm text-destructive mt-1">
+                      {resetPasswordForm.formState.errors.newPassword.message}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  disabled={resetPassword.isPending}
                 >
-                  Resend
-                </button>
-              </p>
-            </div>
-          </form>
-        )}
+                  {resetPassword.isPending ? "Resetting..." : "Reset Password"}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Didn't receive the code?{" "}
+                  <button
+                    type="button"
+                    className="text-primary hover:underline transition-colors font-medium"
+                    onClick={() => forgotPassword.mutate(forgotPasswordForm.getValues())}
+                  >
+                    Resend
+                  </button>
+                </p>
+              </div>
+            </form>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
