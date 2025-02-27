@@ -598,7 +598,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Endpoint for verifying OTP during registration
+  // Update verify-otp endpoint to properly hash password during registration
   app.post("/api/verify/verify-otp", async (req, res) => {
     try {
       const { email, otp } = req.body;
@@ -620,12 +620,23 @@ export async function registerRoutes(app: Express) {
       // If we have registration data, create the user
       if (verification.registrationData) {
         const userData = JSON.parse(verification.registrationData);
+        // Hash the password before creating user
+        const hashedPassword = await hashPassword(userData.password);
         const user = await storage.createUser({
           ...userData,
+          password: hashedPassword,
           isEmailVerified: true
         });
         await storage.deletePendingVerification(email);
-        res.json({ message: "Email verified and account created successfully", user });
+
+        // Log in the user after successful registration
+        req.login(user, (err) => {
+          if (err) {
+            console.error("Auto-login after registration failed:", err);
+            return res.json({ message: "Email verified and account created successfully. Please login.", user });
+          }
+          res.json({ message: "Email verified and account created successfully", user });
+        });
       } else {
         await storage.deletePendingVerification(email);
         res.json({ message: "Email verified successfully" });
