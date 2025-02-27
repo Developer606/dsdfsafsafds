@@ -175,6 +175,17 @@ export default function AdminDashboard() {
               ) : null}
             </Button>
           </Link>
+          <Link href="/admin/dashboard/feedback">
+            <Button variant="outline" className="gap-2">
+              <MessageCircle className="h-4 w-4" />
+              View Feedback
+              {feedback?.length ? (
+                <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                  {feedback.length}
+                </span>
+              ) : null}
+            </Button>
+          </Link>
           <div className="flex items-center gap-2">
             {(statsLoading || usersLoading) && (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -295,54 +306,6 @@ export default function AdminDashboard() {
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      </Card>
-
-      {/* New Feedback Section */}
-      <Card className="mt-8 bg-gradient-to-br from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold">User Feedback</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Recent feedback and suggestions from users
-              </p>
-            </div>
-            <MessageCircle className="h-5 w-5 text-blue-500" />
-          </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[150px]">Name</TableHead>
-                  <TableHead className="w-[200px]">Email</TableHead>
-                  <TableHead>Message</TableHead>
-                  <TableHead className="w-[200px]">Submitted At</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {feedback?.map((item) => (
-                  <TableRow key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.email}</TableCell>
-                    <TableCell className="max-w-md">
-                      <div className="truncate">{item.message}</div>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(item.createdAt).toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {!feedback?.length && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      No feedback submissions yet
-                    </TableCell>
-                  </TableRow>
-                )}
               </TableBody>
             </Table>
           </div>
