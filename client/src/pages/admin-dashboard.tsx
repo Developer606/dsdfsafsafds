@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,8 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { type Complaint } from "@shared/schema";
+import { Link } from "wouter";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -68,6 +70,12 @@ export default function AdminDashboard() {
   // New query for feedback
   const { data: feedback, isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
+    refetchInterval: 30000,
+  });
+
+  // Add new query for complaints
+  const { data: complaints, isLoading: complaintsLoading } = useQuery<Complaint[]>({
+    queryKey: ["/api/admin/complaints"],
     refetchInterval: 30000,
   });
 
@@ -143,7 +151,7 @@ export default function AdminDashboard() {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-  if (statsLoading || usersLoading || messagesLoading || charactersLoading || feedbackLoading) {
+  if (statsLoading || usersLoading || messagesLoading || charactersLoading || feedbackLoading || complaintsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -155,13 +163,26 @@ export default function AdminDashboard() {
     <div className="container mx-auto p-8 space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Admin Dashboard</h1>
-        <div className="flex items-center gap-2">
-          {(statsLoading || usersLoading) && (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          )}
-          <span className="text-sm text-muted-foreground">
-            Auto-refreshing every 30 seconds
-          </span>
+        <div className="flex items-center gap-4">
+          <Link href="/admin/dashboard/complaints">
+            <Button variant="outline" className="gap-2">
+              <AlertCircle className="h-4 w-4" />
+              View Complaints
+              {complaints?.length ? (
+                <span className="ml-1 px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">
+                  {complaints.length}
+                </span>
+              ) : null}
+            </Button>
+          </Link>
+          <div className="flex items-center gap-2">
+            {(statsLoading || usersLoading) && (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            )}
+            <span className="text-sm text-muted-foreground">
+              Auto-refreshing every 30 seconds
+            </span>
+          </div>
         </div>
       </div>
 
@@ -328,6 +349,7 @@ export default function AdminDashboard() {
         </div>
       </Card>
 
+
       {/* User Management Section - Enhanced */}
       <Card className="mt-8">
         <div className="p-6">
@@ -400,8 +422,8 @@ export default function AdminDashboard() {
                           <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => updateSubscription.mutate({ 
-                              userId: user.id, 
+                            onClick={() => updateSubscription.mutate({
+                              userId: user.id,
                               planId: 'free'
                             })}
                           >
@@ -476,8 +498,8 @@ export default function AdminDashboard() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="icon"
                               disabled={deleteUser.isPending}
                             >

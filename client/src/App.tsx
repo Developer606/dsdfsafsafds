@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
+import { ComplaintsSection } from "@/components/complaints-section";
 import { useQuery } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
 
@@ -55,6 +56,9 @@ function Router() {
         <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin/dashboard">
           <AdminRoute component={AdminDashboard} />
+        </Route>
+        <Route path="/admin/dashboard/complaints">
+          <AdminRoute component={ComplaintsSection} />
         </Route>
         <Route component={NotFound} />
       </Switch>
