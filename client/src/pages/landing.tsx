@@ -194,6 +194,7 @@ export default function LandingPage() {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
       message: formData.get("message") as string,
+      rating: 5 // Default rating for now, we can add rating UI later
     };
 
     try {
