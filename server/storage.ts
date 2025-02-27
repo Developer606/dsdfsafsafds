@@ -48,6 +48,11 @@ export interface IStorage {
   getPendingVerification(email: string): Promise<PendingVerification | undefined>;
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
+
+  // Add new methods for OTP rate limiting
+  trackOTPAttempt(email: string): Promise<number>;
+  getOTPAttempts(email: string): Promise<number>;
+  clearOTPAttempts(email: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -310,6 +315,63 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting pending verification:', error);
       throw new Error('Failed to delete pending verification');
+    }
+  }
+
+  async trackOTPAttempt(email: string): Promise<number> {
+    try {
+      // Get current timestamp
+      const now = new Date();
+      const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+
+      // Clean up old attempts first
+      await db.execute(
+        "DELETE FROM otp_attempts WHERE email = ? AND timestamp < ?",
+        [email, tenMinutesAgo]
+      );
+
+      // Insert new attempt
+      await db.execute(
+        "INSERT INTO otp_attempts (email, timestamp) VALUES (?, ?)",
+        [email, now]
+      );
+
+      // Get count of attempts in last 10 minutes
+      const result = await db.get(
+        "SELECT COUNT(*) as count FROM otp_attempts WHERE email = ? AND timestamp > ?",
+        [email, tenMinutesAgo]
+      );
+
+      return result.count;
+    } catch (error) {
+      console.error('Error tracking OTP attempt:', error);
+      throw new Error('Failed to track OTP attempt');
+    }
+  }
+
+  async getOTPAttempts(email: string): Promise<number> {
+    try {
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const result = await db.get(
+        "SELECT COUNT(*) as count FROM otp_attempts WHERE email = ? AND timestamp > ?",
+        [email, tenMinutesAgo]
+      );
+      return result.count;
+    } catch (error) {
+      console.error('Error getting OTP attempts:', error);
+      return 0;
+    }
+  }
+
+  async clearOTPAttempts(email: string): Promise<void> {
+    try {
+      await db.execute(
+        "DELETE FROM otp_attempts WHERE email = ?",
+        [email]
+      );
+    } catch (error) {
+      console.error('Error clearing OTP attempts:', error);
+      throw new Error('Failed to clear OTP attempts');
     }
   }
 }

@@ -578,6 +578,14 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: "Email already registered and verified" });
       }
 
+      // Check OTP attempts within last 10 minutes
+      const attempts = await storage.getOTPAttempts(email);
+      if (attempts >= 3) {
+        return res.status(429).json({ 
+          error: "Too many OTP requests. Please wait 10 minutes before trying again." 
+        });
+      }
+
       const otp = await generateOTPemail();
       const expiry = new Date();
       expiry.setMinutes(expiry.getMinutes() + 10); // OTP expires in 10 minutes
@@ -589,6 +597,9 @@ export async function registerRoutes(app: Express) {
         tokenExpiry: expiry,
         registrationData: registrationData ? JSON.stringify(registrationData) : null
       });
+
+      // Track this OTP attempt
+      await storage.trackOTPAttempt(email);
 
       await sendVerificationEmail(email, otp);
       res.json({ message: "OTP sent successfully" });

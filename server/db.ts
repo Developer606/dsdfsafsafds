@@ -98,6 +98,12 @@ export async function runMigrations() {
         token_expiry INTEGER NOT NULL,
         registration_data TEXT,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS otp_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL,
+        timestamp INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (email) REFERENCES users(email) ON DELETE CASCADE
       )`
     ];
 
@@ -140,6 +146,9 @@ function createIndexes() {
       // Verification indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_email ON pending_verifications(email)').run();
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_token ON pending_verifications(verification_token)').run();
+
+      // Add index for OTP attempts
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_otp_attempts_email_time ON otp_attempts(email, timestamp)').run();
     })();
 
     console.log('Database indexes created successfully');
