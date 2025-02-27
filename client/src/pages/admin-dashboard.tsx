@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -18,17 +18,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, subscriptionPlans, type SubscriptionTier, type Feedback, type Notification } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Bell } from "lucide-react";
+import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   BarChart,
   Bar,
@@ -48,63 +43,47 @@ import {
 } from "recharts";
 import { type Complaint } from "@shared/schema";
 import { Link } from "wouter";
-import React from 'react';
-
-// Add notification form schema
-const notificationSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  message: z.string().min(1, "Message is required"),
-  userId: z.string().optional(), // Optional for broadcasting to all users
-  type: z.enum(["info", "warning", "error", "success"]).default("info"),
-});
-
-type NotificationFormData = z.infer<typeof notificationSchema>;
 
 export default function AdminDashboard() {
   const { toast } = useToast();
 
-  // State hooks
-  const [isNotificationDialogOpen, setIsNotificationDialogOpen] = React.useState(false);
-
-  // Form hooks
-  const notificationForm = useForm<NotificationFormData>({
-    resolver: zodResolver(notificationSchema),
-    defaultValues: {
-      type: "info",
-    },
-  });
-
-  // Query hooks
+  // Enhanced stats query to include more metrics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
     refetchInterval: 30000,
   });
 
+  // Query for users with enhanced information
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     refetchInterval: 30000,
   });
 
+  // New query for recent messages
   const { data: recentMessages, isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
     refetchInterval: 30000,
   });
 
+  // New query for character stats
   const { data: characterStats, isLoading: charactersLoading } = useQuery({
     queryKey: ["/api/admin/characters/stats"],
     refetchInterval: 30000,
   });
 
+  // New query for feedback
   const { data: feedback, isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
     refetchInterval: 30000,
   });
 
+  // Add new query for complaints
   const { data: complaints, isLoading: complaintsLoading } = useQuery<Complaint[]>({
     queryKey: ["/api/admin/complaints"],
     refetchInterval: 30000,
   });
 
+  // New queries for analytics
   const { data: activityData, isLoading: activityLoading } = useQuery({
     queryKey: ["/api/admin/analytics/activity"],
     refetchInterval: 30000,
@@ -120,7 +99,8 @@ export default function AdminDashboard() {
     refetchInterval: 30000,
   });
 
-  // Mutation hooks
+
+  // Existing mutations...
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/block`, { blocked });
@@ -135,6 +115,7 @@ export default function AdminDashboard() {
     },
   });
 
+  // Other existing mutations remain unchanged...
   const deleteUser = useMutation({
     mutationFn: async (userId: number) => {
       const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
@@ -144,7 +125,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "Userdeleted successfully",
       });
     },
   });
@@ -177,22 +158,7 @@ export default function AdminDashboard() {
     },
   });
 
-  const sendNotification = useMutation({
-    mutationFn: async (data: NotificationFormData) => {
-      const res = await apiRequest("POST", "/api/admin/notifications", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Notification sent successfully",
-      });
-      setIsNotificationDialogOpen(false);
-      notificationForm.reset();
-    },
-  });
-
-  // Data preparation
+  // Enhanced data preparation for charts
   const subscriptionData = users ? [
     { name: 'Free', value: users.filter(u => !u.isPremium).length },
     { name: 'Premium', value: users.filter(u => u.isPremium).length },
@@ -219,83 +185,6 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Admin Dashboard</h1>
         <div className="flex items-center gap-4">
-          {/* Add notification button */}
-          <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                <Bell className="h-4 w-4" />
-                Send Notification
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Send Notification</DialogTitle>
-                <DialogDescription>
-                  Send a notification to a specific user or broadcast to all users.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={notificationForm.handleSubmit((data) => sendNotification.mutate(data))}>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Title</label>
-                    <Input {...notificationForm.register("title")} />
-                    {notificationForm.formState.errors.title && (
-                      <p className="text-sm text-red-500">
-                        {notificationForm.formState.errors.title.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Message</label>
-                    <Textarea {...notificationForm.register("message")} />
-                    {notificationForm.formState.errors.message && (
-                      <p className="text-sm text-red-500">
-                        {notificationForm.formState.errors.message.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">User (Optional)</label>
-                    <select
-                      {...notificationForm.register("userId")}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
-                    >
-                      <option value="">All Users</option>
-                      {users?.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.username} ({user.email})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Type</label>
-                    <select
-                      {...notificationForm.register("type")}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2"
-                    >
-                      <option value="info">Info</option>
-                      <option value="warning">Warning</option>
-                      <option value="error">Error</option>
-                      <option value="success">Success</option>
-                    </select>
-                  </div>
-                </div>
-                <DialogFooter className="mt-6">
-                  <Button
-                    type="submit"
-                    disabled={sendNotification.isPending}
-                  >
-                    {sendNotification.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
-                    Send Notification
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
           <Link href="/admin/dashboard/complaints">
             <Button variant="outline" className="gap-2">
               <AlertCircle className="h-4 w-4" />

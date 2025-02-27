@@ -1,10 +1,10 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications, type Notification, type InsertNotification, notifications } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { hashPassword } from "./auth";
+import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
@@ -48,12 +48,6 @@ export interface IStorage {
   getPendingVerification(email: string): Promise<PendingVerification | undefined>;
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
-
-  // Add new notification methods to the interface
-  createNotification(notification: InsertNotification): Promise<Notification>;
-  getUserNotifications(userId: number): Promise<Notification[]>;
-  markNotificationAsRead(notificationId: number, userId: number): Promise<void>;
-  deleteNotification(notificationId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -316,60 +310,6 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting pending verification:', error);
       throw new Error('Failed to delete pending verification');
-    }
-  }
-
-  // Implement notification methods
-  async createNotification(notification: InsertNotification): Promise<Notification> {
-    try {
-      const [newNotification] = await db.insert(notifications)
-        .values({
-          ...notification,
-          createdAt: new Date()
-        })
-        .returning();
-      return newNotification;
-    } catch (error) {
-      console.error('Error creating notification:', error);
-      throw new Error('Failed to create notification');
-    }
-  }
-
-  async getUserNotifications(userId: number): Promise<Notification[]> {
-    try {
-      return await db.select()
-        .from(notifications)
-        .where(eq(notifications.userId, userId))
-        .orderBy(desc(notifications.createdAt));
-    } catch (error) {
-      console.error('Error fetching user notifications:', error);
-      return [];
-    }
-  }
-
-  async markNotificationAsRead(notificationId: number, userId: number): Promise<void> {
-    try {
-      await db.update(notifications)
-        .set({ isRead: true })
-        .where(
-          and(
-            eq(notifications.id, notificationId),
-            eq(notifications.userId, userId)
-          )
-        );
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-      throw new Error('Failed to mark notification as read');
-    }
-  }
-
-  async deleteNotification(notificationId: number): Promise<void> {
-    try {
-      await db.delete(notifications)
-        .where(eq(notifications.id, notificationId));
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      throw new Error('Failed to delete notification');
     }
   }
 }

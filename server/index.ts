@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { runMigrations } from "./db";
 import path from "path";
 
 const app = express();
@@ -61,8 +62,8 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    // better-sqlite3 in notification-storage.ts automatically creates and initializes the database
-    await initializeNotificationDatabase();
+    // Run database migrations before starting the server
+    await runMigrations();
 
     const server = await registerRoutes(app);
 
@@ -98,10 +99,3 @@ app.use((req, res, next) => {
     process.exit(1);
   }
 })();
-
-// No-op function since better-sqlite3 handles database initialization
-async function initializeNotificationDatabase() {
-  // The SQLite database is automatically created and initialized
-  // by better-sqlite3 when first accessed in notification-storage.ts
-  return Promise.resolve();
-}
