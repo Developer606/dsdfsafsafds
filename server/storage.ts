@@ -4,12 +4,10 @@ import { eq } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { scrypt, randomBytes } from "crypto";
-import { promisify } from "util";
+import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
-const scryptAsync = promisify(scrypt);
 
 export interface IStorage {
   getMessagesByCharacter(characterId: string): Promise<Message[]>;
