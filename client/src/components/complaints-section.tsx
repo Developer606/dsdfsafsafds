@@ -7,12 +7,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertCircle, Loader2, ArrowLeft, Image as ImageIcon } from "lucide-react";
+import { AlertCircle, Loader2, ArrowLeft, Image as ImageIcon, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Complaint } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
 
 export function ComplaintsSection() {
@@ -43,13 +43,31 @@ export function ComplaintsSection() {
     <>
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-3xl w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Complaint Image</DialogTitle>
+            <DialogDescription>
+              Image attachment for the complaint
+            </DialogDescription>
+          </DialogHeader>
           {selectedImage && (
-            <div className="relative w-full aspect-video">
+            <div className="relative">
               <img
                 src={selectedImage}
                 alt="Complaint attachment"
-                className="object-contain w-full h-full rounded-lg"
+                className="w-full rounded-lg max-h-[70vh] object-contain"
+                onError={(e) => {
+                  e.currentTarget.src = ""; // Clear the source on error
+                  setSelectedImage(null); // Close dialog on error
+                }}
               />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm"
+                onClick={() => setSelectedImage(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           )}
         </DialogContent>
