@@ -10,7 +10,6 @@ import { AuthDialog } from "@/components/auth-dialog";
 import type { User } from "@shared/schema";
 import { FaEnvelope, FaGithub, FaTwitter } from "react-icons/fa";
 import { PolicyDialog } from "@/components/policy-dialog";
-import { Star } from "lucide-react";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -195,7 +194,6 @@ export default function LandingPage() {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
       message: formData.get("message") as string,
-      rating: parseInt(formData.get("rating") as string) || 5,
     };
 
     try {
@@ -370,13 +368,13 @@ export default function LandingPage() {
           variants={fadeIn}
           className="w-full max-w-7xl mx-auto mt-32"
         >
-          <motion.h2
+          <motion.h2 
             variants={fadeIn}
             className="text-4xl font-bold text-center text-white mb-12"
           >
             Featured Characters
           </motion.h2>
-          <motion.div
+          <motion.div 
             variants={stagger}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
@@ -477,27 +475,6 @@ export default function LandingPage() {
                 required
                 className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 min-h-[120px]"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Rating
-              </label>
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <label key={value} className="cursor-pointer">
-                    <input
-                      type="radio"
-                      name="rating"
-                      value={value.toString()}
-                      className="sr-only"
-                    />
-                    <Star
-                      className="w-8 h-8 text-yellow-500 transition-all hover:scale-110"
-                      style={{ fill: value <= 5 ? "currentColor" : "none" }}
-                    />
-                  </label>
-                ))}
-              </div>
             </div>
             <motion.div
               whileHover={{ scale: 1.02 }}
