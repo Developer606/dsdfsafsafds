@@ -10,7 +10,6 @@ import { AuthDialog } from "@/components/auth-dialog";
 import type { User } from "@shared/schema";
 import { FaEnvelope, FaGithub, FaTwitter } from "react-icons/fa";
 import { PolicyDialog } from "@/components/policy-dialog";
-import { StarRating } from "@/components/star-rating";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -170,7 +169,6 @@ export default function LandingPage() {
   const [currentPolicy, setCurrentPolicy] = useState<
     keyof typeof POLICY_CONTENT | null
   >(null);
-  const [selectedRating, setSelectedRating] = useState(5);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -196,7 +194,7 @@ export default function LandingPage() {
       name: formData.get("name") as string,
       email: formData.get("email") as string,
       message: formData.get("message") as string,
-      rating: selectedRating
+      rating: 5 // Default rating for now, we can add rating UI later
     };
 
     try {
@@ -206,7 +204,6 @@ export default function LandingPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(feedbackData),
-        credentials: "omit" // Don't send auth credentials for feedback
       });
 
       if (!response.ok) {
@@ -217,7 +214,6 @@ export default function LandingPage() {
         title: "Success",
         description: "Thank you for your feedback! We'll get back to you soon.",
       });
-      setSelectedRating(5);
       (e.target as HTMLFormElement).reset();
     } catch (error) {
       toast({
@@ -373,13 +369,13 @@ export default function LandingPage() {
           variants={fadeIn}
           className="w-full max-w-7xl mx-auto mt-32"
         >
-          <motion.h2
+          <motion.h2 
             variants={fadeIn}
             className="text-4xl font-bold text-center text-white mb-12"
           >
             Featured Characters
           </motion.h2>
-          <motion.div
+          <motion.div 
             variants={stagger}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
@@ -479,19 +475,6 @@ export default function LandingPage() {
                 placeholder="Share your thoughts..."
                 required
                 className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 min-h-[120px]"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="rating"
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                Rating
-              </label>
-              <StarRating
-                rating={selectedRating}
-                onRatingChange={setSelectedRating}
-                size="lg"
               />
             </div>
             <motion.div

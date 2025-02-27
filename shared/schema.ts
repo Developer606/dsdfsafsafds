@@ -223,7 +223,7 @@ export const feedback = sqliteTable("feedback", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
-// Update feedback schema
+// Feedback schema
 export const insertFeedbackSchema = createInsertSchema(feedback).pick({
   name: true,
   email: true,
@@ -231,7 +231,7 @@ export const insertFeedbackSchema = createInsertSchema(feedback).pick({
   rating: true,
 });
 
-// Feedback types remain unchanged
+// Feedback types
 export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
