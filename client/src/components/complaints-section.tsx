@@ -24,13 +24,6 @@ export function ComplaintsSection() {
     refetchInterval: 30000,
   });
 
-  const getImageUrl = (path: string | null) => {
-    if (!path) return null;
-    // Remove leading slash if present to avoid double slashes
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-    return `${window.location.origin}/${cleanPath}`;
-  };
-
   if (complaintsLoading) {
     return (
       <div className="flex items-center justify-center p-6">
@@ -120,7 +113,7 @@ export function ComplaintsSection() {
                           <Button
                             variant="ghost" 
                             className="flex items-center gap-2 text-blue-500 hover:text-blue-700"
-                            onClick={() => setSelectedImage(getImageUrl(complaint.imageUrl))}
+                            onClick={() => setSelectedImage(complaint.imageUrl)}
                           >
                             <ImageIcon className="h-4 w-4" />
                             <span className="underline">View Image</span>
