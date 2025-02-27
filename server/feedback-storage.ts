@@ -11,7 +11,7 @@ export class FeedbackStorage {
     const sqlite = new Database('feedback.db');
     this.db = drizzle(sqlite);
 
-    // Initialize the feedback table
+    // Initialize the feedback table with updated schema
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS feedback (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,6 +20,12 @@ export class FeedbackStorage {
         message TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Create index for better search performance
+    sqlite.exec(`
+      CREATE INDEX IF NOT EXISTS idx_feedback_email ON feedback(email);
+      CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at);
     `);
   }
 
@@ -33,6 +39,27 @@ export class FeedbackStorage {
 
   async getAllFeedback() {
     return await this.db.select().from(feedback).orderBy(sql`created_at DESC`);
+  }
+
+  async deleteFeedback(id: number) {
+    await this.db.delete(feedback).where(sql`id = ${id}`);
+  }
+
+  async getFeedbackStats() {
+    const result = await Promise.all([
+      this.db.select().from(feedback).all(),
+      this.db.select({ count: sql<number>`COUNT(DISTINCT email)` }).from(feedback).get(),
+      this.db.select({ count: sql<number>`COUNT(*)` })
+        .from(feedback)
+        .where(sql`created_at >= datetime('now', '-7 days')`)
+        .get(),
+    ]);
+
+    return {
+      totalFeedback: result[0].length,
+      uniqueUsers: result[1]?.count || 0,
+      recentFeedback: result[2]?.count || 0,
+    };
   }
 }
 
