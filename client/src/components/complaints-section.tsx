@@ -7,12 +7,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { AlertCircle, Loader2, ArrowLeft, Image as ImageIcon, X } from "lucide-react";
+import { AlertCircle, Loader2, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Complaint } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 
 export function ComplaintsSection() {
@@ -23,6 +23,13 @@ export function ComplaintsSection() {
     queryKey: ["/api/admin/complaints"],
     refetchInterval: 30000,
   });
+
+  const getImageUrl = (path: string | null) => {
+    if (!path) return null;
+    // Remove leading slash if present to avoid double slashes
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    return `${window.location.origin}/${cleanPath}`;
+  };
 
   if (complaintsLoading) {
     return (
@@ -36,31 +43,13 @@ export function ComplaintsSection() {
     <>
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-3xl w-[95vw]">
-          <DialogHeader>
-            <DialogTitle>Complaint Image</DialogTitle>
-            <DialogDescription>
-              Image attachment for the complaint
-            </DialogDescription>
-          </DialogHeader>
           {selectedImage && (
-            <div className="relative">
+            <div className="relative w-full aspect-video">
               <img
                 src={selectedImage}
                 alt="Complaint attachment"
-                className="w-full rounded-lg max-h-[70vh] object-contain"
-                onError={(e) => {
-                  e.currentTarget.src = ""; // Clear the source on error
-                  setSelectedImage(null); // Close dialog on error
-                }}
+                className="object-contain w-full h-full rounded-lg"
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm"
-                onClick={() => setSelectedImage(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
           )}
         </DialogContent>
@@ -113,7 +102,7 @@ export function ComplaintsSection() {
                           <Button
                             variant="ghost" 
                             className="flex items-center gap-2 text-blue-500 hover:text-blue-700"
-                            onClick={() => setSelectedImage(complaint.imageUrl)}
+                            onClick={() => setSelectedImage(getImageUrl(complaint.imageUrl))}
                           >
                             <ImageIcon className="h-4 w-4" />
                             <span className="underline">View Image</span>
