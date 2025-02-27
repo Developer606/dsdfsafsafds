@@ -38,8 +38,7 @@ export const otpRateLimiter = rateLimit({
 export async function generateOTP(): Promise<string> {
   return cryptoRandomString({ 
     length: 6, 
-    type: 'numeric',
-    characters: '0123456789' 
+    type: 'numeric'
   });
 }
 
