@@ -1,10 +1,10 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications, type Notification, type InsertNotification, notifications } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
+import { hashPassword } from "./auth";
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
@@ -48,6 +48,12 @@ export interface IStorage {
   getPendingVerification(email: string): Promise<PendingVerification | undefined>;
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
+
+  // Add new notification methods to the interface
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getUserNotifications(userId: number): Promise<Notification[]>;
+  markNotificationAsRead(notificationId: number, userId: number): Promise<void>;
+  deleteNotification(notificationId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -311,6 +317,34 @@ export class DatabaseStorage implements IStorage {
       console.error('Error deleting pending verification:', error);
       throw new Error('Failed to delete pending verification');
     }
+  }
+
+  // Implement notification methods
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db.insert(notifications).values({
+      ...notification,
+      createdAt: new Date()
+    }).returning();
+    return newNotification;
+  }
+
+  async getUserNotifications(userId: number): Promise<Notification[]> {
+    return await db.select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(notifications.createdAt);
+  }
+
+  async markNotificationAsRead(notificationId: number, userId: number): Promise<void> {
+    await db.update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, notificationId))
+      .where(eq(notifications.userId, userId));
+  }
+
+  async deleteNotification(notificationId: number): Promise<void> {
+    await db.delete(notifications)
+      .where(eq(notifications.id, notificationId));
   }
 }
 
