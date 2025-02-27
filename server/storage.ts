@@ -48,6 +48,13 @@ export interface IStorage {
   getPendingVerification(email: string): Promise<PendingVerification | undefined>;
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
+  updateUserProfile(userId: number, profileData: {
+    fullName?: string;
+    age?: number;
+    gender?: string;
+    bio?: string;
+    profilePicture?: string;
+  }): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -311,6 +318,17 @@ export class DatabaseStorage implements IStorage {
       console.error('Error deleting pending verification:', error);
       throw new Error('Failed to delete pending verification');
     }
+  }
+  async updateUserProfile(userId: number, profileData: {
+    fullName?: string;
+    age?: number;
+    gender?: string;
+    bio?: string;
+    profilePicture?: string;
+  }): Promise<void> {
+    await db.update(users)
+      .set(profileData)
+      .where(eq(users.id, userId));
   }
 }
 

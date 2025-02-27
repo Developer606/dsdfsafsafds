@@ -40,7 +40,13 @@ async function ensureColumns() {
       { name: 'subscription_tier', sql: 'TEXT' },
       { name: 'subscription_status', sql: 'TEXT DEFAULT "trial"' },
       { name: 'subscription_expires_at', sql: 'INTEGER' },
-      { name: 'last_login_at', sql: 'INTEGER' }
+      { name: 'last_login_at', sql: 'INTEGER' },
+      // Add new profile fields
+      { name: 'full_name', sql: 'TEXT' },
+      { name: 'age', sql: 'INTEGER' },
+      { name: 'gender', sql: 'TEXT' },
+      { name: 'bio', sql: 'TEXT' },
+      { name: 'profile_picture', sql: 'TEXT' }
     ];
 
     for (const column of columnsToAdd) {
