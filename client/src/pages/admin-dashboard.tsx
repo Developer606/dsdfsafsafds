@@ -43,7 +43,6 @@ import { Link } from "wouter";
 export default function AdminDashboard() {
   const { toast } = useToast();
 
-  // Queries and mutations remain the same...
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
     refetchInterval: 30000,
@@ -74,7 +73,6 @@ export default function AdminDashboard() {
     refetchInterval: 30000,
   });
 
-  // Keep existing mutations...
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/block`, { blocked });
@@ -89,7 +87,47 @@ export default function AdminDashboard() {
     },
   });
 
-  // Other mutations remain the same...
+  const restrictUser = useMutation({
+    mutationFn: async ({ userId, restricted }: { userId: number; restricted: boolean }) => {
+      const res = await apiRequest("POST", `/api/admin/users/${userId}/restrict`, { restricted });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "User restrictions updated successfully",
+      });
+    },
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+    },
+  });
+
+  const updateSubscription = useMutation({
+    mutationFn: async ({ userId, planId }: { userId: number; planId: string }) => {
+      const res = await apiRequest("POST", `/api/admin/users/${userId}/subscription`, { planId });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "User subscription updated successfully",
+      });
+    },
+  });
 
   const subscriptionData = users ? [
     { name: 'Free', value: users.filter(u => !u.isPremium).length },
@@ -118,7 +156,6 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-black/90 text-cyan-50">
       <div className="container mx-auto p-8 space-y-8">
-        {/* Header Section */}
         <div className="flex items-center justify-between p-6 border border-cyan-500/20 rounded-lg bg-black/40 backdrop-blur-xl">
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500 animate-pulse">
             System Control Interface
@@ -149,7 +186,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="p-6 bg-black/40 border-cyan-500/20 backdrop-blur-xl hover:bg-cyan-950/20 transition-all duration-300 group">
             <div className="flex items-center justify-between">
@@ -188,7 +224,6 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Charts Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="p-6 bg-black/40 border-cyan-500/20 backdrop-blur-xl">
             <h3 className="text-lg font-medium mb-4 text-cyan-400">Subscription Analysis</h3>
@@ -237,7 +272,6 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Recent Messages Section */}
         <Card className="bg-black/40 border-cyan-500/20 backdrop-blur-xl">
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -271,7 +305,6 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        {/* User Management Section */}
         <Card className="bg-black/40 border-cyan-500/20 backdrop-blur-xl">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
