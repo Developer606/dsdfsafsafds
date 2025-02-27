@@ -36,6 +36,10 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
+  LineChart,
+  Line,
+  Area,
+  AreaChart,
 } from "recharts";
 import { type Complaint } from "@shared/schema";
 import { Link } from "wouter";
@@ -78,6 +82,23 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/complaints"],
     refetchInterval: 30000,
   });
+
+  // New queries for analytics
+  const { data: activityData, isLoading: activityLoading } = useQuery({
+    queryKey: ["/api/admin/analytics/activity"],
+    refetchInterval: 30000,
+  });
+
+  const { data: messageVolume, isLoading: messageVolumeLoading } = useQuery({
+    queryKey: ["/api/admin/analytics/messages"],
+    refetchInterval: 30000,
+  });
+
+  const { data: characterPopularity, isLoading: characterPopularityLoading } = useQuery({
+    queryKey: ["/api/admin/analytics/characters/popularity"],
+    refetchInterval: 30000,
+  });
+
 
   // Existing mutations...
   const blockUser = useMutation({
@@ -151,7 +172,7 @@ export default function AdminDashboard() {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-  if (statsLoading || usersLoading || messagesLoading || charactersLoading || feedbackLoading || complaintsLoading) {
+  if (statsLoading || usersLoading || messagesLoading || charactersLoading || feedbackLoading || complaintsLoading || activityLoading || messageVolumeLoading || characterPopularityLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -272,6 +293,69 @@ export default function AdminDashboard() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      {/* Activity Heatmap Section */}
+      <Card className="p-6">
+        <h3 className="text-lg font-medium mb-4">User Activity Heatmap</h3>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={activityData?.hourlyActivity || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="hour" />
+              <YAxis />
+              <Tooltip />
+              <Area
+                type="monotone"
+                dataKey="activeUsers"
+                stroke="#8884d8"
+                fill="#8884d8"
+                fillOpacity={0.3}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+
+      {/* Message Volume Analysis */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <h3 className="text-lg font-medium mb-4">Message Volume Trend</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={messageVolume?.daily || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="messages"
+                  stroke="#8884d8"
+                  name="Messages"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <h3 className="text-lg font-medium mb-4">Character Popularity</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={characterPopularity?.characters || []}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="messageCount" fill="#8884d8" name="Messages" />
+                <Bar dataKey="userCount" fill="#82ca9d" name="Users" />
               </BarChart>
             </ResponsiveContainer>
           </div>
