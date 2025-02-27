@@ -49,12 +49,6 @@ export const users = sqliteTable("users", {
   isEmailVerified: integer("is_email_verified", { mode: "boolean" })
     .notNull()
     .default(false),
-  // New profile fields
-  fullName: text("full_name"),
-  age: integer("age"),
-  gender: text("gender"),
-  bio: text("bio"),
-  profilePicture: text("profile_picture"),
   verificationToken: text("verification_token"),
   verificationTokenExpiry: integer("verification_token_expiry", { mode: "timestamp_ms" }),
   trialCharactersCreated: integer("trial_characters_created")
@@ -69,15 +63,6 @@ export const users = sqliteTable("users", {
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
   lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
-});
-
-// Add profile update schema
-export const updateProfileSchema = createInsertSchema(users).pick({
-  fullName: true,
-  age: true,
-  gender: true,
-  bio: true,
-  profilePicture: true,
 });
 
 // Messages table optimized for chat history retrieval
