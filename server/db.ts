@@ -5,7 +5,6 @@ import * as schema from "@shared/schema";
 
 // Configure SQLite with WAL mode for better concurrency
 const sqlite = new Database('sqlite.db', {
-  // WAL mode for better concurrent access
   fileMustExist: false,
 });
 
@@ -19,40 +18,34 @@ sqlite.pragma('foreign_keys = ON');
 export const db = drizzle(sqlite, { schema });
 
 // Function to check and add missing columns
-async function ensureColumns() {
-  console.log('Checking for missing columns...');
+async function ensureFeedbackTable() {
+  console.log('Checking feedback table schema...');
   try {
-    // Get existing columns for users table
-    const userColumns = sqlite.prepare("PRAGMA table_info(users)").all();
-    const existingColumns = new Set(userColumns.map((col: any) => col.name));
+    // Create feedback table with all required columns
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        message TEXT NOT NULL,
+        rating INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-    // Add missing columns if needed
-    const columnsToAdd = [
-      { name: 'role', sql: 'TEXT NOT NULL DEFAULT "user"' },
-      { name: 'is_admin', sql: 'INTEGER NOT NULL DEFAULT 0' },
-      { name: 'is_premium', sql: 'INTEGER NOT NULL DEFAULT 0' },
-      { name: 'is_blocked', sql: 'INTEGER NOT NULL DEFAULT 0' },
-      { name: 'is_restricted', sql: 'INTEGER NOT NULL DEFAULT 0' },
-      { name: 'is_email_verified', sql: 'INTEGER NOT NULL DEFAULT 0' },
-      { name: 'verification_token', sql: 'TEXT' },
-      { name: 'verification_token_expiry', sql: 'INTEGER' },
-      { name: 'trial_characters_created', sql: 'INTEGER NOT NULL DEFAULT 0' },
-      { name: 'subscription_tier', sql: 'TEXT' },
-      { name: 'subscription_status', sql: 'TEXT DEFAULT "trial"' },
-      { name: 'subscription_expires_at', sql: 'INTEGER' },
-      { name: 'last_login_at', sql: 'INTEGER' }
-    ];
+    // Get existing columns for feedback table
+    const feedbackColumns = sqlite.prepare("PRAGMA table_info(feedback)").all();
+    const existingColumns = new Set(feedbackColumns.map((col: any) => col.name));
 
-    for (const column of columnsToAdd) {
-      if (!existingColumns.has(column.name)) {
-        console.log(`Adding missing column: ${column.name}`);
-        sqlite.prepare(`ALTER TABLE users ADD COLUMN ${column.name} ${column.sql}`).run();
-      }
+    // Add rating column if it doesn't exist
+    if (!existingColumns.has('rating')) {
+      console.log('Adding missing rating column to feedback table');
+      sqlite.prepare(`ALTER TABLE feedback ADD COLUMN rating INTEGER NOT NULL DEFAULT 0`).run();
     }
 
-    console.log('All required columns are now present');
+    console.log('Feedback table schema is up to date');
   } catch (error: any) {
-    console.error('Error ensuring columns:', error);
+    console.error('Error ensuring feedback table:', error);
     throw error;
   }
 }
@@ -61,7 +54,7 @@ async function ensureColumns() {
 export async function runMigrations() {
   console.log('Running database migrations...');
   try {
-    // Create tables directly from schema
+    // Create tables directly from schema - these are now handled in ensureFeedbackTable
     const migrationQueries = [
       `CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -108,6 +101,8 @@ export async function runMigrations() {
       }
     })();
 
+
+    await ensureFeedbackTable();
     console.log('Database tables created successfully');
 
     // Ensure all columns exist
@@ -148,3 +143,47 @@ function createIndexes() {
     // Don't throw, as indexes are optional for functionality
   }
 }
+
+// Function to check and add missing columns
+async function ensureColumns() {
+  console.log('Checking for missing columns...');
+  try {
+    // Get existing columns for users table
+    const userColumns = sqlite.prepare("PRAGMA table_info(users)").all();
+    const existingColumns = new Set(userColumns.map((col: any) => col.name));
+
+    // Add missing columns if needed
+    const columnsToAdd = [
+      { name: 'role', sql: 'TEXT NOT NULL DEFAULT "user"' },
+      { name: 'is_admin', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'is_premium', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'is_blocked', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'is_restricted', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'is_email_verified', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'verification_token', sql: 'TEXT' },
+      { name: 'verification_token_expiry', sql: 'INTEGER' },
+      { name: 'trial_characters_created', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'subscription_tier', sql: 'TEXT' },
+      { name: 'subscription_status', sql: 'TEXT DEFAULT "trial"' },
+      { name: 'subscription_expires_at', sql: 'INTEGER' },
+      { name: 'last_login_at', sql: 'INTEGER' }
+    ];
+
+    for (const column of columnsToAdd) {
+      if (!existingColumns.has(column.name)) {
+        console.log(`Adding missing column: ${column.name}`);
+        sqlite.prepare(`ALTER TABLE users ADD COLUMN ${column.name} ${column.sql}`).run();
+      }
+    }
+
+    console.log('All required columns are now present');
+  } catch (error: any) {
+    console.error('Error ensuring columns:', error);
+    throw error;
+  }
+}
+
+// Run migrations
+runMigrations()
+  .then(() => console.log('Database setup completed'))
+  .catch(console.error);
