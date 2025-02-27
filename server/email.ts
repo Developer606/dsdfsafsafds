@@ -1,18 +1,18 @@
-import nodemailer from 'nodemailer';
-import cryptoRandomString from 'crypto-random-string';
+import nodemailer from "nodemailer";
+import cryptoRandomString from "crypto-random-string";
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
   port: Number(process.env.SMTP_PORT) || 587,
   secure: false,
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: "noreply.animechat@gmail.com",
+    pass: "ibui zkqn zlcg xucg",
   },
 });
 
 export async function generateOTP(): Promise<string> {
-  return cryptoRandomString({ length: 6, type: 'numeric' });
+  return cryptoRandomString({ length: 6, type: "numeric" });
 }
 
 // Helper to validate email format
@@ -25,7 +25,7 @@ export async function sendVerificationEmail(email: string, otp: string) {
   const mailOptions = {
     from: process.env.SMTP_USER,
     to: email,
-    subject: 'Email Verification - Anime Chat App',
+    subject: "Email Verification - Anime Chat App",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #075e54; text-align: center;">Email Verification</h1>
@@ -51,7 +51,7 @@ export async function sendPasswordResetEmail(email: string, otp: string) {
   const mailOptions = {
     from: process.env.SMTP_USER,
     to: email,
-    subject: 'Password Reset - Anime Chat App',
+    subject: "Password Reset - Anime Chat App",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #075e54; text-align: center;">Password Reset</h1>
@@ -79,7 +79,7 @@ export async function verifyEmailConfig() {
     await transporter.verify();
     return true;
   } catch (error) {
-    console.error('Email configuration error:', error);
+    console.error("Email configuration error:", error);
     return false;
   }
 }
