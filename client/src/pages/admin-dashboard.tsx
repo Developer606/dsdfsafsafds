@@ -29,6 +29,25 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+  LineChart,
+  Line,
+  Area,
+  AreaChart,
+} from "recharts";
+import { type Complaint } from "@shared/schema";
+import { Link } from "wouter";
 import React from 'react';
 
 // Add notification form schema
@@ -44,43 +63,48 @@ type NotificationFormData = z.infer<typeof notificationSchema>;
 export default function AdminDashboard() {
   const { toast } = useToast();
 
-  // Enhanced stats query to include more metrics
+  // State hooks
+  const [isNotificationDialogOpen, setIsNotificationDialogOpen] = React.useState(false);
+
+  // Form hooks
+  const notificationForm = useForm<NotificationFormData>({
+    resolver: zodResolver(notificationSchema),
+    defaultValues: {
+      type: "info",
+    },
+  });
+
+  // Query hooks
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
     refetchInterval: 30000,
   });
 
-  // Query for users with enhanced information
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     refetchInterval: 30000,
   });
 
-  // New query for recent messages
   const { data: recentMessages, isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
     refetchInterval: 30000,
   });
 
-  // New query for character stats
   const { data: characterStats, isLoading: charactersLoading } = useQuery({
     queryKey: ["/api/admin/characters/stats"],
     refetchInterval: 30000,
   });
 
-  // New query for feedback
   const { data: feedback, isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
     refetchInterval: 30000,
   });
 
-  // Add new query for complaints
   const { data: complaints, isLoading: complaintsLoading } = useQuery<Complaint[]>({
     queryKey: ["/api/admin/complaints"],
     refetchInterval: 30000,
   });
 
-  // New queries for analytics
   const { data: activityData, isLoading: activityLoading } = useQuery({
     queryKey: ["/api/admin/analytics/activity"],
     refetchInterval: 30000,
@@ -96,8 +120,7 @@ export default function AdminDashboard() {
     refetchInterval: 30000,
   });
 
-
-  // Existing mutations...
+  // Mutation hooks
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/block`, { blocked });
@@ -112,7 +135,6 @@ export default function AdminDashboard() {
     },
   });
 
-  // Other existing mutations remain unchanged...
   const deleteUser = useMutation({
     mutationFn: async (userId: number) => {
       const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
@@ -122,7 +144,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
-        description: "Userdeleted successfully",
+        description: "User deleted successfully",
       });
     },
   });
@@ -155,7 +177,22 @@ export default function AdminDashboard() {
     },
   });
 
-  // Enhanced data preparation for charts
+  const sendNotification = useMutation({
+    mutationFn: async (data: NotificationFormData) => {
+      const res = await apiRequest("POST", "/api/admin/notifications", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Notification sent successfully",
+      });
+      setIsNotificationDialogOpen(false);
+      notificationForm.reset();
+    },
+  });
+
+  // Data preparation
   const subscriptionData = users ? [
     { name: 'Free', value: users.filter(u => !u.isPremium).length },
     { name: 'Premium', value: users.filter(u => u.isPremium).length },
@@ -176,33 +213,6 @@ export default function AdminDashboard() {
       </div>
     );
   }
-
-  // Add notification dialog state
-  const [isNotificationDialogOpen, setIsNotificationDialogOpen] = React.useState(false);
-
-  // Add notification form
-  const notificationForm = useForm<NotificationFormData>({
-    resolver: zodResolver(notificationSchema),
-    defaultValues: {
-      type: "info",
-    },
-  });
-
-  // Add send notification mutation
-  const sendNotification = useMutation({
-    mutationFn: async (data: NotificationFormData) => {
-      const res = await apiRequest("POST", "/api/admin/notifications", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Notification sent successfully",
-      });
-      setIsNotificationDialogOpen(false);
-      notificationForm.reset();
-    },
-  });
 
   return (
     <div className="container mx-auto p-8 space-y-8">
