@@ -56,13 +56,20 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
+    name: 'sid', // Set a specific cookie name
     cookie: {
       secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      sameSite: 'lax'
     },
   };
 
-  app.set("trust proxy", 1);
+  // Trust proxy if we're behind a reverse proxy
+  if (process.env.NODE_ENV === "production") {
+    app.set("trust proxy", 1);
+  }
+
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
@@ -74,9 +81,12 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid credentials" });
         }
+
+        // Update last login time
         await storage.updateLastLogin(user.id);
         return done(null, user);
       } catch (error) {
+        console.error("Authentication error:", error);
         return done(error);
       }
     }),
@@ -98,9 +108,9 @@ export function setupAuth(app: Express) {
       // Validate input using schema
       const parsedInput = insertUserSchema.safeParse(req.body);
       if (!parsedInput.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "Invalid input",
-          details: parsedInput.error.errors 
+          details: parsedInput.error.errors
         });
       }
 

@@ -7,15 +7,9 @@ import MemoryStore from "memorystore";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 
-// Create a memory store with a 24-hour TTL for sessions only
+// Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
 const scryptAsync = promisify(scrypt);
-
-async function hashPassword(password: string) {
-  const salt = randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
 
 export interface IStorage {
   getMessagesByCharacter(characterId: string): Promise<Message[]>;
@@ -62,10 +56,14 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
+    // Initialize session store with proper configuration
     this.sessionStore = new MemoryStoreSession({
-      checkPeriod: 86400000, // 24 hours
-      max: 10000 // Store up to 10000 sessions in memory
+      checkPeriod: 86400000, // Prune expired entries every 24h
+      max: 1000, // Maximum number of sessions to store
+      ttl: 86400000 * 7, // Session TTL (7 days)
+      stale: false // Delete stale sessions
     });
+
     // Initialize admin user when storage is created
     this.initializeAdmin();
   }
