@@ -13,6 +13,7 @@ import path from "path";
 import fs from "fs";
 import passport from 'passport';
 import { generateOTP as generateOTPemail, sendVerificationEmail, sendPasswordResetEmail, isValidEmail } from './email';
+import { notificationStorage } from './notification-storage';
 
 
 // Middleware to check if user is blocked
@@ -823,7 +824,7 @@ export async function registerRoutes(app: Express) {
 
       if (userId) {
         // Send to specific user
-        await storage.createNotification({
+        await notificationStorage.createNotification({
           userId: parseInt(userId),
           title,
           message,
@@ -834,7 +835,7 @@ export async function registerRoutes(app: Express) {
         const users = await storage.getAllUsers();
         await Promise.all(
           users.map(user =>
-            storage.createNotification({
+            notificationStorage.createNotification({
               userId: user.id,
               title,
               message,
@@ -851,14 +852,14 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add endpoint for retrieving user notifications
+  // Update endpoint for retrieving user notifications
   app.get("/api/notifications", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const notifications = await storage.getUserNotifications(req.user.id);
+      const notifications = await notificationStorage.getUserNotifications(req.user.id);
       res.json(notifications);
     } catch (error: any) {
       console.error("Error fetching notifications:", error);
@@ -866,14 +867,14 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add endpoint for marking notifications as read
+  // Update endpoint for marking notifications as read
   app.post("/api/notifications/:id/read", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      await storage.markNotificationAsRead(parseInt(req.params.id), req.user.id);
+      await notificationStorage.markNotificationAsRead(parseInt(req.params.id), req.user.id);
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error marking notification as read:", error);
