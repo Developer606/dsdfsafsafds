@@ -1,6 +1,6 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications, otpAttempts } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, gt, sql } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -320,29 +320,36 @@ export class DatabaseStorage implements IStorage {
 
   async trackOTPAttempt(email: string): Promise<number> {
     try {
-      // Get current timestamp
       const now = new Date();
       const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
 
-      // Clean up old attempts first
-      await db.execute(
-        "DELETE FROM otp_attempts WHERE email = ? AND timestamp < ?",
-        [email, tenMinutesAgo]
-      );
+      // Delete old attempts
+      await db.delete(otpAttempts)
+        .where(
+          and(
+            eq(otpAttempts.email, email),
+            gt(otpAttempts.timestamp, tenMinutesAgo)
+          )
+        );
 
       // Insert new attempt
-      await db.execute(
-        "INSERT INTO otp_attempts (email, timestamp) VALUES (?, ?)",
-        [email, now]
-      );
+      await db.insert(otpAttempts).values({
+        email,
+        timestamp: now
+      });
 
-      // Get count of attempts in last 10 minutes
-      const result = await db.get(
-        "SELECT COUNT(*) as count FROM otp_attempts WHERE email = ? AND timestamp > ?",
-        [email, tenMinutesAgo]
-      );
+      // Get count of attempts
+      const attempts = await db
+        .select({ count: sql`count(*)` })
+        .from(otpAttempts)
+        .where(
+          and(
+            eq(otpAttempts.email, email),
+            gt(otpAttempts.timestamp, tenMinutesAgo)
+          )
+        );
 
-      return result.count;
+      return attempts[0]?.count || 0;
     } catch (error) {
       console.error('Error tracking OTP attempt:', error);
       throw new Error('Failed to track OTP attempt');
@@ -352,11 +359,18 @@ export class DatabaseStorage implements IStorage {
   async getOTPAttempts(email: string): Promise<number> {
     try {
       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-      const result = await db.get(
-        "SELECT COUNT(*) as count FROM otp_attempts WHERE email = ? AND timestamp > ?",
-        [email, tenMinutesAgo]
-      );
-      return result.count;
+
+      const attempts = await db
+        .select({ count: sql`count(*)` })
+        .from(otpAttempts)
+        .where(
+          and(
+            eq(otpAttempts.email, email),
+            gt(otpAttempts.timestamp, tenMinutesAgo)
+          )
+        );
+
+      return attempts[0]?.count || 0;
     } catch (error) {
       console.error('Error getting OTP attempts:', error);
       return 0;
@@ -365,10 +379,8 @@ export class DatabaseStorage implements IStorage {
 
   async clearOTPAttempts(email: string): Promise<void> {
     try {
-      await db.execute(
-        "DELETE FROM otp_attempts WHERE email = ?",
-        [email]
-      );
+      await db.delete(otpAttempts)
+        .where(eq(otpAttempts.email, email));
     } catch (error) {
       console.error('Error clearing OTP attempts:', error);
       throw new Error('Failed to clear OTP attempts');

@@ -3,6 +3,24 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 
+// Add OTP attempts table schema
+export const otpAttempts = sqliteTable("otp_attempts", {
+  id: integer("id").primaryKey(),
+  email: text("email").notNull(),
+  timestamp: integer("timestamp", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Add schema for OTP attempts
+export const insertOtpAttemptSchema = createInsertSchema(otpAttempts).pick({
+  email: true,
+});
+
+// Add type for OTP attempts
+export type OtpAttempt = typeof otpAttempts.$inferSelect;
+export type InsertOtpAttempt = z.infer<typeof insertOtpAttemptSchema>;
+
 // Add pending verifications table
 export const pendingVerifications = sqliteTable("pending_verifications", {
   id: integer("id").primaryKey(),
