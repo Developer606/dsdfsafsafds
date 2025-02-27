@@ -256,26 +256,3 @@ export const insertComplaintSchema = createInsertSchema(complaints).pick({
 // Add complaint types
 export type Complaint = typeof complaints.$inferSelect;
 export type InsertComplaint = z.infer<typeof insertComplaintSchema>;
-
-// Add notifications table
-export const notifications = sqliteTable("notifications", {
-  id: integer("id").primaryKey(),
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  timestamp: integer("timestamp", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  read: integer("read", { mode: "boolean" })
-    .notNull()
-    .default(false),
-});
-
-// Add notification schema
-export const insertNotificationSchema = createInsertSchema(notifications).pick({
-  title: true,
-  message: true,
-});
-
-// Add notification types
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = z.infer<typeof insertNotificationSchema>;
