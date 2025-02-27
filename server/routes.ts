@@ -717,6 +717,105 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Add new analytics endpoints before httpServer creation
+  app.get("/api/admin/analytics/activity", isAdmin, async (req, res) => {
+    try {
+      // Get user activity data for the last 24 hours
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      // Get all users who logged in within the last 24 hours
+      const activeUsers = await storage.getAllUsers();
+      const hourlyActivity = Array(24).fill(0).map((_, hour) => ({
+        hour,
+        activeUsers: activeUsers.filter(user => {
+          if (!user.lastLoginAt) return false;
+          const loginHour = new Date(user.lastLoginAt).getHours();
+          return loginHour === hour;
+        }).length
+      }));
+
+      res.json({ hourlyActivity });
+    } catch (error: any) {
+      console.error("Error fetching activity data:", error);
+      res.status(500).json({ error: "Failed to fetch activity data" });
+    }
+  });
+
+  app.get("/api/admin/analytics/messages", isAdmin, async (req, res) => {
+    try {
+      // Get message volume for the last 7 days
+      const messages = await storage.getMessagesByCharacter("all");
+      const daily = Array(7).fill(0).map((_, index) => {
+        const date = new Date();
+        date.setDate(date.getDate() - index);
+        date.setHours(0, 0, 0, 0);
+
+        const nextDate = new Date(date);
+        nextDate.setDate(nextDate.getDate() + 1);
+
+        return {
+          date: date.toISOString().split('T')[0],
+          messages: messages.filter(msg => {
+            const msgDate = new Date(msg.timestamp);
+            return msgDate >= date && msgDate < nextDate;
+          }).length
+        };
+      }).reverse();
+
+      res.json({ daily });
+    } catch (error: any) {
+      console.error("Error fetching message volume:", error);
+      res.status(500).json({ error: "Failed to fetch message volume" });
+    }
+  });
+
+  app.get("/api/admin/analytics/characters/popularity", isAdmin, async (req, res) => {
+    try {
+      const messages = await storage.getMessagesByCharacter("all");
+      const characterStats = new Map();
+
+      // Process messages to get character statistics
+      for (const msg of messages) {
+        if (!characterStats.has(msg.characterId)) {
+          characterStats.set(msg.characterId, {
+            messageCount: 0,
+            users: new Set()
+          });
+        }
+        const stats = characterStats.get(msg.characterId);
+        stats.messageCount++;
+        stats.users.add(msg.userId);
+      }
+
+      // Convert stats to response format
+      const charactersData = [];
+      for (const [charId, stats] of characterStats.entries()) {
+        let name = "Unknown";
+        if (charId.startsWith('custom_')) {
+          const customChar = await storage.getCustomCharacterById(
+            parseInt(charId.replace('custom_', ''))
+          );
+          if (customChar) name = customChar.name;
+        } else {
+          const predefinedChar = characters.find(c => c.id === charId);
+          if (predefinedChar) name = predefinedChar.name;
+        }
+
+        charactersData.push({
+          name,
+          messageCount: stats.messageCount,
+          userCount: stats.users.size
+        });
+      }
+
+      res.json({ characters: charactersData });
+    } catch (error: any) {
+      console.error("Error fetching character popularity:", error);
+      res.status(500).json({ error: "Failed to fetch character popularity" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
