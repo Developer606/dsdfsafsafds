@@ -15,6 +15,7 @@ import { insertUserSchema, loginSchema } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
+import { Eye, EyeOff } from "lucide-react";
 
 type AuthDialogProps = {
   open: boolean;
@@ -44,6 +45,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [authStep, setAuthStep] = useState<AuthStep>("login");
   const [verificationEmail, setVerificationEmail] = useState("");
   const [registrationData, setRegistrationData] = useState<{ username: string; email: string; password: string } | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const { toast } = useToast();
 
   const loginForm = useForm({
@@ -267,12 +271,25 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
               </div>
               <div>
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...loginForm.register("password")}
-                  className="mt-1"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    {...loginForm.register("password")}
+                    className="mt-1 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-[calc(50%-10px)] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
                 {loginForm.formState.errors.password && (
                   <p className="text-sm text-destructive mt-1">
                     {loginForm.formState.errors.password.message}
@@ -340,13 +357,26 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                 )}
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...registerForm.register("password")}
-                  className="mt-1"
-                />
+                <Label htmlFor="registerPassword">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="registerPassword"
+                    type={showRegisterPassword ? "text" : "password"}
+                    {...registerForm.register("password")}
+                    className="mt-1 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                    className="absolute right-2 top-[calc(50%-10px)] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    {showRegisterPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
                 {registerForm.formState.errors.password && (
                   <p className="text-sm text-destructive mt-1">
                     {registerForm.formState.errors.password.message}
@@ -484,12 +514,25 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
               </div>
               <div>
                 <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  {...resetPasswordForm.register("newPassword")}
-                  className="mt-1"
-                />
+                <div className="relative">
+                  <Input
+                    id="newPassword"
+                    type={showNewPassword ? "text" : "password"}
+                    {...resetPasswordForm.register("newPassword")}
+                    className="mt-1 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2 top-[calc(50%-10px)] text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    {showNewPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
                 {resetPasswordForm.formState.errors.newPassword && (
                   <p className="text-sm text-destructive mt-1">
                     {resetPasswordForm.formState.errors.newPassword.message}
