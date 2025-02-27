@@ -1,10 +1,10 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications, otpAttempts } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { hashPassword } from "./auth";
+import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
@@ -48,11 +48,6 @@ export interface IStorage {
   getPendingVerification(email: string): Promise<PendingVerification | undefined>;
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
-
-  // Add new methods for OTP rate limiting
-  trackOTPAttempt(email: string): Promise<number>;
-  getOTPAttempts(email: string): Promise<number>;
-  clearOTPAttempts(email: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -315,79 +310,6 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting pending verification:', error);
       throw new Error('Failed to delete pending verification');
-    }
-  }
-
-  async trackOTPAttempt(email: string): Promise<number> {
-    try {
-      const now = new Date();
-      const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
-
-      // Delete old attempts first
-      await db.delete(otpAttempts)
-        .where(
-          and(
-            eq(otpAttempts.email, email),
-            sql`${otpAttempts.timestamp} < ${tenMinutesAgo}`
-          )
-        );
-
-      // Insert new attempt
-      await db.insert(otpAttempts).values({
-        email,
-        timestamp: now
-      });
-
-      // Get count of recent attempts
-      const attempts = await db
-        .select({
-          count: sql<number>`cast(count(*) as integer)`
-        })
-        .from(otpAttempts)
-        .where(
-          and(
-            eq(otpAttempts.email, email),
-            sql`${otpAttempts.timestamp} > ${tenMinutesAgo}`
-          )
-        );
-
-      return attempts[0]?.count || 0;
-    } catch (error) {
-      console.error('Error tracking OTP attempt:', error);
-      throw new Error('Failed to track OTP attempt');
-    }
-  }
-
-  async getOTPAttempts(email: string): Promise<number> {
-    try {
-      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-
-      const attempts = await db
-        .select({
-          count: sql<number>`cast(count(*) as integer)`
-        })
-        .from(otpAttempts)
-        .where(
-          and(
-            eq(otpAttempts.email, email),
-            sql`${otpAttempts.timestamp} > ${tenMinutesAgo}`
-          )
-        );
-
-      return attempts[0]?.count || 0;
-    } catch (error) {
-      console.error('Error getting OTP attempts:', error);
-      return 0;
-    }
-  }
-
-  async clearOTPAttempts(email: string): Promise<void> {
-    try {
-      await db.delete(otpAttempts)
-        .where(eq(otpAttempts.email, email));
-    } catch (error) {
-      console.error('Error clearing OTP attempts:', error);
-      throw new Error('Failed to clear OTP attempts');
     }
   }
 }

@@ -1,34 +1,16 @@
-import { pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
 
-// Add OTP attempts table schema
-export const otpAttempts = pgTable("otp_attempts", {
-  id: integer("id").primaryKey(),
-  email: text("email").notNull(),
-  timestamp: timestamp("timestamp")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
-
-// Add schema for OTP attempts
-export const insertOtpAttemptSchema = createInsertSchema(otpAttempts).pick({
-  email: true,
-});
-
-// Add type for OTP attempts
-export type OtpAttempt = typeof otpAttempts.$inferSelect;
-export type InsertOtpAttempt = z.infer<typeof insertOtpAttemptSchema>;
-
 // Add pending verifications table
-export const pendingVerifications = pgTable("pending_verifications", {
+export const pendingVerifications = sqliteTable("pending_verifications", {
   id: integer("id").primaryKey(),
   email: text("email").notNull().unique(),
   verificationToken: text("verification_token").notNull(),
-  tokenExpiry: timestamp("token_expiry").notNull(),
-  registrationData: text("registration_data"),
-  createdAt: timestamp("created_at")
+  tokenExpiry: integer("token_expiry", { mode: "timestamp_ms" }).notNull(),
+  registrationData: text("registration_data"), // JSON string of registration data
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });
@@ -46,49 +28,61 @@ export type PendingVerification = typeof pendingVerifications.$inferSelect;
 export type InsertPendingVerification = z.infer<typeof insertPendingVerificationSchema>;
 
 // Users table with optimized indexes for high-traffic login/signup
-export const users = pgTable("users", {
+export const users = sqliteTable("users", {
   id: integer("id").primaryKey(),
   email: text("email").notNull().unique(),
   username: text("username").notNull(),
   password: text("password").notNull(),
   role: text("role").notNull().default("user"),
-  isAdmin: boolean("is_admin").notNull().default(false),
-  isPremium: boolean("is_premium").notNull().default(false),
-  isBlocked: boolean("is_blocked").notNull().default(false),
-  isRestricted: boolean("is_restricted").notNull().default(false),
-  isEmailVerified: boolean("is_email_verified").notNull().default(false),
+  isAdmin: integer("is_admin", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  isPremium: integer("is_premium", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  isBlocked: integer("is_blocked", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  isRestricted: integer("is_restricted", { mode: "boolean" })
+    .notNull()
+    .default(false),
+  isEmailVerified: integer("is_email_verified", { mode: "boolean" })
+    .notNull()
+    .default(false),
   verificationToken: text("verification_token"),
-  verificationTokenExpiry: timestamp("verification_token_expiry"),
+  verificationTokenExpiry: integer("verification_token_expiry", { mode: "timestamp_ms" }),
   trialCharactersCreated: integer("trial_characters_created")
     .notNull()
     .default(0),
   subscriptionTier: text("subscription_tier"),
   subscriptionStatus: text("subscription_status").default("trial"),
-  subscriptionExpiresAt: timestamp("subscription_expires_at"),
-  createdAt: timestamp("created_at")
+  subscriptionExpiresAt: integer("subscription_expires_at", {
+    mode: "timestamp_ms",
+  }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
-  lastLoginAt: timestamp("last_login_at"),
+  lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
 });
 
 // Messages table optimized for chat history retrieval
-export const messages = pgTable("messages", {
+export const messages = sqliteTable("messages", {
   id: integer("id").primaryKey(),
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   characterId: text("character_id").notNull(),
   content: text("content").notNull(),
-  isUser: boolean("is_user").notNull(),
+  isUser: integer("is_user", { mode: "boolean" }).notNull(),
   language: text("language").default("english"),
   script: text("script"),
-  timestamp: timestamp("timestamp")
+  timestamp: integer("timestamp", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
 // Custom characters table
-export const customCharacters = pgTable("custom_characters", {
+export const customCharacters = sqliteTable("custom_characters", {
   id: integer("id").primaryKey(),
   userId: integer("user_id")
     .notNull()
@@ -97,7 +91,7 @@ export const customCharacters = pgTable("custom_characters", {
   avatar: text("avatar").notNull(),
   description: text("description").notNull(),
   persona: text("persona").notNull(),
-  createdAt: timestamp("created_at")
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });
@@ -218,12 +212,12 @@ export type SupportedLanguage = (typeof supportedLanguages)[number]["id"];
 export type ScriptPreference = "devanagari" | "latin";
 
 // Feedback table for storing user feedback
-export const feedback = pgTable("feedback", {
+export const feedback = sqliteTable("feedback", {
   id: integer("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
   message: text("message").notNull(),
-  createdAt: timestamp("created_at")
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });
@@ -240,13 +234,13 @@ export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 // Add complaints table schema
-export const complaints = pgTable("complaints", {
+export const complaints = sqliteTable("complaints", {
   id: integer("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
   message: text("message").notNull(),
   imageUrl: text("image_url"),
-  createdAt: timestamp("created_at")
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });
