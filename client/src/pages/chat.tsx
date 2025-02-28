@@ -169,8 +169,8 @@ export default function Chat() {
         id: tempId,
         content,
         isUser: true,
-        timestamp: new Date(),
-        characterId,
+        timestamp: new Date().toISOString(),
+        characterId: characterId!,
         userId: user?.id || 0,
         language,
         script: script || null
@@ -393,7 +393,7 @@ export default function Chat() {
 
       <SubscriptionDialog
         open={showSubscriptionDialog}
-        onOpenChange={setShowSubscriptionDialog}
+        onClose={() => setShowSubscriptionDialog(false)}
       />
     </div>
   );
