@@ -63,7 +63,9 @@ app.use((req, res, next) => {
 (async () => {
   try {
     // Run database migrations before starting the server
+    console.log('Initializing database...');
     await runMigrations();
+    console.log('Database initialization complete');
 
     const server = await registerRoutes(app);
 

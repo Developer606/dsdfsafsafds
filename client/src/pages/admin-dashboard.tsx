@@ -48,18 +48,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Plus, Pencil } from "lucide-react";
-import { useState } from "react";
-
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -855,7 +843,7 @@ export default function AdminDashboard() {
                           </span>
                         )}
                       </div>
-                    </</TableCell>
+                    </TableCell>
                     <TableCell>{user.trialCharactersCreated}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
@@ -863,8 +851,7 @@ export default function AdminDashboard() {
                           {new Date(user.createdAt).toLocaleDateString()}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(user.createdAt).toLocaleTimeString()}
-                        </span>
+                          {new Date(user.createdAt).toLocaleTimeString()}                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
