@@ -244,7 +244,38 @@ export default function AdminDashboard() {
   };
 
   const handleAddPlan = () => {
-    addPlan.mutate(newPlan);
+    if (!newPlan.name || !newPlan.price) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Plan name and price are required"
+      });
+      return;
+    }
+
+    // Generate a planId from the name
+    const planId = newPlan.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    // Ensure we have at least one feature
+    if (!newPlan.features.some(f => f.trim())) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "At least one feature is required"
+      });
+      return;
+    }
+
+    // Filter out empty features and create the plan
+    const features = newPlan.features.filter(f => f.trim());
+
+    addPlan.mutate({
+      planId,
+      name: newPlan.name,
+      price: newPlan.price.startsWith('$') ? newPlan.price : `$${newPlan.price}`,
+      features: JSON.stringify(features),
+      isActive: true
+    });
   };
 
   const handleDeletePlan = (planId: string) => {
@@ -820,8 +851,7 @@ export default function AdminDashboard() {
                               })
                             }
                           >
-                            Free Plan
-                          </DropdownMenuItem>
+                            Free Plan                          </DropdownMenuItem>
                           {(Object.keys(subscriptionPlans) as SubscriptionTier[]).map((tier) => (
                             <DropdownMenuItem
                               key={subscriptionPlans[tier].id}
