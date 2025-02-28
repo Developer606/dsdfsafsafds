@@ -526,11 +526,19 @@ export default function AdminDashboard() {
                     <TableCell>{plan.price}</TableCell>
                     <TableCell>
                       <div className="max-w-xs space-y-1">
-                        {plan.features.map((feature, i) => (
-                          <div key={i} className="text-sm truncate">
-                            • {feature}
-                          </div>
-                        ))}
+                        {(() => {
+                          try {
+                            const featuresList = plan.features ? JSON.parse(plan.features) : [];
+                            return featuresList.map((feature: string, i: number) => (
+                              <div key={i} className="text-sm truncate">
+                                • {feature}
+                              </div>
+                            ));
+                          } catch (e) {
+                            console.error('Error parsing features:', e);
+                            return <div className="text-sm text-red-500">Invalid features data</div>;
+                          }
+                        })()}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -842,8 +850,7 @@ export default function AdminDashboard() {
                             {new Date(user.lastLoginAt).toLocaleTimeString()}
                           </span>
                         )}
-                      </div>
-                    </TableCell>
+                      </div>                    </TableCell>
                     <TableCell>{user.trialCharactersCreated}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
