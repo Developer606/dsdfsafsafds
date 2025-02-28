@@ -21,7 +21,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { type User } from "@shared/schema";
-
+import { SubscriptionDialog } from "@/components/subscription-dialog";
 
 export default function Chat() {
   const { characterId } = useParams();
@@ -30,6 +30,7 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const tempMessageIdRef = useRef<string>("");
 
   const scrollToBottom = () => {
@@ -157,7 +158,8 @@ export default function Chat() {
   const sendMessage = useMutation({
     mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {
       if (!user?.isPremium && remainingMessages <= 0) {
-        throw new Error("Message limit reached. Upgrade to premium to send more messages.");
+        setShowSubscriptionDialog(true);
+        throw new Error("Message limit reached. Please upgrade to premium to continue chatting.");
       }
 
       const tempId = Date.now();
@@ -222,11 +224,15 @@ export default function Chat() {
         (old = []) => old.filter(msg => msg.id.toString() !== tempMessageIdRef.current)
       );
       tempMessageIdRef.current = "";
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to send message"
-      });
+
+      // Only show error toast if it's not the message limit error
+      if (!error.message.includes("Message limit reached")) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message || "Failed to send message"
+        });
+      }
     }
   });
 
@@ -384,6 +390,11 @@ export default function Chat() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <SubscriptionDialog
+        open={showSubscriptionDialog}
+        onOpenChange={setShowSubscriptionDialog}
+      />
     </div>
   );
 }
