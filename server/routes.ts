@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
-import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema } from "@shared/schema";
+import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema, FREE_USER_MESSAGE_LIMIT } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, sendVerificationEmail, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
@@ -330,6 +330,17 @@ export async function registerRoutes(app: Express) {
         return res.status(401).json({ error: "Authentication required" });
       }
       const user = req.user;
+
+      // Check message limit for free users
+      if (!user.isPremium) {
+        const messageCount = await storage.getUserMessageCount(user.id);
+        if (messageCount >= FREE_USER_MESSAGE_LIMIT) {
+          return res.status(403).json({
+            error: "Message limit reached. Please upgrade to premium to continue chatting.",
+            limitReached: true
+          });
+        }
+      }
 
       const data = insertMessageSchema.parse({
         ...req.body,

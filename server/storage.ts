@@ -1,6 +1,6 @@
 import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -48,6 +48,7 @@ export interface IStorage {
   getPendingVerification(email: string): Promise<PendingVerification | undefined>;
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
+  getUserMessageCount(userId: number): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -75,7 +76,20 @@ export class DatabaseStorage implements IStorage {
       ...message,
       timestamp: new Date()
     }).returning();
-    return newMessage;
+
+    // Increment message count for user messages only
+    if (message.isUser) {
+      await db.update(users)
+        .set({ messageCount: sql`${users.messageCount} + 1` })
+        .where(eq(users.id, message.userId));
+    }
+
+    return {
+      ...newMessage,
+      timestamp: new Date(newMessage.timestamp),
+      language: newMessage.language || undefined,
+      script: newMessage.script
+    };
   }
 
   async clearChat(characterId: string): Promise<void> {
@@ -93,7 +107,8 @@ export class DatabaseStorage implements IStorage {
       isEmailVerified: false,
       verificationToken: null,
       verificationTokenExpiry: null,
-      lastLoginAt: null
+      lastLoginAt: null,
+      messageCount: 0 // Initialize message count
     }).returning();
     return newUser;
   }
@@ -241,7 +256,8 @@ export class DatabaseStorage implements IStorage {
           subscriptionStatus: "trial",
           subscriptionExpiresAt: null,
           createdAt: new Date(),
-          lastLoginAt: null
+          lastLoginAt: null,
+          messageCount: 0 // Initialize message count
         });
         console.log("Admin user created successfully");
       }
@@ -311,6 +327,13 @@ export class DatabaseStorage implements IStorage {
       console.error('Error deleting pending verification:', error);
       throw new Error('Failed to delete pending verification');
     }
+  }
+
+  async getUserMessageCount(userId: number): Promise<number> {
+    const [user] = await db.select({ messageCount: users.messageCount })
+      .from(users)
+      .where(eq(users.id, userId));
+    return user?.messageCount || 0;
   }
 }
 
