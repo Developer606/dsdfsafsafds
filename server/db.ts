@@ -83,6 +83,16 @@ export async function runMigrations() {
         timestamp INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )`,
+      `CREATE TABLE IF NOT EXISTS subscription_plans (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_id TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        price TEXT NOT NULL,
+        features TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
       `CREATE TABLE IF NOT EXISTS custom_characters (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -139,6 +149,10 @@ function createIndexes() {
 
       // Custom character indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_custom_chars_user ON custom_characters(user_id)').run();
+
+      // Subscription plan indexes
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_subscription_plans_plan_id ON subscription_plans(plan_id)').run();
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_subscription_plans_active ON subscription_plans(is_active)').run();
 
       // Verification indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_email ON pending_verifications(email)').run();

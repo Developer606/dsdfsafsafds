@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
-import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema, FREE_USER_MESSAGE_LIMIT } from "@shared/schema";
+import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema, FREE_USER_MESSAGE_LIMIT, insertSubscriptionPlanSchema, type SubscriptionPlan, type InsertSubscriptionPlan } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, sendVerificationEmail, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
@@ -220,6 +220,124 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+
+  // Subscription Plan Management Routes
+  app.get("/api/admin/subscription-plans", isAdmin, async (req, res) => {
+    try {
+      console.log("[Admin API] Fetching all subscription plans");
+      const plans = await storage.getAllSubscriptionPlans();
+      console.log(`[Admin API] Found ${plans.length} subscription plans`);
+      res.json(plans);
+    } catch (error: any) {
+      console.error('[Admin API] Error fetching subscription plans:', error);
+      console.error(error.stack);
+      res.status(500).json({ error: "Failed to fetch subscription plans" });
+    }
+  });
+
+  app.post("/api/admin/subscription-plans", isAdmin, async (req, res) => {
+    try {
+      console.log("[Admin API] Creating new subscription plan:", req.body);
+      const data = insertSubscriptionPlanSchema.parse(req.body);
+
+      // Ensure planId is unique and follows proper format
+      if (!data.planId.match(/^[a-z0-9-_]+$/)) {
+        return res.status(400).json({ error: "Plan ID must contain only lowercase letters, numbers, hyphens, and underscores" });
+      }
+
+      const existingPlan = await storage.getSubscriptionPlanByPlanId(data.planId);
+      if (existingPlan) {
+        return res.status(400).json({ error: "Plan ID already exists" });
+      }
+
+      // Validate price format
+      if (!data.price.match(/^\$\d+(\.\d{2})?$/)) {
+        return res.status(400).json({ error: "Price must be in format $X.XX" });
+      }
+
+      // Ensure features is a valid JSON array
+      try {
+        const features = JSON.parse(data.features);
+        if (!Array.isArray(features)) {
+          return res.status(400).json({ error: "Features must be an array" });
+        }
+      } catch (e) {
+        return res.status(400).json({ error: "Features must be valid JSON array" });
+      }
+
+      const plan = await storage.createSubscriptionPlan(data);
+      console.log("[Admin API] Successfully created subscription plan:", plan);
+      res.status(201).json(plan);
+    } catch (error: any) {
+      console.error('[Admin API] Error creating subscription plan:', error);
+      console.error(error.stack);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/admin/subscription-plans/:id", isAdmin, async (req, res) => {
+    try {
+      const planId = parseInt(req.params.id);
+      console.log(`[Admin API] Updating subscription plan ${planId}:`, req.body);
+
+      const data = insertSubscriptionPlanSchema.partial().parse(req.body);
+
+      const existingPlan = await storage.getSubscriptionPlanById(planId);
+      if (!existingPlan) {
+        return res.status(404).json({ error: "Plan not found" });
+      }
+
+      // Validate price format if provided
+      if (data.price && !data.price.match(/^\$\d+(\.\d{2})?$/)) {
+        return res.status(400).json({ error: "Price must be in format $X.XX" });
+      }
+
+      // Validate features if provided
+      if (data.features) {
+        try {
+          const features = JSON.parse(data.features);
+          if (!Array.isArray(features)) {
+            return res.status(400).json({ error: "Features must be an array" });
+          }
+        } catch (e) {
+          return res.status(400).json({ error: "Features must be valid JSON array" });
+        }
+      }
+
+      const updatedPlan = await storage.updateSubscriptionPlan(planId, data);
+      console.log("[Admin API] Successfully updated subscription plan:", updatedPlan);
+      res.json(updatedPlan);
+    } catch (error: any) {
+      console.error('[Admin API] Error updating subscription plan:', error);
+      console.error(error.stack);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/admin/subscription-plans/:id", isAdmin, async (req, res) => {
+    try {
+      const planId = parseInt(req.params.id);
+      console.log(`[Admin API] Attempting to delete subscription plan ${planId}`);
+
+      const existingPlan = await storage.getSubscriptionPlanById(planId);
+      if (!existingPlan) {
+        return res.status(404).json({ error: "Plan not found" });
+      }
+
+      // Don't allow deleting the free plan
+      if (existingPlan.planId === 'free') {
+        return res.status(400).json({ error: "Cannot delete the free plan" });
+      }
+
+      await storage.deleteSubscriptionPlan(planId);
+      console.log(`[Admin API] Successfully deleted subscription plan ${planId}`);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('[Admin API] Error deleting subscription plan:', error);
+      console.error(error.stack);
+      res.status(400).json({ error: error.message });
+    }
+  });
 
   app.get("/api/characters", async (req, res) => {
     try {
