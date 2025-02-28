@@ -34,32 +34,18 @@ export const users = sqliteTable("users", {
   username: text("username").notNull(),
   password: text("password").notNull(),
   role: text("role").notNull().default("user"),
-  isAdmin: integer("is_admin", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  isPremium: integer("is_premium", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  isBlocked: integer("is_blocked", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  isRestricted: integer("is_restricted", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  isEmailVerified: integer("is_email_verified", { mode: "boolean" })
-    .notNull()
-    .default(false),
+  isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+  isPremium: integer("is_premium", { mode: "boolean" }).notNull().default(false),
+  isBlocked: integer("is_blocked", { mode: "boolean" }).notNull().default(false),
+  isRestricted: integer("is_restricted", { mode: "boolean" }).notNull().default(false),
+  isEmailVerified: integer("is_email_verified", { mode: "boolean" }).notNull().default(false),
   messageCount: integer("message_count").notNull().default(0),
   verificationToken: text("verification_token"),
   verificationTokenExpiry: integer("verification_token_expiry", { mode: "timestamp_ms" }),
-  trialCharactersCreated: integer("trial_characters_created")
-    .notNull()
-    .default(0),
+  trialCharactersCreated: integer("trial_characters_created").notNull().default(0),
   subscriptionTier: text("subscription_tier"),
   subscriptionStatus: text("subscription_status").default("trial"),
-  subscriptionExpiresAt: integer("subscription_expires_at", {
-    mode: "timestamp_ms",
-  }),
+  subscriptionExpiresAt: integer("subscription_expires_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -100,18 +86,32 @@ export const customCharacters = sqliteTable("custom_characters", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Add subscription plans table for dynamic management
+export const subscriptionPlans = sqliteTable("subscription_plans", {
+  id: integer("id").primaryKey(),
+  planId: text("plan_id").notNull().unique(),
+  name: text("name").notNull(),
+  price: text("price").notNull(),
+  features: text("features").notNull(), // JSON string array
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Message schemas
-export const insertMessageSchema = createInsertSchema(messages)
-  .pick({
-    userId: true,
-    characterId: true,
-    content: true,
-    isUser: true,
-  })
-  .extend({
-    language: z.string().default("english"),
-    script: z.enum(["devanagari", "latin"]).optional(),
-  });
+export const insertMessageSchema = createInsertSchema(messages).pick({
+  userId: true,
+  characterId: true,
+  content: true,
+  isUser: true,
+}).extend({
+  language: z.string().default("english"),
+  script: z.enum(["devanagari", "latin"]).optional(),
+});
 
 // User schemas
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -132,10 +132,21 @@ export const adminLoginSchema = loginSchema.extend({
   isAdmin: z.literal(true),
 });
 
+// Add insert schema for subscription plans
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).pick({
+  planId: true,
+  name: true,
+  price: true,
+  features: true,
+  isActive: true,
+});
+
+// Add subscription plan types
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+
 // Custom character schemas
-export const insertCustomCharacterSchema = createInsertSchema(
-  customCharacters,
-).pick({
+export const insertCustomCharacterSchema = createInsertSchema(customCharacters).pick({
   userId: true,
   name: true,
   avatar: true,
@@ -163,35 +174,6 @@ export type Role = "user" | "admin";
 export type CustomCharacter = typeof customCharacters.$inferSelect;
 export type InsertCustomCharacter = z.infer<typeof insertCustomCharacterSchema>;
 
-// Add subscription plans table for dynamic management
-export const subscriptionPlans = sqliteTable("subscription_plans", {
-  id: integer("id").primaryKey(),
-  planId: text("plan_id").notNull().unique(),
-  name: text("name").notNull(),
-  price: text("price").notNull(),
-  features: text("features").notNull(), // JSON string array
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
-
-// Add insert schema for subscription plans
-export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).pick({
-  planId: true,
-  name: true,
-  price: true,
-  features: true,
-  isActive: true,
-});
-
-// Add subscription plan types
-export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
-export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
-
 export type SubscriptionTier = keyof typeof subscriptionPlans;
 export type SubscriptionStatus = "trial" | "active" | "cancelled" | "expired";
 
@@ -216,7 +198,7 @@ export const supportedLanguages = [
 export type SupportedLanguage = (typeof supportedLanguages)[number]["id"];
 export type ScriptPreference = "devanagari" | "latin";
 
-// Feedback table for storing user feedback
+// Add feedback table
 export const feedback = sqliteTable("feedback", {
   id: integer("id").primaryKey(),
   name: text("name").notNull(),
@@ -238,7 +220,7 @@ export const insertFeedbackSchema = createInsertSchema(feedback).pick({
 export type Feedback = typeof feedback.$inferSelect;
 export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
-// Add complaints table schema
+// Add complaints table
 export const complaints = sqliteTable("complaints", {
   id: integer("id").primaryKey(),
   name: text("name").notNull(),
@@ -250,7 +232,7 @@ export const complaints = sqliteTable("complaints", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
-// Add complaints schema for validation
+// Add complaints schema
 export const insertComplaintSchema = createInsertSchema(complaints).pick({
   name: true,
   email: true,

@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from "@shared/schema";
 
 // Configure SQLite with WAL mode for better concurrency
@@ -110,6 +109,21 @@ export async function runMigrations() {
         token_expiry INTEGER NOT NULL,
         registration_data TEXT,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS feedback (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        message TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )`,
+      `CREATE TABLE IF NOT EXISTS complaints (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        message TEXT NOT NULL,
+        image_url TEXT,
+        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`
     ];
 
@@ -143,7 +157,7 @@ function createIndexes() {
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)').run();
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_message_count ON users(message_count)').run();
 
-      // Message indexes - Added compound index for character_id + timestamp
+      // Message indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_user_char ON messages(user_id, character_id)').run();
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_char_time ON messages(character_id, timestamp)').run();
 
