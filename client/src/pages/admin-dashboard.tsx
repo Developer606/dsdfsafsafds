@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Plus, Pencil } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -43,11 +43,6 @@ import {
 } from "recharts";
 import { type Complaint } from "@shared/schema";
 import { Link } from "wouter";
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -104,6 +99,7 @@ export default function AdminDashboard() {
     refetchInterval: 30000,
   });
 
+
   // Existing mutations...
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
@@ -129,7 +125,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
-        description: "User deleted successfully",
+        description: "Userdeleted successfully",
       });
     },
   });
@@ -164,135 +160,19 @@ export default function AdminDashboard() {
 
   // Enhanced data preparation for charts
   const subscriptionData = users ? [
-    { name: "Free", value: users.filter((u) => !u.isPremium).length },
-    { name: "Premium", value: users.filter((u) => u.isPremium).length },
+    { name: 'Free', value: users.filter(u => !u.isPremium).length },
+    { name: 'Premium', value: users.filter(u => u.isPremium).length },
   ] : [];
 
   const userStatusData = users ? [
-    { name: "Active", value: users.filter((u) => !u.isBlocked && !u.isRestricted).length },
-    { name: "Blocked", value: users.filter((u) => u.isBlocked).length },
-    { name: "Restricted", value: users.filter((u) => u.isRestricted).length },
+    { name: 'Active', value: users.filter(u => !u.isBlocked && !u.isRestricted).length },
+    { name: 'Blocked', value: users.filter(u => u.isBlocked).length },
+    { name: 'Restricted', value: users.filter(u => u.isRestricted).length },
   ] : [];
 
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
-  const [editPlanDialogOpen, setEditPlanDialogOpen] = useState(false);
-  const [newPlanDialogOpen, setNewPlanDialogOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<{
-    id: string;
-    name: string;
-    price: string;
-    features: string[];
-  } | null>(null);
-  const [newPlan, setNewPlan] = useState({
-    name: "",
-    price: "$0.00",
-    features: [""],
-  });
-
-  // Add the mutation for updating plans
-  const updatePlan = useMutation({
-    mutationFn: async (plan: typeof selectedPlan) => {
-      const res = await apiRequest("PATCH", `/api/admin/subscription-plans/${plan!.id}`, plan);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
-      toast({
-        title: "Success",
-        description: "Plan updated successfully",
-      });
-      setEditPlanDialogOpen(false);
-    },
-  });
-
-  // Add the mutation for adding new plans
-  const addPlan = useMutation({
-    mutationFn: async (plan: typeof newPlan) => {
-      const res = await apiRequest("POST", "/api/admin/subscription-plans", plan);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
-      toast({
-        title: "Success",
-        description: "Plan added successfully",
-      });
-      setNewPlanDialogOpen(false);
-      setNewPlan({ name: "", price: "$0.00", features: [""] });
-    },
-  });
-
-  // Add the mutation for deleting plans
-  const deletePlan = useMutation({
-    mutationFn: async (planId: string) => {
-      const res = await apiRequest("DELETE", `/api/admin/subscription-plans/${planId}`);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
-      toast({
-        title: "Success",
-        description: "Plan deleted successfully",
-      });
-    },
-  });
-
-  const handleUpdatePlan = () => {
-    if (!selectedPlan) return;
-    updatePlan.mutate(selectedPlan);
-  };
-
-  const handleAddPlan = () => {
-    if (!newPlan.name || !newPlan.price) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Plan name and price are required"
-      });
-      return;
-    }
-
-    // Generate a planId from the name
-    const planId = newPlan.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-
-    // Ensure we have at least one feature
-    if (!newPlan.features.some(f => f.trim())) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "At least one feature is required"
-      });
-      return;
-    }
-
-    // Filter out empty features and create the plan
-    const features = newPlan.features.filter(f => f.trim());
-
-    addPlan.mutate({
-      planId,
-      name: newPlan.name,
-      price: newPlan.price.startsWith('$') ? newPlan.price : `$${newPlan.price}`,
-      features: JSON.stringify(features),
-      isActive: true
-    });
-  };
-
-  const handleDeletePlan = (planId: string) => {
-    deletePlan.mutate(planId);
-  };
-
-  if (
-    statsLoading ||
-    usersLoading ||
-    messagesLoading ||
-    charactersLoading ||
-    feedbackLoading ||
-    complaintsLoading ||
-    activityLoading ||
-    messageVolumeLoading ||
-    characterPopularityLoading
-  ) {
+  if (statsLoading || usersLoading || messagesLoading || charactersLoading || feedbackLoading || complaintsLoading || activityLoading || messageVolumeLoading || characterPopularityLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -517,261 +397,6 @@ export default function AdminDashboard() {
       </Card>
 
 
-      {/* Add new subscription management section before the last closing Card */}
-      {/* Subscription Plans Management Section */}
-      <Card className="mt-8">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold">Subscription Plans Management</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Manage subscription plans, pricing, and features
-              </p>
-            </div>
-            <Button
-              onClick={() => {
-                setNewPlanDialogOpen(true);
-              }}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add New Plan
-            </Button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Plan Name</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Features</TableHead>
-                  <TableHead>Active Users</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Object.entries(subscriptionPlans).map(([id, plan]) => (
-                  <TableRow key={id}>
-                    <TableCell>{plan.name}</TableCell>
-                    <TableCell>{plan.price}</TableCell>
-                    <TableCell>
-                      <div className="max-w-xs space-y-1">
-                        {(() => {
-                          try {
-                            const featuresList = plan.features ? JSON.parse(plan.features) : [];
-                            return featuresList.map((feature: string, i: number) => (
-                              <div key={i} className="text-sm truncate">
-                                • {feature}
-                              </div>
-                            ));
-                          } catch (e) {
-                            console.error('Error parsing features:', e);
-                            return <div className="text-sm text-red-500">Invalid features data</div>;
-                          }
-                        })()}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {stats?.planStats?.[id] || 0} users
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedPlan({ id, ...plan });
-                            setEditPlanDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              disabled={id === "free"}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Plan</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this plan? Users currently subscribed to this plan will be moved to the free plan.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeletePlan(id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      </Card>
-
-      {/* Plan Edit Dialog */}
-      <Dialog open={editPlanDialogOpen} onOpenChange={setEditPlanDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Subscription Plan</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Plan Name</Label>
-              <Input
-                id="name"
-                value={selectedPlan?.name || ""}
-                onChange={(e) =>
-                  setSelectedPlan((prev) => ({ ...prev!, name: e.target.value }))
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="price">Price ($/month)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                value={selectedPlan?.price.replace(/[^\d.]/g, "") || ""}
-                onChange={(e) =>
-                  setSelectedPlan((prev) => ({ ...prev!, price: `$${e.target.value}` }))
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Features</Label>
-              <div className="space-y-2">
-                {selectedPlan?.features.map((feature: string, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input
-                      value={feature}
-                      onChange={(e) => {
-                        const newFeatures = [...selectedPlan.features];
-                        newFeatures[index] = e.target.value;
-                        setSelectedPlan((prev) => ({ ...prev!, features: newFeatures }));
-                      }}
-                    />
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => {
-                        const newFeatures = selectedPlan.features.filter((_, i) => i !== index);
-                        setSelectedPlan((prev) => ({ ...prev!, features: newFeatures }));
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedPlan((prev) => ({
-                      ...prev!,
-                      features: [...prev!.features, ""],
-                    }));
-                  }}
-                >
-                  Add Feature
-                </Button>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditPlanDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdatePlan}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* New Plan Dialog */}
-      <Dialog open={newPlanDialogOpen} onOpenChange={setNewPlanDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add New Subscription Plan</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="newName">Plan Name</Label>
-              <Input
-                id="newName"
-                value={newPlan.name}
-                onChange={(e) => setNewPlan((prev) => ({ ...prev, name: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="newPrice">Price ($/month)</Label>
-              <Input
-                id="newPrice"
-                type="number"
-                step="0.01"
-                value={newPlan.price.replace(/[^\d.]/g, "")}
-                onChange={(e) => setNewPlan((prev) => ({ ...prev, price: `$${e.target.value}` }))}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Features</Label>
-              <div className="space-y-2">
-                {newPlan.features.map((feature: string, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <Input
-                      value={feature}
-                      onChange={(e) => {
-                        const newFeatures = [...newPlan.features];
-                        newFeatures[index] = e.target.value;
-                        setNewPlan((prev) => ({ ...prev, features: newFeatures }));
-                      }}
-                    />
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => {
-                        const newFeatures = newPlan.features.filter((_, i) => i !== index);
-                        setNewPlan((prev) => ({ ...prev, features: newFeatures }));
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setNewPlan((prev) => ({
-                      ...prev,
-                      features: [...prev.features, ""],
-                    }));
-                  }}
-                >
-                  Add Feature
-                </Button>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewPlanDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddPlan}>Add Plan</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* User Management Section - Enhanced */}
       <Card className="mt-8">
         <div className="p-6">
@@ -828,9 +453,9 @@ export default function AdminDashboard() {
                           <Button variant="outline" className="w-full justify-start">
                             <div className="flex flex-col items-start gap-1">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                user.isPremium ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-800"
+                                user.isPremium ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
                               }`}>
-                                {user.isPremium ? "Premium" : "Free"}
+                                {user.isPremium ? 'Premium' : 'Free'}
                               </span>
                               {user.subscriptionTier && (
                                 <span className="text-xs text-muted-foreground">
@@ -844,23 +469,20 @@ export default function AdminDashboard() {
                           <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() =>
-                              updateSubscription.mutate({
-                                userId: user.id,
-                                planId: "free",
-                              })
-                            }
+                            onClick={() => updateSubscription.mutate({
+                              userId: user.id,
+                              planId: 'free'
+                            })}
                           >
-                            Free Plan                          </DropdownMenuItem>
+                            Free Plan
+                          </DropdownMenuItem>
                           {(Object.keys(subscriptionPlans) as SubscriptionTier[]).map((tier) => (
                             <DropdownMenuItem
                               key={subscriptionPlans[tier].id}
-                              onClick={() =>
-                                updateSubscription.mutate({
-                                  userId: user.id,
-                                  planId: subscriptionPlans[tier].id,
-                                })
-                              }
+                              onClick={() => updateSubscription.mutate({
+                                userId: user.id,
+                                planId: subscriptionPlans[tier].id
+                              })}
                             >
                               {subscriptionPlans[tier].name}
                             </DropdownMenuItem>
@@ -880,7 +502,8 @@ export default function AdminDashboard() {
                             {new Date(user.lastLoginAt).toLocaleTimeString()}
                           </span>
                         )}
-                      </div>                    </TableCell>
+                      </div>
+                    </TableCell>
                     <TableCell>{user.trialCharactersCreated}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
@@ -888,7 +511,8 @@ export default function AdminDashboard() {
                           {new Date(user.createdAt).toLocaleDateString()}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {new Date(user.createdAt).toLocaleTimeString()}                        </span>
+                          {new Date(user.createdAt).toLocaleTimeString()}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -943,7 +567,9 @@ export default function AdminDashboard() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteUser.mutate(user.id)}>
+                              <AlertDialogAction
+                                onClick={() => deleteUser.mutate(user.id)}
+                              >
                                 Delete
                               </AlertDialogAction>
                             </AlertDialogFooter>

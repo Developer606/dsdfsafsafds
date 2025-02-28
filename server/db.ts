@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import * as schema from "@shared/schema";
 
 // Configure SQLite with WAL mode for better concurrency
@@ -82,16 +83,6 @@ export async function runMigrations() {
         timestamp INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )`,
-      `CREATE TABLE IF NOT EXISTS subscription_plans (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        plan_id TEXT NOT NULL UNIQUE,
-        name TEXT NOT NULL,
-        price TEXT NOT NULL,
-        features TEXT NOT NULL,
-        is_active INTEGER NOT NULL DEFAULT 1,
-        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )`,
       `CREATE TABLE IF NOT EXISTS custom_characters (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
@@ -108,21 +99,6 @@ export async function runMigrations() {
         verification_token TEXT NOT NULL,
         token_expiry INTEGER NOT NULL,
         registration_data TEXT,
-        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )`,
-      `CREATE TABLE IF NOT EXISTS feedback (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        message TEXT NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )`,
-      `CREATE TABLE IF NOT EXISTS complaints (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        message TEXT NOT NULL,
-        image_url TEXT,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`
     ];
@@ -157,16 +133,12 @@ function createIndexes() {
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)').run();
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_message_count ON users(message_count)').run();
 
-      // Message indexes
+      // Message indexes - Added compound index for character_id + timestamp
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_user_char ON messages(user_id, character_id)').run();
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_char_time ON messages(character_id, timestamp)').run();
 
       // Custom character indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_custom_chars_user ON custom_characters(user_id)').run();
-
-      // Subscription plan indexes
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_subscription_plans_plan_id ON subscription_plans(plan_id)').run();
-      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_subscription_plans_active ON subscription_plans(is_active)').run();
 
       // Verification indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_pending_verifications_email ON pending_verifications(email)').run();

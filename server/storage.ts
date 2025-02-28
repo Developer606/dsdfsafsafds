@@ -1,10 +1,10 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications, type SubscriptionPlan, type InsertSubscriptionPlan, subscriptionPlans } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
 import { messages, users, customCharacters } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
-import { hashPassword } from "./auth";
+import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
@@ -49,14 +49,6 @@ export interface IStorage {
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
   getUserMessageCount(userId: number): Promise<number>;
-
-  // New subscription plan methods
-  getAllSubscriptionPlans(): Promise<SubscriptionPlan[]>;
-  getSubscriptionPlanById(id: number): Promise<SubscriptionPlan | undefined>;
-  getSubscriptionPlanByPlanId(planId: string): Promise<SubscriptionPlan | undefined>;
-  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
-  updateSubscriptionPlan(id: number, data: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan>;
-  deleteSubscriptionPlan(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -71,7 +63,7 @@ export class DatabaseStorage implements IStorage {
       stale: false // Delete stale sessions
     });
 
-    // Initialize admin user and default free plan when storage is created
+    // Initialize admin user when storage is created
     this.initializeAdmin();
   }
 
@@ -265,31 +257,12 @@ export class DatabaseStorage implements IStorage {
           subscriptionExpiresAt: null,
           createdAt: new Date(),
           lastLoginAt: null,
-          messageCount: 0
+          messageCount: 0 // Initialize message count
         });
         console.log("Admin user created successfully");
       }
-
-      // Initialize default free plan if it doesn't exist
-      const existingFreePlan = await this.getSubscriptionPlanByPlanId('free');
-      if (!existingFreePlan) {
-        await db.insert(subscriptionPlans).values({
-          planId: 'free',
-          name: 'Free Plan',
-          price: '$0.00',
-          features: JSON.stringify([
-            'Limited message count',
-            'Basic character customization',
-            'Standard support'
-          ]),
-          isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
-        console.log("Default free plan created successfully");
-      }
     } catch (error) {
-      console.error("Error in initialization:", error);
+      console.error("Error creating admin user:", error);
     }
   }
   async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
@@ -361,52 +334,6 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.id, userId));
     return user?.messageCount || 0;
-  }
-
-  // Implementation of new subscription plan methods
-  async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
-    return await db.select().from(subscriptionPlans);
-  }
-
-  async getSubscriptionPlanById(id: number): Promise<SubscriptionPlan | undefined> {
-    const [plan] = await db.select()
-      .from(subscriptionPlans)
-      .where(eq(subscriptionPlans.id, id));
-    return plan;
-  }
-
-  async getSubscriptionPlanByPlanId(planId: string): Promise<SubscriptionPlan | undefined> {
-    const [plan] = await db.select()
-      .from(subscriptionPlans)
-      .where(eq(subscriptionPlans.planId, planId));
-    return plan;
-  }
-
-  async createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
-    const [newPlan] = await db.insert(subscriptionPlans)
-      .values({
-        ...plan,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
-    return newPlan;
-  }
-
-  async updateSubscriptionPlan(id: number, data: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan> {
-    const [updatedPlan] = await db.update(subscriptionPlans)
-      .set({
-        ...data,
-        updatedAt: new Date()
-      })
-      .where(eq(subscriptionPlans.id, id))
-      .returning();
-    return updatedPlan;
-  }
-
-  async deleteSubscriptionPlan(id: number): Promise<void> {
-    await db.delete(subscriptionPlans)
-      .where(eq(subscriptionPlans.id, id));
   }
 }
 
