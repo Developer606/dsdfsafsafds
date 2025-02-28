@@ -49,6 +49,7 @@ export const users = sqliteTable("users", {
   isEmailVerified: integer("is_email_verified", { mode: "boolean" })
     .notNull()
     .default(false),
+  messageCount: integer("message_count").notNull().default(0),
   verificationToken: text("verification_token"),
   verificationTokenExpiry: integer("verification_token_expiry", { mode: "timestamp_ms" }),
   trialCharactersCreated: integer("trial_characters_created")
@@ -64,6 +65,9 @@ export const users = sqliteTable("users", {
     .default(sql`CURRENT_TIMESTAMP`),
   lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
 });
+
+// Add message limit constant
+export const FREE_USER_MESSAGE_LIMIT = 50;
 
 // Messages table optimized for chat history retrieval
 export const messages = sqliteTable("messages", {
@@ -140,7 +144,16 @@ export const insertCustomCharacterSchema = createInsertSchema(
 });
 
 // Types
-export type Message = typeof messages.$inferSelect;
+export type Message = {
+  id: number;
+  userId: number;
+  characterId: string;
+  content: string;
+  isUser: boolean;
+  language?: string;
+  script?: string | null;
+  timestamp: Date;
+};
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
 export type User = typeof users.$inferSelect;

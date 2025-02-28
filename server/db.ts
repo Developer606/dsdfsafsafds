@@ -34,6 +34,7 @@ async function ensureColumns() {
       { name: 'is_blocked', sql: 'INTEGER NOT NULL DEFAULT 0' },
       { name: 'is_restricted', sql: 'INTEGER NOT NULL DEFAULT 0' },
       { name: 'is_email_verified', sql: 'INTEGER NOT NULL DEFAULT 0' },
+      { name: 'message_count', sql: 'INTEGER NOT NULL DEFAULT 0' },
       { name: 'verification_token', sql: 'TEXT' },
       { name: 'verification_token_expiry', sql: 'INTEGER' },
       { name: 'trial_characters_created', sql: 'INTEGER NOT NULL DEFAULT 0' },
@@ -68,6 +69,7 @@ export async function runMigrations() {
         email TEXT NOT NULL UNIQUE,
         username TEXT NOT NULL,
         password TEXT NOT NULL,
+        message_count INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`,
       `CREATE TABLE IF NOT EXISTS messages (
@@ -129,6 +131,7 @@ function createIndexes() {
       // User indexes
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)').run();
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)').run();
+      sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_users_message_count ON users(message_count)').run();
 
       // Message indexes - Added compound index for character_id + timestamp
       sqlite.prepare('CREATE INDEX IF NOT EXISTS idx_messages_user_char ON messages(user_id, character_id)').run();
