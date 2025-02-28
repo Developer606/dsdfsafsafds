@@ -49,29 +49,38 @@ export function SubscriptionDialog({ open, onClose }: SubscriptionDialogProps) {
           </DialogDescription>
         </DialogHeader>
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          {Object.values(subscriptionPlans).map((plan) => (
-            <div
-              key={plan.id}
-              className="p-6 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors"
-            >
-              <h3 className="text-xl font-semibold">{plan.name}</h3>
-              <p className="text-3xl font-bold mt-2">{plan.price}</p>
-              <ul className="mt-4 space-y-2">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                    <span className="text-sm">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              <Button 
-                className="w-full mt-6"
-                onClick={() => handleSubscribe(plan.id)}
+          {Object.values(subscriptionPlans).map((plan) => {
+            let features: string[] = [];
+            try {
+              features = JSON.parse(plan.features);
+            } catch (e) {
+              console.error('Error parsing features for plan:', plan.id, e);
+            }
+
+            return (
+              <div
+                key={plan.id}
+                className="p-6 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors"
               >
-                Subscribe Now
-              </Button>
-            </div>
-          ))}
+                <h3 className="text-xl font-semibold">{plan.name}</h3>
+                <p className="text-3xl font-bold mt-2">{plan.price}</p>
+                <ul className="mt-4 space-y-2">
+                  {features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2">
+                      <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button 
+                  className="w-full mt-6"
+                  onClick={() => handleSubscribe(plan.id)}
+                >
+                  Subscribe Now
+                </Button>
+              </div>
+            );
+          })}
         </div>
         <div className="mt-4 text-center text-sm text-muted-foreground">
           <p>Free trial includes up to 3 character creations.</p>
