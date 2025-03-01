@@ -83,9 +83,10 @@ export function NotificationManagement() {
       toast({
         title: "Success",
         description: "Notification broadcasted to all users",
-        variant: "success",
+        variant: "default"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
       setTitle("");
       setMessage("");
     },
@@ -93,7 +94,7 @@ export function NotificationManagement() {
       toast({
         title: "Error",
         description: "Failed to broadcast notification",
-        variant: "destructive",
+        variant: "destructive"
       });
     },
   });

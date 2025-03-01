@@ -110,7 +110,7 @@ export async function registerRoutes(app: Express) {
                 title,
                 message,
                 read: false,
-                createdAt: new Date()
+                createdAt: new Date().toISOString()
               })
               .returning()
               .get();
@@ -160,7 +160,7 @@ export async function registerRoutes(app: Express) {
         .returning()
         .get();
 
-      res.status(201).json(notification);
+      res.json(notification);
     } catch (error: any) {
       console.error("Error sending notification:", error);
       res.status(500).json({ error: "Failed to send notification" });
