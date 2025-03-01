@@ -58,6 +58,31 @@ export async function initializeNotifications() {
   }
 }
 
+// Function to get all notifications with user details
+export async function getAllNotificationsWithUsers() {
+  const stmt = sqlite.prepare(`
+    SELECT 
+      n.id,
+      n.type,
+      n.title,
+      n.message,
+      n.created_at as createdAt,
+      u.username,
+      u.email as userEmail
+    FROM notifications n
+    JOIN users u ON n.user_id = u.id
+    ORDER BY n.created_at DESC
+  `);
+
+  try {
+    const notifications = stmt.all();
+    return notifications;
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    throw error;
+  }
+}
+
 // Function to create notifications for all users
 export async function createBroadcastNotifications(
   users: Array<{ id: number }>,
@@ -89,6 +114,21 @@ export async function createBroadcastNotifications(
     return true;
   } catch (error) {
     console.error('Error creating broadcast notifications:', error);
+    throw error;
+  }
+}
+
+// Function to delete a notification
+export async function deleteNotification(notificationId: number) {
+  const stmt = sqlite.prepare(`
+    DELETE FROM notifications WHERE id = ?
+  `);
+
+  try {
+    stmt.run(notificationId);
+    return true;
+  } catch (error) {
+    console.error('Error deleting notification:', error);
     throw error;
   }
 }

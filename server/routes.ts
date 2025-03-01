@@ -7,7 +7,7 @@ import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
 import { complaintStorage } from './complaint-storage';
-import { notificationDb, createBroadcastNotifications } from './notification-db';
+import { notificationDb, createBroadcastNotifications, getAllNotificationsWithUsers, deleteNotification } from './notification-db';
 import multer from 'multer';
 import path from "path";
 import fs from "fs";
@@ -125,28 +125,27 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Update GET endpoint for admin notifications
   app.get("/api/admin/notifications/all", isAdmin, async (req, res) => {
     try {
       console.log("Fetching all notifications");
-      const notifications = await notificationDb.query.notifications.findMany({
-        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
-      });
-
-      const notificationsWithUserDetails = await Promise.all(
-        notifications.map(async (notification) => {
-          const user = await storage.getUser(notification.userId);
-          return {
-            ...notification,
-            username: user?.username || 'Deleted User',
-            userEmail: user?.email || 'N/A'
-          };
-        })
-      );
-
+      const notificationsWithUserDetails = await getAllNotificationsWithUsers();
       res.json(notificationsWithUserDetails);
     } catch (error: any) {
       console.error("Error fetching all notifications:", error);
       res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
+  // Add DELETE endpoint for notifications
+  app.delete("/api/admin/notifications/:id", isAdmin, async (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      await deleteNotification(notificationId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ error: "Failed to delete notification" });
     }
   });
 
