@@ -209,9 +209,23 @@ export default function AdminDashboard() {
   const onPlanSubmit = (data: any) => {
     try {
       // Validate features as JSON array
-      const features = JSON.parse(data.features);
-      if (!Array.isArray(features)) {
-        throw new Error("Features must be a valid JSON array");
+      let features;
+      try {
+        features = JSON.parse(data.features);
+        if (!Array.isArray(features)) {
+          throw new Error("Features must be a valid JSON array");
+        }
+        // Validate each feature is a string
+        if (!features.every((f: any) => typeof f === "string")) {
+          throw new Error("Each feature must be a text string");
+        }
+      } catch (e: any) {
+        toast({
+          title: "Invalid Features Format",
+          description: e.message || "Please ensure features is a valid JSON array of strings",
+          variant: "destructive",
+        });
+        return;
       }
 
       if (editingPlan) {
@@ -231,7 +245,7 @@ export default function AdminDashboard() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Please ensure features is a valid JSON array",
+        description: "Failed to save plan. Please check your input and try again.",
         variant: "destructive",
       });
     }
@@ -843,11 +857,31 @@ export default function AdminDashboard() {
   "Feature 2",
   "Feature 3"
 ]`}
-                        className="font-mono"
-                        rows={6}
+                        className="font-mono h-[200px]"
                         {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          // Try to format JSON as user types
+                          try {
+                            const value = e.target.value.trim();
+                            if (value) {
+                              const parsed = JSON.parse(value);
+                              if (Array.isArray(parsed)) {
+                                // Only format if it's a valid array
+                                const formatted = JSON.stringify(parsed, null, 2);
+                                if (formatted !== value) {
+                                  e.target.value = formatted;
+                                  field.onChange(e);
+                                }
+                              }
+                            }
+                          } catch {} // Ignore parsing errors during typing
+                        }}
                       />
                     </FormControl>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Enter features as a JSON array of strings. Each feature should be enclosed in quotes and separated by commas.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
