@@ -55,6 +55,7 @@ export function NotificationManagement() {
       toast({
         title: "Success",
         description: "Notification sent successfully",
+        variant: "success",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
       setTitle("");
@@ -62,9 +63,9 @@ export function NotificationManagement() {
     },
     onError: () => {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to send notification"
+        description: "Failed to send notification",
+        variant: "destructive",
       });
     },
   });
@@ -82,6 +83,7 @@ export function NotificationManagement() {
       toast({
         title: "Success",
         description: "Notification broadcasted to all users",
+        variant: "success",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
       setTitle("");
@@ -89,9 +91,9 @@ export function NotificationManagement() {
     },
     onError: () => {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to broadcast notification"
+        description: "Failed to broadcast notification",
+        variant: "destructive",
       });
     },
   });
@@ -99,17 +101,17 @@ export function NotificationManagement() {
   const handleSendToUser = () => {
     if (!selectedUser) {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Please select a user"
+        description: "Please select a user",
+        variant: "destructive",
       });
       return;
     }
     if (!title || !message) {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Please fill in all fields"
+        description: "Please fill in all fields",
+        variant: "destructive",
       });
       return;
     }
@@ -119,9 +121,9 @@ export function NotificationManagement() {
   const handleBroadcast = () => {
     if (!title || !message) {
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Please fill in all fields"
+        description: "Please fill in all fields",
+        variant: "destructive",
       });
       return;
     }
