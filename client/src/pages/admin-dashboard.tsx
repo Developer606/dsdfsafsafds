@@ -1,26 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Settings } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -43,47 +32,47 @@ import {
 } from "recharts";
 import { type Complaint } from "@shared/schema";
 import { Link } from "wouter";
+import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertSubscriptionPlanSchema } from "@shared/schema";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const [editingPlan, setEditingPlan] = useState<any>(null);
+  const [isPlanDialogOpen, setPlanDialogOpen] = useState(false);
 
-  // Enhanced stats query to include more metrics
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
     refetchInterval: 30000,
   });
 
-  // Query for users with enhanced information
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     refetchInterval: 30000,
   });
 
-  // New query for recent messages
   const { data: recentMessages, isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
     refetchInterval: 30000,
   });
 
-  // New query for character stats
   const { data: characterStats, isLoading: charactersLoading } = useQuery({
     queryKey: ["/api/admin/characters/stats"],
     refetchInterval: 30000,
   });
 
-  // New query for feedback
   const { data: feedback, isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
     refetchInterval: 30000,
   });
 
-  // Add new query for complaints
   const { data: complaints, isLoading: complaintsLoading } = useQuery<Complaint[]>({
     queryKey: ["/api/admin/complaints"],
     refetchInterval: 30000,
   });
 
-  // New queries for analytics
   const { data: activityData, isLoading: activityLoading } = useQuery({
     queryKey: ["/api/admin/analytics/activity"],
     refetchInterval: 30000,
@@ -99,8 +88,11 @@ export default function AdminDashboard() {
     refetchInterval: 30000,
   });
 
+  const { data: plans, isLoading: plansLoading } = useQuery({
+    queryKey: ["/api/admin/plans"],
+    refetchInterval: 30000,
+  });
 
-  // Existing mutations...
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/block`, { blocked });
@@ -115,7 +107,6 @@ export default function AdminDashboard() {
     },
   });
 
-  // Other existing mutations remain unchanged...
   const deleteUser = useMutation({
     mutationFn: async (userId: number) => {
       const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
@@ -125,7 +116,7 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "Success",
-        description: "Userdeleted successfully",
+        description: "User deleted successfully",
       });
     },
   });
@@ -158,21 +149,93 @@ export default function AdminDashboard() {
     },
   });
 
-  // Enhanced data preparation for charts
+  const createPlan = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/admin/plans", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
+      setPlanDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Plan created successfully",
+      });
+    },
+  });
+
+  const updatePlan = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await apiRequest("PATCH", `/api/admin/plans/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
+      setPlanDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Plan updated successfully",
+      });
+    },
+  });
+
+  const deletePlan = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/plans/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
+      toast({
+        title: "Success",
+        description: "Plan deleted successfully",
+      });
+    },
+  });
+
+  const form = useForm({
+    resolver: zodResolver(insertSubscriptionPlanSchema),
+    defaultValues: {
+      id: "",
+      name: "",
+      price: "",
+      features: "",
+    },
+  });
+
+  const onPlanSubmit = (data: any) => {
+    if (editingPlan) {
+      updatePlan.mutate({ id: editingPlan.id, data });
+    } else {
+      createPlan.mutate(data);
+    }
+  };
+
   const subscriptionData = users ? [
-    { name: 'Free', value: users.filter(u => !u.isPremium).length },
-    { name: 'Premium', value: users.filter(u => u.isPremium).length },
+    { name: "Free", value: users.filter((u) => !u.isPremium).length },
+    { name: "Premium", value: users.filter((u) => u.isPremium).length },
   ] : [];
 
   const userStatusData = users ? [
-    { name: 'Active', value: users.filter(u => !u.isBlocked && !u.isRestricted).length },
-    { name: 'Blocked', value: users.filter(u => u.isBlocked).length },
-    { name: 'Restricted', value: users.filter(u => u.isRestricted).length },
+    { name: "Active", value: users.filter((u) => !u.isBlocked && !u.isRestricted).length },
+    { name: "Blocked", value: users.filter((u) => u.isBlocked).length },
+    { name: "Restricted", value: users.filter((u) => u.isRestricted).length },
   ] : [];
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
-  if (statsLoading || usersLoading || messagesLoading || charactersLoading || feedbackLoading || complaintsLoading || activityLoading || messageVolumeLoading || characterPopularityLoading) {
+  if (
+    statsLoading ||
+    usersLoading ||
+    messagesLoading ||
+    charactersLoading ||
+    feedbackLoading ||
+    complaintsLoading ||
+    activityLoading ||
+    messageVolumeLoading ||
+    characterPopularityLoading ||
+    plansLoading
+  ) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -218,7 +281,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Enhanced Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20 hover:border-blue-500/40 transition-colors">
           <div className="flex items-center justify-between">
@@ -250,7 +312,6 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Charts Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-6">
           <h3 className="text-lg font-medium mb-4">Subscription Distribution</h3>
@@ -299,7 +360,6 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Activity Heatmap Section */}
       <Card className="p-6">
         <h3 className="text-lg font-medium mb-4">User Activity Heatmap</h3>
         <div className="h-[300px]">
@@ -321,7 +381,6 @@ export default function AdminDashboard() {
         </div>
       </Card>
 
-      {/* Message Volume Analysis */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-6">
           <h3 className="text-lg font-medium mb-4">Message Volume Trend</h3>
@@ -362,7 +421,6 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Recent Messages Section */}
       <Card className="mt-8">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -396,8 +454,6 @@ export default function AdminDashboard() {
         </div>
       </Card>
 
-
-      {/* User Management Section - Enhanced */}
       <Card className="mt-8">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -453,9 +509,9 @@ export default function AdminDashboard() {
                           <Button variant="outline" className="w-full justify-start">
                             <div className="flex flex-col items-start gap-1">
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                user.isPremium ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                                user.isPremium ? "bg-purple-100 text-purple-800" : "bg-gray-100 text-gray-800"
                               }`}>
-                                {user.isPremium ? 'Premium' : 'Free'}
+                                {user.isPremium ? "Premium" : "Free"}
                               </span>
                               {user.subscriptionTier && (
                                 <span className="text-xs text-muted-foreground">
@@ -469,20 +525,24 @@ export default function AdminDashboard() {
                           <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={() => updateSubscription.mutate({
-                              userId: user.id,
-                              planId: 'free'
-                            })}
+                            onClick={() =>
+                              updateSubscription.mutate({
+                                userId: user.id,
+                                planId: "free",
+                              })
+                            }
                           >
                             Free Plan
                           </DropdownMenuItem>
                           {(Object.keys(subscriptionPlans) as SubscriptionTier[]).map((tier) => (
                             <DropdownMenuItem
                               key={subscriptionPlans[tier].id}
-                              onClick={() => updateSubscription.mutate({
-                                userId: user.id,
-                                planId: subscriptionPlans[tier].id
-                              })}
+                              onClick={() =>
+                                updateSubscription.mutate({
+                                  userId: user.id,
+                                  planId: subscriptionPlans[tier].id,
+                                })
+                              }
                             >
                               {subscriptionPlans[tier].name}
                             </DropdownMenuItem>
@@ -493,9 +553,7 @@ export default function AdminDashboard() {
                     <TableCell>
                       <div className="flex flex-col">
                         <span>
-                          {user.lastLoginAt
-                            ? new Date(user.lastLoginAt).toLocaleDateString()
-                            : "Never"}
+                          {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : "Never"}
                         </span>
                         {user.lastLoginAt && (
                           <span className="text-xs text-muted-foreground">
@@ -584,6 +642,209 @@ export default function AdminDashboard() {
           </div>
         </div>
       </Card>
+
+      <Card className="mt-8">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold">Subscription Plans</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Manage subscription plans and their features
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                setEditingPlan(null);
+                form.reset({
+                  id: "",
+                  name: "",
+                  price: "",
+                  features: "",
+                });
+                setPlanDialogOpen(true);
+              }}
+              className="gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Add New Plan
+            </Button>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>Features</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {plans?.map((plan: any) => (
+                  <TableRow key={plan.id}>
+                    <TableCell>{plan.id}</TableCell>
+                    <TableCell>{plan.name}</TableCell>
+                    <TableCell>{plan.price}</TableCell>
+                    <TableCell>
+                      <ul className="list-disc list-inside">
+                        {JSON.parse(plan.features).map((feature: string, index: number) => (
+                          <li key={index} className="text-sm">{feature}</li>
+                        ))}
+                      </ul>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingPlan(plan);
+                            form.reset({
+                              ...plan,
+                              features: JSON.stringify(JSON.parse(plan.features), null, 2),
+                            });
+                            setPlanDialogOpen(true);
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={deletePlan.isPending}
+                            >
+                              {deletePlan.isPending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Plan</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this plan? This action cannot be undone.
+                                Existing subscribers will not be affected.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deletePlan.mutate(plan.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </Card>
+
+      <Dialog open={isPlanDialogOpen} onOpenChange={setPlanDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingPlan ? "Edit Plan" : "Create New Plan"}
+            </DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onPlanSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Plan ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., basic, premium, pro"
+                        {...field}
+                        disabled={!!editingPlan}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Plan Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Basic Plan" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., $9.99" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="features"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Features (JSON array)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder={`[
+  "Feature 1",
+  "Feature 2",
+  "Feature 3"
+]`}
+                        className="font-mono"
+                        rows={6}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPlanDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createPlan.isPending || updatePlan.isPending}>
+                  {createPlan.isPending || updatePlan.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
+                  {editingPlan ? "Update Plan" : "Create Plan"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
