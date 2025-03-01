@@ -109,6 +109,26 @@ export function NotificationManagement() {
     },
   });
 
+  const deleteNotification = useMutation({
+    mutationFn: async (notificationId: number) => {
+      await apiRequest("DELETE", `/api/admin/notifications/${notificationId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
+      toast({
+        title: "Success",
+        description: "Notification deleted successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete notification",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSendToUser = () => {
     if (!selectedUser) {
       toast({
@@ -150,221 +170,169 @@ export function NotificationManagement() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="notifications">
-        <TabsList>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="database">Database Info</TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardHeader>
+          <CardTitle>Send Notification</CardTitle>
+          <CardDescription>Send notifications to specific users or broadcast to all users</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Select
+              value={notificationType}
+              onValueChange={(value) => setNotificationType(value as NotificationType)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select notification type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="admin_reply">Admin Reply</SelectItem>
+                <SelectItem value="update">Update</SelectItem>
+                <SelectItem value="feature">New Feature</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle>Send Notification</CardTitle>
-              <CardDescription>Send notifications to specific users or broadcast to all users</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Select
-                  value={notificationType}
-                  onValueChange={(value) => setNotificationType(value as NotificationType)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select notification type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin_reply">Admin Reply</SelectItem>
-                    <SelectItem value="update">Update</SelectItem>
-                    <SelectItem value="feature">New Feature</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="space-y-2">
+            <Input
+              placeholder="Notification Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Input
-                  placeholder="Notification Title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
+          <div className="space-y-2">
+            <Textarea
+              placeholder="Notification Message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
 
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Notification Message"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Select
-                  value={selectedUser}
-                  onValueChange={setSelectedUser}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select user (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user: any) => (
-                      <SelectItem key={user.id} value={String(user.id)}>
-                        {user.username} ({user.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-4">
-                <Button
-                  variant="default"
-                  className="flex-1"
-                  onClick={handleSendToUser}
-                  disabled={!selectedUser || sendToUserMutation.isPending}
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Send to User
-                </Button>
-                <Button
-                  variant="default"
-                  className="flex-1"
-                  onClick={handleBroadcast}
-                  disabled={broadcastMutation.isPending}
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  Broadcast to All
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification History</CardTitle>
-              <CardDescription>View all sent notifications</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Search className="w-4 h-4 text-gray-500" />
-                <Input
-                  placeholder="Search notifications..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-4">
-                {filteredNotifications.map((notification) => (
-                  <Alert
-                    key={notification.id}
-                    variant={notification.type === 'update' ? 'default' : notification.type === 'feature' ? 'success' : 'warning'}
-                  >
-                    <Bell className="h-4 w-4" />
-                    <AlertTitle className="flex justify-between">
-                      <span>{notification.title}</span>
-                      <span className="text-sm text-gray-500">
-                        {new Date(notification.createdAt).toLocaleDateString()}
-                      </span>
-                    </AlertTitle>
-                    <AlertDescription className="mt-2 space-y-2">
-                      <p>{notification.message}</p>
-                      <p className="text-sm text-gray-500">
-                        Sent to: {notification.username} ({notification.userEmail})
-                      </p>
-                    </AlertDescription>
-                  </Alert>
+          <div className="space-y-2">
+            <Select
+              value={selectedUser}
+              onValueChange={setSelectedUser}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select user (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user: any) => (
+                  <SelectItem key={user.id} value={String(user.id)}>
+                    {user.username} ({user.email})
+                  </SelectItem>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <TabsContent value="database">
-          <Card>
-            <CardHeader>
-              <CardTitle>Database Structure</CardTitle>
-              <CardDescription>View the notification database schema and tables</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {tableSchema.map((table) => (
-                  <div key={table.table_name} className="space-y-2">
-                    <h3 className="text-lg font-semibold">{table.table_name}</h3>
-                    <pre className="p-4 bg-secondary rounded-lg overflow-x-auto">
-                      <code>{table.table_structure}</code>
-                    </pre>
+          <div className="flex gap-4">
+            <Button
+              variant="default"
+              className="flex-1"
+              onClick={handleSendToUser}
+              disabled={!selectedUser || sendToUserMutation.isPending}
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Send to User
+            </Button>
+            <Button
+              variant="default"
+              className="flex-1"
+              onClick={handleBroadcast}
+              disabled={broadcastMutation.isPending}
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Broadcast to All
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Notification History</CardTitle>
+          <CardDescription>View all sent notifications</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2 mb-4">
+            <Search className="w-4 h-4 text-gray-500" />
+            <Input
+              placeholder="Search notifications..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-4">
+            {filteredNotifications.map((notification) => (
+              <div
+                key={notification.id}
+                className="border rounded-lg p-4 space-y-2 bg-card hover:bg-accent/50 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      notification.type === 'update' ? 'bg-blue-100 text-blue-800' :
+                      notification.type === 'feature' ? 'bg-green-100 text-green-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {notification.type}
+                    </span>
+                    <h3 className="text-lg font-semibold">{notification.title}</h3>
                   </div>
-                ))}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteNotification.mutate(notification.id)}
+                    className="hover:bg-destructive/10"
+                  >
+                    <Bell className="w-4 h-4 mr-2" />
+                    Delete
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">{notification.message}</p>
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                  <span>Sent to: {notification.username} ({notification.userEmail})</span>
+                  <span>{new Date(notification.createdAt).toLocaleString()}</span>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Raw Notification Data</CardTitle>
-              <CardDescription>View raw notification records from the database</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>User ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Created At</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rawNotifications.map((notification: any) => (
-                      <TableRow key={notification.id}>
-                        <TableCell>{notification.id}</TableCell>
-                        <TableCell>{notification.user_id}</TableCell>
-                        <TableCell>{notification.type}</TableCell>
-                        <TableCell>{notification.title}</TableCell>
-                        <TableCell>{notification.formatted_date}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Scheduled Broadcasts</CardTitle>
-              <CardDescription>View raw scheduled broadcast records from the database</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Scheduled For</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {scheduledBroadcasts.map((broadcast: any) => (
-                      <TableRow key={broadcast.id}>
-                        <TableCell>{broadcast.id}</TableCell>
-                        <TableCell>{broadcast.type}</TableCell>
-                        <TableCell>{broadcast.title}</TableCell>
-                        <TableCell>{broadcast.formatted_schedule_time}</TableCell>
-                        <TableCell>{broadcast.sent ? 'Sent' : 'Pending'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle>Database Information</CardTitle>
+          <CardDescription>View raw notification data and database structure</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Created At</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rawNotifications.map((notification: any) => (
+                <TableRow key={notification.id}>
+                  <TableCell>{notification.id}</TableCell>
+                  <TableCell>{notification.type}</TableCell>
+                  <TableCell>{notification.title}</TableCell>
+                  <TableCell>{notification.user_id}</TableCell>
+                  <TableCell>{notification.formatted_date}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
