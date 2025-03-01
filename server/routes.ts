@@ -7,7 +7,7 @@ import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
 import { complaintStorage } from './complaint-storage';
-import { notificationDb, createBroadcastNotifications, getAllNotificationsWithUsers, deleteNotification, createScheduledBroadcast, getScheduledBroadcasts, deleteScheduledBroadcast, getAllNotificationsRaw, getScheduledBroadcastsRaw, getNotificationsTableInfo } from './notification-db';
+import { notificationDb, createBroadcastNotifications, getAllNotificationsWithUsers, deleteNotification, createScheduledBroadcast, getScheduledBroadcasts, deleteScheduledBroadcast } from './notification-db';
 import multer from 'multer';
 import path from "path";
 import fs from "fs";
@@ -1189,37 +1189,6 @@ export async function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error("Error deleting scheduled broadcast:", error);
       res.status(500).json({ error: "Failed to delete scheduled broadcast" });
-    }
-  });
-
-  // Add raw data endpoints for notifications
-  app.get("/api/admin/notifications/raw", isAdmin, async (req, res) => {
-    try {
-      const rawNotifications = await getAllNotificationsRaw();
-      res.json(rawNotifications);
-    } catch (error: any) {
-      console.error("Error fetching raw notifications:", error);
-      res.status(500).json({ error: "Failed to fetch raw notifications" });
-    }
-  });
-
-  app.get("/api/admin/broadcasts/raw", isAdmin, async (req, res) => {
-    try {
-      const rawBroadcasts = await getScheduledBroadcastsRaw();
-      res.json(rawBroadcasts);
-    } catch (error: any) {
-      console.error("Error fetching raw broadcasts:", error);
-      res.status(500).json({ error: "Failed to fetch raw broadcasts" });
-    }
-  });
-
-  app.get("/api/admin/notifications/schema", isAdmin, async (req, res) => {
-    try {
-      const tableInfo = await getNotificationsTableInfo();
-      res.json(tableInfo);
-    } catch (error: any) {
-      console.error("Error fetching table info:", error);
-      res.status(500).json({ error: "Failed to fetch table info" });
     }
   });
 

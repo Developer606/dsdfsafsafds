@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Bell, Users, Send, Search, Database } from "lucide-react";
+import { Bell, Users, Send, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -10,8 +10,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type User, type Notification } from "@shared/schema";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type NotificationType = 'admin_reply' | 'update' | 'feature';
 
@@ -35,26 +33,17 @@ export function NotificationManagement() {
   const [message, setMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Fetch all users for the user selector
   const { data: users = [] } = useQuery({
     queryKey: ["/api/admin/users"],
   });
 
+  // Fetch notification history
   const { data: notifications = [] } = useQuery<NotificationWithUser[]>({
     queryKey: ["/api/admin/notifications/all"],
   });
 
-  const { data: rawNotifications = [] } = useQuery({
-    queryKey: ["/api/admin/notifications/raw"],
-  });
-
-  const { data: scheduledBroadcasts = [] } = useQuery({
-    queryKey: ["/api/admin/broadcasts/raw"],
-  });
-
-  const { data: tableSchema = [] } = useQuery({
-    queryKey: ["/api/admin/notifications/schema"],
-  });
-
+  // Mutation for sending notification to specific user
   const sendToUserMutation = useMutation({
     mutationFn: async () => {
       await apiRequest(
@@ -82,6 +71,7 @@ export function NotificationManagement() {
     },
   });
 
+  // Mutation for broadcasting to all users
   const broadcastMutation = useMutation({
     mutationFn: async () => {
       await apiRequest(
@@ -104,26 +94,6 @@ export function NotificationManagement() {
       toast({
         title: "Error",
         description: error.message || "Failed to broadcast notification",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteNotification = useMutation({
-    mutationFn: async (notificationId: number) => {
-      await apiRequest("DELETE", `/api/admin/notifications/${notificationId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
-      toast({
-        title: "Success",
-        description: "Notification deleted successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete notification",
         variant: "destructive",
       });
     },
@@ -255,8 +225,8 @@ export function NotificationManagement() {
           <CardTitle>Notification History</CardTitle>
           <CardDescription>View all sent notifications</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex gap-2 mb-4">
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
             <Search className="w-4 h-4 text-gray-500" />
             <Input
               placeholder="Search notifications..."
@@ -267,70 +237,26 @@ export function NotificationManagement() {
 
           <div className="space-y-4">
             {filteredNotifications.map((notification) => (
-              <div
+              <Alert
                 key={notification.id}
-                className="border rounded-lg p-4 space-y-2 bg-card hover:bg-accent/50 transition-colors"
+                variant={notification.type === 'update' ? 'default' : notification.type === 'feature' ? 'success' : 'warning'}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      notification.type === 'update' ? 'bg-blue-100 text-blue-800' :
-                      notification.type === 'feature' ? 'bg-green-100 text-green-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {notification.type}
-                    </span>
-                    <h3 className="text-lg font-semibold">{notification.title}</h3>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteNotification.mutate(notification.id)}
-                    className="hover:bg-destructive/10"
-                  >
-                    <Bell className="w-4 h-4 mr-2" />
-                    Delete
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">{notification.message}</p>
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                  <span>Sent to: {notification.username} ({notification.userEmail})</span>
-                  <span>{new Date(notification.createdAt).toLocaleString()}</span>
-                </div>
-              </div>
+                <Bell className="h-4 w-4" />
+                <AlertTitle className="flex justify-between">
+                  <span>{notification.title}</span>
+                  <span className="text-sm text-gray-500">
+                    {new Date(notification.createdAt).toLocaleDateString()}
+                  </span>
+                </AlertTitle>
+                <AlertDescription className="mt-2 space-y-2">
+                  <p>{notification.message}</p>
+                  <p className="text-sm text-gray-500">
+                    Sent to: {notification.username} ({notification.userEmail})
+                  </p>
+                </AlertDescription>
+              </Alert>
             ))}
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Database Information</CardTitle>
-          <CardDescription>View raw notification data and database structure</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Created At</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rawNotifications.map((notification: any) => (
-                <TableRow key={notification.id}>
-                  <TableCell>{notification.id}</TableCell>
-                  <TableCell>{notification.type}</TableCell>
-                  <TableCell>{notification.title}</TableCell>
-                  <TableCell>{notification.user_id}</TableCell>
-                  <TableCell>{notification.formatted_date}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
         </CardContent>
       </Card>
     </div>
