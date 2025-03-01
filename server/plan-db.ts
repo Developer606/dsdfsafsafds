@@ -20,21 +20,21 @@ export const planDb = drizzle(sqlite, { schema });
 export async function initializePlans() {
   console.log('Checking for existing plans...');
   try {
-    // Create subscription plans table
+    // Create subscription plans table if it doesn't exist
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS subscription_plans (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         price TEXT NOT NULL,
         features TEXT NOT NULL,
-        created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+        created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000),
+        updated_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
       )
     `);
 
     // Check if any plans exist
     const existingPlans = sqlite.prepare("SELECT COUNT(*) as count FROM subscription_plans").get();
-    
+
     if (existingPlans.count === 0) {
       // Insert default plans
       const defaultPlans = [
@@ -74,16 +74,19 @@ export async function initializePlans() {
       ];
 
       const insert = sqlite.prepare(
-        'INSERT INTO subscription_plans (id, name, price, features) VALUES (?, ?, ?, ?)'
+        'INSERT INTO subscription_plans (id, name, price, features) VALUES (@id, @name, @price, @features)'
       );
 
-      sqlite.transaction(() => {
+      const insertPlans = sqlite.transaction(() => {
         for (const plan of defaultPlans) {
-          insert.run(plan.id, plan.name, plan.price, plan.features);
+          insert.run(plan);
         }
-      })();
+      });
 
+      insertPlans();
       console.log('Default plans initialized');
+    } else {
+      console.log('Plans already exist in the database');
     }
   } catch (error) {
     console.error('Error initializing plans:', error);
