@@ -7,7 +7,7 @@ import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
 import { complaintStorage } from './complaint-storage';
-import { notificationDb } from './notification-db';
+import { notificationDb, createBroadcastNotifications } from './notification-db';
 import multer from 'multer';
 import path from "path";
 import fs from "fs";
@@ -157,22 +157,14 @@ export async function registerRoutes(app: Express) {
 
       const users = await storage.getAllUsers();
 
-      const notifications = await Promise.all(
-        users.map(user =>
-          notificationDb.insert(notifications)
-            .values({
-              userId: user.id,
-              type,
-              title,
-              message,
-              read: false
-            })
-            .returning()
-            .get()
-        )
-      );
+      // Use the createBroadcastNotifications function from notification-db
+      await createBroadcastNotifications(users, {
+        type,
+        title,
+        message
+      });
 
-      res.status(201).json({ success: true, count: notifications.length });
+      res.status(201).json({ success: true, count: users.length });
     } catch (error: any) {
       console.error("Error broadcasting notification:", error);
       res.status(500).json({ error: "Failed to broadcast notification" });
