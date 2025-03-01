@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./db";
+import { initializeNotifications } from './notification-db';
 import path from "path";
 
 const app = express();
@@ -64,6 +65,10 @@ app.use((req, res, next) => {
   try {
     // Run database migrations before starting the server
     await runMigrations();
+
+    // Initialize notifications database
+    await initializeNotifications();
+    log('Notifications database initialized successfully');
 
     const server = await registerRoutes(app);
 
