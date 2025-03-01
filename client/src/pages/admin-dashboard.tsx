@@ -868,7 +868,7 @@ export default function AdminDashboard() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingPlan ? "Edit Plan" : ""Create New Plan"}
+              {editingPlan ? "Edit Plan" : "Create New Plan"}
             </DialogTitle>
           </DialogHeader>
           <Form {...form}>
@@ -880,7 +880,7 @@ export default function AdminDashboard() {
                   <FormItem>
                     <FormLabel>Plan ID</FormLabel>
                     <FormControl>
-                      <Input
+                      <Input 
                         placeholder="e.g., basic, premium, pro"
                         {...field}
                         disabled={!!editingPlan}
@@ -921,34 +921,16 @@ export default function AdminDashboard() {
                 name="features"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Features (JSON array)</FormLabel>
+                    <FormLabel>Features</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder={`[
   "Feature 1",
   "Feature 2",
   "Feature 3"
-:]`}
+]`}
                         className="font-mono h-[200px]"
                         {...field}
-                        onChange={(e) => {
-                          field.onChange(e);
-                          // Try to format JSON as user types
-                          try {
-                            const value = e.target.value.trim();
-                            if (value) {
-                              const parsed = JSON.parse(value);
-                              if (Array.isArray(parsed)) {
-                                // Only format if it's a valid array
-                                const formatted = JSON.stringify(parsed, null, 2);
-                                if (formatted !== value) {
-                                  e.target.value = formatted;
-                                  field.onChange(e);
-                                }
-                              }
-                            }
-                          } catch {} // Ignore parsing errors during typing
-                        }}
                       />
                     </FormControl>
                     <p className="text-sm text-muted-foreground mt-2">
@@ -958,7 +940,7 @@ export default function AdminDashboard() {
                   </FormItem>
                 )}
               />
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-4">
                 <Button
                   type="button"
                   variant="outline"
@@ -977,7 +959,7 @@ export default function AdminDashboard() {
                   {createPlan.isPending || updatePlan.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : null}
-                  {editingPlan ? "Update Plan" : "Create Plan"}
+                  {editingPlan ? "Save Changes" : "Create Plan"}
                 </Button>
               </div>
             </form>

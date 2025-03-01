@@ -1,18 +1,8 @@
-import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
-import { 
-  insertMessageSchema, 
-  insertCustomCharacterSchema, 
-  subscriptionPlans, 
-  type SubscriptionTier, 
-  insertFeedbackSchema, 
-  FREE_USER_MESSAGE_LIMIT,
-  insertNotificationSchema,
-  notifications 
-} from "@shared/schema";
+import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema, FREE_USER_MESSAGE_LIMIT, insertNotificationSchema, notifications } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
@@ -22,8 +12,9 @@ import multer from 'multer';
 import path from "path";
 import fs from "fs";
 import passport from 'passport';
-import { generateOTP as generateOTPemail, sendVerificationEmail, sendPasswordResetEmail, isValidEmail } from './email';
+import { generateOTP as generateOTPemail, sendVerificationEmail as sendVerificationEmail2, sendPasswordResetEmail, isValidEmail } from './email';
 import { eq } from 'drizzle-orm';
+import type { Express } from "express";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -81,6 +72,7 @@ export async function registerRoutes(app: Express) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
+      console.log("Fetching notifications for user:", req.user.id);
       const notifications = await notificationDb.query.notifications.findMany({
         where: (notifications, { eq }) => eq(notifications.userId, req.user.id),
         orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
@@ -100,6 +92,8 @@ export async function registerRoutes(app: Express) {
       }
 
       const notificationId = parseInt(req.params.id);
+      console.log("Marking notification as read:", notificationId);
+
       await notificationDb.update(notifications)
         .set({ read: true })
         .where(eq(notifications.id, notificationId))
@@ -117,6 +111,8 @@ export async function registerRoutes(app: Express) {
   app.post("/api/admin/notifications", isAdmin, async (req, res) => {
     try {
       const data = insertNotificationSchema.parse(req.body);
+      console.log("Creating new notification:", data);
+
       const notification = await notificationDb.insert(notifications)
         .values(data)
         .returning()
@@ -131,6 +127,7 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/admin/notifications/all", isAdmin, async (req, res) => {
     try {
+      console.log("Fetching all notifications");
       const notifications = await notificationDb.query.notifications.findMany({
         orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
       });
@@ -156,6 +153,8 @@ export async function registerRoutes(app: Express) {
   app.post("/api/admin/notifications/broadcast", isAdmin, async (req, res) => {
     try {
       const { title, message, type } = req.body;
+      console.log("Broadcasting notification:", { title, type });
+
       const users = await storage.getAllUsers();
 
       const notifications = await Promise.all(
@@ -184,6 +183,7 @@ export async function registerRoutes(app: Express) {
     try {
       const { userId } = req.params;
       const { title, message, type } = req.body;
+      console.log("Sending notification to user:", userId);
 
       const user = await storage.getUser(parseInt(userId));
       if (!user) {
@@ -694,7 +694,6 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-
   // Add complaint submission endpoint
   app.post("/api/complaints", upload.single('image'), async (req, res) => {
     try {
@@ -795,7 +794,7 @@ export async function registerRoutes(app: Express) {
         registrationData: registrationData ? JSON.stringify(registrationData) : null
       });
 
-      await sendVerificationEmail(email, otp);
+      await sendVerificationEmail2(email, otp);
       res.json({ message: "OTP sent successfully" });
     } catch (error: any) {
       console.error("Error sending OTP:", error);
