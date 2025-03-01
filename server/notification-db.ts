@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from "@shared/schema";
+import { db } from './db'; // Add this import for user data
 
 // Configure SQLite with WAL mode for better concurrency
 const sqlite = new Database('notifications.db', {
@@ -75,23 +76,40 @@ export async function initializeNotifications() {
 
 // Function to get all notifications with user details
 export async function getAllNotificationsWithUsers() {
-  const stmt = sqlite.prepare(`
-    SELECT 
-      n.id,
-      n.type,
-      n.title,
-      n.message,
-      n.created_at as createdAt,
-      u.username,
-      u.email as userEmail
-    FROM notifications n
-    JOIN users u ON n.user_id = u.id
-    ORDER BY n.created_at DESC
-  `);
-
   try {
-    const notifications = stmt.all();
-    return notifications;
+    // First get all notifications
+    const notificationsStmt = sqlite.prepare(`
+      SELECT 
+        id,
+        user_id as userId,
+        type,
+        title,
+        message,
+        created_at as createdAt
+      FROM notifications
+      ORDER BY created_at DESC
+    `);
+
+    const notifications = notificationsStmt.all();
+
+    // Then fetch user details from the main database for each notification
+    const notificationsWithUsers = await Promise.all(
+      notifications.map(async (notification: any) => {
+        const [user] = await db
+          .select({ username: "username", email: "email" })
+          .from("users")
+          .where({ id: notification.userId });
+
+        return {
+          ...notification,
+          username: user?.username || 'Deleted User',
+          userEmail: user?.email || 'N/A',
+          createdAt: new Date(notification.createdAt).toISOString()
+        };
+      })
+    );
+
+    return notificationsWithUsers;
   } catch (error) {
     console.error('Error fetching notifications:', error);
     throw error;
