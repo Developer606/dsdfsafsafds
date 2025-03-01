@@ -2,7 +2,7 @@ import { createServer } from "http";
 import { storage } from "./storage";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
-import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema, FREE_USER_MESSAGE_LIMIT, insertNotificationSchema, notifications as schema } from "@shared/schema";
+import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema, FREE_USER_MESSAGE_LIMIT, insertNotificationSchema, notifications } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
@@ -73,85 +73,124 @@ export async function registerRoutes(app: Express) {
       }
 
       console.log("Fetching notifications for user:", req.user.id);
-      const userNotifications = await notificationDb.query.notifications.findMany({
+      const notifications = await notificationDb.query.notifications.findMany({
         where: (notifications, { eq }) => eq(notifications.userId, req.user.id),
         orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
       });
 
-      res.json(userNotifications);
+      res.json(notifications);
     } catch (error: any) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ error: "Failed to fetch notifications" });
     }
   });
 
-  // Broadcast notification to all users
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const notificationId = parseInt(req.params.id);
+      console.log("Marking notification as read:", notificationId);
+
+      await notificationDb.update(notifications)
+        .set({ read: true })
+        .where(eq(notifications.id, notificationId))
+        .where(eq(notifications.userId, req.user.id))
+        .execute();
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ error: "Failed to update notification" });
+    }
+  });
+
+  // Admin Notification Routes
+  app.post("/api/admin/notifications", isAdmin, async (req, res) => {
+    try {
+      const data = insertNotificationSchema.parse(req.body);
+      console.log("Creating new notification:", data);
+
+      const notification = await notificationDb.insert(notifications)
+        .values(data)
+        .returning()
+        .get();
+
+      res.status(201).json(notification);
+    } catch (error: any) {
+      console.error("Error creating notification:", error);
+      res.status(500).json({ error: "Failed to create notification" });
+    }
+  });
+
+  app.get("/api/admin/notifications/all", isAdmin, async (req, res) => {
+    try {
+      console.log("Fetching all notifications");
+      const notifications = await notificationDb.query.notifications.findMany({
+        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
+      });
+
+      const notificationsWithUserDetails = await Promise.all(
+        notifications.map(async (notification) => {
+          const user = await storage.getUser(notification.userId);
+          return {
+            ...notification,
+            username: user?.username || 'Deleted User',
+            userEmail: user?.email || 'N/A'
+          };
+        })
+      );
+
+      res.json(notificationsWithUserDetails);
+    } catch (error: any) {
+      console.error("Error fetching all notifications:", error);
+      res.status(500).json({ error: "Failed to fetch notifications" });
+    }
+  });
+
   app.post("/api/admin/notifications/broadcast", isAdmin, async (req, res) => {
     try {
       const { title, message, type } = req.body;
       console.log("Broadcasting notification:", { title, type });
 
-      if (!title || !message || !type) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      // Get all users
       const users = await storage.getAllUsers();
-      console.log(`Broadcasting to ${users.length} users`);
 
-      // Use a transaction to ensure all notifications are created
-      const notifications = await notificationDb.transaction(async (tx) => {
-        const created = [];
-        for (const user of users) {
-          try {
-            const notification = await tx
-              .insert(schema.notifications)
-              .values({
-                userId: user.id,
-                type,
-                title,
-                message,
-                read: false,
-                createdAt: new Date().getTime()
-              })
-              .returning()
-              .get();
-            created.push(notification);
-          } catch (error) {
-            console.error(`Failed to create notification for user ${user.id}:`, error);
-          }
-        }
-        return created;
-      });
+      const notifications = await Promise.all(
+        users.map(user =>
+          notificationDb.insert(notifications)
+            .values({
+              userId: user.id,
+              type,
+              title,
+              message,
+              read: false
+            })
+            .returning()
+            .get()
+        )
+      );
 
-      console.log(`Successfully created ${notifications.length} notifications`);
-
-      res.status(201).json({ 
-        success: true, 
-        count: notifications.length,
-        total: users.length 
-      });
+      res.status(201).json({ success: true, count: notifications.length });
     } catch (error: any) {
       console.error("Error broadcasting notification:", error);
       res.status(500).json({ error: "Failed to broadcast notification" });
     }
   });
 
-  // Send notification to specific user
   app.post("/api/admin/notifications/user/:userId", isAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
       const { title, message, type } = req.body;
       console.log("Sending notification to user:", userId);
 
-      // Verify user exists
       const user = await storage.getUser(parseInt(userId));
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Create notification
-      const notification = await notificationDb.insert(schema.notifications)
+      const notification = await notificationDb.insert(notifications)
         .values({
           userId: parseInt(userId),
           type,
@@ -162,7 +201,7 @@ export async function registerRoutes(app: Express) {
         .returning()
         .get();
 
-      res.json(notification);
+      res.status(201).json(notification);
     } catch (error: any) {
       console.error("Error sending notification:", error);
       res.status(500).json({ error: "Failed to send notification" });
@@ -897,7 +936,7 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/admin/analytics/messages", isAdmin, async (req, res) => {
     try {
-      //      //      // Get message volume for the last 7 days
+      // Get message volume for the last 7 days
       const messages = await storage.getMessagesByCharacter("all");
       const daily = Array(7).fill(0).map((_, index) => {
         const date = new Date();
@@ -1007,10 +1046,10 @@ export async function registerRoutes(app: Express) {
       }
 
       const notificationId = parseInt(req.params.id);
-      await notificationDb.update(schema.notifications)
+      await notificationDb.update(notifications)
         .set({ read: true })
-        .where(eq(schema.notifications.id, notificationId))
-        .where(eq(schema.notifications.userId, req.user.id))
+        .where(eq(notifications.id, notificationId))
+        .where(eq(notifications.userId, req.user.id))
         .execute();
 
       res.json({ success: true });
@@ -1024,7 +1063,7 @@ export async function registerRoutes(app: Express) {
   app.post("/api/admin/notifications", isAdmin, async (req, res) => {
     try {
       const data = insertNotificationSchema.parse(req.body);
-      const notification = await notificationDb.insert(schema.notifications)
+      const notification = await notificationDb.insert(notifications)
         .values(data)
         .returning()
         .get();
@@ -1061,6 +1100,67 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Broadcast notification to all users
+  app.post("/api/admin/notifications/broadcast", isAdmin, async (req, res) => {
+    try {
+      const { title, message, type } = req.body;
+
+      // Get all active users
+      const users = await storage.getAllUsers();
+
+      // Create notifications for all users
+      const notifications = await Promise.all(
+        users.map(user =>
+          notificationDb.insert(notifications)
+            .values({
+              userId: user.id,
+              type,
+              title,
+              message,
+              read: false
+            })
+            .returning()
+            .get()
+        )
+      );
+
+      res.status(201).json({ success: true, count: notifications.length });
+    } catch (error: any) {
+      console.error("Error broadcasting notification:", error);
+      res.status(500).json({ error: "Failed to broadcast notification" });
+    }
+  });
+
+  // Send notification to specific user
+  app.post("/api/admin/notifications/user/:userId", isAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { title, message, type } = req.body;
+
+      // Verify user exists
+      const user = await storage.getUser(parseInt(userId));
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Create notification
+      const notification = await notificationDb.insert(notifications)
+        .values({
+          userId: parseInt(userId),
+          type,
+          title,
+          message,
+          read: false
+        })
+        .returning()
+        .get();
+
+      res.status(201).json(notification);
+    } catch (error: any) {
+      console.error("Error sending notification:", error);
+      res.status(500).json({ error: "Failed to send notification" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

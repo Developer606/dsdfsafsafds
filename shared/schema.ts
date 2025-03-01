@@ -301,7 +301,7 @@ export const notifications = sqliteTable("notifications", {
   userId: integer("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  type: text("type", { enum: ["admin_reply", "update", "feature"] }).notNull(),
+  type: text("type").notNull(), // 'admin_reply' | 'update' | 'feature'
   title: text("title").notNull(),
   message: text("message").notNull(),
   read: integer("read", { mode: "boolean" }).notNull().default(false),
@@ -316,6 +316,7 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   type: true,
   title: true,
   message: true,
+  read: true,
 });
 
 // Add notification types
