@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./db";
 import { initializeNotifications } from './notification-db';
+import { startScheduler } from './scheduler';
 import path from "path";
 
 const app = express();
@@ -69,6 +70,10 @@ app.use((req, res, next) => {
     // Initialize notifications database
     await initializeNotifications();
     log('Notifications database initialized successfully');
+
+    // Start the broadcast scheduler
+    startScheduler();
+    log('Broadcast scheduler started successfully');
 
     const server = await registerRoutes(app);
 
