@@ -12,6 +12,7 @@ import { type Character } from "@shared/characters";
 import { queryClient } from "@/lib/queryClient";
 import { ArrowLeft, Trash2, LogOut, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { SubscriptionManagement } from "@/components/subscription-management";
 import {
   Dialog,
   DialogContent,
@@ -265,6 +266,7 @@ export default function Chat() {
         </div>
 
         <div className="flex items-center gap-2">
+          {user && <SubscriptionManagement user={user} />}
           <Button
             variant="ghost"
             size="icon"
