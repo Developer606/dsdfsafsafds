@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { type User } from "@shared/schema";
 
 interface Notification {
   id: string;
@@ -86,8 +87,8 @@ export function NotificationHeader() {
     }
   };
 
-  // Add query to get user data
-  const { data: user } = useQuery({ 
+  // Add query to get user data with proper type
+  const { data: user } = useQuery<User>({ 
     queryKey: ["/api/user"],
   });
 
@@ -113,8 +114,8 @@ export function NotificationHeader() {
     try {
       const formData = new FormData();
       formData.append('message', complaint);
-      formData.append('name', user.username); // Add user's name
-      formData.append('email', user.email); // Add user's email
+      formData.append('name', user.username); // Now properly typed
+      formData.append('email', user.email); // Now properly typed
       if (selectedImage) {
         formData.append('image', selectedImage);
       }
