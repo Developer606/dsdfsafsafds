@@ -221,6 +221,47 @@ export async function registerRoutes(app: Express) {
   });
 
 
+  // Add new plan management routes before httpServer creation
+  app.get("/api/admin/plans", isAdmin, async (req, res) => {
+    try {
+      const plans = await storage.getSubscriptionPlans();
+      res.json(plans);
+    } catch (error: any) {
+      console.error("Error fetching plans:", error);
+      res.status(500).json({ error: "Failed to fetch plans" });
+    }
+  });
+
+  app.post("/api/admin/plans", isAdmin, async (req, res) => {
+    try {
+      const plan = await storage.createSubscriptionPlan(req.body);
+      res.status(201).json(plan);
+    } catch (error: any) {
+      console.error("Error creating plan:", error);
+      res.status(500).json({ error: "Failed to create plan" });
+    }
+  });
+
+  app.patch("/api/admin/plans/:id", isAdmin, async (req, res) => {
+    try {
+      const plan = await storage.updateSubscriptionPlan(req.params.id, req.body);
+      res.json(plan);
+    } catch (error: any) {
+      console.error("Error updating plan:", error);
+      res.status(500).json({ error: "Failed to update plan" });
+    }
+  });
+
+  app.delete("/api/admin/plans/:id", isAdmin, async (req, res) => {
+    try {
+      await storage.deleteSubscriptionPlan(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting plan:", error);
+      res.status(500).json({ error: "Failed to delete plan" });
+    }
+  });
+
   app.get("/api/characters", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
