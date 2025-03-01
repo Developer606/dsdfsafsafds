@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { type User, type Notification } from "@shared/schema";
 
 type NotificationType = 'admin_reply' | 'update' | 'feature';
 
@@ -83,16 +84,16 @@ export function NotificationManagement() {
       toast({
         title: "Success",
         description: "Notification broadcasted to all users",
-        variant: "success",
+        variant: "default"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
       setTitle("");
       setMessage("");
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to broadcast notification",
+        description: error.message || "Failed to broadcast notification",
         variant: "destructive",
       });
     },

@@ -57,3 +57,38 @@ export async function initializeNotifications() {
     throw error;
   }
 }
+
+// Function to create notifications for all users
+export async function createBroadcastNotifications(
+  users: Array<{ id: number }>,
+  notificationData: {
+    type: string;
+    title: string;
+    message: string;
+  }
+) {
+  const insertStmt = sqlite.prepare(`
+    INSERT INTO notifications (user_id, type, title, message)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  const transaction = sqlite.transaction((users) => {
+    for (const user of users) {
+      insertStmt.run(
+        user.id,
+        notificationData.type,
+        notificationData.title,
+        notificationData.message
+      );
+    }
+  });
+
+  try {
+    transaction(users);
+    console.log(`Broadcast notification created for ${users.length} users`);
+    return true;
+  } catch (error) {
+    console.error('Error creating broadcast notifications:', error);
+    throw error;
+  }
+}
