@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Settings } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Settings, LogOut } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -37,11 +37,33 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSubscriptionPlanSchema } from "@shared/schema";
+import { useLocation } from "wouter";
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [editingPlan, setEditingPlan] = useState<any>(null);
   const [isPlanDialogOpen, setPlanDialogOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      const res = await apiRequest("POST", "/api/admin/logout");
+      if (res.ok) {
+        queryClient.setQueryData(["/api/user"], null);
+        toast({
+          title: "Success",
+          description: "Logged out successfully",
+        });
+        setLocation("/admin/login");
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to logout",
+      });
+    }
+  };
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/dashboard/stats"],
@@ -288,6 +310,14 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Admin Dashboard</h1>
         <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
           <Link href="/admin/dashboard/complaints">
             <Button variant="outline" className="gap-2">
               <AlertCircle className="h-4 w-4" />
@@ -844,7 +874,7 @@ export default function AdminDashboard() {
                   </FormItem>
                 )}
               />
-              <FormField
+<FormField
                 control={form.control}
                 name="features"
                 render={({ field }) => (
@@ -856,7 +886,7 @@ export default function AdminDashboard() {
   "Feature 1",
   "Feature 2",
   "Feature 3"
-]`}
+:]`}
                         className="font-mono h-[200px]"
                         {...field}
                         onChange={(e) => {
