@@ -34,23 +34,38 @@ export async function initializeNotifications() {
       )
     `);
 
+    // Create scheduled_broadcasts table
+    sqlite.exec(`
+      CREATE TABLE IF NOT EXISTS scheduled_broadcasts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        scheduled_for INTEGER NOT NULL,
+        created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000),
+        sent INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+
     // Create indexes for better performance
     sqlite.exec(`
       CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
       CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(read);
       CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
+      CREATE INDEX IF NOT EXISTS idx_scheduled_broadcasts_time ON scheduled_broadcasts(scheduled_for);
+      CREATE INDEX IF NOT EXISTS idx_scheduled_broadcasts_sent ON scheduled_broadcasts(sent);
     `);
 
     // Verify table creation
-    const tableExists = sqlite.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='notifications'"
+    const tablesExist = sqlite.prepare(
+      "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name IN ('notifications', 'scheduled_broadcasts')"
     ).get();
 
-    if (tableExists) {
-      console.log('Notifications table initialized successfully');
+    if (tablesExist.count === 2) {
+      console.log('Notifications tables initialized successfully');
       return true;
     } else {
-      throw new Error('Failed to create notifications table');
+      throw new Error('Failed to create notification tables');
     }
   } catch (error) {
     console.error('Error initializing notifications:', error);
@@ -129,6 +144,91 @@ export async function deleteNotification(notificationId: number) {
     return true;
   } catch (error) {
     console.error('Error deleting notification:', error);
+    throw error;
+  }
+}
+
+// Function to create a scheduled broadcast
+export async function createScheduledBroadcast(
+  scheduledBroadcast: {
+    type: string;
+    title: string;
+    message: string;
+    scheduledFor: number;
+  }
+) {
+  const stmt = sqlite.prepare(`
+    INSERT INTO scheduled_broadcasts (type, title, message, scheduled_for)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  try {
+    const result = stmt.run(
+      scheduledBroadcast.type,
+      scheduledBroadcast.title,
+      scheduledBroadcast.message,
+      scheduledBroadcast.scheduledFor
+    );
+    return result.lastInsertRowid;
+  } catch (error) {
+    console.error('Error creating scheduled broadcast:', error);
+    throw error;
+  }
+}
+
+// Function to get all scheduled broadcasts
+export async function getScheduledBroadcasts() {
+  const stmt = sqlite.prepare(`
+    SELECT 
+      id,
+      type,
+      title,
+      message,
+      scheduled_for as scheduledFor,
+      created_at as createdAt,
+      sent
+    FROM scheduled_broadcasts
+    WHERE sent = 0
+    ORDER BY scheduled_for ASC
+  `);
+
+  try {
+    return stmt.all();
+  } catch (error) {
+    console.error('Error fetching scheduled broadcasts:', error);
+    throw error;
+  }
+}
+
+// Function to mark a scheduled broadcast as sent
+export async function markScheduledBroadcastAsSent(id: number) {
+  const stmt = sqlite.prepare(`
+    UPDATE scheduled_broadcasts
+    SET sent = 1
+    WHERE id = ?
+  `);
+
+  try {
+    stmt.run(id);
+    return true;
+  } catch (error) {
+    console.error('Error marking scheduled broadcast as sent:', error);
+    throw error;
+  }
+}
+
+// Function to delete a scheduled broadcast
+export async function deleteScheduledBroadcast(id: number) {
+  const stmt = sqlite.prepare(`
+    DELETE FROM scheduled_broadcasts
+    WHERE id = ?
+  `);
+
+  try {
+    stmt.run(id);
+    return true;
+  } catch (error) {
+    console.error('Error deleting scheduled broadcast:', error);
     throw error;
   }
 }

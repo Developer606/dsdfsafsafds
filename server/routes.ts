@@ -7,7 +7,7 @@ import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
 import { complaintStorage } from './complaint-storage';
-import { notificationDb, createBroadcastNotifications, getAllNotificationsWithUsers, deleteNotification } from './notification-db';
+import { notificationDb, createBroadcastNotifications, getAllNotificationsWithUsers, deleteNotification, createScheduledBroadcast, getScheduledBroadcasts, deleteScheduledBroadcast } from './notification-db';
 import multer from 'multer';
 import path from "path";
 import fs from "fs";
@@ -889,8 +889,7 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: "Invalid or expired OTP" });
       }
 
-      // Hash new password and update
-      const hashedPassword = await hashPassword(newPassword);
+      // Hash new password and update      const hashedPassword = await hashPassword(newPassword);
       await storage.updateUserPassword(user.id, hashedPassword);
 
       res.json({ message: "Password reset successfully" });
@@ -1150,6 +1149,46 @@ export async function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error("Error sending notification:", error);
       res.status(500).json({ error: "Failed to send notification" });
+    }
+  });
+
+  // Add new endpoints for scheduled broadcasts before httpServer creation
+  app.post("/api/admin/broadcasts/schedule", isAdmin, async (req, res) => {
+    try {
+      const { type, title, message, scheduledFor } = req.body;
+
+      const scheduledBroadcast = await createScheduledBroadcast({
+        type,
+        title,
+        message,
+        scheduledFor: new Date(scheduledFor).getTime()
+      });
+
+      res.status(201).json({ success: true, id: scheduledBroadcast });
+    } catch (error: any) {
+      console.error("Error scheduling broadcast:", error);
+      res.status(500).json({ error: "Failed to schedule broadcast" });
+    }
+  });
+
+  app.get("/api/admin/broadcasts/scheduled", isAdmin, async (req, res) => {
+    try {
+      const scheduledBroadcasts = await getScheduledBroadcasts();
+      res.json(scheduledBroadcasts);
+    } catch (error: any) {
+      console.error("Error fetching scheduled broadcasts:", error);
+      res.status(500).json({ error: "Failed to fetch scheduled broadcasts" });
+    }
+  });
+
+  app.delete("/api/admin/broadcasts/scheduled/:id", isAdmin, async (req, res) => {
+    try {
+      const broadcastId = parseInt(req.params.id);
+      await deleteScheduledBroadcast(broadcastId);
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting scheduled broadcast:", error);
+      res.status(500).json({ error: "Failed to delete scheduled broadcast" });
     }
   });
 

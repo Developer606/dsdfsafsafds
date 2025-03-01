@@ -322,3 +322,28 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
 // Add notification types
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Add scheduled broadcasts table schema
+export const scheduledBroadcasts = sqliteTable("scheduled_broadcasts", {
+  id: integer("id").primaryKey(),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  scheduledFor: integer("scheduled_for", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  sent: integer("sent", { mode: "boolean" }).notNull().default(false),
+});
+
+// Add scheduled broadcast schemas for validation
+export const insertScheduledBroadcastSchema = createInsertSchema(scheduledBroadcasts).pick({
+  type: true,
+  title: true,
+  message: true,
+  scheduledFor: true,
+});
+
+// Add scheduled broadcast types
+export type ScheduledBroadcast = typeof scheduledBroadcasts.$inferSelect;
+export type InsertScheduledBroadcast = z.infer<typeof insertScheduledBroadcastSchema>;
