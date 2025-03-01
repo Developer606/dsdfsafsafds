@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,15 +13,30 @@ import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, Message
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+  LineChart,
+  Line,
+  Area,
+  AreaChart,
+} from "recharts";
+import { type Complaint } from "@shared/schema";
+import { Link } from "wouter";
+import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSubscriptionPlanSchema } from "@shared/schema";
-import { User, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
-import { useState } from "react";
-import { Link } from "wouter";
-import { type Complaint } from "@shared/schema";
-import { type Feedback } from "@shared/schema";
-
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -644,7 +659,7 @@ export default function AdminDashboard() {
                   id: "",
                   name: "",
                   price: "",
-                  features: "[]",
+                  features: "",
                 });
                 setPlanDialogOpen(true);
               }}
