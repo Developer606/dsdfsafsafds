@@ -20,9 +20,9 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
-  // Fetch plans from the API
+  // Fetch plans from the public API endpoint
   const { data: plans, isLoading: plansLoading } = useQuery({
-    queryKey: ["/api/admin/plans"],
+    queryKey: ["/api/plans"],
   });
 
   const upgradePlan = useMutation({

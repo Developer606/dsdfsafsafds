@@ -868,6 +868,17 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Add a public route for subscription plans
+  app.get("/api/plans", async (req, res) => {
+    try {
+      const plans = await storage.getSubscriptionPlans();
+      res.json(plans);
+    } catch (error: any) {
+      console.error("Error fetching plans:", error);
+      res.status(500).json({ error: "Failed to fetch plans" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
