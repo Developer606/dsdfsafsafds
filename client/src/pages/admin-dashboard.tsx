@@ -70,6 +70,16 @@ interface CharacterPopularityData {
   }>;
 }
 
+interface NotificationData {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  username: string;
+  createdAt: string;
+}
+
+
 export default function AdminDashboard() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -144,6 +154,11 @@ export default function AdminDashboard() {
 
   const { data: plans = [], isLoading: plansLoading } = useQuery({
     queryKey: ["/api/admin/plans"],
+    refetchInterval: 30000,
+  });
+
+  const { data: notifications = [], isLoading: notificationsLoading } = useQuery<NotificationData[]>({
+    queryKey: ["/api/admin/notifications"],
     refetchInterval: 30000,
   });
 
@@ -250,6 +265,21 @@ export default function AdminDashboard() {
     },
   });
 
+  const deleteNotification = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const res = await apiRequest("DELETE", `/api/admin/notifications/${notificationId}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] });
+      toast({
+        title: "Success",
+        description: "Notification deleted successfully",
+      });
+    },
+  });
+
+
   const form = useForm({
     resolver: zodResolver(insertSubscriptionPlanSchema),
     defaultValues: {
@@ -328,7 +358,8 @@ export default function AdminDashboard() {
     activityLoading ||
     messageVolumeLoading ||
     characterPopularityLoading ||
-    plansLoading
+    plansLoading ||
+    notificationsLoading
   ) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -841,6 +872,96 @@ export default function AdminDashboard() {
                           </AlertDialogContent>
                         </AlertDialog>
                       </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </Card>
+
+      {/* Notification History Section */}
+      <Card className="mt-8">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold">Notification History</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                View and manage sent notifications
+              </p>
+            </div>
+            <MessageCircle className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Message</TableHead>
+                  <TableHead>Recipient</TableHead>
+                  <TableHead>Sent At</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {notifications?.map((notification: any) => (
+                  <TableRow key={notification.id}>
+                    <TableCell>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        notification.type === 'update' ? 'bg-blue-100 text-blue-800' :
+                        notification.type === 'feature' ? 'bg-green-100 text-green-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {notification.type}
+                      </span>
+                    </TableCell>
+                    <TableCell className="font-medium">{notification.title}</TableCell>
+                    <TableCell className="max-w-md truncate">{notification.message}</TableCell>
+                    <TableCell>{notification.username}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>
+                          {new Date(notification.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(notification.createdAt).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            disabled={deleteNotification.isPending}
+                          >
+                            {deleteNotification.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Notification</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this notification? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteNotification.mutate(notification.id)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}
