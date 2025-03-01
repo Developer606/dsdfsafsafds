@@ -1,10 +1,11 @@
 import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
-import { messages, users, customCharacters } from "@shared/schema";
+import { messages, users, customCharacters, subscriptionPlansTable, type SubscriptionPlan, type InsertSubscriptionPlan } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
+import { planDb } from './plan-db';
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
@@ -49,6 +50,13 @@ export interface IStorage {
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
   getUserMessageCount(userId: number): Promise<number>;
+
+  // Add new methods for subscription plan management
+  getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
+  getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined>;
+  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
+  updateSubscriptionPlan(id: string, plan: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan>;
+  deleteSubscriptionPlan(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -334,6 +342,45 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.id, userId));
     return user?.messageCount || 0;
+  }
+
+  // Update subscription plan methods to use planDb
+  async getSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return await planDb.select().from(subscriptionPlansTable);
+  }
+
+  async getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await planDb
+      .select()
+      .from(subscriptionPlansTable)
+      .where(eq(subscriptionPlansTable.id, id));
+    return plan;
+  }
+
+  async createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+    const [newPlan] = await planDb
+      .insert(subscriptionPlansTable)
+      .values(plan)
+      .returning();
+    return newPlan;
+  }
+
+  async updateSubscriptionPlan(
+    id: string,
+    plan: Partial<InsertSubscriptionPlan>
+  ): Promise<SubscriptionPlan> {
+    const [updatedPlan] = await planDb
+      .update(subscriptionPlansTable)
+      .set({ ...plan, updatedAt: new Date() })
+      .where(eq(subscriptionPlansTable.id, id))
+      .returning();
+    return updatedPlan;
+  }
+
+  async deleteSubscriptionPlan(id: string): Promise<void> {
+    await planDb
+      .delete(subscriptionPlansTable)
+      .where(eq(subscriptionPlansTable.id, id));
   }
 }
 

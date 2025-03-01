@@ -200,6 +200,31 @@ export const subscriptionPlans = {
   },
 } as const;
 
+// Add subscription plan table
+export const subscriptionPlansTable = sqliteTable("subscription_plans", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  price: text("price").notNull(),
+  features: text("features").notNull(), // Stored as JSON string
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Add insert schema for subscription plans
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlansTable).pick({
+  id: true,
+  name: true,
+  price: true,
+  features: true,
+});
+
+export type SubscriptionPlan = typeof subscriptionPlansTable.$inferSelect;
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+
 export type SubscriptionTier = keyof typeof subscriptionPlans;
 export type SubscriptionStatus = "trial" | "active" | "cancelled" | "expired";
 
