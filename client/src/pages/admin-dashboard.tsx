@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Settings, LogOut } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Settings, LogOut, Bell } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationManagement } from "@/components/admin/notification-management";
 import {
   BarChart,
   Bar,
@@ -38,6 +39,36 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSubscriptionPlanSchema } from "@shared/schema";
 import { useLocation } from "wouter";
+
+// Type definitions for stats and analytics data
+interface DashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  premiumUsers: number;
+  totalCharacters: number;
+}
+
+interface ActivityData {
+  hourlyActivity: Array<{
+    hour: number;
+    activeUsers: number;
+  }>;
+}
+
+interface MessageVolumeData {
+  daily: Array<{
+    date: string;
+    messages: number;
+  }>;
+}
+
+interface CharacterPopularityData {
+  characters: Array<{
+    name: string;
+    messageCount: number;
+    userCount: number;
+  }>;
+}
 
 export default function AdminDashboard() {
   const { toast } = useToast();
@@ -65,52 +96,53 @@ export default function AdminDashboard() {
     }
   };
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  // Add proper typing to all queries
+  const { data: stats = {} as DashboardStats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/dashboard/stats"],
     refetchInterval: 30000,
   });
 
-  const { data: users, isLoading: usersLoading } = useQuery<User[]>({
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     refetchInterval: 30000,
   });
 
-  const { data: recentMessages, isLoading: messagesLoading } = useQuery({
+  const { data: recentMessages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
     refetchInterval: 30000,
   });
 
-  const { data: characterStats, isLoading: charactersLoading } = useQuery({
+  const { data: characterStats = {}, isLoading: charactersLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/characters/stats"],
     refetchInterval: 30000,
   });
 
-  const { data: feedback, isLoading: feedbackLoading } = useQuery<Feedback[]>({
+  const { data: feedback = [], isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
     refetchInterval: 30000,
   });
 
-  const { data: complaints, isLoading: complaintsLoading } = useQuery<Complaint[]>({
+  const { data: complaints = [], isLoading: complaintsLoading } = useQuery<Complaint[]>({
     queryKey: ["/api/admin/complaints"],
     refetchInterval: 30000,
   });
 
-  const { data: activityData, isLoading: activityLoading } = useQuery({
+  const { data: activityData = { hourlyActivity: [] }, isLoading: activityLoading } = useQuery<ActivityData>({
     queryKey: ["/api/admin/analytics/activity"],
     refetchInterval: 30000,
   });
 
-  const { data: messageVolume, isLoading: messageVolumeLoading } = useQuery({
+  const { data: messageVolume = { daily: [] }, isLoading: messageVolumeLoading } = useQuery<MessageVolumeData>({
     queryKey: ["/api/admin/analytics/messages"],
     refetchInterval: 30000,
   });
 
-  const { data: characterPopularity, isLoading: characterPopularityLoading } = useQuery({
+  const { data: characterPopularity = { characters: [] }, isLoading: characterPopularityLoading } = useQuery<CharacterPopularityData>({
     queryKey: ["/api/admin/analytics/characters/popularity"],
     refetchInterval: 30000,
   });
 
-  const { data: plans, isLoading: plansLoading } = useQuery({
+  const { data: plans = [], isLoading: plansLoading } = useQuery({
     queryKey: ["/api/admin/plans"],
     refetchInterval: 30000,
   });
@@ -251,8 +283,8 @@ export default function AdminDashboard() {
       }
 
       if (editingPlan) {
-        updatePlan.mutate({ 
-          id: editingPlan.id, 
+        updatePlan.mutate({
+          id: editingPlan.id,
           data: {
             ...data,
             features: JSON.stringify(features)
@@ -308,7 +340,9 @@ export default function AdminDashboard() {
   return (
     <div className="container mx-auto p-8 space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">Admin Dashboard</h1>
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+          Admin Dashboard
+        </h1>
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
@@ -340,16 +374,24 @@ export default function AdminDashboard() {
               ) : null}
             </Button>
           </Link>
-          <div className="flex items-center gap-2">
-            {(statsLoading || usersLoading) && (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            )}
-            <span className="text-sm text-muted-foreground">
-              Auto-refreshing every 30 seconds
-            </span>
-          </div>
         </div>
       </div>
+
+      {/* Notifications Management Section */}
+      <Card className="mt-8">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-bold">Notification Management</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Send notifications to users and manage broadcast messages
+              </p>
+            </div>
+            <Bell className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <NotificationManagement />
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20 hover:border-blue-500/40 transition-colors">
@@ -826,7 +868,7 @@ export default function AdminDashboard() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingPlan ? "Edit Plan" : "Create New Plan"}
+              {editingPlan ? "Edit Plan" : ""Create New Plan"}
             </DialogTitle>
           </DialogHeader>
           <Form {...form}>
@@ -874,7 +916,7 @@ export default function AdminDashboard() {
                   </FormItem>
                 )}
               />
-<FormField
+              <FormField
                 control={form.control}
                 name="features"
                 render={({ field }) => (
@@ -928,8 +970,8 @@ export default function AdminDashboard() {
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={createPlan.isPending || updatePlan.isPending}
                 >
                   {createPlan.isPending || updatePlan.isPending ? (

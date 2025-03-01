@@ -1,60 +1,55 @@
 import { useState, useRef } from "react";
 import { Bell, AlertCircle, Image as ImageIcon, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { type User } from "@shared/schema";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { type User, type Notification } from "@shared/schema";
 
 interface Notification {
   id: string;
   type: 'admin_reply' | 'update' | 'feature';
   title: string;
   message: string;
-  timestamp: Date;
+  createdAt: Date; // Changed timestamp to createdAt
   read: boolean;
 }
 
 export function NotificationHeader() {
-  const [notifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'update',
-      title: 'New App Update',
-      message: "We've added new character customization features!",
-      timestamp: new Date(),
-      read: false
-    },
-    {
-      id: '2',
-      type: 'feature',
-      title: 'New Feature Available',
-      message: 'Try out our new multilingual chat support',
-      timestamp: new Date(Date.now() - 86400000),
-      read: false
-    }
-  ]);
-
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
   const [complaint, setComplaint] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Query notifications from the API
+  const { data: notifications = [], refetch: refetchNotifications } = useQuery<Notification[]>({
+    queryKey: ["/api/notifications"],
+  });
+
+  // Add mutation for marking notifications as read
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationId: string) => { // Changed to string
+      await apiRequest("PATCH", `/api/notifications/${notificationId}/read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to mark notification as read"
+      });
+    }
+  });
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +83,7 @@ export function NotificationHeader() {
   };
 
   // Add query to get user data with proper type
-  const { data: user } = useQuery<User>({ 
+  const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
@@ -157,9 +152,9 @@ export function NotificationHeader() {
       <div className="container mx-auto px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img 
-              src="/images/logo.png" 
-              alt="AnimeChat" 
+            <img
+              src="/images/logo.png"
+              alt="AnimeChat"
               className="h-8 w-8"
             />
             <span className="text-lg font-semibold text-[#075e54] dark:text-[#00a884]">
@@ -202,6 +197,7 @@ export function NotificationHeader() {
                             "p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors",
                             !notification.read && "bg-blue-50 dark:bg-blue-900/10"
                           )}
+                          onClick={() => markAsReadMutation.mutate(notification.id)}
                         >
                           <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">
                             {notification.title}
@@ -210,7 +206,7 @@ export function NotificationHeader() {
                             {notification.message}
                           </p>
                           <span className="text-xs text-gray-500 dark:text-gray-500 mt-2 block">
-                            {new Date(notification.timestamp).toLocaleDateString()}
+                            {new Date(notification.createdAt).toLocaleDateString()}
                           </span>
                         </motion.div>
                       ))}
@@ -263,9 +259,9 @@ export function NotificationHeader() {
 
               {imagePreview ? (
                 <div className="relative rounded-lg overflow-hidden">
-                  <img 
-                    src={imagePreview} 
-                    alt="Selected" 
+                  <img
+                    src={imagePreview}
+                    alt="Selected"
                     className="w-full h-40 object-cover"
                   />
                   <button
