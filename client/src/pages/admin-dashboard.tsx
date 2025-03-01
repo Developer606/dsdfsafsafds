@@ -9,11 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Settings, LogOut, Bell } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Settings, LogOut } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { NotificationManagement } from "@/components/admin/notification-management";
+import { NotificationPopover } from "@/components/admin/notification-popover";
 import {
   BarChart,
   Bar,
@@ -344,6 +344,7 @@ export default function AdminDashboard() {
           Admin Dashboard
         </h1>
         <div className="flex items-center gap-4">
+          <NotificationPopover />
           <Button
             variant="outline"
             className="gap-2"
@@ -377,21 +378,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Notifications Management Section */}
-      <Card className="mt-8">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold">Notification Management</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Send notifications to users and manage broadcast messages
-              </p>
-            </div>
-            <Bell className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <NotificationManagement />
-        </div>
-      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20 hover:border-blue-500/40 transition-colors">
@@ -880,7 +866,7 @@ export default function AdminDashboard() {
                   <FormItem>
                     <FormLabel>Plan ID</FormLabel>
                     <FormControl>
-                      <Input 
+                      <Input
                         placeholder="e.g., basic, premium, pro"
                         {...field}
                         disabled={!!editingPlan}
