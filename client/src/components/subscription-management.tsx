@@ -7,9 +7,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { subscriptionPlans, type SubscriptionTier, type User } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { type User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Loader2 } from "lucide-react";
 
 interface SubscriptionManagementProps {
   user: User;
@@ -18,6 +19,11 @@ interface SubscriptionManagementProps {
 export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+
+  // Fetch plans from the API
+  const { data: plans, isLoading: plansLoading } = useQuery({
+    queryKey: ["/api/admin/plans"],
+  });
 
   const upgradePlan = useMutation({
     mutationFn: async (planId: string) => {
@@ -41,7 +47,17 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
     }
   });
 
-  const planDetails = user.subscriptionTier ? subscriptionPlans[user.subscriptionTier as SubscriptionTier] : null;
+  // Get current plan details
+  const currentPlan = plans?.find(plan => plan.id === user.subscriptionTier);
+
+  if (plansLoading) {
+    return (
+      <Button variant="outline" disabled>
+        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+        Loading...
+      </Button>
+    );
+  }
 
   return (
     <>
@@ -64,7 +80,7 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
           <div className="mt-4 md:mt-6">
             <div className="text-center mb-6 md:mb-8 p-4 md:p-6 bg-accent/50 rounded-lg">
               <h3 className="text-lg md:text-xl font-semibold mb-2">
-                Current Plan: {user.isPremium ? planDetails?.name || "Premium" : "Free"}
+                Current Plan: {currentPlan?.name || "Free"}
               </h3>
               {user.subscriptionExpiresAt && (
                 <p className="text-sm md:text-base text-muted-foreground">
@@ -74,122 +90,36 @@ export function SubscriptionManagement({ user }: SubscriptionManagementProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-              {/* Basic Plan */}
-              <div className="flex flex-col p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
-                <div className="text-center mb-3 md:mb-4">
-                  <h4 className="text-lg md:text-xl font-bold">Basic Plan</h4>
-                  <p className="text-2xl md:text-3xl font-bold mt-2">$4.99<span className="text-sm">/month</span></p>
+              {plans?.map((plan) => (
+                <div key={plan.id} className="flex flex-col p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
+                  <div className="text-center mb-3 md:mb-4">
+                    <h4 className="text-lg md:text-xl font-bold">{plan.name}</h4>
+                    <p className="text-2xl md:text-3xl font-bold mt-2">{plan.price}<span className="text-sm">/month</span></p>
+                  </div>
+                  <ul className="space-y-2 md:space-y-3 flex-grow">
+                    {JSON.parse(plan.features).map((feature: string, index: number) => (
+                      <li key={index} className="flex items-start gap-2 text-xs md:text-sm">
+                        <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    className="w-full text-sm md:text-base mt-4"
+                    onClick={() => upgradePlan.mutate(plan.id)}
+                    disabled={upgradePlan.isPending || (user.subscriptionTier === plan.id && user.isPremium)}
+                  >
+                    {upgradePlan.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Updating...
+                      </>
+                    ) : "Select Plan"}
+                  </Button>
                 </div>
-                <ul className="space-y-2 md:space-y-3 flex-grow">
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Create up to 5 characters
-                  </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Basic character customization
-                  </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Standard support
-                  </li>
-                </ul>
-                <Button 
-                  className="w-full text-sm md:text-base mt-4"
-                  onClick={() => upgradePlan.mutate("basic")}
-                  disabled={upgradePlan.isPending || (user.subscriptionTier === "basic" && user.isPremium)}
-                >
-                  Select Plan
-                </Button>
-              </div>
-
-              {/* Premium Plan */}
-              <div className="flex flex-col p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
-                <div className="text-center mb-3 md:mb-4">
-                  <h4 className="text-lg md:text-xl font-bold">Premium Plan</h4>
-                  <p className="text-2xl md:text-3xl font-bold mt-2">$9.99<span className="text-sm">/month</span></p>
-                </div>
-                <ul className="space-y-2 md:space-y-3 flex-grow">
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Unlimited character creation
-                  </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Advanced character customization
-                  </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Priority support
-                  </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Early access to new features
-                  </li>
-                </ul>
-                <Button 
-                  className="w-full text-sm md:text-base mt-4"
-                  onClick={() => upgradePlan.mutate("premium")}
-                  disabled={upgradePlan.isPending || (user.subscriptionTier === "premium" && user.isPremium)}
-                >
-                  Select Plan
-                </Button>
-              </div>
-
-              {/* Pro Plan */}
-              <div className="flex flex-col p-4 md:p-6 rounded-xl border-2 border-border hover:border-primary/50 transition-all duration-200">
-                <div className="text-center mb-3 md:mb-4">
-                  <h4 className="text-lg md:text-xl font-bold">Pro Plan</h4>
-                  <p className="text-2xl md:text-3xl font-bold mt-2">$19.99<span className="text-sm">/month</span></p>
-                </div>
-                <ul className="space-y-2 md:space-y-3 flex-grow">
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Everything in Premium
-                  </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Custom character API access
-                  </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    Dedicated support
-                  </li>
-                  <li className="flex items-start gap-2 text-xs md:text-sm">
-                    <svg className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                    </svg>
-                    White-label option
-                  </li>
-                </ul>
-                <Button 
-                  className="w-full text-sm md:text-base mt-4"
-                  onClick={() => upgradePlan.mutate("pro")}
-                  disabled={upgradePlan.isPending || (user.subscriptionTier === "pro" && user.isPremium)}
-                >
-                  Select Plan
-                </Button>
-              </div>
+              ))}
             </div>
 
             <p className="text-xs md:text-sm text-muted-foreground text-center mt-4 md:mt-6">
