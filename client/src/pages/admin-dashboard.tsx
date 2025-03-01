@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -157,6 +157,7 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       setPlanDialogOpen(false);
+      form.reset();
       toast({
         title: "Success",
         description: "Plan created successfully",
@@ -172,6 +173,8 @@ export default function AdminDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       setPlanDialogOpen(false);
+      setEditingPlan(null);
+      form.reset();
       toast({
         title: "Success",
         description: "Plan updated successfully",
@@ -199,15 +202,38 @@ export default function AdminDashboard() {
       id: "",
       name: "",
       price: "",
-      features: "",
+      features: "[]",
     },
   });
 
   const onPlanSubmit = (data: any) => {
-    if (editingPlan) {
-      updatePlan.mutate({ id: editingPlan.id, data });
-    } else {
-      createPlan.mutate(data);
+    try {
+      // Validate features as JSON array
+      const features = JSON.parse(data.features);
+      if (!Array.isArray(features)) {
+        throw new Error("Features must be a valid JSON array");
+      }
+
+      if (editingPlan) {
+        updatePlan.mutate({ 
+          id: editingPlan.id, 
+          data: {
+            ...data,
+            features: JSON.stringify(features)
+          }
+        });
+      } else {
+        createPlan.mutate({
+          ...data,
+          features: JSON.stringify(features)
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Please ensure features is a valid JSON array",
+        variant: "destructive",
+      });
     }
   };
 
@@ -659,7 +685,7 @@ export default function AdminDashboard() {
                   id: "",
                   name: "",
                   price: "",
-                  features: "",
+                  features: "[]",
                 });
                 setPlanDialogOpen(true);
               }}
@@ -830,11 +856,18 @@ export default function AdminDashboard() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setPlanDialogOpen(false)}
+                  onClick={() => {
+                    setPlanDialogOpen(false);
+                    setEditingPlan(null);
+                    form.reset();
+                  }}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createPlan.isPending || updatePlan.isPending}>
+                <Button 
+                  type="submit" 
+                  disabled={createPlan.isPending || updatePlan.isPending}
+                >
                   {createPlan.isPending || updatePlan.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : null}
