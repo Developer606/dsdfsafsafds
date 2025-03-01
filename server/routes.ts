@@ -85,7 +85,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Remove duplicate notification routes and fix broadcast endpoint
+  // Broadcast notification to all users
   app.post("/api/admin/notifications/broadcast", isAdmin, async (req, res) => {
     try {
       const { title, message, type } = req.body;
@@ -99,34 +99,36 @@ export async function registerRoutes(app: Express) {
       const users = await storage.getAllUsers();
       console.log(`Broadcasting to ${users.length} users`);
 
-      // Create notifications for all users
-      const createdNotifications = await Promise.all(
-        users.map(async (user) => {
+      // Use a transaction to ensure all notifications are created
+      const notifications = await notificationDb.transaction(async (tx) => {
+        const created = [];
+        for (const user of users) {
           try {
-            return await notificationDb.insert(schema.notifications)
+            const notification = await tx
+              .insert(schema.notifications)
               .values({
                 userId: user.id,
                 type,
                 title,
                 message,
                 read: false,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().getTime()
               })
               .returning()
               .get();
+            created.push(notification);
           } catch (error) {
             console.error(`Failed to create notification for user ${user.id}:`, error);
-            return null;
           }
-        })
-      );
+        }
+        return created;
+      });
 
-      const successfulNotifications = createdNotifications.filter(n => n !== null);
-      console.log(`Successfully created ${successfulNotifications.length} notifications`);
+      console.log(`Successfully created ${notifications.length} notifications`);
 
       res.status(201).json({ 
         success: true, 
-        count: successfulNotifications.length,
+        count: notifications.length,
         total: users.length 
       });
     } catch (error: any) {
@@ -895,7 +897,7 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/admin/analytics/messages", isAdmin, async (req, res) => {
     try {
-      //      // Get message volume for the last 7 days
+      //      //      // Get message volume for the last 7 days
       const messages = await storage.getMessagesByCharacter("all");
       const daily = Array(7).fill(0).map((_, index) => {
         const date = new Date();

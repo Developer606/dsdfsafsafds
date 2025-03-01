@@ -11,7 +11,7 @@ const sqlite = new Database('notifications.db', {
 sqlite.pragma('journal_mode = WAL');
 sqlite.pragma('synchronous = NORMAL');
 sqlite.pragma('cache_size = -64000'); // 64MB cache
-sqlite.pragma('foreign_keys = OFF'); // Disable foreign keys since we're using multiple databases
+sqlite.pragma('foreign_keys = ON'); // Enable foreign keys for referential integrity
 
 // Create connection
 export const notificationDb = drizzle(sqlite, { schema });
@@ -30,7 +30,8 @@ export async function initializeNotifications() {
         title TEXT NOT NULL,
         message TEXT NOT NULL,
         read INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
+        created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
 
@@ -41,17 +42,8 @@ export async function initializeNotifications() {
       CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at);
     `);
 
-    // Verify table creation
-    const tableExists = sqlite.prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='notifications'"
-    ).get();
-
-    if (tableExists) {
-      console.log('Notifications table initialized successfully');
-      return true;
-    } else {
-      throw new Error('Failed to create notifications table');
-    }
+    console.log('Notifications table initialized successfully');
+    return true;
   } catch (error) {
     console.error('Error initializing notifications:', error);
     throw error;
