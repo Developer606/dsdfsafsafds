@@ -314,7 +314,7 @@ export default function Chat() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="hidden sm:flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <Button
                         variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
                         size="icon"
@@ -329,7 +329,7 @@ export default function Chat() {
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                       <span className={cn(
-                        "text-sm",
+                        "hidden md:inline-block text-sm",
                         chatStyle === "whatsapp"
                           ? "text-white/90"
                           : "text-gray-600 dark:text-gray-400"
@@ -359,7 +359,6 @@ export default function Chat() {
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
-
             <Button
               variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
               size="icon"
@@ -373,7 +372,6 @@ export default function Chat() {
             >
               <MessageCircle className="h-4 w-4" />
             </Button>
-
             <Button
               variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
               size="icon"
@@ -387,7 +385,6 @@ export default function Chat() {
             >
               <Trash2 className="h-4 w-4" />
             </Button>
-
             <Button
               variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
               size="icon"
