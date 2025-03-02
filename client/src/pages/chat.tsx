@@ -1,17 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { ChatMessage } from "@/components/chat-message";
 import { ChatInput } from "@/components/chat-input";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { Button } from "@/components/ui/button";
-import { LogOut, Trash2, MessageCircle, Sun, Moon, Layout } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { LogOut, Trash2, MessageCircle, Sun, Moon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SubscriptionManagement } from "@/components/subscription-management";
 import { type Message, FREE_USER_MESSAGE_LIMIT } from "@shared/schema";
@@ -41,7 +35,6 @@ export default function Chat() {
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const tempMessageIdRef = useRef<string>("");
-  const [chatTheme, setChatTheme] = useState<'whatsapp' | 'chatgpt'>('whatsapp');
 
   const toggleTheme = () => {
     const doc = document.documentElement;
@@ -284,34 +277,6 @@ export default function Chat() {
           </div>
 
           <div className="flex items-center gap-2">
-            {user?.isPremium && (user?.subscriptionTier === 'premium' || user?.subscriptionTier === 'pro') && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 rounded-full"
-                  >
-                    <Layout className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => setChatTheme('whatsapp')}
-                    className={chatTheme === 'whatsapp' ? 'bg-accent' : ''}
-                  >
-                    WhatsApp Style
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => setChatTheme('chatgpt')}
-                    className={chatTheme === 'chatgpt' ? 'bg-accent' : ''}
-                  >
-                    ChatGPT Style
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
             <Button
               variant="ghost"
               size="icon"
@@ -368,7 +333,6 @@ export default function Chat() {
                   key={message.id}
                   message={message}
                   character={character!}
-                  theme={chatTheme}
                 />
               ))}
               {isTyping && <TypingIndicator />}
