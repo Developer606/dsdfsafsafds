@@ -7,7 +7,6 @@ import { TypingIndicator } from "@/components/typing-indicator";
 import { Button } from "@/components/ui/button";
 import { LogOut, Trash2, MessageCircle, Sun, Moon, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { SubscriptionManagement } from "@/components/subscription-management";
 import { type Message, FREE_USER_MESSAGE_LIMIT } from "@shared/schema";
 import { type Character } from "@shared/characters";
 import { type User } from "@shared/schema";
@@ -360,8 +359,6 @@ export default function Chat() {
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
-
-            {user && <SubscriptionManagement user={user} />}
 
             <Button
               variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
