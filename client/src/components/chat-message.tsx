@@ -20,114 +20,68 @@ export function ChatMessage({ message, character, theme = 'whatsapp' }: ChatMess
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        "w-full",
-        theme === 'whatsapp' ? (
-          "border-b border-gray-100 dark:border-gray-800"
-        ) : (
-          "py-8 first:pt-0 last:pb-0"
-        ),
-        theme === 'whatsapp' ? (
-          isUser ? "bg-white dark:bg-slate-800" : "bg-gray-50 dark:bg-slate-900"
-        ) : ""
+        "w-full px-4 py-1",
+        theme === 'whatsapp' ? "mb-1" : "py-8 first:pt-0 last:pb-0"
       )}
     >
       <div className={cn(
-        "container mx-auto",
-        theme === 'whatsapp' ? "max-w-4xl px-4 py-6" : "max-w-2xl px-4"
+        "flex",
+        isUser ? "justify-end" : "justify-start",
+        "max-w-[75%]",
+        isUser ? "ml-auto" : "mr-auto"
       )}>
         <div className={cn(
-          "flex gap-4",
-          theme === 'chatgpt' && "items-start",
-          theme === 'whatsapp' && isUser && "flex-row-reverse"
-        )}>
-          {theme === 'whatsapp' ? (
+          "relative px-3 py-2 rounded-lg",
+          theme === 'whatsapp' ? (
             isUser ? (
-              <motion.div
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center"
-              >
-                <span className="text-sm font-medium text-blue-600 dark:text-blue-300">
-                  {isUser ? "Y" : character.name[0]}
-                </span>
-              </motion.div>
+              "bg-[#e7ffdb] dark:bg-[#025c4c] text-black dark:text-white"
             ) : (
-              <motion.img
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                src={character.avatar}
-                alt={character.name}
-                className="w-8 h-8 rounded-full object-cover mt-1"
-              />
+              "bg-white dark:bg-[#202c33] text-black dark:text-white"
             )
           ) : (
-            <motion.img
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              src={isUser ? "/images/user-avatar.png" : character.avatar}
-              alt={isUser ? "You" : character.name}
-              className="w-8 h-8 rounded-full object-cover"
-            />
+            "bg-transparent text-gray-800 dark:text-gray-200"
+          ),
+          "shadow-sm"
+        )}>
+          {theme === 'whatsapp' && (
+            <div className={cn(
+              "absolute top-0 w-4 h-4 overflow-hidden",
+              isUser ? "-right-2" : "-left-2",
+            )}>
+              <div className={cn(
+                "absolute w-4 h-4 transform rotate-45",
+                isUser ? (
+                  "bg-[#e7ffdb] dark:bg-[#025c4c] -left-2 top-1"
+                ) : (
+                  "bg-white dark:bg-[#202c33] -right-2 top-1"
+                )
+              )} />
+            </div>
           )}
 
-          <div className={cn(
-            "flex flex-col flex-1",
-            theme === 'whatsapp' && isUser && "items-end"
-          )}>
-            <motion.span 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className={cn(
-                "text-sm",
-                theme === 'whatsapp' ? (
-                  "text-gray-500 dark:text-gray-400 mb-1"
-                ) : (
-                  "font-medium text-gray-700 dark:text-gray-300 mb-1"
-                )
-              )}
-            >
-              {isUser ? "You" : character.name}
-            </motion.span>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className={cn(
-                "prose dark:prose-invert max-w-none",
-                theme === 'whatsapp' && isUser && "text-right"
-              )}
-            >
-              <div className={cn(
-                "whitespace-pre-wrap",
-                theme === 'whatsapp' ? (
-                  isUser ? (
-                    "bg-blue-500 text-white px-4 py-2 rounded-lg inline-block"
-                  ) : (
-                    "bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-lg inline-block"
-                  )
-                ) : (
-                  "text-gray-800 dark:text-gray-200"
-                )
-              )}>
-                {message.content}
-              </div>
-            </motion.div>
-            {theme === 'whatsapp' && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="flex items-center gap-2 mt-2 text-xs text-gray-400"
-              >
-                {format(new Date(message.timestamp), "h:mm a")}
-                {isUser && (
-                  <div className="flex">
-                    <Check className="h-3 w-3" /> 
-                    <Check className="h-3 w-3 -ml-2" />
-                  </div>
-                )}
-              </motion.div>
-            )}
+          <div className="whitespace-pre-wrap min-w-[120px]">
+            {message.content}
           </div>
+
+          {theme === 'whatsapp' && (
+            <div className={cn(
+              "text-[0.65rem] mt-1",
+              isUser ? (
+                "text-[#75b977] dark:text-[#7db39c]"
+              ) : (
+                "text-gray-500 dark:text-gray-400"
+              ),
+              "flex items-center gap-1 justify-end"
+            )}>
+              {format(new Date(message.timestamp), "HH:mm")}
+              {isUser && (
+                <div className="flex -ml-1">
+                  <Check className="h-3 w-3" />
+                  <Check className="h-3 w-3 -ml-2" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
