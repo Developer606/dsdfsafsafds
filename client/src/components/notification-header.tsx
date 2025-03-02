@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Bell, AlertCircle, Image as ImageIcon, X } from "lucide-react";
+import { AlertCircle, Image as ImageIcon, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -16,7 +16,7 @@ interface Notification {
   type: 'admin_reply' | 'update' | 'feature';
   title: string;
   message: string;
-  createdAt: Date; // Changed timestamp to createdAt
+  createdAt: Date;
   read: boolean;
 }
 
@@ -35,7 +35,7 @@ export function NotificationHeader() {
 
   // Add mutation for marking notifications as read
   const markAsReadMutation = useMutation({
-    mutationFn: async (notificationId: string) => { // Changed to string
+    mutationFn: async (notificationId: string) => {
       await apiRequest("PATCH", `/api/notifications/${notificationId}/read`);
     },
     onSuccess: () => {
@@ -55,7 +55,7 @@ export function NotificationHeader() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         toast({
           variant: "destructive",
           title: "Error",
@@ -82,7 +82,6 @@ export function NotificationHeader() {
     }
   };
 
-  // Add query to get user data with proper type
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
@@ -109,8 +108,8 @@ export function NotificationHeader() {
     try {
       const formData = new FormData();
       formData.append('message', complaint);
-      formData.append('name', user.username); // Now properly typed
-      formData.append('email', user.email); // Now properly typed
+      formData.append('name', user.username);
+      formData.append('email', user.email);
       if (selectedImage) {
         formData.append('image', selectedImage);
       }
@@ -163,63 +162,6 @@ export function NotificationHeader() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <Bell className="h-6 w-6 text-[#075e54] dark:text-[#00a884]" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 h-5 w-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                      {unreadCount}
-                    </span>
-                  )}
-                </motion.button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-0">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="font-semibold text-[#075e54] dark:text-[#00a884]">
-                    Notifications
-                  </h3>
-                </div>
-                <AnimatePresence>
-                  {notifications.length > 0 ? (
-                    <div className="max-h-[300px] overflow-y-auto">
-                      {notifications.map((notification) => (
-                        <motion.div
-                          key={notification.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className={cn(
-                            "p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors",
-                            !notification.read && "bg-blue-50 dark:bg-blue-900/10"
-                          )}
-                          onClick={() => markAsReadMutation.mutate(notification.id)}
-                        >
-                          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                            {notification.title}
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            {notification.message}
-                          </p>
-                          <span className="text-xs text-gray-500 dark:text-gray-500 mt-2 block">
-                            {new Date(notification.createdAt).toLocaleDateString()}
-                          </span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                      No notifications
-                    </div>
-                  )}
-                </AnimatePresence>
-              </PopoverContent>
-            </Popover>
-
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
