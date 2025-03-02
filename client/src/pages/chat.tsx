@@ -272,54 +272,56 @@ export default function Chat() {
         : "bg-white dark:bg-slate-900"
     )}>
       <header className={cn(
-        "fixed top-0 left-0 right-0 z-50 border-b h-16",
+        "fixed top-0 left-0 right-0 z-50 border-b h-14 sm:h-16",
         chatStyle === "whatsapp"
           ? "bg-[#008069] dark:bg-slate-900 border-[#008069] dark:border-gray-800"
           : "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
       )}>
-        <div className="container mx-auto max-w-4xl px-4 h-full flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setLocation("/chats")}
-            className={cn(
-              "h-9 w-9 rounded-full",
-              chatStyle === "whatsapp"
-                ? "text-white hover:bg-white/10"
-                : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-            )}
-          >
-            <ArrowLeft className="h-6 w-6" />
-          </Button>
+        <div className="container h-full mx-auto px-2 sm:px-4 max-w-4xl flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
+              size="icon"
+              onClick={() => setLocation("/chats")}
+              className={cn(
+                "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
+                chatStyle === "whatsapp"
+                  ? "text-white hover:bg-white/10"
+                  : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+              )}
+            >
+              <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            </Button>
 
-          <div className="flex items-center gap-3">
-            <img
-              src={character?.avatar}
-              alt={character?.name}
-              className="w-8 h-8 rounded-full object-cover"
-            />
-            <h2 className={cn(
-              "font-medium",
-              chatStyle === "whatsapp"
-                ? "text-white"
-                : "text-gray-800 dark:text-gray-200"
-            )}>
-              {character?.name}
-            </h2>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <img
+                src={character?.avatar}
+                alt={character?.name}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+              <h2 className={cn(
+                "font-medium text-sm sm:text-base",
+                chatStyle === "whatsapp"
+                  ? "text-white"
+                  : "text-gray-800 dark:text-gray-200"
+              )}>
+                {character?.name}
+              </h2>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {user?.isPremium && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-2">
+                    <div className="hidden sm:flex items-center gap-2">
                       <Button
                         variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
                         size="icon"
                         onClick={toggleChatStyle}
                         className={cn(
-                          "h-9 w-9 rounded-full",
+                          "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                           chatStyle === "whatsapp"
                             ? "text-white hover:bg-white/10"
                             : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -349,7 +351,7 @@ export default function Chat() {
               size="icon"
               onClick={toggleTheme}
               className={cn(
-                "h-9 w-9 rounded-full",
+                "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                 chatStyle === "whatsapp"
                   ? "text-white hover:bg-white/10"
                   : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -366,7 +368,7 @@ export default function Chat() {
               size="icon"
               onClick={() => setShowFeedbackDialog(true)}
               className={cn(
-                "h-9 w-9 rounded-full",
+                "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                 chatStyle === "whatsapp"
                   ? "text-white hover:bg-white/10"
                   : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -380,7 +382,7 @@ export default function Chat() {
               size="icon"
               onClick={handleClearChat}
               className={cn(
-                "h-9 w-9 rounded-full",
+                "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                 chatStyle === "whatsapp"
                   ? "text-white hover:bg-white/10"
                   : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -394,7 +396,7 @@ export default function Chat() {
               size="icon"
               onClick={handleLogout}
               className={cn(
-                "h-9 w-9 rounded-full",
+                "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                 chatStyle === "whatsapp"
                   ? "text-white hover:bg-white/10"
                   : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -407,12 +409,12 @@ export default function Chat() {
       </header>
 
       <main className={cn(
-        "flex-1 overflow-y-auto pt-16 pb-20",
+        "flex-1 overflow-y-auto pt-14 sm:pt-16 pb-20",
         chatStyle === "whatsapp"
           ? "bg-[#efeae2] dark:bg-slate-900"
           : "bg-white dark:bg-slate-900"
       )}>
-        <div className="container mx-auto max-w-4xl">
+        <div className="container mx-auto px-2 sm:px-4 max-w-4xl">
           {messagesLoading ? (
             <div className="space-y-4 p-4">
               {[...Array(3)].map((_, i) => (
@@ -445,7 +447,7 @@ export default function Chat() {
           ? "bg-[#f0f2f5] dark:bg-slate-900 border-gray-200 dark:border-gray-800"
           : "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
       )}>
-        <div className="container mx-auto max-w-4xl p-4">
+        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-4xl">
           <ChatInput
             onSend={(content, language, script) => sendMessage.mutate({ content, language, script })}
             isLoading={sendMessage.isPending}

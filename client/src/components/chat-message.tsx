@@ -56,24 +56,29 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="px-4 py-2 max-w-[85%] relative"
+      className={cn(
+        "px-2 sm:px-4 py-1 sm:py-2",
+        isUser ? "ml-auto" : "mr-auto",
+        "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+      )}
     >
       <div className={cn(
         "flex flex-col",
-        isUser ? "items-end ml-auto" : "items-start"
+        isUser ? "items-end" : "items-start"
       )}>
         <div className={cn(
-          "px-3 py-2 rounded-lg max-w-[90%]",
+          "px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg",
           isUser 
             ? "bg-[#e7ffdb] dark:bg-emerald-800 rounded-tr-none" 
-            : "bg-white dark:bg-slate-800 rounded-tl-none"
+            : "bg-white dark:bg-slate-800 rounded-tl-none",
+          "max-w-full"
         )}>
           {!isUser && (
             <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1">
               {character.name}
             </p>
           )}
-          <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+          <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
             {message.content}
           </p>
           <div className="flex items-center justify-end gap-1 mt-1">
