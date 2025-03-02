@@ -27,6 +27,9 @@ export const insertPendingVerificationSchema = createInsertSchema(pendingVerific
 export type PendingVerification = typeof pendingVerifications.$inferSelect;
 export type InsertPendingVerification = z.infer<typeof insertPendingVerificationSchema>;
 
+// Add message limit constant
+export const FREE_USER_MESSAGE_LIMIT = 50;
+
 // Users table with optimized indexes for high-traffic login/signup
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey(),
@@ -66,8 +69,6 @@ export const users = sqliteTable("users", {
   lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
 });
 
-// Add message limit constant
-export const FREE_USER_MESSAGE_LIMIT = 50;
 
 // Messages table optimized for chat history retrieval
 export const messages = sqliteTable("messages", {
