@@ -11,48 +11,29 @@ import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import { ComplaintsSection } from "@/components/complaints-section";
 import { FeedbackSection } from "@/components/feedback-section";
-import { useQuery } from "@tanstack/react-query";
-import type { User } from "@shared/schema";
-
-function AdminRoute({ component: Component }: { component: React.ComponentType }) {
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/user"],
-    retry: false
-  });
-
-  if (isLoading) {
-    return null;
-  }
-
-  if (!user?.isAdmin) {
-    window.location.href = "/admin/login";
-    return null;
-  }
-
-  return <Component />;
-}
+import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
   return (
     <Switch>
+      {/* Public routes */}
       <Route path="/" component={LandingPage} />
-      <Route path="/chats">
+      <Route path="/admin/login" component={AdminLogin} />
+
+      {/* Protected routes that require authentication */}
+      <ProtectedRoute path="/chats" component={() => (
         <>
           <Navigation />
           <Home />
         </>
-      </Route>
-      <Route path="/chat/:characterId" component={Chat} />
-      <Route path="/admin/login" component={AdminLogin} />
-      <Route path="/admin/dashboard">
-        <AdminRoute component={AdminDashboard} />
-      </Route>
-      <Route path="/admin/dashboard/complaints">
-        <AdminRoute component={ComplaintsSection} />
-      </Route>
-      <Route path="/admin/dashboard/feedback">
-        <AdminRoute component={FeedbackSection} />
-      </Route>
+      )} />
+      <ProtectedRoute path="/chat/:characterId" component={Chat} />
+
+      {/* Admin-only routes */}
+      <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} requireAdmin />
+      <ProtectedRoute path="/admin/dashboard/complaints" component={ComplaintsSection} requireAdmin />
+      <ProtectedRoute path="/admin/dashboard/feedback" component={FeedbackSection} requireAdmin />
+
       <Route component={NotFound} />
     </Switch>
   );
