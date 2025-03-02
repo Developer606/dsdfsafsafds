@@ -57,6 +57,11 @@ export interface IStorage {
   createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
   updateSubscriptionPlan(id: string, plan: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan>;
   deleteSubscriptionPlan(id: string): Promise<void>;
+
+  // Add these methods to the IStorage interface
+  validateCharacterCreation(userId: number): Promise<boolean>;
+  getCharacterLimit(userId: number): Promise<number>;
+  validateFeatureAccess(userId: number, feature: "basic" | "advanced" | "api"): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -385,6 +390,50 @@ export class DatabaseStorage implements IStorage {
     await planDb
       .delete(subscriptionPlansTable)
       .where(eq(subscriptionPlansTable.id, id));
+  }
+
+  async validateCharacterCreation(userId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+
+    // Free users are limited by trial characters
+    if (!user.isPremium) {
+      return user.trialCharactersCreated < 3;
+    }
+
+    // Check subscription tier limits
+    if (user.subscriptionTier === "basic") {
+      const characters = await this.getCustomCharactersByUser(userId);
+      return characters.length < 5;
+    }
+
+    // Premium and Pro users have unlimited characters
+    return true;
+  }
+
+  async getCharacterLimit(userId: number): Promise<number> {
+    const user = await this.getUser(userId);
+    if (!user) return 0;
+
+    if (!user.isPremium) return 3; // Trial limit
+    if (user.subscriptionTier === "basic") return 5;
+    return Infinity; // Premium and Pro users
+  }
+
+  async validateFeatureAccess(userId: number, feature: "basic" | "advanced" | "api"): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+
+    switch (feature) {
+      case "basic":
+        return true; // All users have basic features
+      case "advanced":
+        return user.isPremium && ["premium", "pro"].includes(user.subscriptionTier || "");
+      case "api":
+        return user.isPremium && user.subscriptionTier === "pro";
+      default:
+        return false;
+    }
   }
 }
 

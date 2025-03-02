@@ -465,18 +465,6 @@ export async function registerRoutes(app: Express) {
     res.json(req.user);
   });
 
-  app.get("/api/custom-characters", async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-      const customChars = await storage.getCustomCharactersByUser(req.user.id);
-      res.json(customChars);
-    } catch (error: any) {
-      res.status(500).json({ error: "Failed to fetch custom characters" });
-    }
-  });
-
   app.post("/api/custom-characters", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
@@ -487,9 +475,13 @@ export async function registerRoutes(app: Express) {
         throw new Error("User not found");
       }
 
-      if (!user.isPremium && user.trialCharactersCreated >= 3) {
+      // Check if user can create more characters based on their plan
+      const canCreate = await storage.validateCharacterCreation(user.id);
+      if (!canCreate) {
+        const limit = await storage.getCharacterLimit(user.id);
         return res.status(403).json({
-          error: "Trial limit reached. Please upgrade to create more characters."
+          error: `Character creation limit reached (${limit} characters). Please upgrade your plan to create more characters.`,
+          limitReached: true
         });
       }
 
@@ -499,7 +491,9 @@ export async function registerRoutes(app: Express) {
       });
 
       const character = await storage.createCustomCharacter(data);
-      await storage.incrementTrialCharacterCount(user.id);
+      if (!user.isPremium) {
+        await storage.incrementTrialCharacterCount(user.id);
+      }
 
       res.json(character);
     } catch (error: any) {
@@ -554,6 +548,15 @@ export async function registerRoutes(app: Express) {
           const isCustom = data.characterId.startsWith('custom_');
           const characterIdNum = isCustom ? parseInt(data.characterId.replace('custom_', ''), 10) : null;
 
+          // Check if user has access to advanced features
+          const hasAdvancedAccess = await storage.validateFeatureAccess(user.id, "advanced");
+          if (!hasAdvancedAccess && data.script) {
+            return res.status(403).json({
+              error: "Advanced character features require a premium subscription.",
+              premiumRequired: true
+            });
+          }
+
           if (isCustom && characterIdNum !== null) {
             const customChar = await storage.getCustomCharacterById(characterIdNum);
             if (!customChar) throw new Error("Custom character not found");
@@ -603,6 +606,28 @@ export async function registerRoutes(app: Express) {
       }
     } catch (error: any) {
       res.status(400).json({ error: error.message });
+    }
+  });
+
+  // Add API access check for custom character API endpoints
+  app.get("/api/custom-characters/api", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      const hasApiAccess = await storage.validateFeatureAccess(req.user.id, "api");
+      if (!hasApiAccess) {
+        return res.status(403).json({
+          error: "API access requires a Pro subscription.",
+          upgradeRequired: true
+        });
+      }
+
+      const customChars = await storage.getCustomCharactersByUser(req.user.id);
+      res.json(customChars);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch custom characters API data" });
     }
   });
 
@@ -889,7 +914,8 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: "Invalid or expired OTP" });
       }
 
-      // Hash new password and update      const hashedPassword = await hashPassword(newPassword);
+      // Hash new password and update
+      const hashedPassword = await hashPassword(newPassword);
       await storage.updateUserPassword(user.id, hashedPassword);
 
       res.json({ message: "Password reset successfully" });
