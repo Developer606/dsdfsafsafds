@@ -184,9 +184,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {
-    await db.delete(customCharacters)
-      .where(eq(customCharacters.id, id))
-      .where(eq(customCharacters.userId, userId));
+    const result = await db.delete(customCharacters)
+      .where(sql`${customCharacters.id} = ${id} AND ${customCharacters.userId} = ${userId}`)
+      .returning();
+
+    if (!result.length) {
+      throw new Error('Character not found or unauthorized');
+    }
   }
 
   async updateUserSubscription(
