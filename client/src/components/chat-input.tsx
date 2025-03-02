@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 interface ChatInputProps {
   onSend: (content: string, language: string, script?: string) => void;
   isLoading: boolean;
-  chatStyle?: "whatsapp" | "chatgpt";
+  chatStyle?: "whatsapp" | "chatgpt" | "messenger";
 }
 
 export function ChatInput({ onSend, isLoading, chatStyle = "whatsapp" }: ChatInputProps) {
@@ -62,6 +62,8 @@ export function ChatInput({ onSend, isLoading, chatStyle = "whatsapp" }: ChatInp
         "relative flex items-center gap-2 rounded-lg border shadow-lg",
         chatStyle === "whatsapp" 
           ? "bg-white dark:bg-slate-800 border-[#f0f2f5] dark:border-gray-700" 
+          : chatStyle === "messenger"
+          ? "bg-white dark:bg-slate-800 border-[#eee] dark:border-gray-700"
           : "bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700"
       )}>
         <Popover>
@@ -73,6 +75,8 @@ export function ChatInput({ onSend, isLoading, chatStyle = "whatsapp" }: ChatInp
               className={cn(
                 "h-10 w-10 rounded-full",
                 chatStyle === "whatsapp"
+                  ? "hover:bg-gray-100 dark:hover:bg-slate-700"
+                  : chatStyle === "messenger"
                   ? "hover:bg-gray-100 dark:hover:bg-slate-700"
                   : "hover:bg-gray-100 dark:hover:bg-slate-700"
               )}
@@ -114,6 +118,8 @@ export function ChatInput({ onSend, isLoading, chatStyle = "whatsapp" }: ChatInp
             "flex-1 border-0 focus-visible:ring-0 bg-transparent text-base py-6",
             chatStyle === "whatsapp"
               ? "placeholder:text-gray-500"
+              : chatStyle === "messenger"
+              ? "placeholder:text-gray-400"
               : "placeholder:text-gray-400"
           )}
         />
@@ -126,6 +132,8 @@ export function ChatInput({ onSend, isLoading, chatStyle = "whatsapp" }: ChatInp
             "h-10 w-10 rounded-full mr-2",
             chatStyle === "whatsapp"
               ? "bg-[#00a884] hover:bg-[#00a884]/90 dark:bg-[#00a884] dark:hover:bg-[#00a884]/90"
+              : chatStyle === "messenger"
+              ? "bg-[#0084ff] hover:bg-[#0084ff]/90 dark:bg-[#0084ff] dark:hover:bg-[#0084ff]/90"
               : "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700",
             "transition-all duration-200",
             !message.trim() && "opacity-50"

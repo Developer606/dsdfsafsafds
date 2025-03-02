@@ -39,7 +39,7 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
-  const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt">("whatsapp");
+  const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger">("whatsapp");
   const tempMessageIdRef = useRef<string>("");
 
   const toggleTheme = () => {
@@ -55,7 +55,18 @@ export default function Chat() {
   };
 
   const toggleChatStyle = () => {
-    setChatStyle(prev => prev === "whatsapp" ? "chatgpt" : "whatsapp");
+    setChatStyle(prev => {
+      switch (prev) {
+        case "whatsapp":
+          return "chatgpt";
+        case "chatgpt":
+          return "messenger";
+        case "messenger":
+          return "whatsapp";
+        default:
+          return "whatsapp";
+      }
+    });
   };
 
   const { data: characters } = useQuery<Character[]>({
@@ -268,24 +279,30 @@ export default function Chat() {
       "flex flex-col h-screen",
       chatStyle === "whatsapp"
         ? "bg-[#efeae2] dark:bg-slate-900"
-        : "bg-white dark:bg-slate-900"
+        : chatStyle === "messenger"
+          ? "bg-white dark:bg-slate-900"
+          : "bg-white dark:bg-slate-900"
     )}>
       <header className={cn(
         "fixed top-0 left-0 right-0 z-50 border-b h-14 sm:h-16",
         chatStyle === "whatsapp"
           ? "bg-[#008069] dark:bg-slate-900 border-[#008069] dark:border-gray-800"
+          : chatStyle === "messenger"
+          ? "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
           : "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
       )}>
         <div className="container h-full mx-auto px-2 sm:px-4 max-w-4xl flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
-              variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
+              variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
               size="icon"
               onClick={() => setLocation("/chats")}
               className={cn(
                 "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                 chatStyle === "whatsapp"
                   ? "text-white hover:bg-white/10"
+                  : chatStyle === "messenger"
+                  ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
                   : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
               )}
             >
@@ -302,6 +319,8 @@ export default function Chat() {
                 "font-medium text-sm sm:text-base",
                 chatStyle === "whatsapp"
                   ? "text-white"
+                  : chatStyle === "messenger"
+                  ? "text-[#0084ff]"
                   : "text-gray-800 dark:text-gray-200"
               )}>
                 {character?.name}
@@ -316,13 +335,15 @@ export default function Chat() {
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-2">
                       <Button
-                        variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
+                        variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
                         size="icon"
                         onClick={toggleChatStyle}
                         className={cn(
                           "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                           chatStyle === "whatsapp"
                             ? "text-white hover:bg-white/10"
+                            : chatStyle === "messenger"
+                            ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
                             : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                         )}
                       >
@@ -332,27 +353,41 @@ export default function Chat() {
                         "hidden md:inline-block text-sm",
                         chatStyle === "whatsapp"
                           ? "text-white/90"
+                          : chatStyle === "messenger"
+                          ? "text-[#0084ff] dark:text-blue-400"
                           : "text-gray-600 dark:text-gray-400"
                       )}>
-                        {chatStyle === "whatsapp" ? "WhatsApp Style" : "ChatGPT Style"}
+                        {chatStyle === "whatsapp"
+                          ? "WhatsApp Style"
+                          : chatStyle === "messenger"
+                          ? "Messenger Style"
+                          : "ChatGPT Style"}
                       </span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Switch to {chatStyle === "whatsapp" ? "ChatGPT" : "WhatsApp"} style</p>
+                    <p>Switch to {
+                      chatStyle === "whatsapp"
+                        ? "ChatGPT"
+                        : chatStyle === "chatgpt"
+                        ? "Messenger"
+                        : "WhatsApp"
+                    } style</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}
 
             <Button
-              variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
+              variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
               size="icon"
               onClick={toggleTheme}
               className={cn(
                 "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                 chatStyle === "whatsapp"
                   ? "text-white hover:bg-white/10"
+                  : chatStyle === "messenger"
+                  ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
                   : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
               )}
             >
@@ -360,39 +395,45 @@ export default function Chat() {
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
             <Button
-              variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
+              variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
               size="icon"
               onClick={() => setShowFeedbackDialog(true)}
               className={cn(
                 "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                 chatStyle === "whatsapp"
                   ? "text-white hover:bg-white/10"
+                  : chatStyle === "messenger"
+                  ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
                   : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
               )}
             >
               <MessageCircle className="h-4 w-4" />
             </Button>
             <Button
-              variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
+              variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
               size="icon"
               onClick={handleClearChat}
               className={cn(
                 "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                 chatStyle === "whatsapp"
                   ? "text-white hover:bg-white/10"
+                  : chatStyle === "messenger"
+                  ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
                   : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
               )}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
             <Button
-              variant={chatStyle === "whatsapp" ? "whatsapp" : "ghost"}
+              variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
               size="icon"
               onClick={handleLogout}
               className={cn(
                 "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                 chatStyle === "whatsapp"
                   ? "text-white hover:bg-white/10"
+                  : chatStyle === "messenger"
+                  ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
                   : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
               )}
             >
@@ -406,6 +447,8 @@ export default function Chat() {
         "flex-1 overflow-y-auto pt-14 sm:pt-16 pb-20",
         chatStyle === "whatsapp"
           ? "bg-[#efeae2] dark:bg-slate-900"
+          : chatStyle === "messenger"
+          ? "bg-white dark:bg-slate-900"
           : "bg-white dark:bg-slate-900"
       )}>
         <div className="container mx-auto px-2 sm:px-4 max-w-4xl">
@@ -439,6 +482,8 @@ export default function Chat() {
         "fixed bottom-0 left-0 right-0 border-t",
         chatStyle === "whatsapp"
           ? "bg-[#f0f2f5] dark:bg-slate-900 border-gray-200 dark:border-gray-800"
+          : chatStyle === "messenger"
+          ? "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
           : "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
       )}>
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 max-w-4xl">

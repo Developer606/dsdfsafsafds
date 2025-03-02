@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 interface ChatMessageProps {
   message: Message;
   character: Character;
-  chatStyle?: "whatsapp" | "chatgpt";
+  chatStyle?: "whatsapp" | "chatgpt" | "messenger";
 }
 
 export function ChatMessage({ message, character, chatStyle = "whatsapp" }: ChatMessageProps) {
@@ -51,6 +51,52 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
     );
   }
 
+  if (chatStyle === "messenger") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={cn(
+          "px-2 sm:px-4 py-1 sm:py-2",
+          isUser ? "ml-auto" : "mr-auto",
+          "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+        )}
+      >
+        <div className={cn(
+          "flex",
+          isUser ? "justify-end" : "justify-start",
+          "items-end gap-2"
+        )}>
+          {!isUser && (
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+              <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className={cn(
+            "flex flex-col",
+            isUser ? "items-end" : "items-start"
+          )}>
+            <div className={cn(
+              "px-3 py-2 rounded-2xl max-w-full",
+              isUser 
+                ? "bg-[#0084ff] text-white" 
+                : "bg-[#f0f0f0] dark:bg-slate-700 text-black dark:text-white"
+            )}>
+              <p className="text-sm sm:text-base whitespace-pre-wrap break-words">
+                {message.content}
+              </p>
+            </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {format(new Date(message.timestamp), "h:mm a")}
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // WhatsApp style (default)
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
