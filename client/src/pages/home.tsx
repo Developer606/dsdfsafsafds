@@ -77,7 +77,6 @@ export default function Home() {
     queryKey: ["/api/characters"]
   });
 
-  // Rest of the mutation logic remains unchanged...
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
       const res = await apiRequest("POST", "/api/custom-characters", data);
@@ -179,10 +178,24 @@ export default function Home() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 relative overflow-hidden"
+      className="min-h-screen relative overflow-hidden"
     >
+      {/* Background Image Layer */}
+      <div 
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: "url('/images/anime-landscape.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-100/95 via-purple-100/95 to-pink-100/95 dark:from-slate-950/95 dark:via-purple-950/95 dark:to-slate-900/95" />
+      </div>
+
       {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
         <motion.div
           initial="initial"
           animate="animate"
@@ -197,178 +210,180 @@ export default function Home() {
         />
       </div>
 
-      <NotificationHeader />
+      <div className="relative z-20">
+        <NotificationHeader />
 
-      <div className="container mx-auto p-6 relative z-10">
-        <motion.div 
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="flex items-center justify-between mb-8"
-        >
+        <div className="container mx-auto p-6">
           <motion.div 
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="flex flex-col gap-2"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="flex items-center justify-between mb-8"
           >
-            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
-              Your Characters
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Choose a character to start chatting
-            </p>
-          </motion.div>
-          <div className="flex items-center gap-4">
-            {!user?.isPremium && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center text-sm text-purple-600 dark:text-purple-400"
-                    >
-                      <Info className="h-4 w-4 mr-1" />
-                      {user?.trialCharactersCreated || 0}/3 free characters used
-                    </motion.div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Free users can create up to 3 custom characters.</p>
-                    <p>Upgrade to premium for unlimited characters!</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Button
-                onClick={handleCreateClick}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Create Character
-              </Button>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-        >
-          <AnimatePresence>
-            {characters?.map((character, index) => (
-              <motion.div
-                key={character.id}
-                variants={item}
-                layoutId={character.id}
-                className="relative group"
-                whileHover={{ y: -5, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
-              >
-                <Link href={`/chat/${character.id}`}>
-                  <div className="transform transition-all duration-300">
-                    <div className="relative overflow-hidden rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 border border-purple-200/50 dark:border-purple-800/50">
-                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <CharacterCard character={character} />
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="absolute top-2 right-2 text-purple-500"
-                      >
-                        <Sparkles className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </motion.div>
-                    </div>
-                  </div>
-                </Link>
-                {character.id.startsWith('custom_') && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/90 hover:bg-red-600"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        deleteCharacter.mutate(character.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </motion.div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
-
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-0">
-            <DialogHeader>
-              <DialogTitle className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Create New Character</DialogTitle>
-              {!user?.isPremium && (
-                <DialogDescription className="text-yellow-600">
-                  Free Trial: {user?.trialCharactersCreated || 0}/3 characters created
-                </DialogDescription>
-              )}
-            </DialogHeader>
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-4"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="flex flex-col gap-2"
             >
-              <Input
-                placeholder="Character Name"
-                value={newCharacter.name}
-                onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
-                className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500"
-              />
-              <Input
-                placeholder="Avatar URL"
-                value={newCharacter.avatar}
-                onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
-                className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500"
-              />
-              <Textarea
-                placeholder="Character Description"
-                value={newCharacter.description}
-                onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
-                className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500 min-h-[100px]"
-              />
-              <Textarea
-                placeholder="Character Persona"
-                value={newCharacter.persona}
-                onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
-                className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500 min-h-[100px]"
-              />
-              <motion.div 
-                whileHover={{ scale: 1.02 }} 
-                whileTap={{ scale: 0.98 }}
-                className="pt-2"
+              <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
+                Your Characters
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Choose a character to start chatting
+              </p>
+            </motion.div>
+            <div className="flex items-center gap-4">
+              {!user?.isPremium && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center text-sm text-purple-600 dark:text-purple-400"
+                      >
+                        <Info className="h-4 w-4 mr-1" />
+                        {user?.trialCharactersCreated || 0}/3 free characters used
+                      </motion.div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Free users can create up to 3 custom characters.</p>
+                      <p>Upgrade to premium for unlimited characters!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Button 
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
-                  onClick={handleSubmit}
-                  disabled={createCharacter.isPending}
+                <Button
+                  onClick={handleCreateClick}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                 >
+                  <Plus className="h-5 w-5 mr-2" />
                   Create Character
                 </Button>
               </motion.div>
-            </motion.div>
-          </DialogContent>
-        </Dialog>
+            </div>
+          </motion.div>
 
-        <SubscriptionDialog
-          open={showSubscription}
-          onClose={() => setShowSubscription(false)}
-        />
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            <AnimatePresence>
+              {characters?.map((character, index) => (
+                <motion.div
+                  key={character.id}
+                  variants={item}
+                  layoutId={character.id}
+                  className="relative group"
+                  whileHover={{ y: -5, scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                >
+                  <Link href={`/chat/${character.id}`}>
+                    <div className="transform transition-all duration-300">
+                      <div className="relative overflow-hidden rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 border border-purple-200/50 dark:border-purple-800/50">
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <CharacterCard character={character} />
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute top-2 right-2 text-purple-500"
+                        >
+                          <Sparkles className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </motion.div>
+                      </div>
+                    </div>
+                  </Link>
+                  {character.id.startsWith('custom_') && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500/90 hover:bg-red-600"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          deleteCharacter.mutate(character.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-0">
+              <DialogHeader>
+                <DialogTitle className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Create New Character</DialogTitle>
+                {!user?.isPremium && (
+                  <DialogDescription className="text-yellow-600">
+                    Free Trial: {user?.trialCharactersCreated || 0}/3 characters created
+                  </DialogDescription>
+                )}
+              </DialogHeader>
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <Input
+                  placeholder="Character Name"
+                  value={newCharacter.name}
+                  onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
+                  className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500"
+                />
+                <Input
+                  placeholder="Avatar URL"
+                  value={newCharacter.avatar}
+                  onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
+                  className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500"
+                />
+                <Textarea
+                  placeholder="Character Description"
+                  value={newCharacter.description}
+                  onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
+                  className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500 min-h-[100px]"
+                />
+                <Textarea
+                  placeholder="Character Persona"
+                  value={newCharacter.persona}
+                  onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
+                  className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500 min-h-[100px]"
+                />
+                <motion.div 
+                  whileHover={{ scale: 1.02 }} 
+                  whileTap={{ scale: 0.98 }}
+                  className="pt-2"
+                >
+                  <Button 
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
+                    onClick={handleSubmit}
+                    disabled={createCharacter.isPending}
+                  >
+                    Create Character
+                  </Button>
+                </motion.div>
+              </motion.div>
+            </DialogContent>
+          </Dialog>
+
+          <SubscriptionDialog
+            open={showSubscription}
+            onClose={() => setShowSubscription(false)}
+          />
+        </div>
       </div>
     </motion.div>
   );
