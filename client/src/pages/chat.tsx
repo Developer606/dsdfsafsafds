@@ -491,7 +491,6 @@ export default function Chat() {
             onSend={(content, language, script) => sendMessage.mutate({ content, language, script })}
             isLoading={sendMessage.isPending}
             chatStyle={chatStyle}
-            isPremium={user?.isPremium}
           />
           {!user?.isPremium && (
             <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
