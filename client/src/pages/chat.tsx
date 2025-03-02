@@ -291,14 +291,19 @@ export default function Chat() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={toggleChatStyle}
-                      className="h-9 w-9 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={toggleChatStyle}
+                        className="h-9 w-9 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {chatStyle === "whatsapp" ? "WhatsApp Style" : "ChatGPT Style"}
+                      </span>
+                    </div>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Switch to {chatStyle === "whatsapp" ? "ChatGPT" : "WhatsApp"} style</p>
