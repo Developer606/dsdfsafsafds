@@ -5,14 +5,15 @@ import { ChatMessage } from "@/components/chat-message";
 import { ChatInput } from "@/components/chat-input";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { type Message, FREE_USER_MESSAGE_LIMIT } from "@shared/schema";
-import { type Character } from "@shared/characters";
-import { queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Trash2, LogOut, MessageCircle } from "lucide-react";
+import { LogOut, Trash2, MessageCircle, Sun, Moon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SubscriptionManagement } from "@/components/subscription-management";
+import { type Message, FREE_USER_MESSAGE_LIMIT } from "@shared/schema";
+import { type Character } from "@shared/characters";
+import { type User } from "@shared/schema";
+import { queryClient } from "@/lib/queryClient";
+import { SubscriptionDialog } from "@/components/subscription-dialog";
+import { ArrowLeft } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,8 +22,9 @@ import {
   DialogDescription,
   DialogClose,
 } from "@/components/ui/dialog";
-import { type User } from "@shared/schema";
-import { SubscriptionDialog } from "@/components/subscription-dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
 
 export default function Chat() {
   const { characterId } = useParams();
@@ -34,8 +36,16 @@ export default function Chat() {
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const tempMessageIdRef = useRef<string>("");
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const toggleTheme = () => {
+    const doc = document.documentElement;
+    const isDark = doc.classList.contains('dark');
+    if (isDark) {
+      doc.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      doc.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
   };
 
   const { data: characters } = useQuery<Character[]>({
@@ -237,105 +247,114 @@ export default function Chat() {
     }
   });
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   if (!character) return null;
 
   return (
-    <div className="flex flex-col h-screen bg-[#efeae2] dark:bg-slate-950">
-      <div className="flex items-center px-4 py-2 bg-[#00a884] dark:bg-slate-900 text-white shadow-sm">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setLocation("/chats")}
-          className="text-white hover:bg-white/10"
-        >
-          <ArrowLeft className="h-6 w-6" />
-        </Button>
+    <div className="flex flex-col h-screen bg-white dark:bg-slate-900">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="container mx-auto max-w-4xl px-4 h-16 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLocation("/chats")}
+            className="text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <ArrowLeft className="h-6 w-6" />
+          </Button>
+          <div className="flex items-center gap-3">
+            <img
+              src={character?.avatar}
+              alt={character?.name}
+              className="w-8 h-8 rounded-full object-cover"
+            />
+            <h2 className="font-medium text-gray-800 dark:text-gray-200">
+              {character?.name}
+            </h2>
+          </div>
 
-        <div className="flex items-center flex-1 min-w-0">
-          <img
-            src={character?.avatar}
-            alt={character?.name}
-            className="w-10 h-10 rounded-full object-cover mx-3"
-          />
-          <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-lg truncate">{character?.name}</h2>
-            <p className="text-sm text-white/80">
-              {isTyping ? "typing..." : "online"}
-            </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleTheme}
+              className="h-9 w-9 rounded-full"
+            >
+              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </Button>
+            {user && <SubscriptionManagement user={user} />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowFeedbackDialog(true)}
+              className="h-9 w-9 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClearChat}
+              className="h-9 w-9 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="h-9 w-9 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </div>
+      </header>
 
-        <div className="flex items-center gap-2">
-          {user && <SubscriptionManagement user={user} />}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowFeedbackDialog(true)}
-            className="text-white hover:bg-white/10"
-          >
-            <MessageCircle className="h-5 w-5" />
-          </Button>
+      <main className="flex-1 overflow-y-auto pt-16 pb-20">
+        <div className="container mx-auto max-w-4xl">
+          {messagesLoading ? (
+            <div className="space-y-4 p-4">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-24 bg-gray-100 dark:bg-slate-800 animate-pulse rounded-lg"
+                />
+              ))}
+            </div>
+          ) : (
+            <>
+              {messages.map((message: Message) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  character={character!}
+                />
+              ))}
+              {isTyping && <TypingIndicator />}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+      </main>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClearChat}
-            className="text-white hover:bg-white/10"
-          >
-            <Trash2 className="h-5 w-5" />
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLogout}
-            className="text-white hover:bg-white/10"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800">
+        <div className="container mx-auto max-w-4xl p-4">
+          <ChatInput
+            onSend={(content, language, script) => sendMessage.mutate({ content, language, script })}
+            isLoading={sendMessage.isPending}
+          />
           {!user?.isPremium && (
-            <div className="text-sm text-white/80">
+            <div className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
               {remainingMessages} messages remaining
             </div>
           )}
         </div>
-      </div>
-
-      <div
-        className="flex-1 overflow-y-auto p-4 space-y-4"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E")`,
-          backgroundColor: "#efeae2",
-        }}
-      >
-        {messagesLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="h-16 bg-white/50 dark:bg-white/5 animate-pulse rounded-lg"
-              />
-            ))}
-          </div>
-        ) : (
-          <>
-            {messages.map((message: Message) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                character={character}
-              />
-            ))}
-            {isTyping && <TypingIndicator />}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-
-      <ChatInput
-        onSend={(content, language, script) => sendMessage.mutate({ content, language, script })}
-        isLoading={sendMessage.isPending}
-      />
+      </footer>
 
       <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
         <DialogContent className="sm:max-w-[425px]">
