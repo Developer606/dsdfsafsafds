@@ -60,6 +60,8 @@ export default function Home() {
   const [location] = useLocation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
   const [newCharacter, setNewCharacter] = useState({
     name: "",
     avatar: "",
@@ -73,7 +75,7 @@ export default function Home() {
     queryKey: ["/api/user"]
   });
 
-  const { data: characters, isLoading } = useQuery<Character[]>({ 
+  const { data: characters = [], isLoading } = useQuery<Character[]>({ 
     queryKey: ["/api/characters"]
   });
 
@@ -108,27 +110,28 @@ export default function Home() {
   });
 
   const deleteCharacter = useMutation({
-    mutationFn: async (id: string) => {
-      if (!id.startsWith('custom_')) {
+    mutationFn: async (characterId: string) => {
+      if (!characterId || !characterId.startsWith('custom_')) {
         throw new Error('Cannot delete pre-defined characters');
       }
-      const numericId = parseInt(id.replace('custom_', ''), 10);
+
+      const numericId = parseInt(characterId.replace('custom_', ''), 10);
       if (isNaN(numericId)) {
         throw new Error('Invalid character ID');
       }
+
       await apiRequest("DELETE", `/api/custom-characters/${numericId}`);
+      return { success: true };
     },
-    onSuccess: (_, deletedId) => {
-      // Only invalidate queries related to characters
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/characters"],
-        exact: false,
-        refetchType: "all"
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/characters"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Success",
         description: "Character deleted successfully"
       });
+      setShowDeleteConfirm(false);
+      setCharacterToDelete(null);
     },
     onError: (error) => {
       toast({
@@ -136,13 +139,27 @@ export default function Home() {
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to delete character"
       });
+      setShowDeleteConfirm(false);
+      setCharacterToDelete(null);
     }
   });
 
   const handleDeleteCharacter = (characterId: string) => {
-    // Show confirmation before deleting
-    if (window.confirm('Are you sure you want to delete this character?')) {
-      deleteCharacter.mutate(characterId);
+    if (!characterId.startsWith('custom_')) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Cannot delete pre-defined characters"
+      });
+      return;
+    }
+    setCharacterToDelete(characterId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (characterToDelete) {
+      deleteCharacter.mutate(characterToDelete);
     }
   };
 
@@ -197,7 +214,6 @@ export default function Home() {
       animate={{ opacity: 1 }}
       className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 relative overflow-hidden"
     >
-      {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           initial="initial"
@@ -378,6 +394,35 @@ export default function Home() {
                 </Button>
               </motion.div>
             </motion.div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Character</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this character? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end space-x-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setCharacterToDelete(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+                disabled={deleteCharacter.isPending}
+              >
+                Delete
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
 
