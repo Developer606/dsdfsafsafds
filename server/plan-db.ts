@@ -36,12 +36,12 @@ export async function initializePlans() {
     const existingPlans = sqlite.prepare("SELECT COUNT(*) as count FROM subscription_plans").get();
 
     if (existingPlans.count === 0) {
-      // Insert default plans
+      // Insert default plans with updated pricing and features
       const defaultPlans = [
         {
           id: 'basic',
           name: 'Basic Plan',
-          price: '$4.99',
+          price: '$2.99',
           features: JSON.stringify([
             'Create up to 5 characters',
             'Basic character customization',

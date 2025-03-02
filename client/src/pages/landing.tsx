@@ -35,22 +35,25 @@ const slideIn = {
 const FEATURED_CHARACTERS = [
   {
     name: "Naruto Uzumaki",
-    description: "The determined ninja who never gives up! Join him on his journey to become the greatest Hokage.",
+    description:
+      "The determined ninja who never gives up! Join him on his journey to become the greatest Hokage.",
     image: "/images/characters/naruto.png",
-    color: "from-orange-500 to-red-500"
+    color: "from-orange-500 to-red-500",
   },
   {
     name: "Sakura Haruno",
-    description: "Skilled medical ninja with incredible strength. A powerful kunoichi from the Hidden Leaf Village.",
+    description:
+      "Skilled medical ninja with incredible strength. A powerful kunoichi from the Hidden Leaf Village.",
     image: "/images/characters/sakura.png",
-    color: "from-pink-500 to-red-400"
+    color: "from-pink-500 to-red-400",
   },
   {
     name: "Sasuke Uchiha",
-    description: "Last survivor of the Uchiha clan, seeking to restore honor to his family name.",
+    description:
+      "Last survivor of the Uchiha clan, seeking to restore honor to his family name.",
     image: "/images/characters/sasuke.png",
-    color: "from-purple-600 to-blue-500"
-  }
+    color: "from-purple-600 to-blue-500",
+  },
 ];
 
 // Move policy content outside component for better performance
@@ -368,13 +371,13 @@ export default function LandingPage() {
           variants={fadeIn}
           className="w-full max-w-7xl mx-auto mt-32"
         >
-          <motion.h2 
+          <motion.h2
             variants={fadeIn}
             className="text-4xl font-bold text-center text-white mb-12"
           >
             Featured Characters
           </motion.h2>
-          <motion.div 
+          <motion.div
             variants={stagger}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
@@ -401,9 +404,7 @@ export default function LandingPage() {
                       <h3 className="text-xl font-semibold text-white mb-2">
                         {character.name}
                       </h3>
-                      <p className="text-gray-300">
-                        {character.description}
-                      </p>
+                      <p className="text-gray-300">{character.description}</p>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -510,7 +511,7 @@ export default function LandingPage() {
                   className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
                 >
                   <FaEnvelope className="w-4 h-4" />
-                  support@animechat.ai
+                  contact@anitalks.itsmeanai.com
                 </a>
               </div>
             </div>
