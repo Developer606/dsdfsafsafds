@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Home, LogOut, User as UserIcon } from "lucide-react";
+import { LogOut, User as UserIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { type User as UserType } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
@@ -54,14 +54,7 @@ export function Navigation() {
       <div className="container mx-auto px-4">
         <div className="flex h-14 items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/chats">
-              <a className={location === "/chats" ? "text-primary" : "text-muted-foreground"}>
-                <Button variant="ghost" className="gap-2">
-                  <Home className="h-4 w-4" />
-                  Home
-                </Button>
-              </a>
-            </Link>
+            {/* Home icon and link removed */}
           </div>
 
           {user && (
