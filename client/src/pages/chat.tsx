@@ -42,6 +42,21 @@ export default function Chat() {
   const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger">("whatsapp");
   const tempMessageIdRef = useRef<string>("");
 
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"],
+  });
+
+  // Reset to WhatsApp style if user loses premium status
+  useEffect(() => {
+    if (!user?.isPremium && chatStyle !== "whatsapp") {
+      setChatStyle("whatsapp");
+      toast({
+        title: "Style Reset",
+        description: "Chat style has been reset to WhatsApp. Upgrade to Premium to access additional styles.",
+      });
+    }
+  }, [user?.isPremium, chatStyle]);
+
   const toggleTheme = () => {
     const doc = document.documentElement;
     const isDark = doc.classList.contains('dark');
@@ -55,6 +70,11 @@ export default function Chat() {
   };
 
   const toggleChatStyle = () => {
+    if (!user?.isPremium) {
+      setShowSubscriptionDialog(true);
+      return;
+    }
+
     setChatStyle(prev => {
       switch (prev) {
         case "whatsapp":
@@ -74,10 +94,6 @@ export default function Chat() {
   });
 
   const character = characters?.find((c: Character) => c.id === characterId);
-
-  const { data: user } = useQuery<User>({
-    queryKey: ["/api/user"],
-  });
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: [`/api/messages/${characterId}`],
@@ -329,43 +345,44 @@ export default function Chat() {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
-            {user?.isPremium && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
-                        size="icon"
-                        onClick={toggleChatStyle}
-                        className={cn(
-                          "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
-                          chatStyle === "whatsapp"
-                            ? "text-white hover:bg-white/10"
-                            : chatStyle === "messenger"
-                            ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
-                            : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        )}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                      <span className={cn(
-                        "hidden md:inline-block text-sm",
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
+                      size="icon"
+                      onClick={toggleChatStyle}
+                      className={cn(
+                        "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
                         chatStyle === "whatsapp"
-                          ? "text-white/90"
+                          ? "text-white hover:bg-white/10"
                           : chatStyle === "messenger"
-                          ? "text-[#0084ff] dark:text-blue-400"
-                          : "text-gray-600 dark:text-gray-400"
-                      )}>
-                        {chatStyle === "whatsapp"
-                          ? "WhatsApp Style"
-                          : chatStyle === "messenger"
-                          ? "Messenger Style"
-                          : "ChatGPT Style"}
-                      </span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
+                          ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
+                          : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
+                    <span className={cn(
+                      "hidden md:inline-block text-sm",
+                      chatStyle === "whatsapp"
+                        ? "text-white/90"
+                        : chatStyle === "messenger"
+                        ? "text-[#0084ff] dark:text-blue-400"
+                        : "text-gray-600 dark:text-gray-400"
+                    )}>
+                      {chatStyle === "whatsapp"
+                        ? "WhatsApp Style"
+                        : chatStyle === "messenger"
+                        ? "Messenger Style"
+                        : "ChatGPT Style"}
+                      {!user?.isPremium && " (Premium)"}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {user?.isPremium ? (
                     <p>Switch to {
                       chatStyle === "whatsapp"
                         ? "ChatGPT"
@@ -373,11 +390,12 @@ export default function Chat() {
                         ? "Messenger"
                         : "WhatsApp"
                     } style</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
+                  ) : (
+                    <p>Upgrade to Premium to access additional chat styles</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
               size="icon"
