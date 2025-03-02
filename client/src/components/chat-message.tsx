@@ -56,65 +56,37 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={cn(
-        "w-full border-b border-gray-100 dark:border-gray-800",
-        isUser ? "bg-white dark:bg-slate-800" : "bg-gray-50 dark:bg-slate-900"
-      )}
+      className="px-4 py-2 max-w-[85%] relative"
     >
-      <div className="container mx-auto max-w-4xl px-4 py-6">
-        <div className="flex gap-4 items-start">
+      <div className={cn(
+        "flex flex-col",
+        isUser ? "items-end ml-auto" : "items-start"
+      )}>
+        <div className={cn(
+          "px-3 py-2 rounded-lg max-w-[90%]",
+          isUser 
+            ? "bg-[#e7ffdb] dark:bg-emerald-800 rounded-tr-none" 
+            : "bg-white dark:bg-slate-800 rounded-tl-none"
+        )}>
           {!isUser && (
-            <motion.img
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              src={character.avatar}
-              alt={character.name}
-              className="w-8 h-8 rounded-full object-cover mt-1"
-            />
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1">
+              {character.name}
+            </p>
           )}
-          <div className={cn("flex flex-col flex-1", isUser && "items-end")}>
-            <motion.span 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-sm text-gray-500 dark:text-gray-400 mb-1"
-            >
-              {isUser ? "You" : character.name}
-            </motion.span>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="prose dark:prose-invert max-w-none"
-            >
-              <div className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">
-                {message.content}
-              </div>
-            </motion.div>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center gap-2 mt-2 text-xs text-gray-400"
-            >
+          <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+            {message.content}
+          </p>
+          <div className="flex items-center justify-end gap-1 mt-1">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {format(new Date(message.timestamp), "h:mm a")}
-              {isUser && (
-                <div className="flex">
-                  <Check className="h-3 w-3" /> 
-                  <Check className="h-3 w-3 -ml-2" />
-                </div>
-              )}
-            </motion.div>
+            </span>
+            {isUser && (
+              <div className="flex">
+                <Check className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+                <Check className="h-3 w-3 -ml-1 text-gray-500 dark:text-gray-400" />
+              </div>
+            )}
           </div>
-          {isUser && (
-            <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center"
-            >
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-300">
-                {isUser ? "Y" : character.name[0]}
-              </span>
-            </motion.div>
-          )}
         </div>
       </div>
     </motion.div>

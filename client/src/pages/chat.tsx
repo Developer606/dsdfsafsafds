@@ -344,7 +344,7 @@ export default function Chat() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto pt-16 pb-20">
+      <main className="flex-1 overflow-y-auto pt-16 pb-20 bg-[#efeae2] dark:bg-slate-900">
         <div className="container mx-auto max-w-4xl">
           {messagesLoading ? (
             <div className="space-y-4 p-4">
