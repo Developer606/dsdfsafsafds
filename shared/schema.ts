@@ -175,17 +175,19 @@ export const subscriptionPlans = {
       "Basic character customization",
       "Standard support",
     ],
+    characterLimit: 5
   },
   PREMIUM: {
     id: "premium",
     name: "Premium Plan",
     price: "$9.99",
     features: [
-      "Unlimited character creation",
+      "Create up to 15 characters",
       "Advanced character customization",
       "Priority support",
       "Early access to new features",
     ],
+    characterLimit: 15
   },
   PRO: {
     id: "pro",
@@ -198,6 +200,7 @@ export const subscriptionPlans = {
       "White-label option",
       "Team collaboration features",
     ],
+    characterLimit: Infinity
   },
 } as const;
 

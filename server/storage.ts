@@ -61,7 +61,7 @@ export interface IStorage {
   // Add these methods to the IStorage interface
   validateCharacterCreation(userId: number): Promise<boolean>;
   getCharacterLimit(userId: number): Promise<number>;
-  validateFeatureAccess(userId: number, feature: "basic" | "advanced" | "api"): Promise<boolean>;
+  validateFeatureAccess(userId: number, feature: "basic" | "advanced" | "api" | "team"): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -402,13 +402,17 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Check subscription tier limits
-    if (user.subscriptionTier === "basic") {
-      const characters = await this.getCustomCharactersByUser(userId);
-      return characters.length < 5;
+    const characters = await this.getCustomCharactersByUser(userId);
+    switch (user.subscriptionTier) {
+      case "basic":
+        return characters.length < subscriptionPlans.BASIC.characterLimit;
+      case "premium":
+        return characters.length < subscriptionPlans.PREMIUM.characterLimit;
+      case "pro":
+        return true; // Pro users have unlimited characters
+      default:
+        return false;
     }
-
-    // Premium and Pro users have unlimited characters
-    return true;
   }
 
   async getCharacterLimit(userId: number): Promise<number> {
@@ -416,11 +420,20 @@ export class DatabaseStorage implements IStorage {
     if (!user) return 0;
 
     if (!user.isPremium) return 3; // Trial limit
-    if (user.subscriptionTier === "basic") return 5;
-    return Infinity; // Premium and Pro users
+
+    switch (user.subscriptionTier) {
+      case "basic":
+        return subscriptionPlans.BASIC.characterLimit;
+      case "premium":
+        return subscriptionPlans.PREMIUM.characterLimit;
+      case "pro":
+        return Infinity;
+      default:
+        return 0;
+    }
   }
 
-  async validateFeatureAccess(userId: number, feature: "basic" | "advanced" | "api"): Promise<boolean> {
+  async validateFeatureAccess(userId: number, feature: "basic" | "advanced" | "api" | "team"): Promise<boolean> {
     const user = await this.getUser(userId);
     if (!user) return false;
 
@@ -430,6 +443,8 @@ export class DatabaseStorage implements IStorage {
       case "advanced":
         return user.isPremium && ["premium", "pro"].includes(user.subscriptionTier || "");
       case "api":
+        return user.isPremium && user.subscriptionTier === "pro";
+      case "team":
         return user.isPremium && user.subscriptionTier === "pro";
       default:
         return false;
