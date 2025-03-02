@@ -9,27 +9,51 @@ import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Info } from "lucide-react";
+import { Plus, Trash2, Info, Sparkles } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type Character } from "@shared/characters";
 import { type CustomCharacter, type User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+// Enhanced animations
 const container = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 0, scale: 0.9 },
   show: {
     opacity: 1,
+    scale: 1,
     transition: {
       staggerChildren: 0.1,
-      delayChildren: 0.3
+      delayChildren: 0.3,
+      duration: 0.5
     }
   }
 };
 
 const item = {
-  hidden: { y: 20, opacity: 0 },
-  show: { y: 0, opacity: 1 }
+  hidden: { y: 20, opacity: 0, scale: 0.8 },
+  show: { 
+    y: 0, 
+    opacity: 1, 
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100
+    }
+  }
+};
+
+// Floating animation for background elements
+const floatingAnimation = {
+  initial: { y: 0 },
+  animate: {
+    y: [-10, 10, -10],
+    transition: {
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
 };
 
 export default function Home() {
@@ -53,6 +77,7 @@ export default function Home() {
     queryKey: ["/api/characters"]
   });
 
+  // Rest of the mutation logic remains unchanged...
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
       const res = await apiRequest("POST", "/api/custom-characters", data);
@@ -154,10 +179,27 @@ export default function Home() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-[#efeae2] dark:bg-slate-950"
+      className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 relative overflow-hidden"
     >
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          initial="initial"
+          animate="animate"
+          variants={floatingAnimation}
+          className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-purple-300/20 to-pink-300/20 rounded-full blur-3xl"
+        />
+        <motion.div
+          initial="initial"
+          animate="animate"
+          variants={floatingAnimation}
+          className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-l from-blue-300/20 to-indigo-300/20 rounded-full blur-3xl"
+        />
+      </div>
+
       <NotificationHeader />
-      <div className="container mx-auto p-6">
+
+      <div className="container mx-auto p-6 relative z-10">
         <motion.div 
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -168,7 +210,7 @@ export default function Home() {
             animate={{ x: 0, opacity: 1 }}
             className="flex flex-col gap-2"
           >
-            <h1 className="text-4xl font-bold text-[#075e54] dark:text-[#00a884]">
+            <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
               Your Characters
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
@@ -183,7 +225,7 @@ export default function Home() {
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center text-sm text-[#075e54] dark:text-gray-400"
+                      className="flex items-center text-sm text-purple-600 dark:text-purple-400"
                     >
                       <Info className="h-4 w-4 mr-1" />
                       {user?.trialCharactersCreated || 0}/3 free characters used
@@ -202,7 +244,7 @@ export default function Home() {
             >
               <Button
                 onClick={handleCreateClick}
-                className="bg-[#00a884] hover:bg-[#008f6f] text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <Plus className="h-5 w-5 mr-2" />
                 Create Character
@@ -224,14 +266,21 @@ export default function Home() {
                 variants={item}
                 layoutId={character.id}
                 className="relative group"
-                whileHover={{ y: -5 }}
+                whileHover={{ y: -5, scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
               >
                 <Link href={`/chat/${character.id}`}>
-                  <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                    <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-800">
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#00a884]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="transform transition-all duration-300">
+                    <div className="relative overflow-hidden rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 border border-purple-200/50 dark:border-purple-800/50">
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <CharacterCard character={character} />
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="absolute top-2 right-2 text-purple-500"
+                      >
+                        <Sparkles className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </motion.div>
                     </div>
                   </div>
                 </Link>
@@ -263,7 +312,7 @@ export default function Home() {
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-0">
             <DialogHeader>
-              <DialogTitle className="text-[#075e54] dark:text-[#00a884]">Create New Character</DialogTitle>
+              <DialogTitle className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">Create New Character</DialogTitle>
               {!user?.isPremium && (
                 <DialogDescription className="text-yellow-600">
                   Free Trial: {user?.trialCharactersCreated || 0}/3 characters created
@@ -279,25 +328,25 @@ export default function Home() {
                 placeholder="Character Name"
                 value={newCharacter.name}
                 onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
-                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884]"
+                className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500"
               />
               <Input
                 placeholder="Avatar URL"
                 value={newCharacter.avatar}
                 onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
-                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884]"
+                className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500"
               />
               <Textarea
                 placeholder="Character Description"
                 value={newCharacter.description}
                 onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
-                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] min-h-[100px]"
+                className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500 min-h-[100px]"
               />
               <Textarea
                 placeholder="Character Persona"
                 value={newCharacter.persona}
                 onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
-                className="border-gray-200 dark:border-gray-700 focus:border-[#00a884] dark:focus:border-[#00a884] min-h-[100px]"
+                className="border-purple-200 dark:border-purple-800 focus:border-purple-500 dark:focus:border-purple-500 min-h-[100px]"
               />
               <motion.div 
                 whileHover={{ scale: 1.02 }} 
@@ -305,7 +354,7 @@ export default function Home() {
                 className="pt-2"
               >
                 <Button 
-                  className="w-full bg-gradient-to-r from-[#00a884] to-[#008f6f] hover:from-[#008f6f] hover:to-[#007a5f] text-white shadow-lg"
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
                   onClick={handleSubmit}
                   disabled={createCharacter.isPending}
                 >
