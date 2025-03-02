@@ -169,7 +169,7 @@ export const subscriptionPlans = {
   BASIC: {
     id: "basic",
     name: "Basic Plan",
-    price: "$2.99",
+    price: "$4.99",
     features: [
       "Create up to 5 characters",
       "Basic character customization",
