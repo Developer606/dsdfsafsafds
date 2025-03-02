@@ -77,7 +77,6 @@ export default function Home() {
     queryKey: ["/api/characters"]
   });
 
-  // Rest of the mutation logic remains unchanged...
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
       const res = await apiRequest("POST", "/api/custom-characters", data);
@@ -110,25 +109,42 @@ export default function Home() {
 
   const deleteCharacter = useMutation({
     mutationFn: async (id: string) => {
-      const numericId = id.replace('custom_', '');
+      if (!id.startsWith('custom_')) {
+        throw new Error('Cannot delete pre-defined characters');
+      }
+      const numericId = parseInt(id.replace('custom_', ''), 10);
+      if (isNaN(numericId)) {
+        throw new Error('Invalid character ID');
+      }
       await apiRequest("DELETE", `/api/custom-characters/${numericId}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/custom-characters"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/characters"] });
+    onSuccess: (_, deletedId) => {
+      // Only invalidate queries related to characters
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/characters"],
+        exact: false,
+        refetchType: "all"
+      });
       toast({
         title: "Success",
         description: "Character deleted successfully"
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to delete character"
+        description: error instanceof Error ? error.message : "Failed to delete character"
       });
     }
   });
+
+  const handleDeleteCharacter = (characterId: string) => {
+    // Show confirmation before deleting
+    if (window.confirm('Are you sure you want to delete this character?')) {
+      deleteCharacter.mutate(characterId);
+    }
+  };
 
   const handleCreateClick = () => {
     if (!user) return;
@@ -297,7 +313,7 @@ export default function Home() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        deleteCharacter.mutate(character.id);
+                        handleDeleteCharacter(character.id);
                       }}
                     >
                       <Trash2 className="h-4 w-4" />
