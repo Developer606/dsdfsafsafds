@@ -5,7 +5,7 @@ import { ChatMessage } from "@/components/chat-message";
 import { ChatInput } from "@/components/chat-input";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { Button } from "@/components/ui/button";
-import { LogOut, Trash2, MessageCircle, Sun, Moon } from "lucide-react";
+import { LogOut, Trash2, MessageCircle, Sun, Moon, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SubscriptionManagement } from "@/components/subscription-management";
 import { type Message, FREE_USER_MESSAGE_LIMIT } from "@shared/schema";
@@ -24,7 +24,12 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function Chat() {
   const { characterId } = useParams();
@@ -34,6 +39,7 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt">("whatsapp");
   const tempMessageIdRef = useRef<string>("");
 
   const toggleTheme = () => {
@@ -46,6 +52,10 @@ export default function Chat() {
       doc.classList.add('dark');
       localStorage.setItem('theme', 'dark');
     }
+  };
+
+  const toggleChatStyle = () => {
+    setChatStyle(prev => prev === "whatsapp" ? "chatgpt" : "whatsapp");
   };
 
   const { data: characters } = useQuery<Character[]>({
@@ -277,6 +287,25 @@ export default function Chat() {
           </div>
 
           <div className="flex items-center gap-2">
+            {user?.isPremium && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleChatStyle}
+                      className="h-9 w-9 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Switch to {chatStyle === "whatsapp" ? "ChatGPT" : "WhatsApp"} style</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -333,6 +362,7 @@ export default function Chat() {
                   key={message.id}
                   message={message}
                   character={character!}
+                  chatStyle={chatStyle}
                 />
               ))}
               {isTyping && <TypingIndicator />}
