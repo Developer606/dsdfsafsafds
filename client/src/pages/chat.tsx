@@ -284,7 +284,7 @@ export default function Chat() {
           </div>
 
           <div className="flex items-center gap-2">
-            {user?.isPremium && user?.subscriptionTier !== 'basic' && (
+            {user?.isPremium && (user?.subscriptionTier === 'premium' || user?.subscriptionTier === 'pro') && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
