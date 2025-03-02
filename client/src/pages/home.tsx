@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Info } from "lucide-react";
+import { Plus, Trash2, Info, Sparkles } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type Character } from "@shared/characters";
 import { type CustomCharacter, type User } from "@shared/schema";
@@ -274,6 +274,13 @@ export default function Home() {
                     <div className="relative overflow-hidden rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 border border-purple-200/50 dark:border-purple-800/50">
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <CharacterCard character={character} />
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="absolute top-2 right-2 text-purple-500"
+                      >
+                        <Sparkles className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </motion.div>
                     </div>
                   </div>
                 </Link>
