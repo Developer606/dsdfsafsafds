@@ -70,7 +70,8 @@ export default function Chat() {
   };
 
   const toggleChatStyle = () => {
-    if (!user?.isPremium) {
+    // Check if user is free or on basic plan
+    if (!user?.isPremium || user?.subscriptionTier === "basic") {
       setShowSubscriptionDialog(true);
       return;
     }
@@ -382,7 +383,7 @@ export default function Chat() {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {user?.isPremium ? (
+                  {user?.isPremium && user?.subscriptionTier !== "basic" ? (
                     <p>Switch to {
                       chatStyle === "whatsapp"
                         ? "ChatGPT"
@@ -391,7 +392,7 @@ export default function Chat() {
                         : "WhatsApp"
                     } style</p>
                   ) : (
-                    <p>Upgrade to Premium to access additional chat styles</p>
+                    <p>Upgrade to Premium or Pro plan to access additional chat styles</p>
                   )}
                 </TooltipContent>
               </Tooltip>
