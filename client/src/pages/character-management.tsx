@@ -13,7 +13,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
-import { type CustomCharacter, type User } from "@shared/schema";
+import { type CustomCharacter, type User, subscriptionPlans } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function CharacterManagement() {
@@ -110,6 +110,46 @@ export default function CharacterManagement() {
     createCharacter.mutate(newCharacter);
   };
 
+  // Get character limit based on subscription
+  const getCharacterLimit = () => {
+    if (!user) return 3;
+    if (!user.isPremium) return 3;
+
+    switch (user.subscriptionTier) {
+      case "basic":
+        return subscriptionPlans.BASIC.characterLimit;
+      case "premium":
+        return subscriptionPlans.PREMIUM.characterLimit;
+      case "pro":
+        return "∞"; 
+      default:
+        return 3;
+    }
+  };
+
+  // Get remaining character slots
+  const getRemainingSlots = () => {
+    const limit = getCharacterLimit();
+    if (limit === "∞") return "unlimited";
+    return limit - (customCharacters?.length || 0);
+  };
+
+  const getPlanMessage = () => {
+    if (!user?.isPremium) {
+      return `Free trial: Created ${user?.trialCharactersCreated || 0}/3 characters. Upgrade to premium for more characters!`;
+    }
+
+    const remaining = getRemainingSlots();
+    const planName = user.subscriptionTier ? 
+      subscriptionPlans[user.subscriptionTier.toUpperCase()]?.name :
+      'Basic Plan';
+
+    return remaining === "unlimited" 
+      ? `${planName}: Create unlimited characters!`
+      : `${planName}: ${remaining} character slot${remaining !== 1 ? 's' : ''} remaining`;
+  };
+
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4">
@@ -132,16 +172,18 @@ export default function CharacterManagement() {
         </Button>
       </div>
 
-      {!user?.isPremium && (
-        <Card className="mb-6 bg-accent">
-          <CardContent className="p-4">
-            <p className="text-sm">
-              Free trial: Created {user?.trialCharactersCreated || 0}/3 characters.
-              Upgrade to premium for unlimited characters!
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      <Card className="mb-6 bg-accent">
+        <CardContent className="p-4">
+          <p className="text-sm">
+            {getPlanMessage()}
+            {user?.subscriptionTier === "basic" && (
+              <span className="block mt-1 text-xs">
+                Upgrade to Premium to create up to 45 characters!
+              </span>
+            )}
+          </p>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {customCharacters?.map((character) => (

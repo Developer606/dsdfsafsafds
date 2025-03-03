@@ -1,5 +1,5 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
-import { messages, users, customCharacters, subscriptionPlansTable, type SubscriptionPlan, type InsertSubscriptionPlan } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
+import { messages, users, customCharacters, subscriptionPlansTable } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
@@ -403,11 +403,13 @@ export class DatabaseStorage implements IStorage {
 
     // Check subscription tier limits
     const characters = await this.getCustomCharactersByUser(userId);
-    switch (user.subscriptionTier) {
+    const characterCount = characters.length;
+
+    switch (user.subscriptionTier as SubscriptionTier) {
       case "basic":
-        return characters.length < subscriptionPlans.BASIC.characterLimit;
+        return characterCount < subscriptionPlans.BASIC.characterLimit;
       case "premium":
-        return characters.length < subscriptionPlans.PREMIUM.characterLimit;
+        return characterCount < subscriptionPlans.PREMIUM.characterLimit;
       case "pro":
         return true; // Pro users have unlimited characters
       default:
@@ -421,11 +423,11 @@ export class DatabaseStorage implements IStorage {
 
     if (!user.isPremium) return 3; // Trial limit
 
-    switch (user.subscriptionTier) {
+    switch (user.subscriptionTier as SubscriptionTier) {
       case "basic":
-        return subscriptionPlans.BASIC.characterLimit; // Now 15 characters
+        return subscriptionPlans.BASIC.characterLimit;
       case "premium":
-        return subscriptionPlans.PREMIUM.characterLimit; // Now 45 characters
+        return subscriptionPlans.PREMIUM.characterLimit;
       case "pro":
         return Infinity;
       default:
