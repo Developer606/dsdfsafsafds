@@ -6,6 +6,7 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
 import { planDb } from './plan-db';
+import { dailyCharacterCreation } from "@shared/schema"; //Import dailyCharacterCreation
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
@@ -62,6 +63,9 @@ export interface IStorage {
   validateCharacterCreation(userId: number): Promise<boolean>;
   getCharacterLimit(userId: number): Promise<number>;
   validateFeatureAccess(userId: number, feature: "basic" | "advanced" | "api" | "team"): Promise<boolean>;
+  getDailyCharacterCount(userId: number): Promise<number>;
+  incrementDailyCharacterCount(userId: number): Promise<void>;
+  getDailyCharacterLimit(userId: number): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -396,18 +400,25 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(userId);
     if (!user) return false;
 
+    // Get daily character count
+    const dailyCount = await this.getDailyCharacterCount(userId);
+
     // Free users are limited by trial characters
     if (!user.isPremium) {
-      return user.trialCharactersCreated < 3;
+      return user.trialCharactersCreated < 3 && dailyCount < 3;
     }
 
-    // Check subscription tier limits
+    // Get total characters created
     const characters = await this.getCustomCharactersByUser(userId);
+
+    // Check subscription tier limits
     switch (user.subscriptionTier) {
       case "basic":
-        return characters.length < subscriptionPlans.BASIC.characterLimit;
+        return characters.length < subscriptionPlans.BASIC.characterLimit &&
+               dailyCount < subscriptionPlans.BASIC.dailyCharacterLimit;
       case "premium":
-        return characters.length < subscriptionPlans.PREMIUM.characterLimit;
+        return characters.length < subscriptionPlans.PREMIUM.characterLimit &&
+               dailyCount < subscriptionPlans.PREMIUM.dailyCharacterLimit;
       case "pro":
         return true; // Pro users have unlimited characters
       default:
@@ -448,6 +459,80 @@ export class DatabaseStorage implements IStorage {
         return user.isPremium && user.subscriptionTier === "pro";
       default:
         return false;
+    }
+  }
+
+  async getDailyCharacterCount(userId: number): Promise<number> {
+    const [record] = await db.select()
+      .from(dailyCharacterCreation)
+      .where(eq(dailyCharacterCreation.userId, userId));
+
+    if (!record) {
+      // Create initial record if none exists
+      await db.insert(dailyCharacterCreation)
+        .values({
+          userId,
+          count: 0,
+          lastResetAt: new Date()
+        });
+      return 0;
+    }
+
+    // Check if we need to reset the count (new day)
+    const lastReset = new Date(record.lastResetAt);
+    const now = new Date();
+    if (lastReset.getDate() !== now.getDate() ||
+        lastReset.getMonth() !== now.getMonth() ||
+        lastReset.getFullYear() !== now.getFullYear()) {
+      // Reset count for new day
+      await db.update(dailyCharacterCreation)
+        .set({
+          count: 0,
+          lastResetAt: now
+        })
+        .where(eq(dailyCharacterCreation.userId, userId));
+      return 0;
+    }
+
+    return record.count;
+  }
+
+  async incrementDailyCharacterCount(userId: number): Promise<void> {
+    const [record] = await db.select()
+      .from(dailyCharacterCreation)
+      .where(eq(dailyCharacterCreation.userId, userId));
+
+    if (!record) {
+      await db.insert(dailyCharacterCreation)
+        .values({
+          userId,
+          count: 1,
+          lastResetAt: new Date()
+        });
+    } else {
+      await db.update(dailyCharacterCreation)
+        .set({
+          count: record.count + 1
+        })
+        .where(eq(dailyCharacterCreation.userId, userId));
+    }
+  }
+
+  async getDailyCharacterLimit(userId: number): Promise<number> {
+    const user = await this.getUser(userId);
+    if (!user) return 0;
+
+    if (!user.isPremium) return 3; // Free user limit
+
+    switch (user.subscriptionTier) {
+      case "basic":
+        return subscriptionPlans.BASIC.dailyCharacterLimit;
+      case "premium":
+        return subscriptionPlans.PREMIUM.dailyCharacterLimit;
+      case "pro":
+        return Infinity;
+      default:
+        return 0;
     }
   }
 }
