@@ -1,4 +1,4 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications } from "@shared/schema";
+import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications, subscriptionPlans } from "@shared/schema";
 import { messages, users, customCharacters, subscriptionPlansTable, type SubscriptionPlan, type InsertSubscriptionPlan } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
@@ -396,18 +396,30 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(userId);
     if (!user) return false;
 
+    // Get current character count
+    const characters = await this.getCustomCharactersByUser(userId);
+    const currentCount = characters.length;
+
     // Free users are limited by trial characters
     if (!user.isPremium) {
-      return user.trialCharactersCreated < 3;
+      const canCreate = user.trialCharactersCreated < 3;
+      if (canCreate) {
+        // Use SQL update for atomic increment
+        await db.update(users)
+          .set({ 
+            trialCharactersCreated: sql`${users.trialCharactersCreated} + 1` 
+          })
+          .where(eq(users.id, userId));
+      }
+      return canCreate;
     }
 
     // Check subscription tier limits
-    const characters = await this.getCustomCharactersByUser(userId);
     switch (user.subscriptionTier) {
       case "basic":
-        return characters.length < subscriptionPlans.BASIC.characterLimit;
+        return currentCount < subscriptionPlans.BASIC.characterLimit;
       case "premium":
-        return characters.length < subscriptionPlans.PREMIUM.characterLimit;
+        return currentCount < subscriptionPlans.PREMIUM.characterLimit;
       case "pro":
         return true; // Pro users have unlimited characters
       default:

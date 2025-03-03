@@ -13,7 +13,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
-import { type CustomCharacter, type User } from "@shared/schema";
+import { type CustomCharacter, type User, subscriptionPlans } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function CharacterManagement() {
@@ -39,6 +39,10 @@ export default function CharacterManagement() {
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
       const res = await apiRequest("POST", "/api/custom-characters", data);
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(error);
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -57,12 +61,16 @@ export default function CharacterManagement() {
         description: "Character created successfully"
       });
     },
-    onError: () => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create character"
-      });
+    onError: (error: Error) => {
+      if (error.message.includes("character limit")) {
+        setShowSubscription(true);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message || "Failed to create character"
+        });
+      }
     }
   });
 
@@ -87,10 +95,29 @@ export default function CharacterManagement() {
     }
   });
 
+  const getCharacterLimit = () => {
+    if (!user) return 3; // Default trial limit
+    if (!user.isPremium) return 3;
+
+    switch (user.subscriptionTier) {
+      case "basic":
+        return subscriptionPlans.BASIC.characterLimit;
+      case "premium":
+        return subscriptionPlans.PREMIUM.characterLimit;
+      case "pro":
+        return "∞"; // Infinity symbol for pro users
+      default:
+        return 3;
+    }
+  };
+
   const handleCreateClick = () => {
     if (!user) return;
 
-    if (!user.isPremium && user.trialCharactersCreated >= 3) { 
+    const currentCount = customCharacters?.length || 0;
+    const limit = getCharacterLimit();
+
+    if (limit !== "∞" && currentCount >= limit) {
       setShowSubscription(true);
       return;
     }
@@ -122,6 +149,9 @@ export default function CharacterManagement() {
     );
   }
 
+  const currentCount = customCharacters?.length || 0;
+  const characterLimit = getCharacterLimit();
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
@@ -132,16 +162,25 @@ export default function CharacterManagement() {
         </Button>
       </div>
 
-      {!user?.isPremium && (
-        <Card className="mb-6 bg-accent">
-          <CardContent className="p-4">
+      <Card className="mb-6 bg-accent">
+        <CardContent className="p-4">
+          {!user?.isPremium ? (
             <p className="text-sm">
               Free trial: Created {user?.trialCharactersCreated || 0}/3 characters.
-              Upgrade to premium for unlimited characters!
+              Upgrade to premium for more characters!
             </p>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <p className="text-sm">
+              {characterLimit === "∞" ? (
+                "Pro Plan: Create unlimited characters!"
+              ) : (
+                `${user.subscriptionTier?.charAt(0).toUpperCase()}${user.subscriptionTier?.slice(1)} Plan: Created ${currentCount}/${characterLimit} characters.
+                ${currentCount >= characterLimit ? " Upgrade your plan for more characters!" : ""}`
+              )}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {customCharacters?.map((character) => (
