@@ -96,6 +96,13 @@ export const customCharacters = sqliteTable("custom_characters", {
   avatar: text("avatar").notNull(),
   description: text("description").notNull(),
   persona: text("persona").notNull(),
+  // Advanced customization fields for premium users
+  personality: text("personality"),
+  voiceStyle: text("voice_style"),
+  backgroundStory: text("background_story"),
+  interests: text("interests"),
+  speechPatterns: text("speech_patterns"),
+  emotionalRange: text("emotional_range"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -142,6 +149,12 @@ export const insertCustomCharacterSchema = createInsertSchema(
   avatar: true,
   description: true,
   persona: true,
+  personality: true,
+  voiceStyle: true,
+  backgroundStory: true,
+  interests: true,
+  speechPatterns: true,
+  emotionalRange: true,
 });
 
 // Types
