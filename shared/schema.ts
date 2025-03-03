@@ -171,23 +171,24 @@ export const subscriptionPlans = {
     name: "Basic Plan",
     price: "$4.99",
     features: [
-      "Create up to 5 characters",
+      "Create up to 15 characters",
       "Basic character customization",
       "Standard support",
     ],
-    characterLimit: 5
+    characterLimit: 15
   },
   PREMIUM: {
     id: "premium",
     name: "Premium Plan",
     price: "$9.99",
     features: [
-      "Create up to 15 characters",
+      "Create up to 45 characters",
       "Advanced character customization",
       "Priority support",
       "Early access to new features",
+      "Multiple chat UI styles",
     ],
-    characterLimit: 15
+    characterLimit: 45
   },
   PRO: {
     id: "pro",
@@ -203,6 +204,20 @@ export const subscriptionPlans = {
     characterLimit: Infinity
   },
 } as const;
+
+// Add a helper function to get character limit based on subscription tier
+export function getCharacterLimit(tier?: string): number {
+  switch (tier) {
+    case "basic":
+      return subscriptionPlans.BASIC.characterLimit;
+    case "premium":
+      return subscriptionPlans.PREMIUM.characterLimit;
+    case "pro":
+      return subscriptionPlans.PRO.characterLimit;
+    default:
+      return subscriptionPlans.BASIC.characterLimit;
+  }
+}
 
 // Add subscription plan table
 export const subscriptionPlansTable = sqliteTable("subscription_plans", {

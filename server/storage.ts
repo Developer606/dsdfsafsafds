@@ -423,9 +423,9 @@ export class DatabaseStorage implements IStorage {
 
     switch (user.subscriptionTier) {
       case "basic":
-        return subscriptionPlans.BASIC.characterLimit;
+        return subscriptionPlans.BASIC.characterLimit; // Now 15 characters
       case "premium":
-        return subscriptionPlans.PREMIUM.characterLimit;
+        return subscriptionPlans.PREMIUM.characterLimit; // Now 45 characters
       case "pro":
         return Infinity;
       default:

@@ -479,8 +479,16 @@ export async function registerRoutes(app: Express) {
       const canCreate = await storage.validateCharacterCreation(user.id);
       if (!canCreate) {
         const limit = await storage.getCharacterLimit(user.id);
+        const planName = user.subscriptionTier ? 
+          subscriptionPlans[user.subscriptionTier.toUpperCase()]?.name : 
+          'Free';
+
         return res.status(403).json({
-          error: `Character creation limit reached (${limit} characters). Please upgrade your plan to create more characters.`,
+          error: `Character creation limit reached (${limit} characters) for ${planName}. ${
+            user.subscriptionTier === 'basic' 
+              ? 'Upgrade to Premium plan to create up to 45 characters.' 
+              : 'Please upgrade your plan to create more characters.'
+          }`,
           limitReached: true
         });
       }
