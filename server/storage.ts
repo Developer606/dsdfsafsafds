@@ -121,9 +121,7 @@ export class DatabaseStorage implements IStorage {
       verificationToken: null,
       verificationTokenExpiry: null,
       lastLoginAt: null,
-      messageCount: 0, // Initialize message count
-      dailyCharacterCount: 0, // Initialize daily character count
-      lastCharacterCreationDate: null // Initialize last character creation date
+      messageCount: 0 // Initialize message count
     }).returning();
     return newUser;
   }
@@ -173,70 +171,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  private async resetDailyCharacterCountIfNeeded(userId: number): Promise<void> {
-    const user = await this.getUser(userId);
-    if (!user) return;
-
-    const now = new Date();
-    const lastCreation = user.lastCharacterCreationDate ? new Date(user.lastCharacterCreationDate) : null;
-
-    // Reset if it's a new day or first character creation
-    if (!lastCreation || lastCreation.getDate() !== now.getDate()) {
-      await db.update(users)
-        .set({
-          dailyCharacterCount: 0,
-          lastCharacterCreationDate: now
-        })
-        .where(eq(users.id, userId));
-    }
-  }
-
-  private async incrementDailyCharacterCount(userId: number): Promise<void> {
-    await db.update(users)
-      .set({
-        dailyCharacterCount: sql`${users.dailyCharacterCount} + 1`,
-        lastCharacterCreationDate: new Date()
-      })
-      .where(eq(users.id, userId));
-  }
-
-  async validateCharacterCreation(userId: number): Promise<boolean> {
-    const user = await this.getUser(userId);
-    if (!user) return false;
-
-    // Reset daily count if needed
-    await this.resetDailyCharacterCountIfNeeded(userId);
-
-    // Refresh user data after potential reset
-    const updatedUser = await this.getUser(userId);
-    if (!updatedUser) return false;
-
-    // Free users are limited by trial characters
-    if (!updatedUser.isPremium) {
-      return updatedUser.trialCharactersCreated < 3;
-    }
-
-    // Check daily limits based on subscription tier
-    const dailyLimit = updatedUser.subscriptionTier === "basic" ? 3 :
-      updatedUser.subscriptionTier === "premium" ? 15 :
-        updatedUser.subscriptionTier === "pro" ? Infinity : 0;
-
-    return updatedUser.dailyCharacterCount < dailyLimit;
-  }
-
   async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {
-    const canCreate = await this.validateCharacterCreation(insertCharacter.userId);
-    if (!canCreate) {
-      throw new Error('Daily character creation limit reached');
-    }
-
-    // Increment both counters
-    const user = await this.getUser(insertCharacter.userId);
-    if (!user?.isPremium) {
-      await this.incrementTrialCharacterCount(insertCharacter.userId);
-    }
-    await this.incrementDailyCharacterCount(insertCharacter.userId);
-
     const [newCharacter] = await db.insert(customCharacters).values({
       ...insertCharacter,
       createdAt: new Date()
@@ -339,10 +274,7 @@ export class DatabaseStorage implements IStorage {
           subscriptionExpiresAt: null,
           createdAt: new Date(),
           lastLoginAt: null,
-          messageCount: 0, // Initialize message count
-          dailyCharacterCount: 0, // Initialize daily character count
-          lastCharacterCreationDate: null // Initialize last character creation date
-
+          messageCount: 0 // Initialize message count
         });
         console.log("Admin user created successfully");
       }
@@ -392,7 +324,7 @@ export class DatabaseStorage implements IStorage {
 
       const now = new Date();
       if (verification.verificationToken === token &&
-        verification.tokenExpiry > now) {
+          verification.tokenExpiry > now) {
         // If verification is successful, delete the verification record
         await this.deletePendingVerification(email);
         return true;
@@ -460,6 +392,29 @@ export class DatabaseStorage implements IStorage {
       .where(eq(subscriptionPlansTable.id, id));
   }
 
+  async validateCharacterCreation(userId: number): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+
+    // Free users are limited by trial characters
+    if (!user.isPremium) {
+      return user.trialCharactersCreated < 3;
+    }
+
+    // Check subscription tier limits
+    const characters = await this.getCustomCharactersByUser(userId);
+    switch (user.subscriptionTier) {
+      case "basic":
+        return characters.length < subscriptionPlans.BASIC.characterLimit;
+      case "premium":
+        return characters.length < subscriptionPlans.PREMIUM.characterLimit;
+      case "pro":
+        return true; // Pro users have unlimited characters
+      default:
+        return false;
+    }
+  }
+
   async getCharacterLimit(userId: number): Promise<number> {
     const user = await this.getUser(userId);
     if (!user) return 0;
@@ -468,9 +423,9 @@ export class DatabaseStorage implements IStorage {
 
     switch (user.subscriptionTier) {
       case "basic":
-        return 3;
+        return subscriptionPlans.BASIC.characterLimit;
       case "premium":
-        return 15;
+        return subscriptionPlans.PREMIUM.characterLimit;
       case "pro":
         return Infinity;
       default:
