@@ -58,6 +58,10 @@ export const users = sqliteTable("users", {
   trialCharactersCreated: integer("trial_characters_created")
     .notNull()
     .default(0),
+  dailyCharacterCount: integer("daily_character_count")
+    .notNull()
+    .default(0),
+  lastCharacterCreationDate: integer("last_character_creation_date", { mode: "timestamp_ms" }),
   subscriptionTier: text("subscription_tier"),
   subscriptionStatus: text("subscription_status").default("trial"),
   subscriptionExpiresAt: integer("subscription_expires_at", {
