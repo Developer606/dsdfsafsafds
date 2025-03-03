@@ -182,12 +182,12 @@ export const subscriptionPlans = {
     name: "Premium Plan",
     price: "$9.99",
     features: [
-      "Create up to 15 characters",
+      "Create up to 50 characters",
       "Advanced character customization",
       "Priority support",
       "Early access to new features",
     ],
-    characterLimit: 15
+    characterLimit: 50
   },
   PRO: {
     id: "pro",
