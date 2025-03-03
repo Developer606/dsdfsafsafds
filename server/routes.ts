@@ -465,7 +465,6 @@ export async function registerRoutes(app: Express) {
     res.json(req.user);
   });
 
-  // Update the POST /api/custom-characters endpoint
   app.post("/api/custom-characters", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
@@ -479,10 +478,9 @@ export async function registerRoutes(app: Express) {
       // Check if user can create more characters based on their plan
       const canCreate = await storage.validateCharacterCreation(user.id);
       if (!canCreate) {
-        const dailyLimit = await storage.getDailyCharacterLimit(user.id);
-        const dailyCount = await storage.getDailyCharacterCount(user.id);
+        const limit = await storage.getCharacterLimit(user.id);
         return res.status(403).json({
-          error: `Character creation limit reached. Daily limit: ${dailyLimit}, Created today: ${dailyCount}. Please upgrade your plan to create more characters.`,
+          error: `Character creation limit reached (${limit} characters). Please upgrade your plan to create more characters.`,
           limitReached: true
         });
       }
@@ -493,11 +491,6 @@ export async function registerRoutes(app: Express) {
       });
 
       const character = await storage.createCustomCharacter(data);
-
-      // Increment daily character count
-      await storage.incrementDailyCharacterCount(user.id);
-
-      // Increment trial character count for free users
       if (!user.isPremium) {
         await storage.incrementTrialCharacterCount(user.id);
       }

@@ -69,26 +69,6 @@ export const users = sqliteTable("users", {
   lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
 });
 
-// Add this after the users table definition
-export const dailyCharacterCreation = sqliteTable("daily_character_creation", {
-  id: integer("id").primaryKey(),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  count: integer("count").notNull().default(0),
-  lastResetAt: integer("last_reset_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
-
-// Add insert schema and types
-export const insertDailyCharacterCreationSchema = createInsertSchema(dailyCharacterCreation).pick({
-  userId: true,
-  count: true,
-});
-
-export type DailyCharacterCreation = typeof dailyCharacterCreation.$inferSelect;
-export type InsertDailyCharacterCreation = z.infer<typeof insertDailyCharacterCreationSchema>;
 
 // Messages table optimized for chat history retrieval
 export const messages = sqliteTable("messages", {
@@ -191,25 +171,23 @@ export const subscriptionPlans = {
     name: "Basic Plan",
     price: "$4.99",
     features: [
-      "Create up to 3 characters per day",
+      "Create up to 5 characters",
       "Basic character customization",
       "Standard support",
     ],
-    characterLimit: 5,
-    dailyCharacterLimit: 3
+    characterLimit: 5
   },
   PREMIUM: {
     id: "premium",
     name: "Premium Plan",
     price: "$9.99",
     features: [
-      "Create up to 15 characters per day",
+      "Create up to 15 characters",
       "Advanced character customization",
       "Priority support",
       "Early access to new features",
     ],
-    characterLimit: 15,
-    dailyCharacterLimit: 15
+    characterLimit: 15
   },
   PRO: {
     id: "pro",
@@ -222,8 +200,7 @@ export const subscriptionPlans = {
       "White-label option",
       "Team collaboration features",
     ],
-    characterLimit: Infinity,
-    dailyCharacterLimit: Infinity
+    characterLimit: Infinity
   },
 } as const;
 
