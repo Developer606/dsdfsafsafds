@@ -106,6 +106,9 @@ export default function AdminDashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/characters/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] }); // For subscription and user status charts
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/activity"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/characters/popularity"] });
     }, 1000);
 
     return () => clearInterval(intervalId);
@@ -124,7 +127,7 @@ export default function AdminDashboard() {
 
   const { data: recentMessages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
-    staleTime: 5 * 60 * 1000, // Stay fresh for 5 minutes
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const { data: characterStats = {} as DashboardStats, isLoading: charactersLoading } = useQuery<DashboardStats>({
@@ -144,17 +147,17 @@ export default function AdminDashboard() {
 
   const { data: activityData = { hourlyActivity: [] }, isLoading: activityLoading } = useQuery<ActivityData>({
     queryKey: ["/api/admin/analytics/activity"],
-    staleTime: 15 * 60 * 1000, // Stay fresh for 15 minutes
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const { data: messageVolume = { daily: [] }, isLoading: messageVolumeLoading } = useQuery<MessageVolumeData>({
     queryKey: ["/api/admin/analytics/messages"],
-    staleTime: Infinity,
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const { data: characterPopularity = { characters: [] }, isLoading: characterPopularityLoading } = useQuery<CharacterPopularityData>({
     queryKey: ["/api/admin/analytics/characters/popularity"],
-    staleTime: Infinity,
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const { data: plans = [], isLoading: plansLoading } = useQuery({
