@@ -99,12 +99,13 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  // Add 1-second interval refresh for stats
+  // Add 1-second interval refresh for stats and charts
   useEffect(() => {
     const intervalId = setInterval(() => {
       // Refresh critical stats every second
       queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/characters/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] }); // For subscription and user status charts
     }, 1000);
 
     return () => clearInterval(intervalId);
@@ -118,7 +119,7 @@ export default function AdminDashboard() {
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    staleTime: Infinity,
+    staleTime: 0, // Allow immediate refreshes for real-time chart updates
   });
 
   const { data: recentMessages = [], isLoading: messagesLoading } = useQuery({
@@ -348,11 +349,13 @@ export default function AdminDashboard() {
     }
   };
 
+  // Update subscription data calculation for real-time updates
   const subscriptionData = users ? [
     { name: "Free", value: users.filter((u) => !u.isPremium).length },
     { name: "Premium", value: users.filter((u) => u.isPremium).length },
   ] : [];
 
+  // Update user status data calculation for real-time updates
   const userStatusData = users ? [
     { name: "Active", value: users.filter((u) => !u.isBlocked && !u.isRestricted).length },
     { name: "Blocked", value: users.filter((u) => u.isBlocked).length },
@@ -874,7 +877,7 @@ export default function AdminDashboard() {
                               ...plan,
                               features: JSON.stringify(JSON.parse(plan.features), null, 2),
                             });
-                                                        setPlanDialogOpen(true);
+                            setPlanDialogOpen(true);
                           }}
                         >
                           Edit
