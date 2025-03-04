@@ -19,6 +19,50 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 import { parse } from 'url';
 
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = 'uploads';
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir);
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, uniqueName + path.extname(file.originalname));
+    }
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
+
+// Middleware to check if user is blocked - defined before use
+const checkBlockedStatus = async (req: any, res: any, next: any) => {
+  if (req.isAuthenticated()) {
+    const currentUser = await storage.getUser(req.user.id);
+    if (currentUser?.isBlocked) {
+      req.logout((err: any) => {
+        if (err) {
+          console.error('Error logging out blocked user:', err);
+        }
+      });
+      return res.status(403).json({
+        error: "Your account has been blocked. Please contact support."
+      });
+    }
+  }
+  next();
+};
+
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
 
@@ -857,7 +901,6 @@ export async function registerRoutes(app: Express) {
       if (!verification) {
         return res.status(400).json({ error: "No pending verification found" });
       }
-
       const isValid = await storage.verifyPendingToken(email, otp);
       if (!isValid) {
         return res.status(400).json({ error: "Invalid or expired OTP" });
