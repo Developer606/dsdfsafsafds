@@ -99,10 +99,21 @@ export default function AdminDashboard() {
     };
   }, []);
 
+  // Add 1-second interval refresh for stats
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Refresh critical stats every second
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/characters/stats"] });
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
   // Stats queries with specific query keys for targeted updates
   const { data: stats = {} as DashboardStats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/dashboard/stats"],
-    staleTime: Infinity, // Only update when explicitly invalidated
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
@@ -117,7 +128,7 @@ export default function AdminDashboard() {
 
   const { data: characterStats = {} as DashboardStats, isLoading: charactersLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/characters/stats"],
-    staleTime: Infinity,
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const { data: feedback = [], isLoading: feedbackLoading } = useQuery<Feedback[]>({
@@ -863,7 +874,7 @@ export default function AdminDashboard() {
                               ...plan,
                               features: JSON.stringify(JSON.parse(plan.features), null, 2),
                             });
-                            setPlanDialogOpen(true);
+                                                        setPlanDialogOpen(true);
                           }}
                         >
                           Edit
