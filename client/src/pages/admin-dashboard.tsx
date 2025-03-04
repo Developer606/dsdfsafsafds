@@ -34,13 +34,13 @@ import {
 import { type Complaint } from "@shared/schema";
 import { Link } from "wouter";
 import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSubscriptionPlanSchema } from "@shared/schema";
 import { useLocation } from "wouter";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert"
-
+import { setupWebSocket } from "@/lib/websocket";
 
 // Type definitions for stats and analytics data
 interface DashboardStats {
@@ -89,25 +89,15 @@ export default function AdminDashboard() {
   const [editingPlan, setEditingPlan] = useState<any>(null);
   const [isPlanDialogOpen, setPlanDialogOpen] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      const res = await apiRequest("POST", "/api/admin/logout");
-      if (res.ok) {
-        queryClient.setQueryData(["/api/user"], null);
-        toast({
-          title: "Success",
-          description: "Logged out successfully",
-        });
-        setLocation("/admin/login");
+  // Setup WebSocket connection when component mounts
+  useEffect(() => {
+    const socket = setupWebSocket();
+    return () => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
       }
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to logout",
-      });
-    }
-  };
+    };
+  }, []);
 
   // Stats queries with specific query keys for targeted updates
   const { data: stats = {} as DashboardStats, isLoading: statsLoading } = useQuery<DashboardStats>({
@@ -125,7 +115,7 @@ export default function AdminDashboard() {
     staleTime: 5 * 60 * 1000, // Stay fresh for 5 minutes
   });
 
-  const { data: characterStats = {}, isLoading: charactersLoading } = useQuery<DashboardStats>({
+  const { data: characterStats = {} as DashboardStats, isLoading: charactersLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/characters/stats"],
     staleTime: Infinity,
   });
@@ -171,9 +161,11 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate only user status related queries
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
+      // WebSocket will handle the updates
+      toast({
+        title: "Success",
+        description: "User status updated successfully",
+      });
     },
   });
 
@@ -183,12 +175,11 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate all user-related data
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/activity"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/messages"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/characters/popularity"] });
+      // WebSocket will handle the updates
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
     },
   });
 
@@ -198,9 +189,7 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate only user-related queries
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
+      // WebSocket will handle the updates
       toast({
         title: "Success",
         description: "User restrictions updated successfully",
@@ -214,9 +203,7 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate subscription-related queries
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
+      // WebSocket will handle the updates
       toast({
         title: "Success",
         description: "User subscription updated successfully",
@@ -230,7 +217,7 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate only plan-related queries
+      // WebSocket will handle the updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       setPlanDialogOpen(false);
       form.reset();
@@ -247,7 +234,7 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate only plan-related queries
+      // WebSocket will handle the updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       setPlanDialogOpen(false);
       setEditingPlan(null);
@@ -265,7 +252,7 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate plan-related queries
+      // WebSocket will handle the updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       toast({
         title: "Success",
@@ -279,7 +266,7 @@ export default function AdminDashboard() {
       await apiRequest("DELETE", `/api/admin/notifications/${notificationId}`);
     },
     onSuccess: () => {
-      // Invalidate only notification-related queries
+      // WebSocket will handle the updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
       toast({
         title: "Success",
@@ -382,6 +369,26 @@ export default function AdminDashboard() {
       </div>
     );
   }
+
+  const handleLogout = async () => {
+    try {
+      const res = await apiRequest("POST", "/api/admin/logout");
+      if (res.ok) {
+        queryClient.setQueryData(["/api/user"], null);
+        toast({
+          title: "Success",
+          description: "Logged out successfully",
+        });
+        setLocation("/admin/login");
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to logout",
+      });
+    }
+  };
 
   return (
     <div className="container mx-auto p-8 space-y-8">

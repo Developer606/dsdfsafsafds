@@ -15,6 +15,7 @@ import passport from 'passport';
 import { generateOTP as generateOTPemail, sendVerificationEmail as sendVerificationEmail2, sendPasswordResetEmail, isValidEmail } from './email';
 import { eq } from 'drizzle-orm';
 import type { Express } from "express";
+import { WebSocketServer, WebSocket } from 'ws';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -61,6 +62,20 @@ const checkBlockedStatus = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express) {
+  const httpServer = createServer(app);
+
+  // Initialize WebSocket server
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  // Broadcast updates to all connected clients
+  const broadcastUpdate = (type: string) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({ type }));
+      }
+    });
+  };
+
   // Set up authentication routes and middleware
   setupAuth(app);
   app.use(checkBlockedStatus);
@@ -162,7 +177,7 @@ export async function registerRoutes(app: Express) {
         title,
         message
       });
-
+      broadcastUpdate('notification_update'); // Broadcast notification update
       res.status(201).json({ success: true, count: users.length });
     } catch (error: any) {
       console.error("Error broadcasting notification:", error);
@@ -298,6 +313,7 @@ export async function registerRoutes(app: Express) {
       }
 
       await storage.updateUserStatus(userId, { isBlocked: blocked });
+      broadcastUpdate('user_update'); // Broadcast update
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to update user block status" });
@@ -336,6 +352,7 @@ export async function registerRoutes(app: Express) {
       });
 
       await storage.deleteUser(userId);
+      broadcastUpdate('user_update'); // Broadcast user deletion
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to delete user" });
@@ -479,14 +496,14 @@ export async function registerRoutes(app: Express) {
       const canCreate = await storage.validateCharacterCreation(user.id);
       if (!canCreate) {
         const limit = await storage.getCharacterLimit(user.id);
-        const planName = user.subscriptionTier ? 
-          subscriptionPlans[user.subscriptionTier.toUpperCase()]?.name : 
+        const planName = user.subscriptionTier ?
+          subscriptionPlans[user.subscriptionTier.toUpperCase()]?.name :
           'Free';
 
         return res.status(403).json({
           error: `Character creation limit reached (${limit} characters) for ${planName}. ${
-            user.subscriptionTier === 'basic' 
-              ? 'Upgrade to Premium plan to create up to 45 characters.' 
+            user.subscriptionTier === 'basic'
+              ? 'Upgrade to Premium plan to create up to 45 characters.'
               : 'Please upgrade your plan to create more characters.'
           }`,
           limitReached: true
@@ -1226,6 +1243,5 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  const httpServer = createServer(app);
   return httpServer;
 }
