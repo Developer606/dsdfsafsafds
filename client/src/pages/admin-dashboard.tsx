@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Settings, LogOut, Bell } from "lucide-react";
+import { Ban, Lock, Trash2, UnlockIcon, UserPlus, Users, Crown, Loader2, MessageSquare, Palette, MessageCircle, AlertCircle, Settings, LogOut, Bell, ArrowLeft } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -112,57 +112,46 @@ export default function AdminDashboard() {
   // Add proper typing to all queries
   const { data: stats = {} as DashboardStats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/dashboard/stats"],
-    refetchInterval: 30000,
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    refetchInterval: 30000,
   });
 
   const { data: recentMessages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
-    refetchInterval: 30000,
   });
 
   const { data: characterStats = {}, isLoading: charactersLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/characters/stats"],
-    refetchInterval: 30000,
   });
 
   const { data: feedback = [], isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
-    refetchInterval: 30000,
   });
 
   const { data: complaints = [], isLoading: complaintsLoading } = useQuery<Complaint[]>({
     queryKey: ["/api/admin/complaints"],
-    refetchInterval: 30000,
   });
 
   const { data: activityData = { hourlyActivity: [] }, isLoading: activityLoading } = useQuery<ActivityData>({
     queryKey: ["/api/admin/analytics/activity"],
-    refetchInterval: 30000,
   });
 
   const { data: messageVolume = { daily: [] }, isLoading: messageVolumeLoading } = useQuery<MessageVolumeData>({
     queryKey: ["/api/admin/analytics/messages"],
-    refetchInterval: 30000,
   });
 
   const { data: characterPopularity = { characters: [] }, isLoading: characterPopularityLoading } = useQuery<CharacterPopularityData>({
     queryKey: ["/api/admin/analytics/characters/popularity"],
-    refetchInterval: 30000,
   });
 
   const { data: plans = [], isLoading: plansLoading } = useQuery({
     queryKey: ["/api/admin/plans"],
-    refetchInterval: 30000,
   });
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery<NotificationData[]>({
     queryKey: ["/api/admin/notifications/all"],
-    refetchInterval: 30000,
   });
 
   const blockUser = useMutation({
@@ -380,9 +369,16 @@ export default function AdminDashboard() {
   return (
     <div className="container mx-auto p-8 space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-          Admin Dashboard
-        </h1>
+        <div className="flex items-center gap-4">
+          <Link href="/admin/dashboard">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+            Feedback Management
+          </h1>
+        </div>
         <div className="flex items-center gap-4">
           <NotificationPopover />
           <Button
@@ -880,7 +876,7 @@ export default function AdminDashboard() {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                                            </div>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -893,8 +889,7 @@ export default function AdminDashboard() {
       {/* Notification History Section */}
       <Card className="mt-8">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
+          <div className="flex items-center justify-between mb-6"><div>
               <h2 className="text-xl font-bold">Notification History</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 View all sent notifications
