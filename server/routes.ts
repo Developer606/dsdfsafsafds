@@ -16,62 +16,63 @@ import { generateOTP as generateOTPemail, sendVerificationEmail as sendVerificat
 import { eq } from 'drizzle-orm';
 import type { Express } from "express";
 import { WebSocketServer, WebSocket } from 'ws';
-
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => {
-      const uploadDir = 'uploads';
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir);
-      }
-      cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, uniqueName + path.extname(file.originalname));
-    }
-  }),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type'));
-    }
-  }
-});
-
-// Middleware to check if user is blocked
-const checkBlockedStatus = async (req: any, res: any, next: any) => {
-  if (req.isAuthenticated()) {
-    const currentUser = await storage.getUser(req.user.id);
-    if (currentUser?.isBlocked) {
-      req.logout((err: any) => {
-        if (err) {
-          console.error('Error logging out blocked user:', err);
-        }
-      });
-      return res.status(403).json({
-        error: "Your account has been blocked. Please contact support."
-      });
-    }
-  }
-  next();
-};
+import type { IncomingMessage } from 'http';
+import { parse } from 'url';
 
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
 
-  // Initialize WebSocket server
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  // Initialize WebSocket server with session verification
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    verifyClient: async (info: { origin: string; secure: boolean; req: IncomingMessage }) => {
+      const cookies = info.req.headers.cookie;
+      if (!cookies) return false;
 
-  // Broadcast updates to all connected clients
+      // Parse session ID from cookies
+      const sessionMatch = cookies.match(/connect\.sid=([^;]+)/);
+      if (!sessionMatch) return false;
+
+      const sessionId = decodeURIComponent(sessionMatch[1]);
+
+      try {
+        // Verify session exists and user is admin
+        const session: any = await new Promise((resolve, reject) => {
+          storage.sessionStore.get(sessionId.replace('s:', ''), (err, session) => {
+            if (err) reject(err);
+            else resolve(session);
+          });
+        });
+
+        if (!session?.passport?.user) return false;
+
+        const user = await storage.getUser(session.passport.user);
+        return user?.isAdmin === true;
+      } catch (error) {
+        console.error('WebSocket authentication error:', error);
+        return false;
+      }
+    }
+  });
+
+  // Track authenticated WebSocket clients
+  const clients = new Set<WebSocket>();
+
+  wss.on('connection', (ws: WebSocket) => {
+    clients.add(ws);
+
+    ws.on('close', () => {
+      clients.delete(ws);
+    });
+  });
+
+  // Updated broadcast function to use tracked clients
   const broadcastUpdate = (type: string) => {
-    wss.clients.forEach((client) => {
+    const message = JSON.stringify({ type });
+    clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type }));
+        client.send(message);
       }
     });
   };
@@ -1242,6 +1243,23 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ error: "Failed to delete scheduled broadcast" });
     }
   });
+
+  const checkBlockedStatus = async (req: any, res: any, next: any) => {
+    if (req.isAuthenticated()) {
+      const currentUser = await storage.getUser(req.user.id);
+      if (currentUser?.isBlocked) {
+        req.logout((err: any) => {
+          if (err) {
+            console.error('Error logging out blocked user:', err);
+          }
+        });
+        return res.status(403).json({
+          error: "Your account has been blocked. Please contact support."
+        });
+      }
+    }
+    next();
+  };
 
   return httpServer;
 }

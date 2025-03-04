@@ -88,6 +88,7 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [editingPlan, setEditingPlan] = useState<any>(null);
   const [isPlanDialogOpen, setPlanDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(""); // Add search state
 
   // Setup WebSocket connection when component mounts
   useEffect(() => {
@@ -367,6 +368,12 @@ export default function AdminDashboard() {
 
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
+  // Filter users based on search query
+  const filteredUsers = users?.filter((user) =>
+    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  ) ?? [];
+
   if (
     statsLoading ||
     usersLoading ||
@@ -638,7 +645,15 @@ export default function AdminDashboard() {
                 Manage user accounts, permissions, and subscriptions
               </p>
             </div>
-            <Users className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center gap-4">
+              <Input
+                placeholder="Search by username or email..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-[300px]"
+              />
+              <Users className="h-5 w-5 text-muted-foreground" />
+            </div>
           </div>
           <div className="overflow-x-auto">
             <Table>
@@ -655,7 +670,7 @@ export default function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users?.map((user) => (
+                {filteredUsers.map((user) => (
                   <TableRow key={user.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
                     <TableCell className="font-medium">{user.username}</TableCell>
                     <TableCell>{user.email}</TableCell>
@@ -812,6 +827,13 @@ export default function AdminDashboard() {
                     </TableCell>
                   </TableRow>
                 ))}
+                {filteredUsers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No users found matching "{searchQuery}"
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -856,8 +878,7 @@ export default function AdminDashboard() {
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {plans?.map((plan: any) => (
+              <TableBody>{plans?.map((plan: any) => (
                   <TableRow key={plan.id}>
                     <TableCell>{plan.id}</TableCell>
                     <TableCell>{plan.name}</TableCell>
