@@ -160,7 +160,9 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate only user-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
       toast({
         title: "Success",
         description: "User status updated successfully",
@@ -174,7 +176,10 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate user-related and stats queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/activity"] });
       toast({
         title: "Success",
         description: "User deleted successfully",
@@ -188,7 +193,9 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate only user-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
       toast({
         title: "Success",
         description: "User restrictions updated successfully",
@@ -202,7 +209,9 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate subscription and user-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
       toast({
         title: "Success",
         description: "User subscription updated successfully",
@@ -216,6 +225,7 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate only plan-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       setPlanDialogOpen(false);
       form.reset();
@@ -232,6 +242,7 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate only plan-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       setPlanDialogOpen(false);
       setEditingPlan(null);
@@ -249,6 +260,7 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
+      // Invalidate plan-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
       toast({
         title: "Success",
@@ -262,6 +274,7 @@ export default function AdminDashboard() {
       await apiRequest("DELETE", `/api/admin/notifications/${notificationId}`);
     },
     onSuccess: () => {
+      // Invalidate only notification-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
       toast({
         title: "Success",
@@ -276,7 +289,6 @@ export default function AdminDashboard() {
       });
     },
   });
-
 
   const form = useForm({
     resolver: zodResolver(insertSubscriptionPlanSchema),
