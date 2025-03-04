@@ -19,6 +19,50 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 import { parse } from 'url';
 
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = 'uploads';
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir);
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, uniqueName + path.extname(file.originalname));
+    }
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
+
+// Define middleware to check if user is blocked
+const checkBlockedStatus = async (req: any, res: any, next: any) => {
+  if (req.isAuthenticated()) {
+    const currentUser = await storage.getUser(req.user.id);
+    if (currentUser?.isBlocked) {
+      req.logout((err: any) => {
+        if (err) {
+          console.error('Error logging out blocked user:', err);
+        }
+      });
+      return res.status(403).json({
+        error: "Your account has been blocked. Please contact support."
+      });
+    }
+  }
+  next();
+};
+
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
 
@@ -208,7 +252,7 @@ export async function registerRoutes(app: Express) {
         .returning()
         .get();
 
-      res.status(201).json(notification);
+      res.json(notification);
     } catch (error: any) {
       console.error("Error sending notification:", error);
       res.status(500).json({ error: "Failed to send notification" });
@@ -1166,7 +1210,7 @@ export async function registerRoutes(app: Express) {
         )
       );
 
-      res.status(201).json({ success: true, count: notifications.length });
+      res.json({ success: true, count: notifications.length });
     } catch (error: any) {
       console.error("Error broadcasting notification:", error);
       res.status(500).json({ error: "Failed to broadcast notification" });
@@ -1243,23 +1287,6 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ error: "Failed to delete scheduled broadcast" });
     }
   });
-
-  const checkBlockedStatus = async (req: any, res: any, next: any) => {
-    if (req.isAuthenticated()) {
-      const currentUser = await storage.getUser(req.user.id);
-      if (currentUser?.isBlocked) {
-        req.logout((err: any) => {
-          if (err) {
-            console.error('Error logging out blocked user:', err);
-          }
-        });
-        return res.status(403).json({
-          error: "Your account has been blocked. Please contact support."
-        });
-      }
-    }
-    next();
-  };
 
   return httpServer;
 }
