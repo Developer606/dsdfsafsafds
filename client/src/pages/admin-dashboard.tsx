@@ -109,49 +109,60 @@ export default function AdminDashboard() {
     }
   };
 
-  // Add proper typing to all queries
+  // Stats queries with specific query keys for targeted updates
   const { data: stats = {} as DashboardStats, isLoading: statsLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/dashboard/stats"],
+    staleTime: Infinity, // Only update when explicitly invalidated
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
+    staleTime: Infinity,
   });
 
   const { data: recentMessages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["/api/admin/messages/recent"],
+    staleTime: 5 * 60 * 1000, // Stay fresh for 5 minutes
   });
 
   const { data: characterStats = {}, isLoading: charactersLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/characters/stats"],
+    staleTime: Infinity,
   });
 
   const { data: feedback = [], isLoading: feedbackLoading } = useQuery<Feedback[]>({
     queryKey: ["/api/admin/feedback"],
+    staleTime: Infinity,
   });
 
   const { data: complaints = [], isLoading: complaintsLoading } = useQuery<Complaint[]>({
     queryKey: ["/api/admin/complaints"],
+    staleTime: Infinity,
   });
 
   const { data: activityData = { hourlyActivity: [] }, isLoading: activityLoading } = useQuery<ActivityData>({
     queryKey: ["/api/admin/analytics/activity"],
+    staleTime: 15 * 60 * 1000, // Stay fresh for 15 minutes
   });
 
   const { data: messageVolume = { daily: [] }, isLoading: messageVolumeLoading } = useQuery<MessageVolumeData>({
     queryKey: ["/api/admin/analytics/messages"],
+    staleTime: Infinity,
   });
 
   const { data: characterPopularity = { characters: [] }, isLoading: characterPopularityLoading } = useQuery<CharacterPopularityData>({
     queryKey: ["/api/admin/analytics/characters/popularity"],
+    staleTime: Infinity,
   });
 
   const { data: plans = [], isLoading: plansLoading } = useQuery({
     queryKey: ["/api/admin/plans"],
+    staleTime: Infinity,
   });
 
   const { data: notifications = [], isLoading: notificationsLoading } = useQuery<NotificationData[]>({
     queryKey: ["/api/admin/notifications/all"],
+    staleTime: Infinity,
   });
 
   const blockUser = useMutation({
@@ -160,13 +171,9 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate only user-related queries
+      // Invalidate only user status related queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
-      toast({
-        title: "Success",
-        description: "User status updated successfully",
-      });
     },
   });
 
@@ -176,14 +183,12 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate user-related and stats queries
+      // Invalidate all user-related data
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/activity"] });
-      toast({
-        title: "Success",
-        description: "User deleted successfully",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/characters/popularity"] });
     },
   });
 
@@ -209,7 +214,7 @@ export default function AdminDashboard() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate subscription and user-related queries
+      // Invalidate subscription-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
       toast({
