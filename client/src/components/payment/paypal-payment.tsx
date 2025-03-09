@@ -13,10 +13,21 @@ interface PayPalPaymentProps {
   onBackToPlanSelection: () => void;
 }
 
+// Get the PayPal Client ID from environment variables
+const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID as string;
+
+// Log client ID to verify it's being loaded (without revealing full value)
+console.log("PayPal Client ID available:", !!clientId, 
+            clientId ? `${clientId.substring(0, 3)}...${clientId.substring(clientId.length - 3)}` : 'missing');
+
+// PayPal SDK options
 const paypalOptions = {
-  clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID as string,
+  clientId: clientId, // Use clientId (not client-id) as required by PayPalScriptProvider
   currency: "USD",
-  intent: "capture"
+  intent: "capture",
+  components: "buttons",
+  disableFunding: "credit,card",
+  dataAttribute: "data-sdk-integration-source=button-factory"
 };
 
 export function PayPalPayment({ 
