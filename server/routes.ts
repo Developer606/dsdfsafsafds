@@ -19,6 +19,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 import { parse } from 'url';
 import fetch from 'node-fetch';
+import { credentialsManager } from './credentials-manager';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -707,6 +708,7 @@ export async function registerRoutes(app: Express) {
     res.json({ success: true });
   });
 
+  // Update the payment verification section in routes.ts
   app.post("/api/verify-payment", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
@@ -723,23 +725,15 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: "Plan ID is required" });
       }
 
-      // Verify plan exists
-      const plan = await storage.getSubscriptionPlan(planId);
-      if (!plan) {
-        return res.status(400).json({ error: "Invalid subscription plan" });
-      }
-
-      // Verify the payment with PayPal
-      console.log("Verifying payment with PayPal:", orderID);
-
-      // Check if we have the required environment variables
-      if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_SECRET) {
-        console.error("Missing PayPal credentials in environment variables");
+      // Get PayPal credentials securely
+      const credentials = credentialsManager.getPayPalCredentials();
+      if (!credentials) {
+        console.error("Missing PayPal credentials");
         return res.status(500).json({ error: "Payment verification unavailable. Missing PayPal credentials." });
       }
 
       // Building PayPal API auth and request
-      const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
+      const auth = Buffer.from(`${credentials.clientId}:${credentials.secret}`).toString('base64');
 
       const paypalResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}`, {
         method: 'GET',
@@ -905,8 +899,7 @@ export async function registerRoutes(app: Express) {
       const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
       const complaint = await complaintStorage.createComplaint({
-        name,
-        email,
+        name,        email,
         message,
         imageUrl
       });
