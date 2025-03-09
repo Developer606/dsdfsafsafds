@@ -706,19 +706,78 @@ export async function registerRoutes(app: Express) {
     res.json({ success: true });
   });
 
+  app.post("/api/verify-payment", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      const { orderID, planId } = req.body;
+      
+      if (!orderID) {
+        return res.status(400).json({ error: "Order ID is required" });
+      }
+
+      // Verify the payment with PayPal
+      // Building PayPal API auth and request
+      const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
+      
+      const paypalResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const paypalData = await paypalResponse.json();
+      
+      // Verify payment was completed successfully
+      if (paypalData.status !== 'COMPLETED' && paypalData.status !== 'APPROVED') {
+        return res.status(400).json({ 
+          error: "Payment not completed", 
+          details: paypalData 
+        });
+      }
+      
+      // Return success response with verification data
+      res.json({ 
+        success: true, 
+        verification: paypalData 
+      });
+    } catch (error: any) {
+      console.error("Payment verification error:", error);
+      res.status(400).json({ 
+        error: "Payment verification failed",
+        message: error.message
+      });
+    }
+  });
+
   app.post("/api/subscribe", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ error: "Authentication required" });
       }
       const user = req.user;
-      const { planId } = req.body;
+      const { planId, paymentVerified } = req.body;
 
       if (!user) {
         throw new Error("User not found");
       }
 
-      if (!Object.keys(subscriptionPlans).some(plan => subscriptionPlans[plan as SubscriptionTier].id === planId)) {
+      if (!planId) {
+        throw new Error("Plan ID is required");
+      }
+      
+      // Only proceed if payment has been verified
+      if (!paymentVerified) {
+        throw new Error("Payment must be verified before subscription can be activated");
+      }
+
+      // Get plan from database to ensure it exists
+      const plan = await storage.getSubscriptionPlan(planId);
+      if (!plan) {
         throw new Error("Invalid subscription plan");
       }
 
@@ -732,7 +791,10 @@ export async function registerRoutes(app: Express) {
         subscriptionExpiresAt: expiresAt
       });
 
-      res.json({ success: true });
+      res.json({ 
+        success: true,
+        message: "Subscription activated successfully"
+      });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
