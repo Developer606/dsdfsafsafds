@@ -712,9 +712,9 @@ export async function registerRoutes(app: Express) {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ error: "Authentication required" });
       }
-      
+
       const { orderID, planId } = req.body;
-      
+
       if (!orderID) {
         return res.status(400).json({ error: "Order ID is required" });
       }
@@ -731,16 +731,16 @@ export async function registerRoutes(app: Express) {
 
       // Verify the payment with PayPal
       console.log("Verifying payment with PayPal:", orderID);
-      
+
       // Check if we have the required environment variables
       if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_SECRET) {
         console.error("Missing PayPal credentials in environment variables");
         return res.status(500).json({ error: "Payment verification unavailable. Missing PayPal credentials." });
       }
-      
+
       // Building PayPal API auth and request
       const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
-      
+
       const paypalResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}`, {
         method: 'GET',
         headers: {
@@ -748,7 +748,7 @@ export async function registerRoutes(app: Express) {
           'Content-Type': 'application/json',
         }
       });
-      
+
       if (!paypalResponse.ok) {
         console.error("PayPal API error:", await paypalResponse.text());
         return res.status(400).json({ 
@@ -756,9 +756,9 @@ export async function registerRoutes(app: Express) {
           details: `Status: ${paypalResponse.status} ${paypalResponse.statusText}`
         });
       }
-      
+
       const paypalData = await paypalResponse.json();
-      
+
       // Verify payment was completed successfully
       if (paypalData.status !== 'COMPLETED' && paypalData.status !== 'APPROVED') {
         return res.status(400).json({ 
@@ -766,17 +766,17 @@ export async function registerRoutes(app: Express) {
           details: paypalData 
         });
       }
-      
+
       // Verify payment amount matches plan price
       const priceValue = parseFloat(plan.price.replace(/[^0-9.]/g, ''));
       let paymentAmount = 0;
-      
+
       if (paypalData.purchase_units && 
           paypalData.purchase_units[0] && 
           paypalData.purchase_units[0].amount) {
         paymentAmount = parseFloat(paypalData.purchase_units[0].amount.value);
       }
-      
+
       if (paymentAmount < priceValue) {
         return res.status(400).json({ 
           error: "Payment amount does not match plan price", 
@@ -784,7 +784,7 @@ export async function registerRoutes(app: Express) {
           received: paymentAmount
         });
       }
-      
+
       // Return success response with verification data
       console.log("Payment verified successfully");
       res.json({ 
