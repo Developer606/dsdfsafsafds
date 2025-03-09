@@ -707,30 +707,36 @@ export async function registerRoutes(app: Express) {
     res.json({ success: true });
   });
 
+  // Add more detailed logging in the payment verification route
   app.post("/api/verify-payment", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
+        console.log("Payment verification attempted without authentication");
         return res.status(401).json({ error: "Authentication required" });
       }
 
       const { orderID, planId } = req.body;
+      console.log("Starting payment verification process:", { orderID, planId });
 
       if (!orderID) {
+        console.log("Payment verification failed: Missing order ID");
         return res.status(400).json({ error: "Order ID is required" });
       }
 
       if (!planId) {
+        console.log("Payment verification failed: Missing plan ID");
         return res.status(400).json({ error: "Plan ID is required" });
       }
 
       // Verify plan exists
       const plan = await storage.getSubscriptionPlan(planId);
       if (!plan) {
+        console.log("Payment verification failed: Invalid plan ID:", planId);
         return res.status(400).json({ error: "Invalid subscription plan" });
       }
 
-      // Verify the payment with PayPal
       console.log("Verifying payment with PayPal:", orderID);
+      console.log("Using plan:", plan);
 
       // Check if we have the required environment variables
       if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_SECRET) {
@@ -740,6 +746,7 @@ export async function registerRoutes(app: Express) {
 
       // Building PayPal API auth and request
       const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
+      console.log("Making PayPal API request for order:", orderID);
 
       const paypalResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}`, {
         method: 'GET',
@@ -750,7 +757,8 @@ export async function registerRoutes(app: Express) {
       });
 
       if (!paypalResponse.ok) {
-        console.error("PayPal API error:", await paypalResponse.text());
+        const errorText = await paypalResponse.text();
+        console.error("PayPal API error response:", errorText);
         return res.status(400).json({ 
           error: "PayPal verification failed", 
           details: `Status: ${paypalResponse.status} ${paypalResponse.statusText}`
@@ -758,9 +766,11 @@ export async function registerRoutes(app: Express) {
       }
 
       const paypalData = await paypalResponse.json();
+      console.log("PayPal API response:", paypalData);
 
       // Verify payment was completed successfully
       if (paypalData.status !== 'COMPLETED' && paypalData.status !== 'APPROVED') {
+        console.log("Payment not completed. Status:", paypalData.status);
         return res.status(400).json({ 
           error: "Payment not completed", 
           details: paypalData 
@@ -777,7 +787,10 @@ export async function registerRoutes(app: Express) {
         paymentAmount = parseFloat(paypalData.purchase_units[0].amount.value);
       }
 
+      console.log("Verifying payment amount:", { expected: priceValue, received: paymentAmount });
+
       if (paymentAmount < priceValue) {
+        console.log("Payment amount mismatch:", { expected: priceValue, received: paymentAmount });
         return res.status(400).json({ 
           error: "Payment amount does not match plan price", 
           expected: priceValue,
