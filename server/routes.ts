@@ -21,7 +21,7 @@ import { generateOTP, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
 import { complaintStorage } from './complaint-storage';
 import { notificationDb, createBroadcastNotifications, getAllNotificationsWithUsers, deleteNotification, createScheduledBroadcast, getScheduledBroadcasts, deleteScheduledBroadcast } from './notification-db';
-import { getPayPalConfig } from './config';
+import { getPayPalConfig } from './config/index';
 
 // Configure multer for file uploads
 const upload = multer({
