@@ -167,6 +167,20 @@ export async function registerRoutes(app: Express) {
   ], authCheck);
 
 
+  // Add PayPal config endpoint before existing routes
+  app.get("/api/paypal-config", (req, res) => {
+    try {
+      const config = getPayPalConfig();
+      if (!config.clientId) {
+        throw new Error("PayPal configuration not found");
+      }
+      res.json({ clientId: config.clientId });
+    } catch (error) {
+      console.error("Error serving PayPal config:", error);
+      res.status(500).json({ error: "Failed to load PayPal configuration" });
+    }
+  });
+
   // Notification Routes
   app.get("/api/notifications", async (req, res) => {
     try {
