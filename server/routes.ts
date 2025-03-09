@@ -18,6 +18,7 @@ import type { Express } from "express";
 import { WebSocketServer, WebSocket } from 'ws';
 import type { IncomingMessage } from 'http';
 import { parse } from 'url';
+import fetch from 'node-fetch';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -718,7 +719,25 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ error: "Order ID is required" });
       }
 
+      if (!planId) {
+        return res.status(400).json({ error: "Plan ID is required" });
+      }
+
+      // Verify plan exists
+      const plan = await storage.getSubscriptionPlan(planId);
+      if (!plan) {
+        return res.status(400).json({ error: "Invalid subscription plan" });
+      }
+
       // Verify the payment with PayPal
+      console.log("Verifying payment with PayPal:", orderID);
+      
+      // Check if we have the required environment variables
+      if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_SECRET) {
+        console.error("Missing PayPal credentials in environment variables");
+        return res.status(500).json({ error: "Payment verification unavailable. Missing PayPal credentials." });
+      }
+      
       // Building PayPal API auth and request
       const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
       
@@ -730,6 +749,14 @@ export async function registerRoutes(app: Express) {
         }
       });
       
+      if (!paypalResponse.ok) {
+        console.error("PayPal API error:", await paypalResponse.text());
+        return res.status(400).json({ 
+          error: "PayPal verification failed", 
+          details: `Status: ${paypalResponse.status} ${paypalResponse.statusText}`
+        });
+      }
+      
       const paypalData = await paypalResponse.json();
       
       // Verify payment was completed successfully
@@ -740,7 +767,26 @@ export async function registerRoutes(app: Express) {
         });
       }
       
+      // Verify payment amount matches plan price
+      const priceValue = parseFloat(plan.price.replace(/[^0-9.]/g, ''));
+      let paymentAmount = 0;
+      
+      if (paypalData.purchase_units && 
+          paypalData.purchase_units[0] && 
+          paypalData.purchase_units[0].amount) {
+        paymentAmount = parseFloat(paypalData.purchase_units[0].amount.value);
+      }
+      
+      if (paymentAmount < priceValue) {
+        return res.status(400).json({ 
+          error: "Payment amount does not match plan price", 
+          expected: priceValue,
+          received: paymentAmount
+        });
+      }
+      
       // Return success response with verification data
+      console.log("Payment verified successfully");
       res.json({ 
         success: true, 
         verification: paypalData 
@@ -770,16 +816,22 @@ export async function registerRoutes(app: Express) {
         throw new Error("Plan ID is required");
       }
       
+      console.log(`Subscription request for user ${user.id}, plan ${planId}, payment verified: ${paymentVerified}`);
+      
       // Only proceed if payment has been verified
       if (!paymentVerified) {
+        console.warn(`Subscription attempted without payment verification for user ${user.id}`);
         throw new Error("Payment must be verified before subscription can be activated");
       }
 
       // Get plan from database to ensure it exists
       const plan = await storage.getSubscriptionPlan(planId);
       if (!plan) {
+        console.error(`Invalid subscription plan ${planId} requested by user ${user.id}`);
         throw new Error("Invalid subscription plan");
       }
+      
+      console.log(`Processing subscription for user ${user.id} to plan ${plan.name} (${planId})`);
 
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30);
@@ -790,12 +842,15 @@ export async function registerRoutes(app: Express) {
         subscriptionStatus: 'active',
         subscriptionExpiresAt: expiresAt
       });
+      
+      console.log(`Subscription successfully activated for user ${user.id}`);
 
       res.json({ 
         success: true,
         message: "Subscription activated successfully"
       });
     } catch (error: any) {
+      console.error("Subscription error:", error);
       res.status(400).json({ error: error.message });
     }
   });
