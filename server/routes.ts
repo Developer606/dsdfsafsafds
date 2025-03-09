@@ -1,5 +1,18 @@
 import { createServer } from "http";
 import { storage } from "./storage";
+import express from "express";
+import session from "express-session";
+import passport from "passport";
+import multer from 'multer';
+import path from "path";
+import fs from "fs";
+import { generateOTP as generateOTPemail, sendVerificationEmail as sendVerificationEmail2, sendPasswordResetEmail, isValidEmail } from './email';
+import { eq } from 'drizzle-orm';
+import type { Express } from "express";
+import { WebSocketServer, WebSocket } from 'ws';
+import type { IncomingMessage } from 'http';
+import { parse } from 'url';
+import fetch from 'node-fetch';
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema, FREE_USER_MESSAGE_LIMIT, insertNotificationSchema, notifications } from "@shared/schema";
@@ -8,17 +21,7 @@ import { generateOTP, hashPassword } from './auth';
 import { feedbackStorage } from './feedback-storage';
 import { complaintStorage } from './complaint-storage';
 import { notificationDb, createBroadcastNotifications, getAllNotificationsWithUsers, deleteNotification, createScheduledBroadcast, getScheduledBroadcasts, deleteScheduledBroadcast } from './notification-db';
-import multer from 'multer';
-import path from "path";
-import fs from "fs";
-import passport from 'passport';
-import { generateOTP as generateOTPemail, sendVerificationEmail as sendVerificationEmail2, sendPasswordResetEmail, isValidEmail } from './email';
-import { eq } from 'drizzle-orm';
-import type { Express } from "express";
-import { WebSocketServer, WebSocket } from 'ws';
-import type { IncomingMessage } from 'http';
-import { parse } from 'url';
-import fetch from 'node-fetch';
+import { getPayPalConfig } from './config';
 
 // Configure multer for file uploads
 const upload = multer({
@@ -65,11 +68,27 @@ const checkBlockedStatus = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express) {
+  // Configure session middleware first
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    },
+    store: storage.sessionStore
+  }));
+
+  // Initialize passport after session
+  app.use(passport.initialize());
+  app.use(passport.session());
+
   const httpServer = createServer(app);
 
   // Initialize WebSocket server with session verification
-  const wss = new WebSocketServer({ 
-    server: httpServer, 
+  const wss = new WebSocketServer({
+    server: httpServer,
     path: '/ws',
     verifyClient: async (info: { origin: string; secure: boolean; req: IncomingMessage }) => {
       const cookies = info.req.headers.cookie;
@@ -126,14 +145,32 @@ export async function registerRoutes(app: Express) {
   setupAuth(app);
   app.use(checkBlockedStatus);
 
+  // Update authentication check middleware
+  const authCheck = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({
+        error: "Authentication required",
+        redirectTo: "/login"
+      });
+    }
+    next();
+  };
+
+  // Apply auth check to protected routes
+  app.use([
+    "/api/messages",
+    "/api/characters",
+    "/api/custom-characters",
+    "/api/notifications",
+    "/api/subscribe",
+    "/api/verify-payment"
+  ], authCheck);
+
+
   // Notification Routes
   app.get("/api/notifications", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
 
-      console.log("Fetching notifications for user:", req.user.id);
       const notifications = await notificationDb.query.notifications.findMany({
         where: (notifications, { eq }) => eq(notifications.userId, req.user.id),
         orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
@@ -148,10 +185,6 @@ export async function registerRoutes(app: Express) {
 
   app.patch("/api/notifications/:id/read", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const notificationId = parseInt(req.params.id);
       console.log("Marking notification as read:", notificationId);
 
@@ -443,6 +476,7 @@ export async function registerRoutes(app: Express) {
   });
 
 
+
   // Add new plan management routes before httpServer creation
   app.get("/api/admin/plans", isAdmin, async (req, res) => {
     try {
@@ -486,10 +520,6 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/characters", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const customChars = await storage.getCustomCharactersByUser(req.user.id);
       const formattedCustomChars = customChars.map(char => ({
         id: `custom_${char.id}`,
@@ -508,10 +538,6 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/messages/:characterId", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const messages = await storage.getMessagesByCharacter(req.params.characterId);
       // Only return messages belonging to the authenticated user
       const userMessages = messages.filter(msg => msg.userId === req.user.id);
@@ -522,17 +548,12 @@ export async function registerRoutes(app: Express) {
   });
 
   app.get("/api/user", async (req, res) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
+
     res.json(req.user);
   });
 
   app.post("/api/custom-characters", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
       const user = req.user;
       if (!user) {
         throw new Error("User not found");
@@ -574,9 +595,6 @@ export async function registerRoutes(app: Express) {
 
   app.delete("/api/custom-characters/:id", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
       const user = req.user;
       if (!user) {
         throw new Error("User not found");
@@ -591,9 +609,6 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/messages", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
       const user = req.user;
 
       // Check message limit for free users
@@ -683,10 +698,6 @@ export async function registerRoutes(app: Express) {
   // Add API access check for custom character API endpoints
   app.get("/api/custom-characters/api", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const hasApiAccess = await storage.validateFeatureAccess(req.user.id, "api");
       if (!hasApiAccess) {
         return res.status(403).json({
@@ -710,11 +721,6 @@ export async function registerRoutes(app: Express) {
   // Add more detailed logging in the payment verification route
   app.post("/api/verify-payment", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        console.log("Payment verification attempted without authentication");
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const { orderID, planId } = req.body;
       console.log("Starting payment verification process:", { orderID, planId });
 
@@ -738,14 +744,15 @@ export async function registerRoutes(app: Express) {
       console.log("Verifying payment with PayPal:", orderID);
       console.log("Using plan:", plan);
 
-      // Check if we have the required environment variables
-      if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_SECRET) {
-        console.error("Missing PayPal credentials in environment variables");
+      // Get PayPal configuration
+      const paypalConfig = getPayPalConfig();
+      if (!paypalConfig.clientId || !paypalConfig.clientSecret) {
+        console.error("Missing PayPal credentials in configuration");
         return res.status(500).json({ error: "Payment verification unavailable. Missing PayPal credentials." });
       }
 
       // Building PayPal API auth and request
-      const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
+      const auth = Buffer.from(`${paypalConfig.clientId}:${paypalConfig.clientSecret}`).toString('base64');
       console.log("Making PayPal API request for order:", orderID);
 
       const paypalResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}`, {
@@ -759,8 +766,8 @@ export async function registerRoutes(app: Express) {
       if (!paypalResponse.ok) {
         const errorText = await paypalResponse.text();
         console.error("PayPal API error response:", errorText);
-        return res.status(400).json({ 
-          error: "PayPal verification failed", 
+        return res.status(400).json({
+          error: "PayPal verification failed",
           details: `Status: ${paypalResponse.status} ${paypalResponse.statusText}`
         });
       }
@@ -771,9 +778,9 @@ export async function registerRoutes(app: Express) {
       // Verify payment was completed successfully
       if (paypalData.status !== 'COMPLETED' && paypalData.status !== 'APPROVED') {
         console.log("Payment not completed. Status:", paypalData.status);
-        return res.status(400).json({ 
-          error: "Payment not completed", 
-          details: paypalData 
+        return res.status(400).json({
+          error: "Payment not completed",
+          details: paypalData
         });
       }
 
@@ -781,9 +788,9 @@ export async function registerRoutes(app: Express) {
       const priceValue = parseFloat(plan.price.replace(/[^0-9.]/g, ''));
       let paymentAmount = 0;
 
-      if (paypalData.purchase_units && 
-          paypalData.purchase_units[0] && 
-          paypalData.purchase_units[0].amount) {
+      if (paypalData.purchase_units &&
+        paypalData.purchase_units[0] &&
+        paypalData.purchase_units[0].amount) {
         paymentAmount = parseFloat(paypalData.purchase_units[0].amount.value);
       }
 
@@ -791,8 +798,8 @@ export async function registerRoutes(app: Express) {
 
       if (paymentAmount < priceValue) {
         console.log("Payment amount mismatch:", { expected: priceValue, received: paymentAmount });
-        return res.status(400).json({ 
-          error: "Payment amount does not match plan price", 
+        return res.status(400).json({
+          error: "Payment amount does not match plan price",
           expected: priceValue,
           received: paymentAmount
         });
@@ -800,13 +807,13 @@ export async function registerRoutes(app: Express) {
 
       // Return success response with verification data
       console.log("Payment verified successfully");
-      res.json({ 
-        success: true, 
-        verification: paypalData 
+      res.json({
+        success: true,
+        verification: paypalData
       });
     } catch (error: any) {
       console.error("Payment verification error:", error);
-      res.status(400).json({ 
+      res.status(400).json({
         error: "Payment verification failed",
         message: error.message
       });
@@ -815,9 +822,6 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/subscribe", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
       const user = req.user;
       const { planId, paymentVerified } = req.body;
 
@@ -828,9 +832,9 @@ export async function registerRoutes(app: Express) {
       if (!planId) {
         throw new Error("Plan ID is required");
       }
-      
+
       console.log(`Subscription request for user ${user.id}, plan ${planId}, payment verified: ${paymentVerified}`);
-      
+
       // Only proceed if payment has been verified
       if (!paymentVerified) {
         console.warn(`Subscription attempted without payment verification for user ${user.id}`);
@@ -843,7 +847,7 @@ export async function registerRoutes(app: Express) {
         console.error(`Invalid subscription plan ${planId} requested by user ${user.id}`);
         throw new Error("Invalid subscription plan");
       }
-      
+
       console.log(`Processing subscription for user ${user.id} to plan ${plan.name} (${planId})`);
 
       const expiresAt = new Date();
@@ -855,10 +859,10 @@ export async function registerRoutes(app: Express) {
         subscriptionStatus: 'active',
         subscriptionExpiresAt: expiresAt
       });
-      
+
       console.log(`Subscription successfully activated for user ${user.id}`);
 
-      res.json({ 
+      res.json({
         success: true,
         message: "Subscription activated successfully"
       });
@@ -1238,10 +1242,6 @@ export async function registerRoutes(app: Express) {
   // Get user notifications
   app.get("/api/notifications", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const notifications = await notificationDb.query.notifications.findMany({
         where: (notifications, { eq }) => eq(notifications.userId, req.user.id),
         orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
@@ -1257,10 +1257,6 @@ export async function registerRoutes(app: Express) {
   // Mark notification as read
   app.patch("/api/notifications/:id/read", async (req, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
       const notificationId = parseInt(req.params.id);
       await notificationDb.update(notifications)
         .set({ read: true })

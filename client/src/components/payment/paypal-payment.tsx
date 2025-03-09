@@ -13,17 +13,16 @@ interface PayPalPaymentProps {
   onBackToPlanSelection: () => void;
 }
 
-// Get PayPal client ID from environment variables
-const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
-
-if (!clientId) {
-  console.error("PayPal Client ID not found in environment variables");
-}
-
-const paypalOptions = {
-  clientId,
-  currency: "USD",
-  intent: "capture",
+// Get PayPal client ID from configuration
+const fetchPayPalConfig = async () => {
+  try {
+    const response = await fetch('/api/paypal-config');
+    const data = await response.json();
+    return data.clientId;
+  } catch (error) {
+    console.error("Error fetching PayPal config:", error);
+    return null;
+  }
 };
 
 export function PayPalPayment({ 
@@ -36,8 +35,21 @@ export function PayPalPayment({
   const [error, setError] = useState<string | null>(null);
   const [paypalLoaded, setPaypalLoaded] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [clientId, setClientId] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchClientId = async () => {
+      const id = await fetchPayPalConfig();
+      setClientId(id);
+    };
+    fetchClientId();
+  }, []);
+
+  useEffect(() => {
+    if(clientId === null){
+      setError("Failed to load PayPal configuration. Please try again later.")
+      return;
+    }
     const timer = setTimeout(() => {
       const paypalButtons = document.querySelector('[data-funding-source]');
       if (!paypalButtons) {
@@ -49,7 +61,7 @@ export function PayPalPayment({
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [retryCount]);
+  }, [retryCount, clientId]);
 
   const getPriceValue = (priceString: string) => {
     return parseFloat(priceString.replace(/[^0-9.]/g, ''));
@@ -124,7 +136,7 @@ export function PayPalPayment({
         <p className="text-center text-sm mb-2">Complete payment to activate your subscription</p>
 
         {clientId ? (
-          <PayPalScriptProvider options={paypalOptions}>
+          <PayPalScriptProvider options={{ clientId, currency: "USD", intent: "capture" }}>
             <PayPalButtons
               style={{ layout: "vertical" }}
               createOrder={(data, actions) => {

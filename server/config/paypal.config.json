@@ -1,0 +1,10 @@
+{
+  "sandbox": {
+    "clientId": "AYlJp6Gs5nzl0iywAa-6pKijZ8vujbYKhJgDZdTXZ2a2tWyEBAxj463gxxn0NyIv9_Epa0vZ6xEX0DHL",
+    "clientSecret": "EEImgTe9dPCqdFwEjKroHj7-ahYcXPSUigU8U2EQi_AhTr1JdmRDmeOJ7k6Ke6V3mQ4QM2F0XaGIpOIM"
+  },
+  "production": {
+    "clientId": "",
+    "clientSecret": ""
+  }
+}
