@@ -13,8 +13,9 @@ interface PayPalPaymentProps {
   onBackToPlanSelection: () => void;
 }
 
-// Get the PayPal Client ID from environment variables
-const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID as string;
+// Hardcode a PayPal sandbox client ID directly for testing purposes
+// In production, this would come from env vars properly passed through Vite
+const clientId = "AQBcHJDcnYDUxFYfaF3AxdVJcE_1QtG3kdV0l4YXcXb3ixbWKCUcuHXAxIwK4TnRQnjumOZYzdtP7VrJ";
 
 // Log client ID to verify it's being loaded (without revealing full value)
 console.log("PayPal Client ID available:", !!clientId, 
