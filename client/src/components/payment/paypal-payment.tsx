@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -20,14 +20,11 @@ const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID as string;
 console.log("PayPal Client ID available:", !!clientId, 
             clientId ? `${clientId.substring(0, 3)}...${clientId.substring(clientId.length - 3)}` : 'missing');
 
-// PayPal SDK options
+// PayPal SDK options - using recommended pattern for PayPalScriptProvider
 const paypalOptions = {
-  clientId: clientId, // Use clientId (not client-id) as required by PayPalScriptProvider
+  clientId: clientId,
   currency: "USD",
   intent: "capture",
-  components: "buttons",
-  disableFunding: "credit,card",
-  dataAttribute: "data-sdk-integration-source=button-factory"
 };
 
 export function PayPalPayment({ 
@@ -38,6 +35,23 @@ export function PayPalPayment({
 }: PayPalPaymentProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paypalLoaded, setPaypalLoaded] = useState<boolean>(false);
+  
+  // Use useEffect to detect if PayPal script is loaded after a reasonable time
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // If no PayPal buttons are displayed after 3 seconds, assume script failed to load
+      const paypalButtons = document.querySelector('[data-funding-source]');
+      if (!paypalButtons) {
+        console.warn('PayPal buttons not detected after timeout');
+        setError('PayPal payment system could not be loaded. Please try again later.');
+      } else {
+        setPaypalLoaded(true);
+      }
+    }, 3000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Format price for PayPal (remove currency symbol and convert to number)
   const getPriceValue = (priceString: string) => {
@@ -149,6 +163,31 @@ export function PayPalPayment({
             }}
           />
         </PayPalScriptProvider>
+        
+        {/* Fallback for when PayPal doesn't load */}
+        {!paypalLoaded && error && (
+          <div className="mt-4 border-t pt-4">
+            <p className="text-center text-sm mb-4">
+              Unable to load PayPal payment options. You can try the following:
+            </p>
+            <div className="flex flex-col gap-2">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => window.location.reload()}
+              >
+                Reload Page
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={onBackToPlanSelection}
+              >
+                Choose Different Plan
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
