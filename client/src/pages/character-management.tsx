@@ -13,7 +13,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
-import { type CustomCharacter, type User, subscriptionPlans } from "@shared/schema";
+import { type CustomCharacter, type User, type SubscriptionPlan } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function CharacterManagement() {
@@ -32,8 +32,12 @@ export default function CharacterManagement() {
     queryKey: ["/api/user"]
   });
 
-  const { data: customCharacters, isLoading } = useQuery<CustomCharacter[]>({ 
+  const { data: customCharacters, isLoading: isLoadingCharacters } = useQuery<CustomCharacter[]>({ 
     queryKey: ["/api/custom-characters"]
+  });
+  
+  const { data: plans, isLoading: isLoadingPlans } = useQuery<SubscriptionPlan[]>({
+    queryKey: ["/api/plans"]
   });
 
   const createCharacter = useMutation({
