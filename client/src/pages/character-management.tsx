@@ -118,16 +118,37 @@ export default function CharacterManagement() {
   const getCharacterLimit = () => {
     if (!user) return 3;
     if (!user.isPremium) return 3;
+    if (!plans) return 3;
 
-    switch (user.subscriptionTier) {
-      case "basic":
-        return subscriptionPlans.BASIC.characterLimit;
-      case "premium":
-        return subscriptionPlans.PREMIUM.characterLimit;
-      case "pro":
-        return "∞"; 
-      default:
-        return 3;
+    const userPlan = plans.find(plan => plan.id === user.subscriptionTier);
+    
+    if (!userPlan) return 3;
+    
+    // Parse features to find character limit
+    try {
+      const features = JSON.parse(userPlan.features);
+      // Look for a feature containing "character" and a number
+      const characterLimitFeature = features.find((feature: string) => 
+        feature.toLowerCase().includes('character') && /\d+/.test(feature)
+      );
+      
+      if (characterLimitFeature) {
+        const limitMatch = characterLimitFeature.match(/\d+/);
+        if (limitMatch) return parseInt(limitMatch[0], 10);
+      }
+      
+      // Default limits based on tier if not found in features
+      if (user.subscriptionTier === "pro") return "∞";
+      if (user.subscriptionTier === "premium") return 45;
+      if (user.subscriptionTier === "basic") return 15;
+      
+      return 3;
+    } catch (e) {
+      // Fallback to defaults if JSON parsing fails
+      if (user.subscriptionTier === "pro") return "∞";
+      if (user.subscriptionTier === "premium") return 45;
+      if (user.subscriptionTier === "basic") return 15;
+      return 3;
     }
   };
 
@@ -144,9 +165,8 @@ export default function CharacterManagement() {
     }
 
     const remaining = getRemainingSlots();
-    const planName = user.subscriptionTier ? 
-      subscriptionPlans[user.subscriptionTier.toUpperCase()]?.name :
-      'Basic Plan';
+    const userPlan = plans?.find(plan => plan.id === user.subscriptionTier);
+    const planName = userPlan?.name || 'Basic Plan';
 
     return remaining === "unlimited" 
       ? `${planName}: Create unlimited characters!`
@@ -154,6 +174,8 @@ export default function CharacterManagement() {
   };
 
 
+  const isLoading = isLoadingCharacters || isLoadingPlans;
+  
   if (isLoading) {
     return (
       <div className="container mx-auto p-4">
@@ -182,7 +204,9 @@ export default function CharacterManagement() {
             {getPlanMessage()}
             {user?.subscriptionTier === "basic" && (
               <span className="block mt-1 text-xs">
-                Upgrade to Premium to create up to 45 characters!
+                {plans && plans.find(p => p.id === "premium") ? 
+                  `Upgrade to ${plans.find(p => p.id === "premium")?.name} for more characters!` :
+                  "Upgrade to Premium for more characters!"}
               </span>
             )}
           </p>

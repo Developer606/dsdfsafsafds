@@ -33,7 +33,7 @@ import {
 } from "recharts";
 import { type Complaint } from "@shared/schema";
 import { Link } from "wouter";
-import { User, subscriptionPlans, type SubscriptionTier, type Feedback } from "@shared/schema";
+import { User, type SubscriptionPlan, type Feedback } from "@shared/schema";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -724,17 +724,17 @@ export default function AdminDashboard() {
                           >
                             Free Plan
                           </DropdownMenuItem>
-                          {(Object.keys(subscriptionPlans) as SubscriptionTier[]).map((tier) => (
+                          {plans.map((plan) => (
                             <DropdownMenuItem
-                              key={subscriptionPlans[tier].id}
+                              key={plan.id}
                               onClick={() =>
                                 updateSubscription.mutate({
                                   userId: user.id,
-                                  planId: subscriptionPlans[tier].id,
+                                  planId: plan.id,
                                 })
                               }
                             >
-                              {subscriptionPlans[tier].name}
+                              {plan.name}
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuContent>
