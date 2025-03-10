@@ -9,19 +9,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.ui.graphics.Color
 
 @Composable
-fun ChatMessage(message: String) {
-    Card(
+fun ChatMessage(
+    content: String,
+    isUser: Boolean
+) {
+    Box(
         modifier = Modifier
-            .padding(vertical = 4.dp)
-            .fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp)
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
     ) {
-        Text(
-            text = message,
-            modifier = Modifier.padding(16.dp)
-        )
+        Card(
+            modifier = Modifier.widthIn(max = 280.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isUser)
+                    MaterialTheme.colorScheme.primary
+                else
+                    MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Text(
+                text = content,
+                modifier = Modifier.padding(12.dp),
+                color = if (isUser)
+                    Color.White
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -29,7 +48,8 @@ fun ChatMessage(message: String) {
 fun ChatInput(
     value: String,
     onValueChange: (String) -> Unit,
-    onSend: () -> Unit
+    onSend: () -> Unit,
+    enabled: Boolean = true
 ) {
     Row(
         modifier = Modifier
@@ -43,13 +63,26 @@ fun ChatInput(
             modifier = Modifier
                 .weight(1f)
                 .padding(end = 8.dp),
-            placeholder = { Text("Type a message...") }
+            placeholder = { Text("Type a message...") },
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+            ),
+            enabled = enabled
         )
-        
-        IconButton(onClick = onSend) {
+
+        IconButton(
+            onClick = onSend,
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            enabled = enabled && value.isNotEmpty()
+        ) {
             Icon(
                 imageVector = Icons.Default.Send,
-                contentDescription = "Send message"
+                contentDescription = "Send message",
+                tint = if (enabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.anime.chat.ui.theme.AnimeCharacterChatTheme
 import com.anime.chat.ui.screens.ChatScreen
+import com.anime.chat.ui.screens.LoginScreen
+import com.anime.chat.ui.viewmodels.AuthViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,7 +22,17 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ChatScreen()
+                    val authViewModel: AuthViewModel = viewModel()
+                    val isAuthenticated by authViewModel.user.collectAsState()
+
+                    if (isAuthenticated != null) {
+                        ChatScreen()
+                    } else {
+                        LoginScreen(
+                            onLoginSuccess = { /* Navigation will be handled automatically */ },
+                            onRegisterClick = { /* Add navigation to register screen */ }
+                        )
+                    }
                 }
             }
         }
