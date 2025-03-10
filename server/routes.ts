@@ -86,56 +86,33 @@ export async function registerRoutes(app: Express) {
 
   const httpServer = createServer(app);
 
-  // Initialize WebSocket server with enhanced session verification
+  // Initialize WebSocket server with session verification
   const wss = new WebSocketServer({
     server: httpServer,
     path: '/ws',
     verifyClient: async (info: { origin: string; secure: boolean; req: IncomingMessage }) => {
+      const cookies = info.req.headers.cookie;
+      if (!cookies) return false;
+
+      // Parse session ID from cookies
+      const sessionMatch = cookies.match(/connect\.sid=([^;]+)/);
+      if (!sessionMatch) return false;
+
+      const sessionId = decodeURIComponent(sessionMatch[1]);
+
       try {
-        const cookies = info.req.headers.cookie;
-        const authHeader = info.req.headers.authorization;
-
-        // Try to get session from cookie
-        let sessionId: string | undefined;
-        if (cookies) {
-          const sessionMatch = cookies.match(/connect\.sid=([^;]+)/);
-          if (sessionMatch) {
-            sessionId = decodeURIComponent(sessionMatch[1]).replace('s:', '');
-          }
-        }
-
-        // Try to get session from Authorization header
-        if (!sessionId && authHeader) {
-          const token = authHeader.replace('Bearer ', '');
-          sessionId = token.replace('s:', '');
-        }
-
-        if (!sessionId) {
-          console.log('WebSocket connection rejected: No session ID found');
-          return false;
-        }
-
-        // Verify session exists
+        // Verify session exists and user is admin
         const session: any = await new Promise((resolve, reject) => {
-          storage.sessionStore.get(sessionId, (err, session) => {
+          storage.sessionStore.get(sessionId.replace('s:', ''), (err, session) => {
             if (err) reject(err);
             else resolve(session);
           });
         });
 
-        if (!session?.passport?.user) {
-          console.log('WebSocket connection rejected: Invalid session');
-          return false;
-        }
+        if (!session?.passport?.user) return false;
 
         const user = await storage.getUser(session.passport.user);
-        if (!user) {
-          console.log('WebSocket connection rejected: User not found');
-          return false;
-        }
-
-        console.log(`WebSocket connection accepted for user: ${user.username}`);
-        return true;
+        return user?.isAdmin === true;
       } catch (error) {
         console.error('WebSocket authentication error:', error);
         return false;
@@ -193,15 +170,8 @@ export async function registerRoutes(app: Express) {
   // Add PayPal config endpoint before existing routes
   app.get("/api/paypal-config", (req, res) => {
     try {
-      console.log('PayPal config request received');
       const config = getPayPalConfig();
-      console.log('Retrieved PayPal config:', {
-        hasClientId: !!config.clientId,
-        hasClientSecret: !!config.clientSecret
-      });
-
       if (!config.clientId) {
-        console.error('PayPal configuration not found - clientId is empty');
         throw new Error("PayPal configuration not found");
       }
       res.json({ clientId: config.clientId });
@@ -917,7 +887,7 @@ export async function registerRoutes(app: Express) {
   });
 
   // Update the feedback endpoint to use the new storage
-  app.post("/api/feedback", async (req, res) =>{
+  app.post("/api/feedback", async (req, res) => {
     try {
       const parsedInput = insertFeedbackSchema.safeParse(req.body);
       if (!parsedInput.success) {
