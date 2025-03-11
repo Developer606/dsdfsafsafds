@@ -56,95 +56,100 @@ export function ChatInput({ onSend, isLoading, chatStyle = "whatsapp" }: ChatInp
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
       onSubmit={handleSubmit} 
-      className="fixed bottom-0 left-0 right-0 p-4 bg-[#f0f2f5] dark:bg-gray-900"
+      className="relative"
     >
-      <div className="max-w-4xl mx-auto">
-        <div className={cn(
-          "relative flex items-center gap-2 rounded-lg bg-white dark:bg-slate-800 shadow-sm",
-          chatStyle === "whatsapp" 
-            ? "border border-[#f0f2f5] dark:border-gray-700" 
-            : chatStyle === "messenger"
-            ? "border border-[#eee] dark:border-gray-700"
-            : "border border-gray-200 dark:border-gray-700"
-        )}>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                type="button" 
-                size="icon" 
-                variant="ghost"
-                className="h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
-              >
-                <Smile className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent 
-              className="p-0 w-full" 
-              side="top" 
-              align="start"
+      <div className={cn(
+        "relative flex items-center gap-2 rounded-lg border shadow-lg",
+        chatStyle === "whatsapp" 
+          ? "bg-white dark:bg-slate-800 border-[#f0f2f5] dark:border-gray-700" 
+          : chatStyle === "messenger"
+          ? "bg-white dark:bg-slate-800 border-[#eee] dark:border-gray-700"
+          : "bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700"
+      )}>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button 
+              type="button" 
+              size="icon" 
+              variant="ghost"
+              className={cn(
+                "h-10 w-10 rounded-full",
+                chatStyle === "whatsapp"
+                  ? "hover:bg-gray-100 dark:hover:bg-slate-700"
+                  : chatStyle === "messenger"
+                  ? "hover:bg-gray-100 dark:hover:bg-slate-700"
+                  : "hover:bg-gray-100 dark:hover:bg-slate-700"
+              )}
             >
-              <EmojiPicker onEmojiClick={onEmojiClick} />
-            </PopoverContent>
-          </Popover>
-
-          <Select
-            value={language}
-            onValueChange={setLanguage}
+              <Smile className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent 
+            className="p-0 w-full" 
+            side="top" 
+            align="start"
           >
-            <SelectTrigger className="w-[100px] h-8 border-0 focus:ring-0 bg-transparent">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {supportedLanguages.map((lang) => (
-                <SelectItem key={lang.id} value={lang.id}>
-                  {lang.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <EmojiPicker onEmojiClick={onEmojiClick} />
+          </PopoverContent>
+        </Popover>
 
-          <Input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type a message"
-            disabled={isLoading}
-            className={cn(
-              "flex-1 border-0 focus-visible:ring-0 bg-transparent text-base py-6",
-              chatStyle === "whatsapp"
-                ? "placeholder:text-gray-500"
-                : chatStyle === "messenger"
-                ? "placeholder:text-gray-400"
-                : "placeholder:text-gray-400"
-            )}
-          />
+        <Select
+          value={language}
+          onValueChange={setLanguage}
+        >
+          <SelectTrigger className="w-[100px] h-8 border-0 focus:ring-0 bg-transparent">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {supportedLanguages.map((lang) => (
+              <SelectItem key={lang.id} value={lang.id}>
+                {lang.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <Button 
-            type="submit" 
-            size="icon"
-            disabled={isLoading || !message.trim()}
-            className={cn(
-              "h-10 w-10 rounded-full mr-2",
-              chatStyle === "whatsapp"
-                ? "bg-[#00a884] hover:bg-[#00a884]/90 dark:bg-[#00a884] dark:hover:bg-[#00a884]/90"
-                : chatStyle === "messenger"
-                ? "bg-[#0084ff] hover:bg-[#0084ff]/90 dark:bg-[#0084ff] dark:hover:bg-[#0084ff]/90"
-                : "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700",
-              "transition-all duration-200",
-              !message.trim() && "opacity-50"
-            )}
-          >
-            {isLoading ? (
-              <motion.span 
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              >
-                <Loader2 className="h-5 w-5 text-white" />
-              </motion.span>
-            ) : (
-              <Send className="h-5 w-5 text-white" />
-            )}
-          </Button>
-        </div>
+        <Input
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Send a message..."
+          disabled={isLoading}
+          className={cn(
+            "flex-1 border-0 focus-visible:ring-0 bg-transparent text-base py-6",
+            chatStyle === "whatsapp"
+              ? "placeholder:text-gray-500"
+              : chatStyle === "messenger"
+              ? "placeholder:text-gray-400"
+              : "placeholder:text-gray-400"
+          )}
+        />
+
+        <Button 
+          type="submit" 
+          size="icon"
+          disabled={isLoading || !message.trim()}
+          className={cn(
+            "h-10 w-10 rounded-full mr-2",
+            chatStyle === "whatsapp"
+              ? "bg-[#00a884] hover:bg-[#00a884]/90 dark:bg-[#00a884] dark:hover:bg-[#00a884]/90"
+              : chatStyle === "messenger"
+              ? "bg-[#0084ff] hover:bg-[#0084ff]/90 dark:bg-[#0084ff] dark:hover:bg-[#0084ff]/90"
+              : "bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700",
+            "transition-all duration-200",
+            !message.trim() && "opacity-50"
+          )}
+        >
+          {isLoading ? (
+            <motion.span 
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
+              <Loader2 className="h-5 w-5 text-white" />
+            </motion.span>
+          ) : (
+            <Send className="h-5 w-5 text-white" />
+          )}
+        </Button>
       </div>
     </motion.form>
   );

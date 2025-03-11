@@ -9,26 +9,54 @@ import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Info, Sparkles, MessageCircle } from "lucide-react";
+import { Plus, Trash2, Info, Sparkles } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type Character } from "@shared/characters";
 import { type CustomCharacter, type User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
-// Add UI style type
-type ChatUIStyle = 'whatsapp' | 'messenger';
+// Enhanced animations
+const container = {
+  hidden: { opacity: 0, scale: 0.9 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.3,
+      duration: 0.5
+    }
+  }
+};
+
+const item = {
+  hidden: { y: 20, opacity: 0, scale: 0.8 },
+  show: { 
+    y: 0, 
+    opacity: 1, 
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100
+    }
+  }
+};
+
+// Floating animation for background elements
+const floatingAnimation = {
+  initial: { y: 0 },
+  animate: {
+    y: [-10, 10, -10],
+    transition: {
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+};
 
 export default function Home() {
-  // Add UI style state
-  const [chatStyle, setChatStyle] = useState<ChatUIStyle>('whatsapp');
-
   const [location] = useLocation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -222,24 +250,6 @@ export default function Home() {
             </p>
           </motion.div>
           <div className="flex items-center gap-4">
-            {/* Add UI Style Switcher */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <MessageCircle className="h-4 w-4" />
-                  {chatStyle === 'whatsapp' ? 'WhatsApp Style' : 'Messenger Style'}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setChatStyle('whatsapp')}>
-                  WhatsApp Style
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setChatStyle('messenger')}>
-                  Messenger Style
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             {!user?.isPremium && (
               <TooltipProvider>
                 <Tooltip>
@@ -260,7 +270,6 @@ export default function Home() {
                 </Tooltip>
               </TooltipProvider>
             )}
-
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -292,7 +301,7 @@ export default function Home() {
                 whileHover={{ y: -5, scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
               >
-                <Link href={`/chat/${character.id}?style=${chatStyle}`}>
+                <Link href={`/chat/${character.id}`}>
                   <div className="transform transition-all duration-300">
                     <div className="relative overflow-hidden rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 border border-purple-200/50 dark:border-purple-800/50">
                       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -425,41 +434,3 @@ export default function Home() {
     </motion.div>
   );
 }
-
-const container = {
-  hidden: { opacity: 0, scale: 0.9 },
-  show: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.3,
-      duration: 0.5
-    }
-  }
-};
-
-const item = {
-  hidden: { y: 20, opacity: 0, scale: 0.8 },
-  show: { 
-    y: 0, 
-    opacity: 1, 
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100
-    }
-  }
-};
-
-const floatingAnimation = {
-  initial: { y: 0 },
-  animate: {
-    y: [-10, 10, -10],
-    transition: {
-      duration: 4,
-      repeat: Infinity,
-      ease: "easeInOut"
-    }
-  }
-};
