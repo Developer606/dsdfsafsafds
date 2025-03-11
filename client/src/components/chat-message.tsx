@@ -21,9 +21,9 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "px-2 sm:px-4 py-1 sm:py-2",
+          "px-4 py-1",
           isUser ? "ml-auto" : "mr-auto",
-          "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+          "max-w-[65%]"
         )}
       >
         <div className={cn(
@@ -31,26 +31,28 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
           isUser ? "items-end" : "items-start"
         )}>
           <div className={cn(
-            "px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg relative",
+            "px-3 py-2 rounded-lg relative",
             isUser 
               ? "bg-[#e7ffdb] dark:bg-emerald-800 rounded-tr-none" 
               : "bg-white dark:bg-slate-800 rounded-tl-none",
             "max-w-full shadow-sm"
           )}>
-            {/* Triangle for message bubble */}
-            <div className={cn(
-              "absolute top-0 w-4 h-4",
-              isUser 
-                ? "right-0 transform translate-x-2 -translate-y-px bg-[#e7ffdb] dark:bg-emerald-800 clip-path-msg-right" 
-                : "left-0 transform -translate-x-2 -translate-y-px bg-white dark:bg-slate-800 clip-path-msg-left"
-            )} />
+            {/* Message bubble tail */}
+            <div 
+              className={cn(
+                "absolute top-0 w-4 h-4",
+                isUser
+                  ? "right-0 transform translate-x-2 -translate-y-px bg-[#e7ffdb] dark:bg-emerald-800 [clip-path:polygon(0_0,100%_100%,0_100%)]"
+                  : "left-0 transform -translate-x-2 -translate-y-px bg-white dark:bg-slate-800 [clip-path:polygon(0_100%,100%_0,100%_100%)]"
+              )}
+            />
 
             {!isUser && (
               <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1">
                 {character.name}
               </p>
             )}
-            <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+            <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
               {message.content}
             </p>
             <div className="flex items-center justify-end gap-1 mt-1">
@@ -114,9 +116,9 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className={cn(
-          "px-2 sm:px-4 py-1 sm:py-2",
+          "px-4 py-1",
           isUser ? "ml-auto" : "mr-auto",
-          "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+          "max-w-[65%]"
         )}
       >
         <div className={cn(
@@ -139,7 +141,7 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
                 ? "bg-[#0084ff] text-white" 
                 : "bg-[#f0f0f0] dark:bg-slate-700 text-black dark:text-white"
             )}>
-              <p className="text-sm sm:text-base whitespace-pre-wrap break-words">
+              <p className="text-sm whitespace-pre-wrap break-words">
                 {message.content}
               </p>
             </div>
