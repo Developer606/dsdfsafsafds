@@ -11,10 +11,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Settings } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { type CustomCharacter, type User, type SubscriptionPlan } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function CharacterManagement() {
   const [showSubscription, setShowSubscription] = useState(false);
@@ -23,7 +29,16 @@ export default function CharacterManagement() {
     name: "",
     avatar: "",
     description: "",
-    persona: ""
+    persona: "",
+    // Advanced fields
+    voiceSettings: JSON.stringify({
+      pitch: 1.0,
+      speed: 1.0,
+      tone: "neutral"
+    }),
+    personalityTraits: JSON.stringify([]),
+    backgroundStory: "",
+    greetingMessage: ""
   });
 
   const { toast } = useToast();
@@ -35,10 +50,13 @@ export default function CharacterManagement() {
   const { data: customCharacters, isLoading: isLoadingCharacters } = useQuery<CustomCharacter[]>({ 
     queryKey: ["/api/custom-characters"]
   });
-  
+
   const { data: plans, isLoading: isLoadingPlans } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/plans"]
   });
+
+  // Check if user has access to advanced features
+  const hasAdvancedAccess = user?.isPremium && ["premium", "pro"].includes(user?.subscriptionTier || "");
 
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
@@ -54,7 +72,15 @@ export default function CharacterManagement() {
         name: "",
         avatar: "",
         description: "",
-        persona: ""
+        persona: "",
+        voiceSettings: JSON.stringify({
+          pitch: 1.0,
+          speed: 1.0,
+          tone: "neutral"
+        }),
+        personalityTraits: JSON.stringify([]),
+        backgroundStory: "",
+        greetingMessage: ""
       });
       toast({
         title: "Success",
@@ -114,7 +140,6 @@ export default function CharacterManagement() {
     createCharacter.mutate(newCharacter);
   };
 
-  // Get character limit based on subscription
   const getCharacterLimit = () => {
     if (!user) return 3;
     if (!user.isPremium) return 3;
@@ -124,10 +149,8 @@ export default function CharacterManagement() {
     
     if (!userPlan) return 3;
     
-    // Parse features to find character limit
     try {
       const features = JSON.parse(userPlan.features);
-      // Look for a feature containing "character" and a number
       const characterLimitFeature = features.find((feature: string) => 
         feature.toLowerCase().includes('character') && /\d+/.test(feature)
       );
@@ -137,14 +160,12 @@ export default function CharacterManagement() {
         if (limitMatch) return parseInt(limitMatch[0], 10);
       }
       
-      // Default limits based on tier if not found in features
       if (user.subscriptionTier === "pro") return "∞";
       if (user.subscriptionTier === "premium") return 45;
       if (user.subscriptionTier === "basic") return 15;
       
       return 3;
     } catch (e) {
-      // Fallback to defaults if JSON parsing fails
       if (user.subscriptionTier === "pro") return "∞";
       if (user.subscriptionTier === "premium") return 45;
       if (user.subscriptionTier === "basic") return 15;
@@ -152,7 +173,6 @@ export default function CharacterManagement() {
     }
   };
 
-  // Get remaining character slots
   const getRemainingSlots = () => {
     const limit = getCharacterLimit();
     if (limit === "∞") return "unlimited";
@@ -172,7 +192,6 @@ export default function CharacterManagement() {
       ? `${planName}: Create unlimited characters!`
       : `${planName}: ${remaining} character slot${remaining !== 1 ? 's' : ''} remaining`;
   };
-
 
   const isLoading = isLoadingCharacters || isLoadingPlans;
   
@@ -240,7 +259,7 @@ export default function CharacterManagement() {
       </div>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Create New Character</DialogTitle>
           </DialogHeader>
@@ -265,6 +284,120 @@ export default function CharacterManagement() {
               value={newCharacter.persona}
               onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
             />
+
+            {hasAdvancedAccess && (
+              <Accordion type="single" collapsible>
+                <AccordionItem value="advanced">
+                  <AccordionTrigger>
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      Advanced Customization
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 pt-4">
+                      <div>
+                        <label className="text-sm font-medium">Voice Settings</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <Input
+                            type="number"
+                            placeholder="Pitch (0.5-2.0)"
+                            min="0.5"
+                            max="2.0"
+                            step="0.1"
+                            onChange={(e) => {
+                              const currentSettings = JSON.parse(newCharacter.voiceSettings);
+                              setNewCharacter({
+                                ...newCharacter,
+                                voiceSettings: JSON.stringify({
+                                  ...currentSettings,
+                                  pitch: parseFloat(e.target.value)
+                                })
+                              });
+                            }}
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Speed (0.5-2.0)"
+                            min="0.5"
+                            max="2.0"
+                            step="0.1"
+                            onChange={(e) => {
+                              const currentSettings = JSON.parse(newCharacter.voiceSettings);
+                              setNewCharacter({
+                                ...newCharacter,
+                                voiceSettings: JSON.stringify({
+                                  ...currentSettings,
+                                  speed: parseFloat(e.target.value)
+                                })
+                              });
+                            }}
+                          />
+                          <select
+                            className="rounded-md border"
+                            onChange={(e) => {
+                              const currentSettings = JSON.parse(newCharacter.voiceSettings);
+                              setNewCharacter({
+                                ...newCharacter,
+                                voiceSettings: JSON.stringify({
+                                  ...currentSettings,
+                                  tone: e.target.value
+                                })
+                              });
+                            }}
+                          >
+                            <option value="neutral">Neutral</option>
+                            <option value="cheerful">Cheerful</option>
+                            <option value="serious">Serious</option>
+                            <option value="mysterious">Mysterious</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium">Personality Traits</label>
+                        <Input
+                          placeholder="Add traits (comma-separated)"
+                          onChange={(e) => {
+                            setNewCharacter({
+                              ...newCharacter,
+                              personalityTraits: JSON.stringify(
+                                e.target.value.split(',').map(t => t.trim())
+                              )
+                            });
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium">Background Story</label>
+                        <Textarea
+                          placeholder="Character's detailed background story"
+                          value={newCharacter.backgroundStory}
+                          onChange={(e) => setNewCharacter({
+                            ...newCharacter,
+                            backgroundStory: e.target.value
+                          })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium">Custom Greeting</label>
+                        <Input
+                          placeholder="Custom greeting message"
+                          value={newCharacter.greetingMessage}
+                          onChange={(e) => setNewCharacter({
+                            ...newCharacter,
+                            greetingMessage: e.target.value
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+
             <Button 
               className="w-full"
               onClick={handleSubmit}
