@@ -96,11 +96,6 @@ export const customCharacters = sqliteTable("custom_characters", {
   avatar: text("avatar").notNull(),
   description: text("description").notNull(),
   persona: text("persona").notNull(),
-  // Advanced customization fields
-  voiceSettings: text("voice_settings"),  // JSON string for voice configuration
-  personalityTraits: text("personality_traits"),  // JSON array of traits
-  backgroundStory: text("background_story"),  // Detailed character background
-  greetingMessage: text("greeting_message"),  // Custom greeting
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -147,10 +142,6 @@ export const insertCustomCharacterSchema = createInsertSchema(
   avatar: true,
   description: true,
   persona: true,
-  voiceSettings: true,
-  personalityTraits: true,
-  backgroundStory: true,
-  greetingMessage: true,
 });
 
 // Types
@@ -375,13 +366,3 @@ export const insertScheduledBroadcastSchema = createInsertSchema(scheduledBroadc
 // Add scheduled broadcast types
 export type ScheduledBroadcast = typeof scheduledBroadcasts.$inferSelect;
 export type InsertScheduledBroadcast = z.infer<typeof insertScheduledBroadcastSchema>;
-
-// Add advanced character customization fields to customCharacters table
-
-// Update the insert schema to include optional advanced fields
-
-
-// Add validation for advanced features
-export const validateAdvancedFeatures = (user: User) => {
-  return user.isPremium && ["premium", "pro"].includes(user.subscriptionTier || "");
-};

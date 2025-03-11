@@ -591,27 +591,9 @@ export async function registerRoutes(app: Express) {
         });
       }
 
-      // Validate premium features
-      const hasAdvancedAccess = user.isPremium && ["premium", "pro"].includes(user.subscriptionTier || "");
-      if (!hasAdvancedAccess && 
-          (req.body.voiceSettings || req.body.personalityTraits || 
-           req.body.backgroundStory || req.body.greetingMessage)) {
-        return res.status(403).json({
-          error: "Advanced character customization requires a premium subscription",
-          premiumRequired: true
-        });
-      }
-
       const data = insertCustomCharacterSchema.parse({
         ...req.body,
-        userId: user.id,
-        // Only include advanced fields if user has access
-        ...(hasAdvancedAccess ? {
-          voiceSettings: req.body.voiceSettings,
-          personalityTraits: req.body.personalityTraits,
-          backgroundStory: req.body.backgroundStory,
-          greetingMessage: req.body.greetingMessage
-        } : {})
+        userId: user.id
       });
 
       const character = await storage.createCustomCharacter(data);
