@@ -69,12 +69,16 @@ const checkBlockedStatus = async (req: any, res: any, next: any) => {
 
 // Helper function to get background images
 async function getBackgroundImages(): Promise<string[]> {
-  const fs = require('fs');
-  const path = require('path');
-  
   try {
-    const backgroundDir = path.join(__dirname, '../client/public/background');
-    const files = await fs.promises.readdir(backgroundDir);
+    const backgroundDir = path.join(process.cwd(), 'client/public/background');
+    
+    // Use promisified version of fs.readdir
+    const files = await new Promise<string[]>((resolve, reject) => {
+      fs.readdir(backgroundDir, (err, files) => {
+        if (err) reject(err);
+        else resolve(files);
+      });
+    });
     
     // Filter for image files and sort them
     const imageFiles = files
