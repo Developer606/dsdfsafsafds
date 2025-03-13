@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#87CEFA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4169E1;stop-opacity:1" />
+    </linearGradient>
+    <pattern id="pattern2" width="70" height="70" patternUnits="userSpaceOnUse">
+      <circle cx="35" cy="35" r="20" fill="rgba(255,255,255,0.1)"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#grad2)"/>
+  <rect width="100%" height="100%" fill="url(#pattern2)"/>
+  <g fill="rgba(255,255,255,0.15)">
+    <polygon points="400,100 500,300 300,300" />
+    <polygon points="1500,200 1600,400 1400,400" />
+    <polygon points="700,800 800,1000 600,1000" />
+    <polygon points="1200,700 1300,900 1100,900" />
+    <path d="M0,400 Q200,200 400,400 T800,400" stroke="rgba(255,255,255,0.2)" stroke-width="5" fill="none"/>
+    <path d="M1100,300 Q1300,100 1500,300 T1900,300" stroke="rgba(255,255,255,0.2)" stroke-width="5" fill="none"/>
+    <path d="M1000,800 Q1200,600 1400,800 T1800,800" stroke="rgba(255,255,255,0.2)" stroke-width="5" fill="none"/>
+  </g>
+</svg>
