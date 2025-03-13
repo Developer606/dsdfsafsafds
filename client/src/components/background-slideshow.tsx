@@ -14,6 +14,7 @@ export function BackgroundSlideshow({
 }: BackgroundSlideshowProps) {
   const [backgrounds, setBackgrounds] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
   
   // Load background images when component mounts
   useEffect(() => {
@@ -25,7 +26,34 @@ export function BackgroundSlideshow({
       "/images/background/image (4).webp",
       "/images/background/image (5).webp",
     ];
-    setBackgrounds(bgImages);
+    
+    // Preload all images before setting them
+    const imagePromises = bgImages.map(src => {
+      return new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        img.src = src;
+        img.onload = () => resolve(src);
+        img.onerror = () => {
+          console.error(`Failed to load image: ${src}`);
+          reject(new Error(`Failed to load image: ${src}`));
+        };
+      });
+    });
+    
+    Promise.all(imagePromises)
+      .then(loadedImages => {
+        setBackgrounds(loadedImages);
+        setImagesLoaded(true);
+        console.log("All background images loaded successfully");
+      })
+      .catch(error => {
+        console.error("Error loading background images:", error);
+        // Set at least the first image if available
+        if (bgImages.length > 0) {
+          setBackgrounds([bgImages[0]]);
+          setImagesLoaded(true);
+        }
+      });
   }, []);
   
   // Rotate through backgrounds at specified interval
@@ -39,7 +67,7 @@ export function BackgroundSlideshow({
     return () => clearInterval(timer);
   }, [backgrounds, interval]);
   
-  if (backgrounds.length === 0) {
+  if (!imagesLoaded || backgrounds.length === 0) {
     return null; // Don't render anything until backgrounds are loaded
   }
   
