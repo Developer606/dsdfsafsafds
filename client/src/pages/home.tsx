@@ -9,8 +9,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, Sparkles } from "lucide-react";
+import { Plus, Trash2, User as UserIcon, Moon, Sun, LogOut } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
+import { SubscriptionManagement } from "@/components/subscription-management";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { type Character } from "@shared/characters";
 import { type CustomCharacter, type User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -39,7 +48,7 @@ const item = {
 };
 
 export default function Home() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -60,6 +69,46 @@ export default function Home() {
   const { data: characters = [], isLoading } = useQuery<Character[]>({ 
     queryKey: ["/api/characters"]
   });
+
+  // Theme toggle function
+  const toggleTheme = () => {
+    const doc = document.documentElement;
+    const isDark = doc.classList.contains('dark');
+
+    if (isDark) {
+      doc.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      doc.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include"
+      });
+
+      // Clear all queries from the cache
+      queryClient.clear();
+
+      // Navigate to landing page
+      setLocation("/");
+
+      toast({
+        title: "Logged out successfully",
+        description: "Come back soon!"
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to logout. Please try again."
+      });
+    }
+  };
 
   const createCharacter = useMutation({
     mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
@@ -206,6 +255,52 @@ export default function Home() {
           animate="show"
           className="w-80 border-r border-yellow-200 dark:border-amber-800 overflow-y-auto p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm"
         >
+          {/* User Profile and Settings Section */}
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-yellow-200 dark:border-amber-800">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="rounded-full h-8 w-8"
+              >
+                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+              <SubscriptionManagement user={user} />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="rounded-full h-8 w-8 bg-yellow-500/10 hover:bg-yellow-500/20 dark:bg-amber-500/10 dark:hover:bg-amber-500/20"
+                  >
+                    <UserIcon className="h-4 w-4 text-yellow-600 dark:text-amber-500" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem disabled>
+                    Email: {user?.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    Username: {user?.username}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled>
+                    Status: {user?.subscriptionStatus}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
           <div className="mb-4">
             <Button
               onClick={handleCreateClick}
