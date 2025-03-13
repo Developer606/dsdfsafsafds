@@ -11,15 +11,6 @@ import { cn } from "@/lib/utils";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type User, type Notification } from "@shared/schema";
 
-interface Notification {
-  id: string;
-  type: 'admin_reply' | 'update' | 'feature';
-  title: string;
-  message: string;
-  createdAt: Date; // Changed timestamp to createdAt
-  read: boolean;
-}
-
 export function NotificationHeader() {
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
   const [complaint, setComplaint] = useState("");
@@ -35,7 +26,7 @@ export function NotificationHeader() {
 
   // Add mutation for marking notifications as read
   const markAsReadMutation = useMutation({
-    mutationFn: async (notificationId: string) => { // Changed to string
+    mutationFn: async (notificationId: string) => {
       await apiRequest("PATCH", `/api/notifications/${notificationId}/read`);
     },
     onSuccess: () => {
@@ -55,7 +46,7 @@ export function NotificationHeader() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         toast({
           variant: "destructive",
           title: "Error",
@@ -82,7 +73,7 @@ export function NotificationHeader() {
     }
   };
 
-  // Add query to get user data with proper type
+  // Add query to get user data
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
@@ -109,8 +100,8 @@ export function NotificationHeader() {
     try {
       const formData = new FormData();
       formData.append('message', complaint);
-      formData.append('name', user.username); // Now properly typed
-      formData.append('email', user.email); // Now properly typed
+      formData.append('name', user.username);
+      formData.append('email', user.email);
       if (selectedImage) {
         formData.append('image', selectedImage);
       }
