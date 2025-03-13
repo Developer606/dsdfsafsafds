@@ -67,6 +67,31 @@ const checkBlockedStatus = async (req: any, res: any, next: any) => {
   next();
 };
 
+// Helper function to get background images
+async function getBackgroundImages(): Promise<string[]> {
+  const fs = require('fs');
+  const path = require('path');
+  
+  try {
+    const backgroundDir = path.join(__dirname, '../client/public/background');
+    const files = await fs.promises.readdir(backgroundDir);
+    
+    // Filter for image files and sort them
+    const imageFiles = files
+      .filter((file: string) => {
+        const ext = path.extname(file).toLowerCase();
+        return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+      })
+      .sort();
+    
+    // Return paths relative to the public directory
+    return imageFiles.map((file: string) => `/background/${file}`);
+  } catch (error) {
+    console.error('Error reading background images directory:', error);
+    return [];
+  }
+}
+
 export async function registerRoutes(app: Express) {
   // Configure session middleware first
   app.use(session({
@@ -178,6 +203,17 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error serving PayPal config:", error);
       res.status(500).json({ error: "Failed to load PayPal configuration" });
+    }
+  });
+  
+  // Add background images endpoint
+  app.get("/api/background-images", async (req, res) => {
+    try {
+      const images = await getBackgroundImages();
+      res.json(images);
+    } catch (error) {
+      console.error("Error fetching background images:", error);
+      res.status(500).json({ error: "Failed to load background images" });
     }
   });
 
