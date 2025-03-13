@@ -273,12 +273,12 @@ export default function Home() {
           >
             <div className="absolute inset-0 -z-10">
               <div 
-                className="absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-90"
+                className="absolute -top-20 right-0 transform translate-x-1/2 w-[800px] h-[800px]"
                 style={{
-                  backgroundImage: "url('/Are you ready to make your dream come true Take one small step toward them today!(14) 2.png')",
+                  backgroundImage: "url('/baground/bagiundimage.png')",
                   backgroundSize: 'contain',
                   backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'center'
+                  backgroundPosition: 'center right'
                 }}
               />
             </div>
