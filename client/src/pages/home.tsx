@@ -277,7 +277,7 @@ export default function Home() {
     <div className="min-h-screen bg-[#FFFDFA] dark:bg-slate-950">
       <BackgroundSlideshow 
         interval={8000} 
-        opacity={0.15} 
+        opacity={0.35} 
         fadeTime={1.5} 
         darkMode={theme === 'dark'} 
       />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
@@ -10,6 +10,7 @@ import { AuthDialog } from "@/components/auth-dialog";
 import type { User } from "@shared/schema";
 import { FaEnvelope, FaGithub, FaTwitter } from "react-icons/fa";
 import { PolicyDialog } from "@/components/policy-dialog";
+import { BackgroundSlideshow } from "@/components/background-slideshow";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -169,6 +170,30 @@ export default function LandingPage() {
   const [currentPolicy, setCurrentPolicy] = useState<
     keyof typeof POLICY_CONTENT | null
   >(null);
+  
+  // Keep track of current theme
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    }
+    return 'light';
+  });
+  
+  // Check for theme changes
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const isDark = document.documentElement.classList.contains('dark');
+          setTheme(isDark ? 'dark' : 'light');
+        }
+      });
+    });
+    
+    observer.observe(document.documentElement, { attributes: true });
+    
+    return () => observer.disconnect();
+  }, []);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -225,11 +250,20 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Anime background slideshow */}
+      <BackgroundSlideshow 
+        interval={10000} 
+        opacity={0.25} 
+        fadeTime={2} 
+        darkMode={true} 
+      />
+      
+      {/* Additional decorative layered backgrounds */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-blue-900/20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]" />
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-black/95 to-purple-900/90 animate-gradient-shift" />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-black/90 to-purple-900/80 animate-gradient-shift" />
 
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDYwIEwgNjAgMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 animate-float" />
 

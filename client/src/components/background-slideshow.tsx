@@ -84,25 +84,35 @@ export function BackgroundSlideshow({
       <AnimatePresence mode="wait">
         <motion.div
           key={currentImageIndex}
-          initial={{ opacity: 0 }}
-          animate={{ opacity }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: fadeTime }}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ 
+            opacity: opacity * 1.5,
+            scale: 1,
+          }}
+          exit={{ opacity: 0, scale: 1.05 }}
+          transition={{ 
+            opacity: { duration: fadeTime },
+            scale: { duration: fadeTime * 1.5, ease: "easeOut" }
+          }}
           className="absolute inset-0 z-0"
           style={{
             backgroundImage: `url(${backgroundImages[currentImageIndex]})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
+            filter: 'contrast(1.1) brightness(1.05)', // Enhanced contrast and brightness
           }}
         />
       </AnimatePresence>
       
-      {/* Gradient overlay */}
-      <div 
-        className={`absolute inset-0 z-1 bg-gradient-to-b ${
+      {/* Semi-transparent overlay with subtle animated gradient */}
+      <motion.div 
+        initial={{ opacity: 0.9 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 2, repeat: Infinity, repeatType: "reverse" }}
+        className={`absolute inset-0 z-1 ${
           darkMode 
-            ? 'from-transparent via-slate-950/50 to-slate-950' 
-            : 'from-transparent via-[#FFFDFA]/50 to-[#FFFDFA]'
+            ? 'bg-gradient-to-b from-transparent via-slate-950/40 to-slate-950/80' 
+            : 'bg-gradient-to-b from-transparent via-[#FFFDFA]/40 to-[#FFFDFA]/80'
         }`} 
       />
     </div>
