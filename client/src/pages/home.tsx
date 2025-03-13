@@ -269,8 +269,19 @@ export default function Home() {
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-2xl mx-auto"
+            className="text-center max-w-2xl mx-auto relative z-10"
           >
+            <div className="absolute inset-0 -z-10">
+              <div 
+                className="absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-90"
+                style={{
+                  backgroundImage: "url('/Are you ready to make your dream come true Take one small step toward them today!(14) 2.png')",
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center'
+                }}
+              />
+            </div>
             <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
               Immerse in Anime & Manga
             </h1>
