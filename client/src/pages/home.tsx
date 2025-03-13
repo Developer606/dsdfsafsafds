@@ -16,8 +16,8 @@ import { type CustomCharacter, type User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Enhanced animations
-const container = {
+// Container animation variant
+const animeGalleryContainer = {
   hidden: { opacity: 0, scale: 0.9 },
   show: {
     opacity: 1,
@@ -30,7 +30,8 @@ const container = {
   }
 };
 
-const item = {
+// Individual card animation variant
+const characterPortraitItem = {
   hidden: { y: 20, opacity: 0, scale: 0.8 },
   show: { 
     y: 0, 
@@ -43,8 +44,8 @@ const item = {
   }
 };
 
-// Floating animation for background elements
-const floatingAnimation = {
+// Background floating animation
+const etherealFloating = {
   initial: { y: 0 },
   animate: {
     y: [-10, 10, -10],
@@ -212,20 +213,20 @@ export default function Home() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 dark:from-slate-950 dark:via-purple-950 dark:to-slate-900 relative overflow-hidden"
+      className="min-h-screen bg-gradient-to-br from-sakura-light via-twilight-mist to-cherry-blossom dark:from-night-sky dark:via-mystic-purple dark:to-shadow-realm relative overflow-hidden"
     >
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
           initial="initial"
           animate="animate"
-          variants={floatingAnimation}
-          className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-purple-300/20 to-pink-300/20 rounded-full blur-3xl"
+          variants={etherealFloating}
+          className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-r from-spirit-glow/20 to-mystic-aura/20 rounded-full blur-3xl"
         />
         <motion.div
           initial="initial"
           animate="animate"
-          variants={floatingAnimation}
-          className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-l from-blue-300/20 to-indigo-300/20 rounded-full blur-3xl"
+          variants={etherealFloating}
+          className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-l from-celestial-blue/20 to-ethereal-indigo/20 rounded-full blur-3xl"
         />
       </div>
 
@@ -286,7 +287,7 @@ export default function Home() {
         </motion.div>
 
         <motion.div
-          variants={container}
+          variants={animeGalleryContainer}
           initial="hidden"
           animate="show"
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
@@ -295,9 +296,9 @@ export default function Home() {
             {characters?.map((character, index) => (
               <motion.div
                 key={character.id}
-                variants={item}
+                variants={characterPortraitItem}
                 layoutId={character.id}
-                className="relative group"
+                className="relative group character-portrait"
                 whileHover={{ y: -5, scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 400, damping: 20 }}
               >
