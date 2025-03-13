@@ -7,9 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, User as UserIcon, Moon, Sun, LogOut } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  User as UserIcon,
+  Moon,
+  Sun,
+  LogOut,
+} from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { SubscriptionManagement } from "@/components/subscription-management";
 import {
@@ -30,9 +43,9 @@ const container = {
     opacity: 1,
     transition: {
       staggerChildren: 0.05,
-      delayChildren: 0.1
-    }
-  }
+      delayChildren: 0.1,
+    },
+  },
 };
 
 const item = {
@@ -42,9 +55,9 @@ const item = {
     opacity: 1,
     transition: {
       type: "spring",
-      stiffness: 100
-    }
-  }
+      stiffness: 100,
+    },
+  },
 };
 
 export default function Home() {
@@ -52,35 +65,37 @@ export default function Home() {
   const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [characterToDelete, setCharacterToDelete] = useState<string | null>(null);
+  const [characterToDelete, setCharacterToDelete] = useState<string | null>(
+    null,
+  );
   const [newCharacter, setNewCharacter] = useState({
     name: "",
     avatar: "",
     description: "",
-    persona: ""
+    persona: "",
   });
 
   const { toast } = useToast();
 
-  const { data: user } = useQuery<User>({ 
-    queryKey: ["/api/user"]
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user"],
   });
 
-  const { data: characters = [], isLoading } = useQuery<Character[]>({ 
-    queryKey: ["/api/characters"]
+  const { data: characters = [], isLoading } = useQuery<Character[]>({
+    queryKey: ["/api/characters"],
   });
 
   // Theme toggle function
   const toggleTheme = () => {
     const doc = document.documentElement;
-    const isDark = doc.classList.contains('dark');
+    const isDark = doc.classList.contains("dark");
 
     if (isDark) {
-      doc.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+      doc.classList.remove("dark");
+      localStorage.setItem("theme", "light");
     } else {
-      doc.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
+      doc.classList.add("dark");
+      localStorage.setItem("theme", "dark");
     }
   };
 
@@ -88,7 +103,7 @@ export default function Home() {
     try {
       await fetch("/api/logout", {
         method: "POST",
-        credentials: "include"
+        credentials: "include",
       });
 
       // Clear all queries from the cache
@@ -99,19 +114,21 @@ export default function Home() {
 
       toast({
         title: "Logged out successfully",
-        description: "Come back soon!"
+        description: "Come back soon!",
       });
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to logout. Please try again."
+        description: "Failed to logout. Please try again.",
       });
     }
   };
 
   const createCharacter = useMutation({
-    mutationFn: async (data: Omit<CustomCharacter, "id" | "userId" | "createdAt">) => {
+    mutationFn: async (
+      data: Omit<CustomCharacter, "id" | "userId" | "createdAt">,
+    ) => {
       const res = await apiRequest("POST", "/api/custom-characters", data);
       return res.json();
     },
@@ -124,31 +141,31 @@ export default function Home() {
         name: "",
         avatar: "",
         description: "",
-        persona: ""
+        persona: "",
       });
       toast({
         title: "Success",
-        description: "Character created successfully"
+        description: "Character created successfully",
       });
     },
     onError: () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create character"
+        description: "Failed to create character",
       });
-    }
+    },
   });
 
   const deleteCharacter = useMutation({
     mutationFn: async (characterId: string) => {
-      if (!characterId || !characterId.startsWith('custom_')) {
-        throw new Error('Cannot delete pre-defined characters');
+      if (!characterId || !characterId.startsWith("custom_")) {
+        throw new Error("Cannot delete pre-defined characters");
       }
 
-      const numericId = parseInt(characterId.replace('custom_', ''), 10);
+      const numericId = parseInt(characterId.replace("custom_", ""), 10);
       if (isNaN(numericId)) {
-        throw new Error('Invalid character ID');
+        throw new Error("Invalid character ID");
       }
 
       await apiRequest("DELETE", `/api/custom-characters/${numericId}`);
@@ -159,7 +176,7 @@ export default function Home() {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Success",
-        description: "Character deleted successfully"
+        description: "Character deleted successfully",
       });
       setShowDeleteConfirm(false);
       setCharacterToDelete(null);
@@ -168,19 +185,20 @@ export default function Home() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete character"
+        description:
+          error instanceof Error ? error.message : "Failed to delete character",
       });
       setShowDeleteConfirm(false);
       setCharacterToDelete(null);
-    }
+    },
   });
 
   const handleDeleteCharacter = (characterId: string) => {
-    if (!characterId.startsWith('custom_')) {
+    if (!characterId.startsWith("custom_")) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Cannot delete pre-defined characters"
+        description: "Cannot delete pre-defined characters",
       });
       return;
     }
@@ -206,11 +224,16 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
-    if (!newCharacter.name || !newCharacter.avatar || !newCharacter.description || !newCharacter.persona) {
+    if (
+      !newCharacter.name ||
+      !newCharacter.avatar ||
+      !newCharacter.description ||
+      !newCharacter.persona
+    ) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Please fill in all fields"
+        description: "Please fill in all fields",
       });
       return;
     }
@@ -219,7 +242,7 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="container mx-auto p-4"
@@ -249,7 +272,7 @@ export default function Home() {
 
       <div className="flex h-[calc(100vh-64px)]">
         {/* Left Sidebar */}
-        <motion.div 
+        <motion.div
           variants={container}
           initial="hidden"
           animate="show"
@@ -271,8 +294,8 @@ export default function Home() {
               <SubscriptionManagement user={user} />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="icon"
                     className="rounded-full h-8 w-8 bg-yellow-500/10 hover:bg-yellow-500/20 dark:bg-amber-500/10 dark:hover:bg-amber-500/20"
                   >
@@ -292,7 +315,10 @@ export default function Home() {
                     Status: {user?.subscriptionStatus}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-600"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
@@ -324,13 +350,15 @@ export default function Home() {
                     <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-md hover:shadow-lg border border-yellow-500/20 dark:border-amber-500/20 hover:border-yellow-500/40 dark:hover:border-amber-500/40 p-3">
                       <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <div className="flex items-center gap-3">
-                        <img 
-                          src={character.avatar} 
+                        <img
+                          src={character.avatar}
                           alt={character.name}
                           className="w-12 h-12 rounded-full object-cover"
                         />
                         <div>
-                          <h3 className="font-medium text-sm">{character.name}</h3>
+                          <h3 className="font-medium text-sm">
+                            {character.name}
+                          </h3>
                           <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
                             {character.description}
                           </p>
@@ -339,7 +367,7 @@ export default function Home() {
                     </div>
                   </div>
                 </Link>
-                {character.id.startsWith('custom_') && (
+                {character.id.startsWith("custom_") && (
                   <motion.button
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -361,7 +389,7 @@ export default function Home() {
 
         {/* Main Content Area */}
         <div className="flex-1 p-8">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-2xl mx-auto"
@@ -370,7 +398,8 @@ export default function Home() {
               Immerse in Anime & Manga
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-400">
-              Chat with your favorite characters and bring your anime world to life
+              Chat with your favorite characters and bring your anime world to
+              life
             </p>
           </motion.div>
         </div>
@@ -384,11 +413,12 @@ export default function Home() {
             </DialogTitle>
             {!user?.isPremium && (
               <DialogDescription className="text-amber-600">
-                Free Trial: {user?.trialCharactersCreated || 0}/3 characters created
+                Free Trial: {user?.trialCharactersCreated || 0}/3 characters
+                created
               </DialogDescription>
             )}
           </DialogHeader>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-4"
@@ -396,33 +426,44 @@ export default function Home() {
             <Input
               placeholder="Character Name"
               value={newCharacter.name}
-              onChange={(e) => setNewCharacter({ ...newCharacter, name: e.target.value })}
+              onChange={(e) =>
+                setNewCharacter({ ...newCharacter, name: e.target.value })
+              }
               className="border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"
             />
             <Input
               placeholder="Avatar URL"
               value={newCharacter.avatar}
-              onChange={(e) => setNewCharacter({ ...newCharacter, avatar: e.target.value })}
+              onChange={(e) =>
+                setNewCharacter({ ...newCharacter, avatar: e.target.value })
+              }
               className="border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"
             />
             <Textarea
               placeholder="Character Description"
               value={newCharacter.description}
-              onChange={(e) => setNewCharacter({ ...newCharacter, description: e.target.value })}
+              onChange={(e) =>
+                setNewCharacter({
+                  ...newCharacter,
+                  description: e.target.value,
+                })
+              }
               className="border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"
             />
             <Textarea
               placeholder="Character Persona"
               value={newCharacter.persona}
-              onChange={(e) => setNewCharacter({ ...newCharacter, persona: e.target.value })}
+              onChange={(e) =>
+                setNewCharacter({ ...newCharacter, persona: e.target.value })
+              }
               className="border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"
             />
-            <motion.div 
-              whileHover={{ scale: 1.02 }} 
+            <motion.div
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="pt-2"
             >
-              <Button 
+              <Button
                 className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg"
                 onClick={handleSubmit}
                 disabled={createCharacter.isPending}
@@ -439,7 +480,8 @@ export default function Home() {
           <DialogHeader>
             <DialogTitle>Delete Character</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this character? This action cannot be undone.
+              Are you sure you want to delete this character? This action cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end space-x-2 mt-4">
