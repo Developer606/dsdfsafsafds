@@ -18,11 +18,12 @@ export function BackgroundSlideshow({
   // Load background images when component mounts
   useEffect(() => {
     const bgImages = [
-      "/images/background/bg1.svg",
-      "/images/background/bg2.svg",
-      "/images/background/bg3.svg",
-      "/images/background/bg4.svg",
-      "/images/background/bg5.svg",
+      "/images/background/image.webp",
+      "/images/background/image (1).webp",
+      "/images/background/image (2).webp",
+      "/images/background/image (3).webp",
+      "/images/background/image (4).webp",
+      "/images/background/image (5).webp",
     ];
     setBackgrounds(bgImages);
   }, []);
@@ -47,10 +48,16 @@ export function BackgroundSlideshow({
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0 }}
-          animate={{ opacity }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1.5, ease: "easeInOut" }}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.02 }}
+          transition={{ 
+            duration: 2, 
+            ease: "easeInOut",
+            scale: {
+              duration: 8,
+            }
+          }}
           className="absolute inset-0"
           style={{ 
             backgroundImage: `url(${backgrounds[currentIndex]})`,
@@ -61,7 +68,7 @@ export function BackgroundSlideshow({
       </AnimatePresence>
       
       {/* Add a gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/70 to-background" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#FFFDFA]/70 to-[#FFFDFA] dark:via-slate-950/70 dark:to-slate-950" />
     </div>
   );
 }

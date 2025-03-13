@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
+import { BackgroundSlideshow } from "@/components/background-slideshow";
 import {
   Dialog,
   DialogContent,
