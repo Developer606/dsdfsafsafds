@@ -2,7 +2,7 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import { Navigation } from "@/components/navigation";
+// import { Navigation } from "@/components/navigation";
 import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import NotFound from "@/pages/not-found";
@@ -21,18 +21,33 @@ function Router() {
       <Route path="/admin/login" component={AdminLogin} />
 
       {/* Protected routes that require authentication */}
-      <ProtectedRoute path="/chats" component={() => (
-        <>
-          <Navigation />
-          <Home />
-        </>
-      )} />
+      <ProtectedRoute
+        path="/chats"
+        component={() => (
+          <>
+            {/* <Navigation /> */}
+            <Home />
+          </>
+        )}
+      />
       <ProtectedRoute path="/chat/:characterId" component={Chat} />
 
       {/* Admin-only routes */}
-      <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} requireAdmin />
-      <ProtectedRoute path="/admin/dashboard/complaints" component={ComplaintsSection} requireAdmin />
-      <ProtectedRoute path="/admin/dashboard/feedback" component={FeedbackSection} requireAdmin />
+      <ProtectedRoute
+        path="/admin/dashboard"
+        component={AdminDashboard}
+        requireAdmin
+      />
+      <ProtectedRoute
+        path="/admin/dashboard/complaints"
+        component={ComplaintsSection}
+        requireAdmin
+      />
+      <ProtectedRoute
+        path="/admin/dashboard/feedback"
+        component={FeedbackSection}
+        requireAdmin
+      />
 
       <Route component={NotFound} />
     </Switch>
