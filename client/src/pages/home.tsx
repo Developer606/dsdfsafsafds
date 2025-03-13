@@ -275,7 +275,7 @@ export default function Home() {
               <div 
                 className="absolute -top-20 right-0 transform translate-x-1/2 w-[800px] h-[800px]"
                 style={{
-                  backgroundImage: "url('/baground/bagiundimage.png')",
+                  backgroundImage: "url('/background-image.png')",
                   backgroundSize: 'contain',
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'center right'
