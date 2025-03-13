@@ -263,9 +263,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDFA] dark:bg-slate-950">
+    <div className="min-h-screen bg-[#FFFDFA] dark:bg-slate-950 relative">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('/anime-pattern.svg')] opacity-5" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://images.stockcake.com/public/4/f/c/4fc2549e-fc25-4c8c-8879-1e536c80caca/dancing-with-wind-stockcake.jpg')] bg-cover bg-center opacity-20 dark:opacity-15" />
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent via-[#FFFDFA]/50 to-[#FFFDFA] dark:via-slate-950/50 dark:to-slate-950" />
       </div>
 
       <NotificationHeader />
@@ -388,19 +389,42 @@ export default function Home() {
         </motion.div>
 
         {/* Main Content Area */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-8 flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-2xl mx-auto"
+            className="text-center max-w-2xl mx-auto bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm p-10 rounded-3xl shadow-xl border border-yellow-500/10 dark:border-amber-500/10"
           >
-            <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
-              Immerse in Anime & Manga
-            </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
-              Chat with your favorite characters and bring your anime world to
-              life
-            </p>
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 100 }}
+            >
+              <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
+                Immerse in Anime & Manga
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-400">
+                Chat with your favorite characters and bring your anime world to
+                life
+              </p>
+              <div className="mt-8 flex justify-center">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    onClick={() => {
+                      if (characters && characters.length > 0) {
+                        setLocation(`/chat/${characters[0].id}`);
+                      }
+                    }}
+                    className="bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg rounded-full px-8 py-6 text-lg"
+                  >
+                    Start a New Conversation
+                  </Button>
+                </motion.div>
+              </div>
+            </motion.div>
           </motion.div>
         </div>
       </div>
