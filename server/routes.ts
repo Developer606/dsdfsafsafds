@@ -69,25 +69,25 @@ const checkBlockedStatus = async (req: any, res: any, next: any) => {
 
 // Helper function to get background images
 async function getBackgroundImages(): Promise<string[]> {
+  const fs = require('fs');
+  const path = require('path');
+  
   try {
-    // Hardcoded array of background image paths to avoid file system issues
-    const defaultImages = [
-      '/background/1.webp',
-      '/background/2.webp',
-      '/background/3.webp',
-      '/background/4.webp',
-      '/background/6.webp',
-      '/background/7.webp',
-      '/background/image_1740421401242.png',
-      '/background/image_1740656896464.png',
-      '/background/image_1741079807737.png',
-      '/background/image_1741082939840.png',
-      '/background/image_1741851380088.png'
-    ];
+    const backgroundDir = path.join(__dirname, '../client/public/background');
+    const files = await fs.promises.readdir(backgroundDir);
     
-    return defaultImages;
+    // Filter for image files and sort them
+    const imageFiles = files
+      .filter((file: string) => {
+        const ext = path.extname(file).toLowerCase();
+        return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+      })
+      .sort();
+    
+    // Return paths relative to the public directory
+    return imageFiles.map((file: string) => `/background/${file}`);
   } catch (error) {
-    console.error('Error reading background images:', error);
+    console.error('Error reading background images directory:', error);
     return [];
   }
 }
