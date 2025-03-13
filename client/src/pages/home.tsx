@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
-import { BackgroundSlideshow } from "@/components/background-slideshow";
 import {
   Dialog,
   DialogContent,
@@ -264,8 +263,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFDFA] dark:bg-slate-950 relative">
-      <BackgroundSlideshow opacity={0.15} interval={10000} />
+    <div className="min-h-screen bg-[#FFFDFA] dark:bg-slate-950">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('/anime-pattern.svg')] opacity-5" />
+      </div>
 
       <NotificationHeader />
 
