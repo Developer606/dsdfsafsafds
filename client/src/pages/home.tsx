@@ -279,7 +279,7 @@ export default function Home() {
         interval={8000} 
         opacity={0.15} 
         fadeTime={1.5} 
-        darkMode={theme === 'dark'} 
+        darkMode={document.documentElement.classList.contains('dark')} 
       />
 
       <NotificationHeader />
