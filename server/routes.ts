@@ -292,6 +292,22 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ error: "Failed to delete notification" });
     }
   });
+  
+  // Test endpoint for IP geolocation (admin only)
+  app.get("/api/admin/test-ip-location", isAdmin, async (req, res) => {
+    try {
+      const { getLocationFromIp } = await import('./ip-location');
+      const testIp = req.query.ip as string || req.ip;
+      const locationData = getLocationFromIp(testIp);
+      res.json({
+        ip: testIp,
+        location: locationData
+      });
+    } catch (error) {
+      console.error("Error testing IP location:", error);
+      res.status(500).json({ error: "Failed to test IP location" });
+    }
+  });
 
   app.post("/api/admin/notifications/broadcast", isAdmin, async (req, res) => {
     try {
