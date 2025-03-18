@@ -21,7 +21,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   getUserStats(): Promise<{ totalUsers: number; activeUsers: number; premiumUsers: number; }>;
   incrementTrialCharacterCount(userId: number): Promise<void>;
-  updateLastLogin(userId: number): Promise<void>;
+  updateLastLogin(userId: number, ipAddress?: string): Promise<void>;
   createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter>;
   getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
   getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
@@ -164,10 +164,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async updateLastLogin(userId: number): Promise<void> {
+  async updateLastLogin(userId: number, ipAddress?: string): Promise<void> {
+    const updateData: any = { lastLoginAt: new Date() };
+    
+    // If IP address is provided, update location data
+    if (ipAddress) {
+      const { getLocationFromIp } = await import('./ip-location');
+      const locationData = getLocationFromIp(ipAddress);
+      
+      updateData.lastLoginIp = ipAddress;
+      updateData.countryCode = locationData.countryCode;
+      updateData.countryName = locationData.countryName;
+      updateData.cityName = locationData.cityName;
+    }
+    
     await db
       .update(users)
-      .set({ lastLoginAt: new Date() })
+      .set(updateData)
       .where(eq(users.id, userId));
   }
 

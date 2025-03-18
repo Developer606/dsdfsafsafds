@@ -42,7 +42,11 @@ async function ensureColumns() {
       { name: 'subscription_tier', sql: 'TEXT' },
       { name: 'subscription_status', sql: 'TEXT DEFAULT "trial"' },
       { name: 'subscription_expires_at', sql: 'INTEGER' },
-      { name: 'last_login_at', sql: 'INTEGER' }
+      { name: 'last_login_at', sql: 'INTEGER' },
+      { name: 'last_login_ip', sql: 'TEXT' },
+      { name: 'country_code', sql: 'TEXT' },
+      { name: 'country_name', sql: 'TEXT' },
+      { name: 'city_name', sql: 'TEXT' }
     ];
 
     for (const column of columnsToAdd) {

@@ -83,6 +83,7 @@ export function setupAuth(app: Express) {
         }
 
         // Update last login time
+        // The IP is not available in passport strategy, will be updated in route
         await storage.updateLastLogin(user.id);
         return done(null, user);
       } catch (error) {
