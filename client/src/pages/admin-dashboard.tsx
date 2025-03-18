@@ -753,6 +753,24 @@ export default function AdminDashboard() {
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        {user.countryName ? (
+                          <>
+                            <span>
+                              {user.countryName}
+                            </span>
+                            {user.cityName && (
+                              <span className="text-xs text-muted-foreground">
+                                {user.cityName}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Unknown</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{user.trialCharactersCreated}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
@@ -830,7 +848,7 @@ export default function AdminDashboard() {
                 ))}
                 {filteredUsers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       No users found matching "{searchQuery}"
                     </TableCell>
                   </TableRow>
