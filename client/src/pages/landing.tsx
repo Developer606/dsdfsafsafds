@@ -10,7 +10,7 @@ import { AuthDialog } from "@/components/auth-dialog";
 import type { User } from "@shared/schema";
 import { FaEnvelope, FaGithub, FaTwitter } from "react-icons/fa";
 import { PolicyDialog } from "@/components/policy-dialog";
-import { BackgroundSlideshow } from "@/components/background-slideshow";
+// import { BackgroundSlideshow } from "@/components/background-slideshow";
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -36,22 +36,25 @@ const slideIn = {
 const FEATURED_CHARACTERS = [
   {
     name: "Naruto Uzumaki",
-    description: "The determined ninja who never gives up! Join him on his journey to become the greatest Hokage.",
+    description:
+      "The determined ninja who never gives up! Join him on his journey to become the greatest Hokage.",
     image: "/images/characters/naruto.png",
-    color: "from-orange-500 to-red-500"
+    color: "from-orange-500 to-red-500",
   },
   {
     name: "Sakura Haruno",
-    description: "Skilled medical ninja with incredible strength. A powerful kunoichi from the Hidden Leaf Village.",
+    description:
+      "Skilled medical ninja with incredible strength. A powerful kunoichi from the Hidden Leaf Village.",
     image: "/images/characters/sakura.png",
-    color: "from-pink-500 to-red-400"
+    color: "from-pink-500 to-red-400",
   },
   {
     name: "Sasuke Uchiha",
-    description: "Last survivor of the Uchiha clan, seeking to restore honor to his family name.",
+    description:
+      "Last survivor of the Uchiha clan, seeking to restore honor to his family name.",
     image: "/images/characters/sasuke.png",
-    color: "from-purple-600 to-blue-500"
-  }
+    color: "from-purple-600 to-blue-500",
+  },
 ];
 
 // Move policy content outside component for better performance
@@ -170,28 +173,30 @@ export default function LandingPage() {
   const [currentPolicy, setCurrentPolicy] = useState<
     keyof typeof POLICY_CONTENT | null
   >(null);
-  
+
   // Keep track of current theme
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      return document.documentElement.classList.contains("dark")
+        ? "dark"
+        : "light";
     }
-    return 'light';
+    return "light";
   });
-  
+
   // Check for theme changes
   useEffect(() => {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          const isDark = document.documentElement.classList.contains('dark');
-          setTheme(isDark ? 'dark' : 'light');
+        if (mutation.attributeName === "class") {
+          const isDark = document.documentElement.classList.contains("dark");
+          setTheme(isDark ? "dark" : "light");
         }
       });
     });
-    
+
     observer.observe(document.documentElement, { attributes: true });
-    
+
     return () => observer.disconnect();
   }, []);
 
@@ -251,13 +256,13 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
       {/* Anime background slideshow */}
-      <BackgroundSlideshow 
+      {/* <BackgroundSlideshow 
         interval={10000} 
         opacity={0.25} 
         fadeTime={2} 
         darkMode={true} 
-      />
-      
+      /> */}
+
       {/* Additional decorative layered backgrounds */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-blue-900/20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]" />
@@ -402,13 +407,13 @@ export default function LandingPage() {
           variants={fadeIn}
           className="w-full max-w-7xl mx-auto mt-32"
         >
-          <motion.h2 
+          <motion.h2
             variants={fadeIn}
             className="text-4xl font-bold text-center text-white mb-12"
           >
             Featured Characters
           </motion.h2>
-          <motion.div 
+          <motion.div
             variants={stagger}
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
           >
@@ -435,9 +440,7 @@ export default function LandingPage() {
                       <h3 className="text-xl font-semibold text-white mb-2">
                         {character.name}
                       </h3>
-                      <p className="text-gray-300">
-                        {character.description}
-                      </p>
+                      <p className="text-gray-300">{character.description}</p>
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
