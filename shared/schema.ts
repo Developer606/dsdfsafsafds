@@ -67,6 +67,10 @@ export const users = sqliteTable("users", {
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
   lastLoginAt: integer("last_login_at", { mode: "timestamp_ms" }),
+  lastLoginIp: text("last_login_ip"),
+  countryCode: text("country_code"),
+  countryName: text("country_name"),
+  cityName: text("city_name"),
 });
 
 
