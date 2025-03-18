@@ -664,6 +664,7 @@ export default function AdminDashboard() {
                   <TableHead className="w-[100px]">Status</TableHead>
                   <TableHead className="w-[150px]">Subscription</TableHead>
                   <TableHead className="w-[150px]">Last Login</TableHead>
+                  <TableHead className="w-[150px]">Location</TableHead>
                   <TableHead className="w-[100px]">Characters</TableHead>
                   <TableHead className="w-[100px]">Created</TableHead>
                   <TableHead className="w-[150px]">Actions</TableHead>

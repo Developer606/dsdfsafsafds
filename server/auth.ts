@@ -165,8 +165,8 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ error: "Invalid admin credentials" });
       }
 
-      // Update last login time
-      await storage.updateLastLogin(user.id);
+      // Update last login time with IP address
+      await storage.updateLastLogin(user.id, req.ip);
 
       // Log in the admin
       req.login(user, (err) => {
@@ -194,7 +194,7 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ error: "Please use admin login" });
       }
 
-      await storage.updateLastLogin(user.id);
+      await storage.updateLastLogin(user.id, req.ip);
 
       req.login(user, (err) => {
         if (err) {
