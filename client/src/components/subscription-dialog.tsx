@@ -113,11 +113,11 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className={isMobile 
-          ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" 
+          ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white max-h-[90vh] overflow-y-auto" 
           : "sm:max-w-[800px]"
         }>
           <div className="py-8 flex justify-center items-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <Loader2 className={isMobile ? "h-8 w-8 animate-spin text-red-400" : "h-8 w-8 animate-spin text-primary"} />
           </div>
         </DialogContent>
       </Dialog>
@@ -129,7 +129,7 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className={isMobile 
-          ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" 
+          ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white max-h-[90vh] overflow-y-auto" 
           : "sm:max-w-[800px]"
         }>
           <div className="py-8">
@@ -149,7 +149,7 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className={isMobile 
-        ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" 
+        ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white max-h-[90vh] overflow-y-auto" 
         : "sm:max-w-[800px]"
       }>
         <DialogHeader>
