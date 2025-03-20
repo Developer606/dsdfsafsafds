@@ -4,15 +4,7 @@ import { Link, useLocation } from "wouter";
 import { CharacterCard } from "@/components/character-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { BackgroundSlideshow } from "@/components/background-slideshow";
@@ -22,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -40,7 +31,6 @@ import {
   Bell,
   AlertCircle,
   CreditCard,
-  Edit2,
 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { SubscriptionManagement } from "@/components/subscription-management";
@@ -284,15 +274,6 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Profile dialog states
-  const [showProfileDialog, setShowProfileDialog] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    fullName: user?.fullName || "",
-    age: user?.age || "",
-    gender: user?.gender || "",
-    bio: user?.bio || ""
-  });
 
   if (isLoading) {
     return (
@@ -698,51 +679,6 @@ export default function Home() {
                   <p className="text-gray-400">{user?.email}</p>
                 </div>
                 
-                {/* Personal Information Section */}
-                <div className="bg-gray-800/60 rounded-lg border border-gray-700 p-4 mb-5">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-lg font-bold">Personal Information</h3>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => {
-                        setProfileForm({
-                          fullName: user?.fullName || "",
-                          age: user?.age || "",
-                          gender: user?.gender || "",
-                          bio: user?.bio || ""
-                        });
-                        setShowProfileDialog(true);
-                      }}
-                      className="text-red-400 hover:bg-red-400/10 hover:text-red-300 p-1 h-8"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="border-b border-gray-700 pb-2">
-                      <p className="text-xs text-gray-400">Full Name</p>
-                      <p className="text-sm">{user?.fullName || "Not specified"}</p>
-                    </div>
-                    
-                    <div className="border-b border-gray-700 pb-2">
-                      <p className="text-xs text-gray-400">Age</p>
-                      <p className="text-sm">{user?.age || "Not specified"}</p>
-                    </div>
-                    
-                    <div className="border-b border-gray-700 pb-2">
-                      <p className="text-xs text-gray-400">Gender</p>
-                      <p className="text-sm">{user?.gender || "Not specified"}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-xs text-gray-400">Bio</p>
-                      <p className="text-sm">{user?.bio || "Not specified"}</p>
-                    </div>
-                  </div>
-                </div>
-                
                 <div className="bg-gray-800/60 rounded-lg border border-gray-700 p-4 mb-5">
                   <h3 className="text-lg font-bold mb-3">Subscription Status</h3>
                   <div className={`p-3 rounded-lg mb-3 ${user?.isPremium ? 'bg-red-500/20 border border-red-500/30' : 'bg-gray-700'}`}>
@@ -1093,90 +1029,6 @@ export default function Home() {
         onClose={() => setShowSubscription(false)}
         isMobile={isMobile}
       />
-      
-      {/* Profile Edit Dialog */}
-      <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className={`max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white`}>
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-red-400">
-              Edit Profile
-            </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Update your personal information
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-gray-300">Full Name</Label>
-              <Input
-                id="fullName"
-                placeholder="Enter your full name"
-                value={profileForm.fullName}
-                onChange={(e) => setProfileForm({...profileForm, fullName: e.target.value})}
-                className="bg-gray-800 border-gray-700 text-white"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="age" className="text-gray-300">Age</Label>
-              <Input
-                id="age"
-                type="number"
-                placeholder="Enter your age"
-                value={profileForm.age}
-                onChange={(e) => setProfileForm({...profileForm, age: e.target.value})}
-                className="bg-gray-800 border-gray-700 text-white"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="gender" className="text-gray-300">Gender</Label>
-              <Select 
-                value={profileForm.gender} 
-                onValueChange={(value) => setProfileForm({...profileForm, gender: value})}
-              >
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                  <SelectValue placeholder="Select your gender" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-900 border-gray-700 text-white">
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                  <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="bio" className="text-gray-300">Bio</Label>
-              <Textarea
-                id="bio"
-                placeholder="Tell us a bit about yourself"
-                value={profileForm.bio}
-                onChange={(e) => setProfileForm({...profileForm, bio: e.target.value})}
-                className="bg-gray-800 border-gray-700 text-white h-20"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              variant="ghost" 
-              onClick={() => setShowProfileDialog(false)}
-              className="border border-gray-700 text-gray-300 hover:bg-gray-800"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleUpdateProfile}
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       
       {/* Complaint Dialog */}
       <Dialog open={showComplaintDialog} onOpenChange={setShowComplaintDialog}>
