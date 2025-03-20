@@ -29,6 +29,12 @@ const AuthDialog = lazy(() =>
   })),
 );
 
+const ProfileCompletionDialog = lazy(() =>
+  import("@/components/profile-completion-dialog").then((module) => ({
+    default: module.ProfileCompletionDialog,
+  })),
+);
+
 const PolicyDialog = lazy(() =>
   import("@/components/policy-dialog").then((module) => ({
     default: module.PolicyDialog,
@@ -91,6 +97,7 @@ export default function LandingPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [currentPolicy, setCurrentPolicy] = useState<
     keyof typeof POLICY_CONTENT | null
   >(null);
