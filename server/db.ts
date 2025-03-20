@@ -47,6 +47,12 @@ async function ensureColumns() {
       { name: "country_code", sql: "TEXT" },
       { name: "country_name", sql: "TEXT" },
       { name: "city_name", sql: "TEXT" },
+      // Add profile-related columns
+      { name: "full_name", sql: "TEXT" },
+      { name: "age", sql: "INTEGER" },
+      { name: "gender", sql: "TEXT" },
+      { name: "bio", sql: "TEXT" },
+      { name: "profile_completed", sql: "INTEGER DEFAULT 0" },
     ];
 
     for (const column of columnsToAdd) {
