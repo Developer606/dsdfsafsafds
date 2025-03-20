@@ -16,10 +16,11 @@ import { insertUserSchema, loginSchema } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
-import { Eye, EyeOff, Mail, User, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, User, Lock, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaGoogle, FaFacebook, FaGithub, FaApple } from "react-icons/fa";
 import { Separator } from "@/components/ui/separator";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Additional schema for OTP verification
 const otpSchema = z.object({
@@ -57,12 +58,14 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  
+
   // States for real-time username and email validation
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
+    null,
+  );
   const [usernameMessage, setUsernameMessage] = useState<string>("");
   const [checkingUsername, setCheckingUsername] = useState(false);
-  
+
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
   const [emailMessage, setEmailMessage] = useState<string>("");
   const [checkingEmail, setCheckingEmail] = useState(false);
@@ -110,7 +113,11 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   });
 
   const login = useMutation({
-    mutationFn: async (data: { username: string; password: string; rememberMe?: boolean }) => {
+    mutationFn: async (data: {
+      username: string;
+      password: string;
+      rememberMe?: boolean;
+    }) => {
       const res = await apiRequest("POST", "/api/login", data);
       if (!res.ok) {
         const error = await res.json();
@@ -270,11 +277,53 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
     },
   });
 
+  const isMobile = useIsMobile();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] p-0 gap-0 bg-gradient-to-b from-background/95 to-background/85 backdrop-blur-xl border-none shadow-2xl">
-        <DialogHeader className="p-6 pb-2 bg-gradient-to-b from-primary/10 to-transparent">
-          <DialogTitle className="text-2xl font-bold text-center">
+      <DialogContent
+        className={`
+        ${
+          isMobile
+            ? "max-w-full h-full rounded-none m-0 p-0 gap-0 bg-black text-white"
+            : "sm:max-w-[400px] p-0 gap-0 bg-gradient-to-b from-background/95 to-background/85 backdrop-blur-xl border-none shadow-2xl"
+        }
+      `}
+      >
+        <DialogHeader
+          className={`
+          ${
+            isMobile
+              ? "p-4 pb-2 bg-black border-b border-gray-800"
+              : "p-6 pb-2 bg-gradient-to-b from-primary/10 to-transparent"
+          }
+        `}
+        >
+          {isMobile && authStep !== "login" && (
+            <button
+              onClick={() =>
+                authStep === "register"
+                  ? setAuthStep("login")
+                  : authStep === "verify"
+                    ? setAuthStep("register")
+                    : authStep === "reset"
+                      ? setAuthStep("login")
+                      : setAuthStep("login")
+              }
+              className="absolute left-4 top-4 text-white"
+            >
+              <ArrowLeft className="h-6 w-6" />
+            </button>
+          )}
+          <DialogTitle
+            className={`
+            ${
+              isMobile
+                ? "text-xl font-medium text-center text-white"
+                : "text-2xl font-bold text-center"
+            }
+          `}
+          >
             {authStep === "login" && "Welcome Back!"}
             {authStep === "register" && "Create Account"}
             {authStep === "verify" && "Verify Email"}
@@ -283,13 +332,23 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 pb-6 space-y-6">
+        <div
+          className={`
+          ${
+            isMobile
+              ? "px-4 pb-4 pt-2 space-y-4 bg-black text-white"
+              : "px-6 pb-6 space-y-6"
+          }
+        `}
+        >
           {authStep === "login" && (
             <motion.form
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              onSubmit={loginForm.handleSubmit((data) => login.mutate({...data, rememberMe}))}
+              onSubmit={loginForm.handleSubmit((data) =>
+                login.mutate({ ...data, rememberMe }),
+              )}
               className="space-y-4"
             >
               <div className="space-y-4">
@@ -302,7 +361,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     <Input
                       id="username"
                       {...loginForm.register("username")}
-                      className="pl-10 bg-background/50"
+                      className={`pl-10 ${isMobile ? "bg-gray-900 border-gray-700 text-white" : "bg-background/50"}`}
                       placeholder="Enter your username"
                     />
                   </div>
@@ -322,7 +381,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       id="password"
                       type={showPassword ? "text" : "password"}
                       {...loginForm.register("password")}
-                      className="pl-10 pr-10 bg-background/50"
+                      className={`pl-10 pr-10 ${isMobile ? "bg-gray-900 border-gray-700 text-white" : "bg-background/50"}`}
                       placeholder="Enter your password"
                     />
                     <button
@@ -344,10 +403,12 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   )}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember" 
+                  <Checkbox
+                    id="remember"
                     checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      setRememberMe(checked as boolean)
+                    }
                   />
                   <label
                     htmlFor="remember"
@@ -359,7 +420,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full bg-primary hover:bg-primary/90 transition-colors"
+                  className={`w-full ${isMobile ? "bg-[#6200EE] text-white rounded-md font-medium" : "bg-primary hover:bg-primary/90"} transition-colors`}
                   disabled={login.isPending}
                 >
                   {login.isPending ? (
@@ -375,23 +436,27 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   ) : null}
                   {login.isPending ? "Logging in..." : "Login"}
                 </Button>
-                
+
                 <div className="relative my-2">
                   <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
+                    <Separator
+                      className={`w-full ${isMobile ? "bg-gray-700" : ""}`}
+                    />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="bg-background px-2 text-xs text-muted-foreground">
+                    <span
+                      className={`px-2 text-xs ${isMobile ? "bg-black text-gray-400" : "bg-background text-muted-foreground"}`}
+                    >
                       OR CONTINUE WITH
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-4 gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="bg-background/50"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
                       toast({
                         title: "Google Login",
@@ -401,10 +466,10 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   >
                     <FaGoogle className="h-5 w-5 text-[#4285F4]" />
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="bg-background/50"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
                       toast({
                         title: "Facebook Login",
@@ -414,10 +479,10 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   >
                     <FaFacebook className="h-5 w-5 text-[#1877F2]" />
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="bg-background/50"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
                       toast({
                         title: "GitHub Login",
@@ -425,12 +490,14 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       });
                     }}
                   >
-                    <FaGithub className="h-5 w-5" />
+                    <FaGithub
+                      className={`h-5 w-5 ${isMobile ? "text-white" : ""}`}
+                    />
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="bg-background/50"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
                       toast({
                         title: "Apple Login",
@@ -438,22 +505,26 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       });
                     }}
                   >
-                    <FaApple className="h-5 w-5" />
+                    <FaApple
+                      className={`h-5 w-5 ${isMobile ? "text-white" : ""}`}
+                    />
                   </Button>
                 </div>
                 <div className="space-y-2 text-center">
                   <button
                     type="button"
-                    className="text-sm text-primary hover:underline transition-colors"
+                    className={`text-sm ${isMobile ? "text-[#BB86FC]" : "text-primary"} hover:underline transition-colors`}
                     onClick={() => setAuthStep("forgot")}
                   >
                     Forgot password?
                   </button>
-                  <p className="text-sm text-muted-foreground">
+                  <p
+                    className={`text-sm ${isMobile ? "text-gray-400" : "text-muted-foreground"}`}
+                  >
                     Don't have an account?{" "}
                     <button
                       type="button"
-                      className="text-primary hover:underline transition-colors font-medium"
+                      className={`${isMobile ? "text-[#BB86FC]" : "text-primary"} hover:underline transition-colors font-medium`}
                       onClick={() => setAuthStep("register")}
                     >
                       Sign up
@@ -489,7 +560,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                           if (username.length >= 3) {
                             setCheckingUsername(true);
                             try {
-                              const res = await fetch(`/api/auth/check-username/${username}`);
+                              const res = await fetch(
+                                `/api/auth/check-username/${username}`,
+                              );
                               const data = await res.json();
                               setUsernameAvailable(data.available);
                               setUsernameMessage(data.message);
@@ -502,11 +575,14 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                             setUsernameAvailable(null);
                             setUsernameMessage("");
                           }
-                        }
+                        },
                       })}
-                      className={`pl-10 bg-background/50 ${
-                        usernameAvailable === true ? "border-green-500" : 
-                        usernameAvailable === false ? "border-red-500" : ""
+                      className={`pl-10 ${isMobile ? "bg-gray-900 border-gray-700 text-white" : "bg-background/50"} ${
+                        usernameAvailable === true
+                          ? "border-green-500"
+                          : usernameAvailable === false
+                            ? "border-red-500"
+                            : ""
                       }`}
                       placeholder="Choose a username"
                     />
@@ -516,11 +592,16 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       {registerForm.formState.errors.username.message}
                     </p>
                   )}
-                  {usernameMessage && !registerForm.formState.errors.username && (
-                    <p className={`text-sm mt-1 ${usernameAvailable ? "text-green-500" : "text-destructive"}`}>
-                      {checkingUsername ? "Checking username..." : usernameMessage}
-                    </p>
-                  )}
+                  {usernameMessage &&
+                    !registerForm.formState.errors.username && (
+                      <p
+                        className={`text-sm mt-1 ${usernameAvailable ? "text-green-500" : "text-destructive"}`}
+                      >
+                        {checkingUsername
+                          ? "Checking username..."
+                          : usernameMessage}
+                      </p>
+                    )}
                 </div>
                 <div>
                   <Label htmlFor="email" className="text-sm font-medium">
@@ -534,10 +615,16 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       {...registerForm.register("email", {
                         onChange: async (e) => {
                           const email = e.target.value;
-                          if (email && email.includes('@') && email.includes('.')) {
+                          if (
+                            email &&
+                            email.includes("@") &&
+                            email.includes(".")
+                          ) {
                             setCheckingEmail(true);
                             try {
-                              const res = await fetch(`/api/auth/check-email/${email}`);
+                              const res = await fetch(
+                                `/api/auth/check-email/${email}`,
+                              );
                               const data = await res.json();
                               setEmailAvailable(data.available);
                               setEmailMessage(data.message);
@@ -550,11 +637,14 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                             setEmailAvailable(null);
                             setEmailMessage("");
                           }
-                        }
+                        },
                       })}
-                      className={`pl-10 bg-background/50 ${
-                        emailAvailable === true ? "border-green-500" : 
-                        emailAvailable === false ? "border-red-500" : ""
+                      className={`pl-10 ${isMobile ? "bg-gray-900 border-gray-700 text-white" : "bg-background/50"} ${
+                        emailAvailable === true
+                          ? "border-green-500"
+                          : emailAvailable === false
+                            ? "border-red-500"
+                            : ""
                       }`}
                       placeholder="Enter your email"
                     />
@@ -565,7 +655,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     </p>
                   )}
                   {emailMessage && !registerForm.formState.errors.email && (
-                    <p className={`text-sm mt-1 ${emailAvailable ? "text-green-500" : "text-destructive"}`}>
+                    <p
+                      className={`text-sm mt-1 ${emailAvailable ? "text-green-500" : "text-destructive"}`}
+                    >
                       {checkingEmail ? "Checking email..." : emailMessage}
                     </p>
                   )}
@@ -583,7 +675,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       id="registerPassword"
                       type={showRegisterPassword ? "text" : "password"}
                       {...registerForm.register("password")}
-                      className="pl-10 pr-10 bg-background/50"
+                      className={`pl-10 pr-10 ${isMobile ? "bg-gray-900 border-gray-700 text-white" : "bg-background/50"}`}
                       placeholder="Create a password"
                     />
                     <button
@@ -626,23 +718,27 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     ? "Creating account..."
                     : "Create Account"}
                 </Button>
-                
+
                 <div className="relative my-2">
                   <div className="absolute inset-0 flex items-center">
-                    <Separator className="w-full" />
+                    <Separator
+                      className={`w-full ${isMobile ? "bg-gray-700" : ""}`}
+                    />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="bg-background px-2 text-xs text-muted-foreground">
+                    <span
+                      className={`px-2 text-xs ${isMobile ? "bg-black text-gray-400" : "bg-background text-muted-foreground"}`}
+                    >
                       OR SIGN UP WITH
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-4 gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="bg-background/50"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
                       toast({
                         title: "Google Signup",
@@ -652,23 +748,24 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   >
                     <FaGoogle className="h-5 w-5 text-[#4285F4]" />
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="bg-background/50"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
                       toast({
                         title: "Facebook Signup",
-                        description: "Facebook signup will be implemented soon!",
+                        description:
+                          "Facebook signup will be implemented soon!",
                       });
                     }}
                   >
                     <FaFacebook className="h-5 w-5 text-[#1877F2]" />
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="bg-background/50"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
                       toast({
                         title: "GitHub Signup",
@@ -676,12 +773,14 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       });
                     }}
                   >
-                    <FaGithub className="h-5 w-5" />
+                    <FaGithub
+                      className={`h-5 w-5 ${isMobile ? "text-white" : ""}`}
+                    />
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="bg-background/50"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
                       toast({
                         title: "Apple Signup",
@@ -689,15 +788,19 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       });
                     }}
                   >
-                    <FaApple className="h-5 w-5" />
+                    <FaApple
+                      className={`h-5 w-5 ${isMobile ? "text-white" : ""}`}
+                    />
                   </Button>
                 </div>
-                
-                <p className="text-center text-sm text-muted-foreground">
+
+                <p
+                  className={`text-center text-sm ${isMobile ? "text-gray-400" : "text-muted-foreground"}`}
+                >
                   Already have an account?{" "}
                   <button
                     type="button"
-                    className="text-primary hover:underline transition-colors font-medium"
+                    className={`${isMobile ? "text-[#BB86FC]" : "text-primary"} hover:underline transition-colors font-medium`}
                     onClick={() => setAuthStep("login")}
                   >
                     Login
