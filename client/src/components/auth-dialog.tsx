@@ -39,7 +39,7 @@ type AuthStep = "login" | "register" | "verify" | "forgot" | "reset";
 type AuthDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (isNewUser?: boolean) => void;
 };
 
 export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {

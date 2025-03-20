@@ -116,8 +116,18 @@ export default function LandingPage() {
     }
   };
 
-  const handleSuccessfulAuth = () => {
+  const handleSuccessfulAuth = (isNewUser: boolean = false) => {
     setShowAuthDialog(false);
+    
+    if (isNewUser) {
+      setShowProfileDialog(true);
+    } else {
+      setLocation("/chats");
+    }
+  };
+  
+  const handleSuccessfulProfileCompletion = () => {
+    setShowProfileDialog(false);
     setLocation("/chats");
   };
 
@@ -597,6 +607,17 @@ export default function LandingPage() {
             open={showAuthDialog}
             onOpenChange={setShowAuthDialog}
             onSuccess={handleSuccessfulAuth}
+          />
+        )}
+      </Suspense>
+      
+      {/* Profile Completion Dialog */}
+      <Suspense fallback={null}>
+        {showProfileDialog && (
+          <ProfileCompletionDialog
+            open={showProfileDialog}
+            onOpenChange={setShowProfileDialog}
+            onSuccess={handleSuccessfulProfileCompletion}
           />
         )}
       </Suspense>
