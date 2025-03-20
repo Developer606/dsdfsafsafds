@@ -74,6 +74,16 @@ export interface IStorage {
     expiry: Date,
   ): Promise<void>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
+  updateUserProfile(
+    userId: number,
+    data: {
+      fullName?: string;
+      age?: number;
+      gender?: string;
+      bio?: string;
+      profileCompleted?: boolean;
+    },
+  ): Promise<User>;
 
   // Add new methods for pending verifications
   createPendingVerification(

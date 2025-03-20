@@ -37,6 +37,11 @@ export const users = sqliteTable("users", {
   username: text("username").notNull(),
   password: text("password").notNull(),
   role: text("role").notNull().default("user"),
+  fullName: text("full_name"),
+  age: integer("age"),
+  gender: text("gender"),
+  bio: text("bio"),
+  profileCompleted: integer("profile_completed", { mode: "boolean" }).default(false),
   isAdmin: integer("is_admin", { mode: "boolean" })
     .notNull()
     .default(false),
