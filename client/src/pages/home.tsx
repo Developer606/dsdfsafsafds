@@ -407,8 +407,8 @@ export default function Home() {
                 }`}
                 onClick={() => setActiveTab('home')}
               >
-                <MessageSquare className="h-5 w-5" />
-                <span className="text-xs mt-1">Chats</span>
+                <HomeIcon className="h-5 w-5" />
+                <span className="text-xs mt-1">Home</span>
               </button>
               <button
                 className={`flex flex-col items-center p-2 ${
@@ -588,13 +588,13 @@ export default function Home() {
       )}
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="sm:max-w-[425px] bg-white dark:bg-slate-900 border-2 border-yellow-500/20 dark:border-amber-500/20 rounded-3xl">
+        <DialogContent className={`${isMobile ? 'max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white' : 'sm:max-w-[425px] bg-white dark:bg-slate-900 border-2 border-yellow-500/20 dark:border-amber-500/20 rounded-3xl'}`}>
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
+            <DialogTitle className={isMobile ? "text-xl font-bold text-red-400" : "text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600"}>
               Create New Character
             </DialogTitle>
             {!user?.isPremium && (
-              <DialogDescription className="text-amber-600">
+              <DialogDescription className={isMobile ? "text-gray-400" : "text-amber-600"}>
                 Free Trial: {user?.trialCharactersCreated || 0}/3 characters
                 created
               </DialogDescription>
@@ -611,7 +611,7 @@ export default function Home() {
               onChange={(e) =>
                 setNewCharacter({ ...newCharacter, name: e.target.value })
               }
-              className="border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"
+              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500" : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"}
             />
             <Input
               placeholder="Avatar URL"
@@ -619,7 +619,7 @@ export default function Home() {
               onChange={(e) =>
                 setNewCharacter({ ...newCharacter, avatar: e.target.value })
               }
-              className="border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"
+              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500" : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"}
             />
             <Textarea
               placeholder="Character Description"
@@ -630,7 +630,7 @@ export default function Home() {
                   description: e.target.value,
                 })
               }
-              className="border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"
+              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[100px]" : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"}
             />
             <Textarea
               placeholder="Character Persona"
@@ -638,7 +638,7 @@ export default function Home() {
               onChange={(e) =>
                 setNewCharacter({ ...newCharacter, persona: e.target.value })
               }
-              className="border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"
+              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[100px]" : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"}
             />
             <motion.div
               whileHover={{ scale: 1.02 }}
@@ -646,7 +646,7 @@ export default function Home() {
               className="pt-2"
             >
               <Button
-                className="w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg"
+                className={isMobile ? "w-full bg-red-500 hover:bg-red-600 text-white" : "w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg"}
                 onClick={handleSubmit}
                 disabled={createCharacter.isPending}
               >
@@ -658,21 +658,22 @@ export default function Home() {
       </Dialog>
 
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent className="rounded-3xl">
+        <DialogContent className={isMobile ? "rounded-xl bg-gray-900 border-gray-800 text-white" : "rounded-3xl"}>
           <DialogHeader>
-            <DialogTitle>Delete Character</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className={isMobile ? "text-white" : ""}>Delete Character</DialogTitle>
+            <DialogDescription className={isMobile ? "text-gray-400" : ""}>
               Are you sure you want to delete this character? This action cannot
               be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end space-x-2 mt-4">
             <Button
-              variant="outline"
+              variant={isMobile ? "ghost" : "outline"}
               onClick={() => {
                 setShowDeleteConfirm(false);
                 setCharacterToDelete(null);
               }}
+              className={isMobile ? "text-gray-300" : ""}
             >
               Cancel
             </Button>
@@ -690,6 +691,7 @@ export default function Home() {
       <SubscriptionDialog
         open={showSubscription}
         onClose={() => setShowSubscription(false)}
+        isMobile={isMobile}
       />
     </div>
   );

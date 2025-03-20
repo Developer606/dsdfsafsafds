@@ -18,9 +18,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface SubscriptionDialogProps {
   open: boolean;
   onClose: () => void;
+  isMobile?: boolean;
 }
 
-export function SubscriptionDialog({ open, onClose }: SubscriptionDialogProps) {
+export function SubscriptionDialog({ open, onClose, isMobile = false }: SubscriptionDialogProps) {
   const { toast } = useToast();
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [paymentStep, setPaymentStep] = useState<"select" | "payment" | "processing">("select");
@@ -111,7 +112,10 @@ export function SubscriptionDialog({ open, onClose }: SubscriptionDialogProps) {
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[800px]">
+        <DialogContent className={isMobile 
+          ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" 
+          : "sm:max-w-[800px]"
+        }>
           <div className="py-8 flex justify-center items-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
@@ -124,13 +128,16 @@ export function SubscriptionDialog({ open, onClose }: SubscriptionDialogProps) {
   if (plansError) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[800px]">
+        <DialogContent className={isMobile 
+          ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" 
+          : "sm:max-w-[800px]"
+        }>
           <div className="py-8">
-            <Alert variant="destructive">
+            <Alert variant={isMobile ? "default" : "destructive"} className={isMobile ? "bg-gray-800 border-gray-700 text-red-400" : ""}>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>Failed to load subscription plans. Please try again later.</AlertDescription>
             </Alert>
-            <Button onClick={() => handleOpenChange(false)} className="mt-4 w-full">
+            <Button onClick={() => handleOpenChange(false)} className={`mt-4 w-full ${isMobile ? "bg-red-500 hover:bg-red-600 text-white" : ""}`}>
               Close
             </Button>
           </div>
@@ -141,12 +148,21 @@ export function SubscriptionDialog({ open, onClose }: SubscriptionDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[800px]">
+      <DialogContent className={isMobile 
+        ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" 
+        : "sm:max-w-[800px]"
+      }>
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">
+          <DialogTitle className={isMobile 
+            ? "text-xl font-bold text-center text-red-400" 
+            : "text-2xl font-bold text-center"
+          }>
             {paymentStep === "select" ? "Choose Your Subscription Plan" : "Complete Your Subscription"}
           </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogDescription className={isMobile 
+            ? "text-center text-gray-400" 
+            : "text-center"
+          }>
             {paymentStep === "select" 
               ? "Create and customize your own anime characters with our flexible subscription plans"
               : "Securely process your payment to activate your subscription"}
@@ -158,20 +174,32 @@ export function SubscriptionDialog({ open, onClose }: SubscriptionDialogProps) {
             {plans?.map((plan) => (
               <div
                 key={plan.id}
-                className="p-6 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors"
+                className={isMobile
+                  ? "p-6 rounded-lg border border-gray-700 bg-gray-800 text-white shadow-sm hover:border-red-500 transition-colors"
+                  : "p-6 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors"
+                }
               >
-                <h3 className="text-xl font-semibold">{plan.name}</h3>
-                <p className="text-3xl font-bold mt-2">{plan.price}</p>
+                <h3 className={isMobile ? "text-xl font-semibold text-red-400" : "text-xl font-semibold"}>
+                  {plan.name}
+                </h3>
+                <p className={isMobile ? "text-3xl font-bold mt-2 text-white" : "text-3xl font-bold mt-2"}>
+                  {plan.price}
+                </p>
                 <ul className="mt-4 space-y-2">
                   {JSON.parse(plan.features).map((feature: string, index: number) => (
                     <li key={index} className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                      <span className="text-sm">{feature}</span>
+                      <Check className={isMobile ? "h-4 w-4 text-red-400 flex-shrink-0" : "h-4 w-4 text-green-500 flex-shrink-0"} />
+                      <span className={isMobile ? "text-sm text-gray-300" : "text-sm"}>
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>
                 <Button 
-                  className="w-full mt-6"
+                  className={isMobile 
+                    ? "w-full mt-6 bg-red-500 hover:bg-red-600 text-white"
+                    : "w-full mt-6"
+                  }
                   onClick={() => handleSubscribe(plan.id)}
                 >
                   Select Plan
@@ -192,19 +220,31 @@ export function SubscriptionDialog({ open, onClose }: SubscriptionDialogProps) {
 
         {paymentStep === "processing" && (
           <div className="py-8 flex flex-col justify-center items-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+            <Loader2 className={isMobile 
+              ? "h-8 w-8 animate-spin text-red-400 mb-4"
+              : "h-8 w-8 animate-spin text-primary mb-4"
+            } />
             <p>Processing your subscription...</p>
           </div>
         )}
 
         {paymentError && (
-          <Alert variant="destructive" className="mt-4">
+          <Alert 
+            variant={isMobile ? "default" : "destructive"} 
+            className={isMobile 
+              ? "mt-4 bg-gray-800 border-gray-700 text-red-400"
+              : "mt-4"
+            }
+          >
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{paymentError}</AlertDescription>
           </Alert>
         )}
 
-        <div className="mt-4 text-center text-sm text-muted-foreground">
+        <div className={isMobile 
+          ? "mt-4 text-center text-sm text-gray-400"
+          : "mt-4 text-center text-sm text-muted-foreground"
+        }>
           <p>Free trial includes up to 3 character creations.</p>
           <p>You can upgrade or cancel your subscription at any time.</p>
         </div>
