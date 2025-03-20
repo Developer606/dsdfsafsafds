@@ -105,7 +105,7 @@ export default function Home() {
 
   // Add mutation for marking notifications as read
   const markAsReadMutation = useMutation({
-    mutationFn: async (notificationId: string) => {
+    mutationFn: async (notificationId: number) => {
       await apiRequest("PATCH", `/api/notifications/${notificationId}/read`);
     },
     onSuccess: () => {
@@ -356,7 +356,7 @@ export default function Home() {
                               "p-3 border-b border-gray-700 hover:bg-gray-800 cursor-pointer transition-colors",
                               !notification.read && "bg-gray-800"
                             )}
-                            onClick={() => markAsReadMutation.mutate(notification.id)}
+                            onClick={() => markAsReadMutation.mutate(Number(notification.id))}
                           >
                             <h4 className="font-medium text-sm text-gray-200">
                               {notification.title}
@@ -807,6 +807,140 @@ export default function Home() {
         onClose={() => setShowSubscription(false)}
         isMobile={isMobile}
       />
+      
+      {/* Complaint Dialog */}
+      <Dialog open={showComplaintDialog} onOpenChange={setShowComplaintDialog}>
+        <DialogContent className={`${isMobile ? 'max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white' : 'sm:max-w-[425px]'}`}>
+          <DialogHeader>
+            <DialogTitle className={isMobile ? "text-xl font-bold text-red-400" : "text-2xl font-bold"}>
+              Submit Complaint
+            </DialogTitle>
+            <DialogDescription className={isMobile ? "text-gray-400" : ""}>
+              Tell us what went wrong. We'll look into it right away.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Describe your issue in detail..."
+              value={complaint}
+              onChange={(e) => setComplaint(e.target.value)}
+              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[120px]" : "min-h-[120px]"}
+            />
+            
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <label className={`text-sm font-medium ${isMobile ? "text-gray-300" : ""}`}>
+                Attach screenshot (optional)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setSelectedImage(file);
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      setImagePreview(event.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant={isMobile ? "outline" : "secondary"}
+                className={isMobile ? "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white" : ""}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Select Image
+              </Button>
+              
+              {imagePreview && (
+                <div className="mt-2 relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-auto max-h-[150px] object-contain rounded border border-gray-300 dark:border-gray-700"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6 rounded-full"
+                    onClick={() => {
+                      setSelectedImage(null);
+                      setImagePreview(null);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3 mt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setShowComplaintDialog(false);
+                setComplaint("");
+                setSelectedImage(null);
+                setImagePreview(null);
+              }}
+              className={isMobile ? "text-gray-400 hover:text-white hover:bg-gray-800" : ""}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className={isMobile ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+              onClick={() => {
+                // Submit the complaint
+                const formData = new FormData();
+                formData.append("content", complaint);
+                if (selectedImage) {
+                  formData.append("image", selectedImage);
+                }
+                
+                fetch("/api/complaints", {
+                  method: "POST",
+                  body: formData,
+                })
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error("Failed to submit complaint");
+                  }
+                  return response.json();
+                })
+                .then(() => {
+                  toast({
+                    title: "Complaint submitted",
+                    description: "We've received your complaint and will review it shortly.",
+                  });
+                  setShowComplaintDialog(false);
+                  setComplaint("");
+                  setSelectedImage(null);
+                  setImagePreview(null);
+                })
+                .catch(error => {
+                  toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: error.message || "Failed to submit complaint",
+                  });
+                });
+              }}
+            >
+              Submit
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
