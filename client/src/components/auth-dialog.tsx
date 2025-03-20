@@ -66,6 +66,20 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
   const [emailMessage, setEmailMessage] = useState<string>("");
   const [checkingEmail, setCheckingEmail] = useState(false);
+  
+  // Initialize theme from localStorage on component mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      
+      if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  }, []);
   const { toast } = useToast();
 
   const loginForm = useForm({
