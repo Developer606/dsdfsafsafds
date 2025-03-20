@@ -37,6 +37,7 @@ import {
 import { type Character } from "@shared/characters";
 import { type CustomCharacter, type User } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useTheme } from "@/lib/theme-context";
 
 const container = {
   hidden: { opacity: 0 },
@@ -86,31 +87,8 @@ export default function Home() {
     queryKey: ["/api/characters"],
   });
 
-  // Theme toggle function
-  // Keep track of current theme
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window !== "undefined") {
-      return document.documentElement.classList.contains("dark")
-        ? "dark"
-        : "dark";
-    }
-    return "dark";
-  });
-
-  const toggleTheme = () => {
-    const doc = document.documentElement;
-    const isDark = doc.classList.contains("dark");
-
-    if (isDark) {
-      doc.classList.remove("dark");
-      localStorage.setItem("theme", "dark");
-      setTheme("dark");
-    } else {
-      doc.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setTheme("dark");
-    }
-  };
+  // Use theme context instead of local state
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = async () => {
     try {

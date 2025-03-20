@@ -12,6 +12,7 @@ import AdminDashboard from "@/pages/admin-dashboard";
 import { ComplaintsSection } from "@/components/complaints-section";
 import { FeedbackSection } from "@/components/feedback-section";
 import { ProtectedRoute } from "./lib/protected-route";
+import { ThemeProvider } from "./lib/theme-context";
 
 function Router() {
   return (
@@ -57,8 +58,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <ThemeProvider>
+        <Router />
+        <Toaster />
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
