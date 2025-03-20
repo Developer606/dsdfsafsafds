@@ -11,12 +11,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { insertUserSchema, loginSchema } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
 import { Eye, EyeOff, Mail, User, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { FaGoogle, FaFacebook, FaGithub, FaApple } from "react-icons/fa";
+import { Separator } from "@/components/ui/separator";
 
 // Additional schema for OTP verification
 const otpSchema = z.object({
@@ -53,6 +56,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const { toast } = useToast();
 
   const loginForm = useForm({
@@ -276,7 +280,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              onSubmit={loginForm.handleSubmit((data) => login.mutate(data))}
+              onSubmit={loginForm.handleSubmit((data) => login.mutate({...data, rememberMe}))}
               className="space-y-4"
             >
               <div className="space-y-4">
@@ -330,6 +334,20 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     </p>
                   )}
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="remember" 
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  />
+                  <label
+                    htmlFor="remember"
+                    className="text-sm font-medium leading-none cursor-pointer"
+                    onClick={() => setRememberMe(!rememberMe)}
+                  >
+                    Remember me
+                  </label>
+                </div>
                 <Button
                   type="submit"
                   className="w-full bg-primary hover:bg-primary/90 transition-colors"
@@ -348,6 +366,72 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   ) : null}
                   {login.isPending ? "Logging in..." : "Login"}
                 </Button>
+                
+                <div className="relative my-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-background px-2 text-xs text-muted-foreground">
+                      OR CONTINUE WITH
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="bg-background/50"
+                    onClick={() => {
+                      toast({
+                        title: "Google Login",
+                        description: "Google login will be implemented soon!",
+                      });
+                    }}
+                  >
+                    <FaGoogle className="h-5 w-5 text-[#4285F4]" />
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="bg-background/50"
+                    onClick={() => {
+                      toast({
+                        title: "Facebook Login",
+                        description: "Facebook login will be implemented soon!",
+                      });
+                    }}
+                  >
+                    <FaFacebook className="h-5 w-5 text-[#1877F2]" />
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="bg-background/50"
+                    onClick={() => {
+                      toast({
+                        title: "GitHub Login",
+                        description: "GitHub login will be implemented soon!",
+                      });
+                    }}
+                  >
+                    <FaGithub className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="bg-background/50"
+                    onClick={() => {
+                      toast({
+                        title: "Apple Login",
+                        description: "Apple login will be implemented soon!",
+                      });
+                    }}
+                  >
+                    <FaApple className="h-5 w-5" />
+                  </Button>
+                </div>
                 <div className="space-y-2 text-center">
                   <button
                     type="button"
@@ -477,6 +561,73 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     ? "Creating account..."
                     : "Create Account"}
                 </Button>
+                
+                <div className="relative my-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-background px-2 text-xs text-muted-foreground">
+                      OR SIGN UP WITH
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-4 gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="bg-background/50"
+                    onClick={() => {
+                      toast({
+                        title: "Google Signup",
+                        description: "Google signup will be implemented soon!",
+                      });
+                    }}
+                  >
+                    <FaGoogle className="h-5 w-5 text-[#4285F4]" />
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="bg-background/50"
+                    onClick={() => {
+                      toast({
+                        title: "Facebook Signup",
+                        description: "Facebook signup will be implemented soon!",
+                      });
+                    }}
+                  >
+                    <FaFacebook className="h-5 w-5 text-[#1877F2]" />
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="bg-background/50"
+                    onClick={() => {
+                      toast({
+                        title: "GitHub Signup",
+                        description: "GitHub signup will be implemented soon!",
+                      });
+                    }}
+                  >
+                    <FaGithub className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="bg-background/50"
+                    onClick={() => {
+                      toast({
+                        title: "Apple Signup",
+                        description: "Apple signup will be implemented soon!",
+                      });
+                    }}
+                  >
+                    <FaApple className="h-5 w-5" />
+                  </Button>
+                </div>
+                
                 <p className="text-center text-sm text-muted-foreground">
                   Already have an account?{" "}
                   <button
