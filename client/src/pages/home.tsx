@@ -103,8 +103,8 @@ export default function Home() {
 
     if (isDark) {
       doc.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setTheme("light");
+      localStorage.setItem("theme", "dark");
+      setTheme("dark");
     } else {
       doc.classList.add("dark");
       localStorage.setItem("theme", "dark");

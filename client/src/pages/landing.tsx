@@ -21,7 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Moon, Sun } from "lucide-react";
 
 // Lazy load components
 const AuthDialog = lazy(() =>
@@ -104,31 +103,6 @@ export default function LandingPage() {
   >(null);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false); // Added state for feedback dialog
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
-  // Theme toggle functionality
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window !== "undefined") {
-      return document.documentElement.classList.contains("dark") 
-        ? "dark" 
-        : "light";
-    }
-    return "light";
-  });
-
-  const toggleTheme = () => {
-    const doc = document.documentElement;
-    const isDark = doc.classList.contains("dark");
-
-    if (isDark) {
-      doc.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setTheme("light");
-    } else {
-      doc.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setTheme("dark");
-    }
-  };
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -335,24 +309,13 @@ export default function LandingPage() {
 
           <div className="relative z-10 flex flex-col min-h-screen">
             <div className="flex-1 p-6 flex flex-col">
-              <div className="mb-auto pt-8 flex justify-between items-center">
-                <div>
-                  <h1 className="text-4xl font-bold text-white mb-2">
-                    AnimeChat AI
-                  </h1>
-                  <p className="text-lg text-gray-200">
-                    Chat with your favorite anime characters
-                  </p>
-                </div>
-                
-                <button
-                  onClick={toggleTheme}
-                  className="rounded-full bg-white/10 p-2 backdrop-blur-sm transition-colors hover:bg-white/20"
-                  aria-label="Toggle theme"
-                >
-                  <Sun className="h-5 w-5 text-white rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-5 w-5 text-white rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                </button>
+              <div className="mb-auto pt-8">
+                <h1 className="text-4xl font-bold text-white mb-2">
+                  AnimeChat AI
+                </h1>
+                <p className="text-lg text-gray-200">
+                  Chat with your favorite anime characters
+                </p>
               </div>
 
               <div className="absolute top-[36%] right-5 transform -translate-y-1/2">
@@ -425,7 +388,7 @@ export default function LandingPage() {
 
           {/* Main content */}
           <div className="relative z-10 container mx-auto px-4">
-            <div className="flex justify-between items-center pt-6">
+            <div className="flex justify-end items-center pt-6">
               <div className="flex items-center space-x-2">
                 <span className="text-white font-bold text-lg uppercase tracking-wider">
                   AnimeChat AI
@@ -438,15 +401,6 @@ export default function LandingPage() {
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               </div>
-              
-              <button
-                onClick={toggleTheme}
-                className="rounded-full bg-white/10 p-2 backdrop-blur-sm transition-colors hover:bg-white/20"
-                aria-label="Toggle theme"
-              >
-                <Sun className="h-5 w-5 text-white rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-5 w-5 text-white rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              </button>
             </div>
 
             {/* Replace the static background image with animated slideshow */}
