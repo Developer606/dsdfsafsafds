@@ -170,19 +170,21 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
         </DialogHeader>
 
         {paymentStep === "select" && (
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="mt-4 grid grid-cols-1 gap-4">
             {plans?.map((plan) => (
               <div
                 key={plan.id}
                 className={isMobile
-                  ? "p-6 rounded-lg border border-gray-700 bg-gray-800 text-white shadow-sm hover:border-red-500 transition-colors"
+                  ? plan.id === 'pro' 
+                    ? "p-6 rounded-lg border border-red-500 bg-[#121824] text-white shadow-md" 
+                    : "p-6 rounded-lg border border-gray-700 bg-[#121824] text-white shadow-sm"
                   : "p-6 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors"
                 }
               >
                 <h3 className={isMobile ? "text-xl font-semibold text-red-400" : "text-xl font-semibold"}>
                   {plan.name}
                 </h3>
-                <p className={isMobile ? "text-3xl font-bold mt-2 text-white" : "text-3xl font-bold mt-2"}>
+                <p className={isMobile ? "text-4xl font-bold mt-2 text-white" : "text-3xl font-bold mt-2"}>
                   {plan.price}
                 </p>
                 <ul className="mt-4 space-y-2">
@@ -197,7 +199,7 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
                 </ul>
                 <Button 
                   className={isMobile 
-                    ? "w-full mt-6 bg-red-500 hover:bg-red-600 text-white"
+                    ? "w-full mt-6 bg-red-500 hover:bg-red-600 text-white rounded-md"
                     : "w-full mt-6"
                   }
                   onClick={() => handleSubscribe(plan.id)}
