@@ -111,7 +111,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
         title: "Success",
         description: "Logged in successfully",
       });
-      onSuccess();
+      onSuccess(false); // Not a new user
     },
     onError: (error: Error) => {
       toast({
@@ -189,7 +189,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
         title: "Success",
         description: "Email verified and account created successfully!",
       });
-      onSuccess();
+      onSuccess(true); // Signal this is a new user that needs profile completion
     },
     onError: (error: Error) => {
       toast({

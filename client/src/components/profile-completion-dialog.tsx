@@ -76,11 +76,7 @@ export function ProfileCompletionDialog({
   // Profile update mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormValues) => {
-      return apiRequest({
-        url: "/api/user/profile",
-        method: "POST",
-        body: data,
-      });
+      return apiRequest("POST", "/api/user/profile", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
