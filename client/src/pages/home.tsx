@@ -28,6 +28,9 @@ import {
   MessageSquare,
   Settings,
   Library,
+  Bell,
+  AlertCircle,
+  CreditCard,
 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { SubscriptionManagement } from "@/components/subscription-management";
@@ -279,55 +282,86 @@ export default function Home() {
           {/* Mobile header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
             <div className="flex items-center">
-              <Search className="h-5 w-5 mr-4" />
+              <Search className="h-5 w-5 mr-2" />
             </div>
             <div className="flex items-center justify-center">
               <h1 className="text-lg font-semibold text-red-400">
                 <span className="font-bold">Anime</span>Chat
               </h1>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full h-8 w-8"
-                >
-                  <UserIcon className="h-5 w-5 text-gray-300" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-700 text-gray-200">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-gray-700" />
-                <DropdownMenuItem disabled className="text-gray-400">
-                  Email: {user?.email}
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled className="text-gray-400">
-                  Username: {user?.username}
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled className="text-gray-400">
-                  Status: {user?.subscriptionStatus}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-gray-700" />
-                <DropdownMenuItem
-                  onClick={toggleTheme}
-                  className="flex items-center"
-                >
-                  {theme === 'dark' ? 
-                    <Sun className="mr-2 h-4 w-4" /> : 
-                    <Moon className="mr-2 h-4 w-4" />
-                  }
-                  {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-red-400"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center space-x-2">
+              {/* Notification bell */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full h-8 w-8 text-gray-300"
+                onClick={() => {
+                  /* Keep notification functionality */
+                }}
+              >
+                <Bell className="h-5 w-5" />
+              </Button>
+              
+              {/* Subscription button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full h-8 w-8 text-gray-300"
+                onClick={() => setShowSubscription(true)}
+              >
+                <CreditCard className="h-5 w-5" />
+              </Button>
+              
+              {/* User menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-8 w-8"
+                  >
+                    <UserIcon className="h-5 w-5 text-gray-300" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-700 text-gray-200">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem disabled className="text-gray-400">
+                    Email: {user?.email}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled className="text-gray-400">
+                    Username: {user?.username}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled className="text-gray-400">
+                    Status: {user?.subscriptionStatus}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem
+                    onClick={toggleTheme}
+                    className="flex items-center"
+                  >
+                    {theme === 'dark' ? 
+                      <Sun className="mr-2 h-4 w-4" /> : 
+                      <Moon className="mr-2 h-4 w-4" />
+                    }
+                    {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                  </DropdownMenuItem>
+                  {/* Complaint button */}
+                  <DropdownMenuItem className="flex items-center">
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    Submit Complaint
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-400"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {/* Featured character section */}
