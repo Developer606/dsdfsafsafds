@@ -266,6 +266,7 @@ export default function Home() {
 
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<'home' | 'search' | 'create' | 'library' | 'profile'>('home');
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Complaint dialog states
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
@@ -444,72 +445,293 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Featured character section */}
-          <div className="px-4 pt-4">
-            <div className="relative rounded-lg overflow-hidden">
-              {characters && characters.length > 0 && (
-                <div className="relative">
-                  <div className="aspect-[3/4] rounded-xl overflow-hidden relative">
-                    <img 
-                      src={characters[0].avatar} 
-                      alt={characters[0].name}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
-                  </div>
-                  <div className="absolute bottom-0 left-0 p-4 w-full">
-                    <div className="text-xs text-gray-300">Up on your watchlist!</div>
-                    <h2 className="text-xl font-bold text-white">{characters[0].name}</h2>
-                    <div className="flex items-center mt-1">
-                      <span className="text-xs text-gray-400">2023</span>
-                      <span className="mx-2 text-gray-500">•</span>
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((star, i) => (
-                          <span key={i} className="text-yellow-500 text-xs">
-                            {i < 3 ? "★" : "☆"}
-                          </span>
-                        ))}
+          {/* Main content area based on active tab */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Home Tab Content */}
+            {activeTab === 'home' && (
+              <div className="pb-20">
+                {/* Featured character section */}
+                <div className="px-4 pt-4">
+                  <div className="relative rounded-lg overflow-hidden">
+                    {characters && characters.length > 0 && (
+                      <div className="relative">
+                        <div className="aspect-[3/4] rounded-xl overflow-hidden relative">
+                          <img 
+                            src={characters[0].avatar} 
+                            alt={characters[0].name}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 p-4 w-full">
+                          <div className="text-xs text-gray-300">Up on your watchlist!</div>
+                          <h2 className="text-xl font-bold text-white">{characters[0].name}</h2>
+                          <div className="flex items-center mt-1">
+                            <span className="text-xs text-gray-400">2023</span>
+                            <span className="mx-2 text-gray-500">•</span>
+                            <div className="flex">
+                              {[1, 2, 3, 4, 5].map((star, i) => (
+                                <span key={i} className="text-yellow-500 text-xs">
+                                  {i < 3 ? "★" : "☆"}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Top Rated section */}
+                <div className="px-4 pt-5">
+                  <h2 className="text-lg font-bold mb-3">Top Rated</h2>
+                  <div className="flex overflow-x-auto pb-4 space-x-3 hide-scrollbar">
+                    {characters?.slice(0, 5).map((character) => (
+                      <Link key={character.id} href={`/chat/${character.id}`}>
+                        <div className="w-24 shrink-0">
+                          <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-800 mb-1 relative">
+                            <img
+                              src={character.avatar}
+                              alt={character.name}
+                              className="w-full h-full object-cover"
+                            />
+                            {character.id.startsWith("custom_") && (
+                              <button
+                                className="absolute top-1 right-1 p-1 bg-red-500/90 text-white rounded-full z-10"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDeleteCharacter(character.id);
+                                }}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                          <h3 className="text-xs font-medium text-gray-300 line-clamp-1">
+                            {character.name}
+                          </h3>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Recently Added Section */}
+                <div className="px-4 pt-5">
+                  <h2 className="text-lg font-bold mb-3">Recently Added</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    {characters?.slice(5, 9).map((character) => (
+                      <Link key={character.id} href={`/chat/${character.id}`}>
+                        <div className="relative">
+                          <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-800 mb-1 relative">
+                            <img
+                              src={character.avatar}
+                              alt={character.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <h3 className="text-xs font-medium text-gray-300 line-clamp-1">
+                            {character.name}
+                          </h3>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Search Tab Content */}
+            {activeTab === 'search' && (
+              <div className="p-4 pb-20">
+                <div className="relative mb-5">
+                  <Input
+                    type="text"
+                    placeholder="Search characters..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-white pr-10 rounded-full"
+                  />
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  {characters
+                    ?.filter(char => 
+                      searchQuery === "" || 
+                      char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      char.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map((character) => (
+                      <Link key={character.id} href={`/chat/${character.id}`}>
+                        <div className="relative">
+                          <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-800 mb-1 relative">
+                            <img
+                              src={character.avatar}
+                              alt={character.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <h3 className="text-xs font-medium text-gray-300 line-clamp-1">
+                            {character.name}
+                          </h3>
+                        </div>
+                      </Link>
+                    ))
+                  }
+                </div>
+                
+                {searchQuery !== "" && 
+                 characters?.filter(char => 
+                   char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                   char.description.toLowerCase().includes(searchQuery.toLowerCase())
+                 ).length === 0 && (
+                  <div className="text-center mt-10 text-gray-400">
+                    <Search className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                    <p>No characters found matching "{searchQuery}"</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Create Tab Content - handled by the modal, but could have a content preview */}
+            {activeTab === 'create' && (
+              <div className="p-4 pb-20 text-center">
+                <div className="mt-10 mb-5">
+                  <div className="mx-auto w-20 h-20 flex items-center justify-center rounded-full bg-red-500/10 mb-4">
+                    <Plus className="h-10 w-10 text-red-400" />
+                  </div>
+                  <h2 className="text-xl font-bold mb-2">Create a Character</h2>
+                  <p className="text-gray-400 mb-6">Create your own custom character to chat with</p>
+                  
+                  {user && user.isPremium ? (
+                    <div className="text-sm text-gray-300 mb-4">
+                      You can create unlimited characters with your premium subscription!
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-300 mb-4">
+                      Free trial: {user?.trialCharactersCreated || 0}/3 characters created
+                    </div>
+                  )}
+                  
+                  <Button
+                    onClick={handleCreateClick}
+                    className="bg-red-500 hover:bg-red-600 text-white rounded-full px-8"
+                  >
+                    <Plus className="h-5 w-5 mr-2" />
+                    Create New Character
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Library Tab Content */}
+            {activeTab === 'library' && (
+              <div className="p-4 pb-20">
+                <h2 className="text-lg font-bold mb-4">Your Character Library</h2>
+                
+                <div className="space-y-3">
+                  {characters?.map((character) => (
+                    <Link key={character.id} href={`/chat/${character.id}`}>
+                      <div className="flex items-center bg-gray-800/60 p-3 rounded-lg border border-gray-700">
+                        <img
+                          src={character.avatar}
+                          alt={character.name}
+                          className="w-14 h-14 rounded-lg object-cover mr-3"
+                        />
+                        <div className="flex-1">
+                          <h3 className="font-medium text-sm text-white">
+                            {character.name}
+                          </h3>
+                          <p className="text-xs text-gray-400 line-clamp-1">
+                            {character.description}
+                          </p>
+                        </div>
+                        {character.id.startsWith("custom_") && (
+                          <button
+                            className="p-2 text-red-400 hover:text-red-500"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDeleteCharacter(character.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Profile Tab Content */}
+            {activeTab === 'profile' && (
+              <div className="p-4 pb-20">
+                <div className="mb-5 text-center">
+                  <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-3">
+                    <UserIcon className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h2 className="text-xl font-bold">{user?.username}</h2>
+                  <p className="text-gray-400">{user?.email}</p>
+                </div>
+                
+                <div className="bg-gray-800/60 rounded-lg border border-gray-700 p-4 mb-5">
+                  <h3 className="text-lg font-bold mb-3">Subscription Status</h3>
+                  <div className={`p-3 rounded-lg mb-3 ${user?.isPremium ? 'bg-red-500/20 border border-red-500/30' : 'bg-gray-700'}`}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">{user?.subscriptionTier || 'Free'}</p>
+                        <p className="text-sm text-gray-400">{user?.subscriptionStatus}</p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setShowSubscription(true)}
+                        className="border-red-400 text-red-400 hover:bg-red-400/10 hover:text-red-300"
+                      >
+                        {user?.isPremium ? 'Manage' : 'Upgrade'}
+                      </Button>
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* Top Rated section */}
-          <div className="px-4 pt-5">
-            <h2 className="text-lg font-bold mb-3">Top Rated</h2>
-            <div className="flex overflow-x-auto pb-4 space-x-3 hide-scrollbar">
-              {characters?.slice(0, 5).map((character) => (
-                <Link key={character.id} href={`/chat/${character.id}`}>
-                  <div className="w-24 shrink-0">
-                    <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-800 mb-1 relative">
-                      <img
-                        src={character.avatar}
-                        alt={character.name}
-                        className="w-full h-full object-cover"
-                      />
-                      {character.id.startsWith("custom_") && (
-                        <button
-                          className="absolute top-1 right-1 p-1 bg-red-500/90 text-white rounded-full z-10"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDeleteCharacter(character.id);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                    <h3 className="text-xs font-medium text-gray-300 line-clamp-1">
-                      {character.name}
-                    </h3>
-                  </div>
-                </Link>
-              ))}
-            </div>
+                
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+                    onClick={toggleTheme}
+                  >
+                    {theme === 'dark' ? 
+                      <Sun className="mr-2 h-4 w-4" /> : 
+                      <Moon className="mr-2 h-4 w-4" />
+                    }
+                    {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+                    onClick={() => setShowComplaintDialog(true)}
+                  >
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    Submit Complaint
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start border-gray-700 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bottom navigation bar */}
