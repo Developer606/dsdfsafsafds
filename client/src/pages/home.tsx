@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { CharacterCard } from "@/components/character-card";
@@ -43,10 +43,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { type Character } from "@shared/characters";
-import { type CustomCharacter, type User } from "@shared/schema";
+import { type CustomCharacter, type User, type Notification } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useTheme } from "@/lib/theme-context";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const container = {
   hidden: { opacity: 0 },
@@ -94,6 +96,28 @@ export default function Home() {
 
   const { data: characters = [], isLoading } = useQuery<Character[]>({
     queryKey: ["/api/characters"],
+  });
+
+  // Query notifications from the API
+  const { data: notifications = [] } = useQuery<Notification[]>({
+    queryKey: ["/api/notifications"],
+  });
+
+  // Add mutation for marking notifications as read
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      await apiRequest("PATCH", `/api/notifications/${notificationId}/read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to mark notification as read"
+      });
+    }
   });
 
   // Use theme context instead of local state
@@ -242,6 +266,13 @@ export default function Home() {
 
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<'home' | 'search' | 'create' | 'library' | 'profile'>('home');
+  
+  // Complaint dialog states
+  const [showComplaintDialog, setShowComplaintDialog] = useState(false);
+  const [complaint, setComplaint] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (isLoading) {
     return (
@@ -291,16 +322,62 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-2">
               {/* Notification bell */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full h-8 w-8 text-gray-300"
-                onClick={() => {
-                  /* Keep notification functionality */
-                }}
-              >
-                <Bell className="h-5 w-5" />
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-8 w-8 text-gray-300 relative"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {notifications && notifications.filter(n => !n.read).length > 0 && (
+                      <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                        {notifications.filter(n => !n.read).length}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-0 bg-gray-900 border-gray-700 text-white">
+                  <div className="p-3 border-b border-gray-700">
+                    <h3 className="font-semibold text-red-400">
+                      Notifications
+                    </h3>
+                  </div>
+                  <AnimatePresence>
+                    {notifications && notifications.length > 0 ? (
+                      <div className="max-h-[300px] overflow-y-auto">
+                        {notifications.map((notification) => (
+                          <motion.div
+                            key={notification.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className={cn(
+                              "p-3 border-b border-gray-700 hover:bg-gray-800 cursor-pointer transition-colors",
+                              !notification.read && "bg-gray-800"
+                            )}
+                            onClick={() => markAsReadMutation.mutate(notification.id)}
+                          >
+                            <h4 className="font-medium text-sm text-gray-200">
+                              {notification.title}
+                            </h4>
+                            <p className="text-sm text-gray-400 mt-1">
+                              {notification.message}
+                            </p>
+                            <span className="text-xs text-gray-500 mt-2 block">
+                              {new Date(notification.createdAt).toLocaleDateString()}
+                            </span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-3 text-center text-gray-400">
+                        No notifications
+                      </div>
+                    )}
+                  </AnimatePresence>
+                </PopoverContent>
+              </Popover>
               
               {/* Subscription button */}
               <Button
@@ -347,7 +424,10 @@ export default function Home() {
                     {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
                   </DropdownMenuItem>
                   {/* Complaint button */}
-                  <DropdownMenuItem className="flex items-center">
+                  <DropdownMenuItem 
+                    className="flex items-center"
+                    onClick={() => setShowComplaintDialog(true)}
+                  >
                     <AlertCircle className="mr-2 h-4 w-4" />
                     Submit Complaint
                   </DropdownMenuItem>
