@@ -118,14 +118,14 @@ export default function LandingPage() {
 
   const handleSuccessfulAuth = (isNewUser: boolean = false) => {
     setShowAuthDialog(false);
-    
+
     if (isNewUser) {
       setShowProfileDialog(true);
     } else {
       setLocation("/chats");
     }
   };
-  
+
   const handleSuccessfulProfileCompletion = () => {
     setShowProfileDialog(false);
     setLocation("/chats");
@@ -375,7 +375,7 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-          <div className="absolute bottom-0 left-0 p-12">
+          {/* <div className="absolute bottom-0 left-0 p-12">
             <div className="grid grid-cols-4 gap-2">
               {[...Array(8)].map((i, _) => (
                 <div
@@ -384,7 +384,7 @@ export default function LandingPage() {
                 />
               ))}
             </div>
-          </div>
+          </div> */}
 
           {/* Main content */}
           <div className="relative z-10 container mx-auto px-4">
@@ -563,13 +563,21 @@ export default function LandingPage() {
             <div className="absolute top-8 right-[30vh] flex items-center space-x-4 text-[#FF6584]">
               <div className="text-center">
                 <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-blue-400/80">
+                  <motion.button
+                    className=" ursor-pointer hover:text-white transition-colors "
+                    onClick={() => setShowFeedbackDialog(true)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    feedback
+                  </motion.button>
                   {Object.keys(POLICY_CONTENT).map((policy) => (
                     <button
                       key={policy}
                       onClick={() =>
                         setCurrentPolicy(policy as keyof typeof POLICY_CONTENT)
                       }
-                      className="hover:text-cyan-400 transition-colors"
+                      className="ursor-pointer hover:text-white transition-colors"
                     >
                       {policy.charAt(0).toUpperCase() + policy.slice(1)}
                     </button>
@@ -585,13 +593,14 @@ export default function LandingPage() {
 
             {/* Social Links */}
             <div className="absolute bottom-8 right-8 flex items-center space-x-4 text-[#FF6584]">
-              <motion.button
+              {/* <motion.button
                 onClick={() => setShowFeedbackDialog(true)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <FaComment className="w-10 h-10 cursor-pointer hover:text-white transition-colors" />
-              </motion.button>
+                feed
+              </motion.button> */}
               <FaTwitter className="w-10 h-10 cursor-pointer hover:text-white transition-colors" />
               <FaInstagram className="w-10 h-10 cursor-pointer hover:text-white transition-colors" />
               <FaGithub className="w-10 h-10 cursor-pointer hover:text-white transition-colors" />
@@ -610,7 +619,7 @@ export default function LandingPage() {
           />
         )}
       </Suspense>
-      
+
       {/* Profile Completion Dialog */}
       <Suspense fallback={null}>
         {showProfileDialog && (
