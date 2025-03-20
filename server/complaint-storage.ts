@@ -1,13 +1,13 @@
-import Database from 'better-sqlite3';
-import { complaints, type InsertComplaint } from '@shared/schema';
-import { sql } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from "better-sqlite3";
+import { complaints, type InsertComplaint } from "@shared/schema";
+import { sql } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 
 export class ComplaintStorage {
   private db: ReturnType<typeof drizzle>;
 
   constructor() {
-    const sqlite = new Database('complaints.db');
+    const sqlite = new Database("complaints.db");
     this.db = drizzle(sqlite);
 
     // Initialize the complaints table
@@ -24,15 +24,21 @@ export class ComplaintStorage {
   }
 
   async createComplaint(data: InsertComplaint) {
-    const [newComplaint] = await this.db.insert(complaints).values({
-      ...data,
-      createdAt: new Date(),
-    }).returning();
+    const [newComplaint] = await this.db
+      .insert(complaints)
+      .values({
+        ...data,
+        createdAt: new Date(),
+      })
+      .returning();
     return newComplaint;
   }
 
   async getAllComplaints() {
-    return await this.db.select().from(complaints).orderBy(sql`created_at DESC`);
+    return await this.db
+      .select()
+      .from(complaints)
+      .orderBy(sql`created_at DESC`);
   }
 }
 

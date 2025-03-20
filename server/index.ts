@@ -2,16 +2,19 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./db";
-import { initializeNotifications } from './notification-db';
-import { startScheduler } from './scheduler';
+import { initializeNotifications } from "./notification-db";
+import { startScheduler } from "./scheduler";
 import path from "path";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Configure trust proxy to get real client IP when behind a proxy (like in Replit)
+app.set("trust proxy", true);
+
 // Serve files from the uploads directory
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Enhanced logging middleware
 app.use((req, res, next) => {
@@ -69,11 +72,11 @@ app.use((req, res, next) => {
 
     // Initialize notifications database
     await initializeNotifications();
-    log('Notifications database initialized successfully');
+    log("Notifications database initialized successfully");
 
     // Start the broadcast scheduler
     startScheduler();
-    log('Broadcast scheduler started successfully');
+    log("Broadcast scheduler started successfully");
 
     const server = await registerRoutes(app);
 
@@ -87,10 +90,10 @@ app.use((req, res, next) => {
         log(`Stack trace: ${err.stack}`);
       }
 
-      res.status(status).json({ 
+      res.status(status).json({
         error: message,
         path: req.path,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     });
 
@@ -105,7 +108,7 @@ app.use((req, res, next) => {
       log(`Server started successfully on port ${PORT}`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 })();

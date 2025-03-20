@@ -1,11 +1,29 @@
-import { type Message, type InsertMessage, type User, type InsertUser, type CustomCharacter, type InsertCustomCharacter, type SubscriptionStatus, type PendingVerification, type InsertPendingVerification, pendingVerifications, subscriptionPlans, type SubscriptionTier } from "@shared/schema";
-import { messages, users, customCharacters, subscriptionPlansTable } from "@shared/schema";
+import {
+  type Message,
+  type InsertMessage,
+  type User,
+  type InsertUser,
+  type CustomCharacter,
+  type InsertCustomCharacter,
+  type SubscriptionStatus,
+  type PendingVerification,
+  type InsertPendingVerification,
+  pendingVerifications,
+  subscriptionPlans,
+  type SubscriptionTier,
+} from "@shared/schema";
+import {
+  messages,
+  users,
+  customCharacters,
+  subscriptionPlansTable,
+} from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
-import { planDb } from './plan-db';
+import { planDb } from "./plan-db";
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
@@ -19,10 +37,16 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUser(id: number): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
-  getUserStats(): Promise<{ totalUsers: number; activeUsers: number; premiumUsers: number; }>;
+  getUserStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    premiumUsers: number;
+  }>;
   incrementTrialCharacterCount(userId: number): Promise<void>;
   updateLastLogin(userId: number, ipAddress?: string): Promise<void>;
-  createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter>;
+  createCustomCharacter(
+    insertCharacter: InsertCustomCharacter,
+  ): Promise<CustomCharacter>;
   getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
   getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
   deleteCustomCharacter(id: number, userId: number): Promise<void>;
@@ -33,20 +57,31 @@ export interface IStorage {
       subscriptionTier: string;
       subscriptionStatus: SubscriptionStatus;
       subscriptionExpiresAt: Date;
-    }
+    },
   ): Promise<void>;
-  updateUserStatus(userId: number, status: {
-    isBlocked?: boolean;
-    isRestricted?: boolean;
-  }): Promise<void>;
+  updateUserStatus(
+    userId: number,
+    status: {
+      isBlocked?: boolean;
+      isRestricted?: boolean;
+    },
+  ): Promise<void>;
   deleteUser(userId: number): Promise<void>;
   verifyEmail(userId: number, token: string): Promise<boolean>;
-  updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void>;
+  updateVerificationToken(
+    userId: number,
+    token: string,
+    expiry: Date,
+  ): Promise<void>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<void>;
 
   // Add new methods for pending verifications
-  createPendingVerification(data: InsertPendingVerification): Promise<PendingVerification>;
-  getPendingVerification(email: string): Promise<PendingVerification | undefined>;
+  createPendingVerification(
+    data: InsertPendingVerification,
+  ): Promise<PendingVerification>;
+  getPendingVerification(
+    email: string,
+  ): Promise<PendingVerification | undefined>;
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
   getUserMessageCount(userId: number): Promise<number>;
@@ -54,14 +89,22 @@ export interface IStorage {
   // Add new methods for subscription plan management
   getSubscriptionPlans(): Promise<SubscriptionPlan[]>;
   getSubscriptionPlan(id: string): Promise<SubscriptionPlan | undefined>;
-  createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan>;
-  updateSubscriptionPlan(id: string, plan: Partial<InsertSubscriptionPlan>): Promise<SubscriptionPlan>;
+  createSubscriptionPlan(
+    plan: InsertSubscriptionPlan,
+  ): Promise<SubscriptionPlan>;
+  updateSubscriptionPlan(
+    id: string,
+    plan: Partial<InsertSubscriptionPlan>,
+  ): Promise<SubscriptionPlan>;
   deleteSubscriptionPlan(id: string): Promise<void>;
 
   // Add these methods to the IStorage interface
   validateCharacterCreation(userId: number): Promise<boolean>;
   getCharacterLimit(userId: number): Promise<number>;
-  validateFeatureAccess(userId: number, feature: "basic" | "advanced" | "api" | "team"): Promise<boolean>;
+  validateFeatureAccess(
+    userId: number,
+    feature: "basic" | "advanced" | "api" | "team",
+  ): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -73,7 +116,7 @@ export class DatabaseStorage implements IStorage {
       checkPeriod: 86400000, // Prune expired entries every 24h
       max: 1000, // Maximum number of sessions to store
       ttl: 86400000 * 7, // Session TTL (7 days)
-      stale: false // Delete stale sessions
+      stale: false, // Delete stale sessions
     });
 
     // Initialize admin user when storage is created
@@ -81,18 +124,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
-    return await db.select().from(messages).where(eq(messages.characterId, characterId));
+    return await db
+      .select()
+      .from(messages)
+      .where(eq(messages.characterId, characterId));
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    const [newMessage] = await db.insert(messages).values({
-      ...message,
-      timestamp: new Date()
-    }).returning();
+    const [newMessage] = await db
+      .insert(messages)
+      .values({
+        ...message,
+        timestamp: new Date(),
+      })
+      .returning();
 
     // Increment message count for user messages only
     if (message.isUser) {
-      await db.update(users)
+      await db
+        .update(users)
         .set({ messageCount: sql`${users.messageCount} + 1` })
         .where(eq(users.id, message.userId));
     }
@@ -101,7 +151,7 @@ export class DatabaseStorage implements IStorage {
       ...newMessage,
       timestamp: new Date(newMessage.timestamp),
       language: newMessage.language || undefined,
-      script: newMessage.script
+      script: newMessage.script,
     };
   }
 
@@ -110,19 +160,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values({
-      ...insertUser,
-      createdAt: new Date(),
-      isPremium: false,
-      trialCharactersCreated: 0,
-      isBlocked: false,
-      isRestricted: false,
-      isEmailVerified: false,
-      verificationToken: null,
-      verificationTokenExpiry: null,
-      lastLoginAt: null,
-      messageCount: 0 // Initialize message count
-    }).returning();
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        createdAt: new Date(),
+        isPremium: false,
+        trialCharactersCreated: 0,
+        isBlocked: false,
+        isRestricted: false,
+        isEmailVerified: false,
+        verificationToken: null,
+        verificationTokenExpiry: null,
+        lastLoginAt: null,
+        messageCount: 0, // Initialize message count
+      })
+      .returning();
     return newUser;
   }
 
@@ -132,7 +185,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
     return user;
   }
 
@@ -145,15 +201,21 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).where(eq(users.isAdmin, false));
   }
 
-  async getUserStats(): Promise<{ totalUsers: number; activeUsers: number; premiumUsers: number; }> {
+  async getUserStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    premiumUsers: number;
+  }> {
     const allUsers = await this.getAllUsers();
     const now = Date.now();
-    const activeThreshold = now - (24 * 60 * 60 * 1000); // Active in last 24 hours
+    const activeThreshold = now - 24 * 60 * 60 * 1000; // Active in last 24 hours
 
     return {
       totalUsers: allUsers.length,
-      activeUsers: allUsers.filter(u => u.lastLoginAt && u.lastLoginAt.getTime() > activeThreshold).length,
-      premiumUsers: allUsers.filter(u => u.isPremium).length,
+      activeUsers: allUsers.filter(
+        (u) => u.lastLoginAt && u.lastLoginAt.getTime() > activeThreshold,
+      ).length,
+      premiumUsers: allUsers.filter((u) => u.isPremium).length,
     };
   }
 
@@ -166,48 +228,61 @@ export class DatabaseStorage implements IStorage {
 
   async updateLastLogin(userId: number, ipAddress?: string): Promise<void> {
     const updateData: any = { lastLoginAt: new Date() };
-    
+
     // If IP address is provided, update location data
     if (ipAddress) {
-      const { getLocationFromIp } = await import('./ip-location');
+      const { getLocationFromIp } = await import("./ip-location");
       const locationData = getLocationFromIp(ipAddress);
-      
+
       updateData.lastLoginIp = ipAddress;
       updateData.countryCode = locationData.countryCode;
       updateData.countryName = locationData.countryName;
       updateData.cityName = locationData.cityName;
     }
-    
-    await db
-      .update(users)
-      .set(updateData)
-      .where(eq(users.id, userId));
+
+    await db.update(users).set(updateData).where(eq(users.id, userId));
   }
 
-  async createCustomCharacter(insertCharacter: InsertCustomCharacter): Promise<CustomCharacter> {
-    const [newCharacter] = await db.insert(customCharacters).values({
-      ...insertCharacter,
-      createdAt: new Date()
-    }).returning();
+  async createCustomCharacter(
+    insertCharacter: InsertCustomCharacter,
+  ): Promise<CustomCharacter> {
+    const [newCharacter] = await db
+      .insert(customCharacters)
+      .values({
+        ...insertCharacter,
+        createdAt: new Date(),
+      })
+      .returning();
     return newCharacter;
   }
 
   async getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]> {
-    return await db.select().from(customCharacters).where(eq(customCharacters.userId, userId));
+    return await db
+      .select()
+      .from(customCharacters)
+      .where(eq(customCharacters.userId, userId));
   }
 
-  async getCustomCharacterById(id: number): Promise<CustomCharacter | undefined> {
-    const [character] = await db.select().from(customCharacters).where(eq(customCharacters.id, id));
+  async getCustomCharacterById(
+    id: number,
+  ): Promise<CustomCharacter | undefined> {
+    const [character] = await db
+      .select()
+      .from(customCharacters)
+      .where(eq(customCharacters.id, id));
     return character;
   }
 
   async deleteCustomCharacter(id: number, userId: number): Promise<void> {
-    const result = await db.delete(customCharacters)
-      .where(sql`${customCharacters.id} = ${id} AND ${customCharacters.userId} = ${userId}`)
+    const result = await db
+      .delete(customCharacters)
+      .where(
+        sql`${customCharacters.id} = ${id} AND ${customCharacters.userId} = ${userId}`,
+      )
       .returning();
 
     if (!result.length) {
-      throw new Error('Character not found or unauthorized');
+      throw new Error("Character not found or unauthorized");
     }
   }
 
@@ -218,17 +293,16 @@ export class DatabaseStorage implements IStorage {
       subscriptionTier: string;
       subscriptionStatus: SubscriptionStatus;
       subscriptionExpiresAt: Date;
-    }
+    },
   ): Promise<void> {
-    await db.update(users)
-      .set(data)
-      .where(eq(users.id, userId));
+    await db.update(users).set(data).where(eq(users.id, userId));
   }
 
-  async updateUserStatus(userId: number, status: { isBlocked?: boolean; isRestricted?: boolean; }): Promise<void> {
-    await db.update(users)
-      .set(status)
-      .where(eq(users.id, userId));
+  async updateUserStatus(
+    userId: number,
+    status: { isBlocked?: boolean; isRestricted?: boolean },
+  ): Promise<void> {
+    await db.update(users).set(status).where(eq(users.id, userId));
   }
 
   async deleteUser(userId: number): Promise<void> {
@@ -240,14 +314,17 @@ export class DatabaseStorage implements IStorage {
     if (!user) return false;
 
     const now = new Date();
-    if (user.verificationToken === token &&
+    if (
+      user.verificationToken === token &&
       user.verificationTokenExpiry &&
-      new Date(user.verificationTokenExpiry) > now) {
-      await db.update(users)
+      new Date(user.verificationTokenExpiry) > now
+    ) {
+      await db
+        .update(users)
         .set({
           isEmailVerified: true,
           verificationToken: null,
-          verificationTokenExpiry: null
+          verificationTokenExpiry: null,
         })
         .where(eq(users.id, userId));
       return true;
@@ -255,11 +332,16 @@ export class DatabaseStorage implements IStorage {
     return false;
   }
 
-  async updateVerificationToken(userId: number, token: string, expiry: Date): Promise<void> {
-    await db.update(users)
+  async updateVerificationToken(
+    userId: number,
+    token: string,
+    expiry: Date,
+  ): Promise<void> {
+    await db
+      .update(users)
       .set({
         verificationToken: token,
-        verificationTokenExpiry: expiry
+        verificationTokenExpiry: expiry,
       })
       .where(eq(users.id, userId));
   }
@@ -287,7 +369,7 @@ export class DatabaseStorage implements IStorage {
           subscriptionExpiresAt: null,
           createdAt: new Date(),
           lastLoginAt: null,
-          messageCount: 0 // Initialize message count
+          messageCount: 0, // Initialize message count
         });
         console.log("Admin user created successfully");
       }
@@ -295,37 +377,49 @@ export class DatabaseStorage implements IStorage {
       console.error("Error creating admin user:", error);
     }
   }
-  async updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
-    await db.update(users)
+  async updateUserPassword(
+    userId: number,
+    hashedPassword: string,
+  ): Promise<void> {
+    await db
+      .update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, userId));
   }
 
-  async createPendingVerification(data: InsertPendingVerification): Promise<PendingVerification> {
+  async createPendingVerification(
+    data: InsertPendingVerification,
+  ): Promise<PendingVerification> {
     try {
       // Delete any existing verification for this email
-      await db.delete(pendingVerifications).where(eq(pendingVerifications.email, data.email));
+      await db
+        .delete(pendingVerifications)
+        .where(eq(pendingVerifications.email, data.email));
 
       // Create new verification
-      const [newVerification] = await db.insert(pendingVerifications)
+      const [newVerification] = await db
+        .insert(pendingVerifications)
         .values(data)
         .returning();
 
       return newVerification;
     } catch (error) {
-      console.error('Error creating pending verification:', error);
-      throw new Error('Failed to create pending verification');
+      console.error("Error creating pending verification:", error);
+      throw new Error("Failed to create pending verification");
     }
   }
 
-  async getPendingVerification(email: string): Promise<PendingVerification | undefined> {
+  async getPendingVerification(
+    email: string,
+  ): Promise<PendingVerification | undefined> {
     try {
-      const [verification] = await db.select()
+      const [verification] = await db
+        .select()
         .from(pendingVerifications)
         .where(eq(pendingVerifications.email, email));
       return verification;
     } catch (error) {
-      console.error('Error getting pending verification:', error);
+      console.error("Error getting pending verification:", error);
       return undefined;
     }
   }
@@ -336,31 +430,35 @@ export class DatabaseStorage implements IStorage {
       if (!verification) return false;
 
       const now = new Date();
-      if (verification.verificationToken === token &&
-          verification.tokenExpiry > now) {
+      if (
+        verification.verificationToken === token &&
+        verification.tokenExpiry > now
+      ) {
         // If verification is successful, delete the verification record
         await this.deletePendingVerification(email);
         return true;
       }
       return false;
     } catch (error) {
-      console.error('Error verifying pending token:', error);
+      console.error("Error verifying pending token:", error);
       return false;
     }
   }
 
   async deletePendingVerification(email: string): Promise<void> {
     try {
-      await db.delete(pendingVerifications)
+      await db
+        .delete(pendingVerifications)
         .where(eq(pendingVerifications.email, email));
     } catch (error) {
-      console.error('Error deleting pending verification:', error);
-      throw new Error('Failed to delete pending verification');
+      console.error("Error deleting pending verification:", error);
+      throw new Error("Failed to delete pending verification");
     }
   }
 
   async getUserMessageCount(userId: number): Promise<number> {
-    const [user] = await db.select({ messageCount: users.messageCount })
+    const [user] = await db
+      .select({ messageCount: users.messageCount })
       .from(users)
       .where(eq(users.id, userId));
     return user?.messageCount || 0;
@@ -379,7 +477,9 @@ export class DatabaseStorage implements IStorage {
     return plan;
   }
 
-  async createSubscriptionPlan(plan: InsertSubscriptionPlan): Promise<SubscriptionPlan> {
+  async createSubscriptionPlan(
+    plan: InsertSubscriptionPlan,
+  ): Promise<SubscriptionPlan> {
     const [newPlan] = await planDb
       .insert(subscriptionPlansTable)
       .values(plan)
@@ -389,7 +489,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateSubscriptionPlan(
     id: string,
-    plan: Partial<InsertSubscriptionPlan>
+    plan: Partial<InsertSubscriptionPlan>,
   ): Promise<SubscriptionPlan> {
     const [updatedPlan] = await planDb
       .update(subscriptionPlansTable)
@@ -448,7 +548,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async validateFeatureAccess(userId: number, feature: "basic" | "advanced" | "api" | "team"): Promise<boolean> {
+  async validateFeatureAccess(
+    userId: number,
+    feature: "basic" | "advanced" | "api" | "team",
+  ): Promise<boolean> {
     const user = await this.getUser(userId);
     if (!user) return false;
 
@@ -456,7 +559,10 @@ export class DatabaseStorage implements IStorage {
       case "basic":
         return true; // All users have basic features
       case "advanced":
-        return user.isPremium && ["premium", "pro"].includes(user.subscriptionTier || "");
+        return (
+          user.isPremium &&
+          ["premium", "pro"].includes(user.subscriptionTier || "")
+        );
       case "api":
         return user.isPremium && user.subscriptionTier === "pro";
       case "team":

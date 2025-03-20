@@ -1,18 +1,18 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "@shared/schema";
-import { db } from './db'; // Add this import for user data
+import { db } from "./db"; // Add this import for user data
 
 // Configure SQLite with WAL mode for better concurrency
-const sqlite = new Database('notifications.db', {
+const sqlite = new Database("notifications.db", {
   fileMustExist: false,
 });
 
 // Enable WAL mode and other optimizations
-sqlite.pragma('journal_mode = WAL');
-sqlite.pragma('synchronous = NORMAL');
-sqlite.pragma('cache_size = -64000'); // 64MB cache
-sqlite.pragma('foreign_keys = OFF'); // Disable foreign keys since we're using multiple databases
+sqlite.pragma("journal_mode = WAL");
+sqlite.pragma("synchronous = NORMAL");
+sqlite.pragma("cache_size = -64000"); // 64MB cache
+sqlite.pragma("foreign_keys = OFF"); // Disable foreign keys since we're using multiple databases
 
 // Create connection
 export const notificationDb = drizzle(sqlite, { schema });
@@ -20,7 +20,7 @@ export const notificationDb = drizzle(sqlite, { schema });
 // Function to initialize notifications table if needed
 export async function initializeNotifications() {
   try {
-    console.log('Starting notifications database initialization...');
+    console.log("Starting notifications database initialization...");
 
     // Create notifications table if it doesn't exist
     sqlite.exec(`
@@ -58,18 +58,20 @@ export async function initializeNotifications() {
     `);
 
     // Verify table creation
-    const tablesExist = sqlite.prepare(
-      "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name IN ('notifications', 'scheduled_broadcasts')"
-    ).get();
+    const tablesExist = sqlite
+      .prepare(
+        "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name IN ('notifications', 'scheduled_broadcasts')",
+      )
+      .get();
 
     if (tablesExist.count === 2) {
-      console.log('Notifications tables initialized successfully');
+      console.log("Notifications tables initialized successfully");
       return true;
     } else {
-      throw new Error('Failed to create notification tables');
+      throw new Error("Failed to create notification tables");
     }
   } catch (error) {
-    console.error('Error initializing notifications:', error);
+    console.error("Error initializing notifications:", error);
     throw error;
   }
 }
@@ -102,16 +104,16 @@ export async function getAllNotificationsWithUsers() {
 
         return {
           ...notification,
-          username: user?.username || 'Deleted User',
-          userEmail: user?.email || 'N/A',
-          createdAt: new Date(notification.createdAt).toISOString()
+          username: user?.username || "Deleted User",
+          userEmail: user?.email || "N/A",
+          createdAt: new Date(notification.createdAt).toISOString(),
         };
-      })
+      }),
     );
 
     return notificationsWithUsers;
   } catch (error) {
-    console.error('Error fetching notifications:', error);
+    console.error("Error fetching notifications:", error);
     throw error;
   }
 }
@@ -123,7 +125,7 @@ export async function createBroadcastNotifications(
     type: string;
     title: string;
     message: string;
-  }
+  },
 ) {
   const insertStmt = sqlite.prepare(`
     INSERT INTO notifications (user_id, type, title, message)
@@ -136,7 +138,7 @@ export async function createBroadcastNotifications(
         user.id,
         notificationData.type,
         notificationData.title,
-        notificationData.message
+        notificationData.message,
       );
     }
   });
@@ -146,7 +148,7 @@ export async function createBroadcastNotifications(
     console.log(`Broadcast notification created for ${users.length} users`);
     return true;
   } catch (error) {
-    console.error('Error creating broadcast notifications:', error);
+    console.error("Error creating broadcast notifications:", error);
     throw error;
   }
 }
@@ -161,20 +163,18 @@ export async function deleteNotification(notificationId: number) {
     stmt.run(notificationId);
     return true;
   } catch (error) {
-    console.error('Error deleting notification:', error);
+    console.error("Error deleting notification:", error);
     throw error;
   }
 }
 
 // Function to create a scheduled broadcast
-export async function createScheduledBroadcast(
-  scheduledBroadcast: {
-    type: string;
-    title: string;
-    message: string;
-    scheduledFor: number;
-  }
-) {
+export async function createScheduledBroadcast(scheduledBroadcast: {
+  type: string;
+  title: string;
+  message: string;
+  scheduledFor: number;
+}) {
   const stmt = sqlite.prepare(`
     INSERT INTO scheduled_broadcasts (type, title, message, scheduled_for)
     VALUES (?, ?, ?, ?)
@@ -185,11 +185,11 @@ export async function createScheduledBroadcast(
       scheduledBroadcast.type,
       scheduledBroadcast.title,
       scheduledBroadcast.message,
-      scheduledBroadcast.scheduledFor
+      scheduledBroadcast.scheduledFor,
     );
     return result.lastInsertRowid;
   } catch (error) {
-    console.error('Error creating scheduled broadcast:', error);
+    console.error("Error creating scheduled broadcast:", error);
     throw error;
   }
 }
@@ -213,7 +213,7 @@ export async function getScheduledBroadcasts() {
   try {
     return stmt.all();
   } catch (error) {
-    console.error('Error fetching scheduled broadcasts:', error);
+    console.error("Error fetching scheduled broadcasts:", error);
     throw error;
   }
 }
@@ -230,7 +230,7 @@ export async function markScheduledBroadcastAsSent(id: number) {
     stmt.run(id);
     return true;
   } catch (error) {
-    console.error('Error marking scheduled broadcast as sent:', error);
+    console.error("Error marking scheduled broadcast as sent:", error);
     throw error;
   }
 }
@@ -246,7 +246,7 @@ export async function deleteScheduledBroadcast(id: number) {
     stmt.run(id);
     return true;
   } catch (error) {
-    console.error('Error deleting scheduled broadcast:', error);
+    console.error("Error deleting scheduled broadcast:", error);
     throw error;
   }
 }

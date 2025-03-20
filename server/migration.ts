@@ -1,7 +1,7 @@
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { migrate } from "drizzle-orm/neon-serverless/migrator";
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import ws from 'ws';
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 import * as schema from "@shared/schema";
 
 // Required for Neon serverless
@@ -15,13 +15,13 @@ async function runMigration() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const db = drizzle(pool, { schema });
 
-  console.log('Running migrations...');
-  
+  console.log("Running migrations...");
+
   try {
-    await migrate(db, { migrationsFolder: './migrations' });
-    console.log('Migrations completed successfully');
+    await migrate(db, { migrationsFolder: "./migrations" });
+    console.log("Migrations completed successfully");
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error("Migration failed:", error);
     process.exit(1);
   }
 

@@ -3,50 +3,72 @@ import { storage } from "./storage";
 import express from "express";
 import session from "express-session";
 import passport from "passport";
-import multer from 'multer';
+import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { generateOTP as generateOTPemail, sendVerificationEmail as sendVerificationEmail2, sendPasswordResetEmail, isValidEmail } from './email';
-import { eq } from 'drizzle-orm';
+import {
+  generateOTP as generateOTPemail,
+  sendVerificationEmail as sendVerificationEmail2,
+  sendPasswordResetEmail,
+  isValidEmail,
+} from "./email";
+import { eq } from "drizzle-orm";
 import type { Express } from "express";
-import { WebSocketServer, WebSocket } from 'ws';
-import type { IncomingMessage } from 'http';
-import { parse } from 'url';
-import fetch from 'node-fetch';
+import { WebSocketServer, WebSocket } from "ws";
+import type { IncomingMessage } from "http";
+import { parse } from "url";
+import fetch from "node-fetch";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
-import { insertMessageSchema, insertCustomCharacterSchema, subscriptionPlans, type SubscriptionTier, insertFeedbackSchema, FREE_USER_MESSAGE_LIMIT, insertNotificationSchema, notifications } from "@shared/schema";
+import {
+  insertMessageSchema,
+  insertCustomCharacterSchema,
+  subscriptionPlans,
+  type SubscriptionTier,
+  insertFeedbackSchema,
+  FREE_USER_MESSAGE_LIMIT,
+  insertNotificationSchema,
+  notifications,
+} from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
-import { generateOTP, hashPassword } from './auth';
-import { feedbackStorage } from './feedback-storage';
-import { complaintStorage } from './complaint-storage';
-import { notificationDb, createBroadcastNotifications, getAllNotificationsWithUsers, deleteNotification, createScheduledBroadcast, getScheduledBroadcasts, deleteScheduledBroadcast } from './notification-db';
-import { getPayPalConfig } from './config/index';
+import { generateOTP, hashPassword } from "./auth";
+import { feedbackStorage } from "./feedback-storage";
+import { complaintStorage } from "./complaint-storage";
+import {
+  notificationDb,
+  createBroadcastNotifications,
+  getAllNotificationsWithUsers,
+  deleteNotification,
+  createScheduledBroadcast,
+  getScheduledBroadcasts,
+  deleteScheduledBroadcast,
+} from "./notification-db";
+import { getPayPalConfig } from "./config/index";
 
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => {
-      const uploadDir = 'uploads';
+      const uploadDir = "uploads";
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir);
       }
       cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-      const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
       cb(null, uniqueName + path.extname(file.originalname));
-    }
+    },
   }),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      cb(new Error("Invalid file type"));
     }
-  }
+  },
 });
 
 // Define middleware to check if user is blocked
@@ -56,11 +78,11 @@ const checkBlockedStatus = async (req: any, res: any, next: any) => {
     if (currentUser?.isBlocked) {
       req.logout((err: any) => {
         if (err) {
-          console.error('Error logging out blocked user:', err);
+          console.error("Error logging out blocked user:", err);
         }
       });
       return res.status(403).json({
-        error: "Your account has been blocked. Please contact support."
+        error: "Your account has been blocked. Please contact support.",
       });
     }
   }
@@ -69,41 +91,43 @@ const checkBlockedStatus = async (req: any, res: any, next: any) => {
 
 // Helper function to get background images
 async function getBackgroundImages(): Promise<string[]> {
-  const fs = require('fs');
-  const path = require('path');
-  
+  const fs = require("fs");
+  const path = require("path");
+
   try {
-    const backgroundDir = path.join(__dirname, '../client/public/background');
+    const backgroundDir = path.join(__dirname, "../client/public/background");
     const files = await fs.promises.readdir(backgroundDir);
-    
+
     // Filter for image files and sort them
     const imageFiles = files
       .filter((file: string) => {
         const ext = path.extname(file).toLowerCase();
-        return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext);
+        return [".jpg", ".jpeg", ".png", ".gif", ".webp"].includes(ext);
       })
       .sort();
-    
+
     // Return paths relative to the public directory
     return imageFiles.map((file: string) => `/background/${file}`);
   } catch (error) {
-    console.error('Error reading background images directory:', error);
+    console.error("Error reading background images directory:", error);
     return [];
   }
 }
 
 export async function registerRoutes(app: Express) {
   // Configure session middleware first
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    store: storage.sessionStore
-  }));
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || "your-secret-key",
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      },
+      store: storage.sessionStore,
+    }),
+  );
 
   // Initialize passport after session
   app.use(passport.initialize());
@@ -114,8 +138,12 @@ export async function registerRoutes(app: Express) {
   // Initialize WebSocket server with session verification
   const wss = new WebSocketServer({
     server: httpServer,
-    path: '/ws',
-    verifyClient: async (info: { origin: string; secure: boolean; req: IncomingMessage }) => {
+    path: "/ws",
+    verifyClient: async (info: {
+      origin: string;
+      secure: boolean;
+      req: IncomingMessage;
+    }) => {
       const cookies = info.req.headers.cookie;
       if (!cookies) return false;
 
@@ -128,10 +156,13 @@ export async function registerRoutes(app: Express) {
       try {
         // Verify session exists and user is admin
         const session: any = await new Promise((resolve, reject) => {
-          storage.sessionStore.get(sessionId.replace('s:', ''), (err, session) => {
-            if (err) reject(err);
-            else resolve(session);
-          });
+          storage.sessionStore.get(
+            sessionId.replace("s:", ""),
+            (err, session) => {
+              if (err) reject(err);
+              else resolve(session);
+            },
+          );
         });
 
         if (!session?.passport?.user) return false;
@@ -139,19 +170,19 @@ export async function registerRoutes(app: Express) {
         const user = await storage.getUser(session.passport.user);
         return user?.isAdmin === true;
       } catch (error) {
-        console.error('WebSocket authentication error:', error);
+        console.error("WebSocket authentication error:", error);
         return false;
       }
-    }
+    },
   });
 
   // Track authenticated WebSocket clients
   const clients = new Set<WebSocket>();
 
-  wss.on('connection', (ws: WebSocket) => {
+  wss.on("connection", (ws: WebSocket) => {
     clients.add(ws);
 
-    ws.on('close', () => {
+    ws.on("close", () => {
       clients.delete(ws);
     });
   });
@@ -171,26 +202,32 @@ export async function registerRoutes(app: Express) {
   app.use(checkBlockedStatus);
 
   // Update authentication check middleware
-  const authCheck = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const authCheck = (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({
         error: "Authentication required",
-        redirectTo: "/login"
+        redirectTo: "/login",
       });
     }
     next();
   };
 
   // Apply auth check to protected routes
-  app.use([
-    "/api/messages",
-    "/api/characters",
-    "/api/custom-characters",
-    "/api/notifications",
-    "/api/subscribe",
-    "/api/verify-payment"
-  ], authCheck);
-
+  app.use(
+    [
+      "/api/messages",
+      "/api/characters",
+      "/api/custom-characters",
+      "/api/notifications",
+      "/api/subscribe",
+      "/api/verify-payment",
+    ],
+    authCheck,
+  );
 
   // Add PayPal config endpoint before existing routes
   app.get("/api/paypal-config", (req, res) => {
@@ -205,7 +242,7 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ error: "Failed to load PayPal configuration" });
     }
   });
-  
+
   // Add background images endpoint
   app.get("/api/background-images", async (req, res) => {
     try {
@@ -220,10 +257,9 @@ export async function registerRoutes(app: Express) {
   // Notification Routes
   app.get("/api/notifications", async (req, res) => {
     try {
-
       const notifications = await notificationDb.query.notifications.findMany({
         where: (notifications, { eq }) => eq(notifications.userId, req.user.id),
-        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
+        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)],
       });
 
       res.json(notifications);
@@ -238,7 +274,8 @@ export async function registerRoutes(app: Express) {
       const notificationId = parseInt(req.params.id);
       console.log("Marking notification as read:", notificationId);
 
-      await notificationDb.update(notifications)
+      await notificationDb
+        .update(notifications)
         .set({ read: true })
         .where(eq(notifications.id, notificationId))
         .where(eq(notifications.userId, req.user.id))
@@ -257,7 +294,8 @@ export async function registerRoutes(app: Express) {
       const data = insertNotificationSchema.parse(req.body);
       console.log("Creating new notification:", data);
 
-      const notification = await notificationDb.insert(notifications)
+      const notification = await notificationDb
+        .insert(notifications)
         .values(data)
         .returning()
         .get();
@@ -292,32 +330,32 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ error: "Failed to delete notification" });
     }
   });
-  
+
   // Test endpoint for IP geolocation (admin only)
   app.get("/api/admin/test-ip-location", isAdmin, async (req, res) => {
     try {
-      const { getLocationFromIp } = await import('./ip-location');
-      const testIp = req.query.ip as string || req.ip;
+      const { getLocationFromIp } = await import("./ip-location");
+      const testIp = (req.query.ip as string) || req.ip;
       const locationData = getLocationFromIp(testIp);
       res.json({
         ip: testIp,
-        location: locationData
+        location: locationData,
       });
     } catch (error) {
       console.error("Error testing IP location:", error);
       res.status(500).json({ error: "Failed to test IP location" });
     }
   });
-  
+
   // Public test endpoint for development/debugging only (remove in production)
   app.get("/api/debug/ip-location", async (req, res) => {
     try {
-      const { getLocationFromIp } = await import('./ip-location');
-      const testIp = req.query.ip as string || req.ip;
+      const { getLocationFromIp } = await import("./ip-location");
+      const testIp = (req.query.ip as string) || req.ip;
       const locationData = getLocationFromIp(testIp);
       res.json({
         ip: testIp,
-        location: locationData
+        location: locationData,
       });
     } catch (error) {
       console.error("Error testing IP location:", error);
@@ -336,9 +374,9 @@ export async function registerRoutes(app: Express) {
       await createBroadcastNotifications(users, {
         type,
         title,
-        message
+        message,
       });
-      broadcastUpdate('notification_update'); // Broadcast notification update
+      broadcastUpdate("notification_update"); // Broadcast notification update
       res.status(201).json({ success: true, count: users.length });
     } catch (error: any) {
       console.error("Error broadcasting notification:", error);
@@ -346,34 +384,39 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/admin/notifications/user/:userId", isAdmin, async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const { title, message, type } = req.body;
-      console.log("Sending notification to user:", userId);
+  app.post(
+    "/api/admin/notifications/user/:userId",
+    isAdmin,
+    async (req, res) => {
+      try {
+        const { userId } = req.params;
+        const { title, message, type } = req.body;
+        console.log("Sending notification to user:", userId);
 
-      const user = await storage.getUser(parseInt(userId));
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        const user = await storage.getUser(parseInt(userId));
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        const notification = await notificationDb
+          .insert(notifications)
+          .values({
+            userId: parseInt(userId),
+            type,
+            title,
+            message,
+            read: false,
+          })
+          .returning()
+          .get();
+
+        res.json(notification);
+      } catch (error: any) {
+        console.error("Error sending notification:", error);
+        res.status(500).json({ error: "Failed to send notification" });
       }
-
-      const notification = await notificationDb.insert(notifications)
-        .values({
-          userId: parseInt(userId),
-          type,
-          title,
-          message,
-          read: false
-        })
-        .returning()
-        .get();
-
-      res.json(notification);
-    } catch (error: any) {
-      console.error("Error sending notification:", error);
-      res.status(500).json({ error: "Failed to send notification" });
-    }
-  });
+    },
+  );
 
   // Admin dashboard endpoints
   app.get("/api/admin/dashboard/stats", isAdmin, async (req, res) => {
@@ -404,22 +447,24 @@ export async function registerRoutes(app: Express) {
           const user = await storage.getUser(msg.userId);
           let characterName = "Unknown";
 
-          if (msg.characterId.startsWith('custom_')) {
+          if (msg.characterId.startsWith("custom_")) {
             const customChar = await storage.getCustomCharacterById(
-              parseInt(msg.characterId.replace('custom_', ''))
+              parseInt(msg.characterId.replace("custom_", "")),
             );
             if (customChar) characterName = customChar.name;
           } else {
-            const predefinedChar = characters.find(c => c.id === msg.characterId);
+            const predefinedChar = characters.find(
+              (c) => c.id === msg.characterId,
+            );
             if (predefinedChar) characterName = predefinedChar.name;
           }
 
           return {
             ...msg,
-            username: user?.username || 'Deleted User',
-            characterName
+            username: user?.username || "Deleted User",
+            characterName,
           };
-        })
+        }),
       );
 
       res.json(enrichedMessages.reverse()); // Most recent first
@@ -432,16 +477,18 @@ export async function registerRoutes(app: Express) {
   app.get("/api/admin/characters/stats", isAdmin, async (req, res) => {
     try {
       const customCharacters = await Promise.all(
-        (await storage.getAllUsers()).map(user =>
-          storage.getCustomCharactersByUser(user.id)
-        )
+        (await storage.getAllUsers()).map((user) =>
+          storage.getCustomCharactersByUser(user.id),
+        ),
       );
 
       const stats = {
         totalCharacters: characters.length + customCharacters.flat().length,
         customCharactersCount: customCharacters.flat().length,
         predefinedCharactersCount: characters.length,
-        averageCustomCharactersPerUser: customCharacters.flat().length / Math.max(1, (await storage.getAllUsers()).length)
+        averageCustomCharactersPerUser:
+          customCharacters.flat().length /
+          Math.max(1, (await storage.getAllUsers()).length),
       };
 
       res.json(stats);
@@ -466,15 +513,17 @@ export async function registerRoutes(app: Express) {
 
       // If blocking the user, find and destroy their session
       if (blocked && sessions) {
-        Object.entries(sessions as Record<string, any>).forEach(([sessionId, session]) => {
-          if (session?.passport?.user === userId) {
-            storage.sessionStore.destroy(sessionId);
-          }
-        });
+        Object.entries(sessions as Record<string, any>).forEach(
+          ([sessionId, session]) => {
+            if (session?.passport?.user === userId) {
+              storage.sessionStore.destroy(sessionId);
+            }
+          },
+        );
       }
 
       await storage.updateUserStatus(userId, { isBlocked: blocked });
-      broadcastUpdate('user_update'); // Broadcast update
+      broadcastUpdate("user_update"); // Broadcast update
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to update user block status" });
@@ -513,51 +562,57 @@ export async function registerRoutes(app: Express) {
       });
 
       await storage.deleteUser(userId);
-      broadcastUpdate('user_update'); // Broadcast user deletion
+      broadcastUpdate("user_update"); // Broadcast user deletion
       res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ error: "Failed to delete user" });
     }
   });
 
-  app.post("/api/admin/users/:userId/subscription", isAdmin, async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      const { planId } = req.body;
+  app.post(
+    "/api/admin/users/:userId/subscription",
+    isAdmin,
+    async (req, res) => {
+      try {
+        const userId = parseInt(req.params.userId);
+        const { planId } = req.body;
 
-      // Handle free plan
-      if (planId === 'free') {
+        // Handle free plan
+        if (planId === "free") {
+          await storage.updateUserSubscription(userId, {
+            isPremium: false,
+            subscriptionTier: null,
+            subscriptionStatus: "cancelled",
+            subscriptionExpiresAt: new Date(),
+          });
+          return res.json({ success: true });
+        }
+
+        // Handle premium plans
+        if (
+          !Object.keys(subscriptionPlans).some(
+            (plan) => subscriptionPlans[plan as SubscriptionTier].id === planId,
+          )
+        ) {
+          return res.status(400).json({ error: "Invalid subscription plan" });
+        }
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30); // Set expiration to 30 days from now
+
         await storage.updateUserSubscription(userId, {
-          isPremium: false,
-          subscriptionTier: null,
-          subscriptionStatus: 'cancelled',
-          subscriptionExpiresAt: new Date()
+          isPremium: true,
+          subscriptionTier: planId,
+          subscriptionStatus: "active",
+          subscriptionExpiresAt: expiresAt,
         });
-        return res.json({ success: true });
+
+        res.json({ success: true });
+      } catch (error: any) {
+        res.status(500).json({ error: "Failed to update user subscription" });
       }
-
-      // Handle premium plans
-      if (!Object.keys(subscriptionPlans).some(plan => subscriptionPlans[plan as SubscriptionTier].id === planId)) {
-        return res.status(400).json({ error: "Invalid subscription plan" });
-      }
-
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30); // Set expiration to 30 days from now
-
-      await storage.updateUserSubscription(userId, {
-        isPremium: true,
-        subscriptionTier: planId,
-        subscriptionStatus: 'active',
-        subscriptionExpiresAt: expiresAt
-      });
-
-      res.json({ success: true });
-    } catch (error: any) {
-      res.status(500).json({ error: "Failed to update user subscription" });
-    }
-  });
-
-
+    },
+  );
 
   // Add new plan management routes before httpServer creation
   app.get("/api/admin/plans", isAdmin, async (req, res) => {
@@ -582,7 +637,10 @@ export async function registerRoutes(app: Express) {
 
   app.patch("/api/admin/plans/:id", isAdmin, async (req, res) => {
     try {
-      const plan = await storage.updateSubscriptionPlan(req.params.id, req.body);
+      const plan = await storage.updateSubscriptionPlan(
+        req.params.id,
+        req.body,
+      );
       res.json(plan);
     } catch (error: any) {
       console.error("Error updating plan:", error);
@@ -603,12 +661,12 @@ export async function registerRoutes(app: Express) {
   app.get("/api/characters", async (req, res) => {
     try {
       const customChars = await storage.getCustomCharactersByUser(req.user.id);
-      const formattedCustomChars = customChars.map(char => ({
+      const formattedCustomChars = customChars.map((char) => ({
         id: `custom_${char.id}`,
         name: char.name,
         avatar: char.avatar,
         description: char.description,
-        persona: char.persona
+        persona: char.persona,
       }));
 
       const allCharacters = [...characters, ...formattedCustomChars];
@@ -620,9 +678,11 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/messages/:characterId", async (req, res) => {
     try {
-      const messages = await storage.getMessagesByCharacter(req.params.characterId);
+      const messages = await storage.getMessagesByCharacter(
+        req.params.characterId,
+      );
       // Only return messages belonging to the authenticated user
-      const userMessages = messages.filter(msg => msg.userId === req.user.id);
+      const userMessages = messages.filter((msg) => msg.userId === req.user.id);
       res.json(userMessages);
     } catch (error: any) {
       res.status(500).json({ error: "Failed to fetch messages" });
@@ -630,7 +690,6 @@ export async function registerRoutes(app: Express) {
   });
 
   app.get("/api/user", async (req, res) => {
-
     res.json(req.user);
   });
 
@@ -645,23 +704,23 @@ export async function registerRoutes(app: Express) {
       const canCreate = await storage.validateCharacterCreation(user.id);
       if (!canCreate) {
         const limit = await storage.getCharacterLimit(user.id);
-        const planName = user.subscriptionTier ?
-          subscriptionPlans[user.subscriptionTier.toUpperCase()]?.name :
-          'Free';
+        const planName = user.subscriptionTier
+          ? subscriptionPlans[user.subscriptionTier.toUpperCase()]?.name
+          : "Free";
 
         return res.status(403).json({
           error: `Character creation limit reached (${limit} characters) for ${planName}. ${
-            user.subscriptionTier === 'basic'
-              ? 'Upgrade to Premium plan to create up to 45 characters.'
-              : 'Please upgrade your plan to create more characters.'
+            user.subscriptionTier === "basic"
+              ? "Upgrade to Premium plan to create up to 45 characters."
+              : "Please upgrade your plan to create more characters."
           }`,
-          limitReached: true
+          limitReached: true,
         });
       }
 
       const data = insertCustomCharacterSchema.parse({
         ...req.body,
-        userId: user.id
+        userId: user.id,
       });
 
       const character = await storage.createCustomCharacter(data);
@@ -698,58 +757,68 @@ export async function registerRoutes(app: Express) {
         const messageCount = await storage.getUserMessageCount(user.id);
         if (messageCount >= FREE_USER_MESSAGE_LIMIT) {
           return res.status(403).json({
-            error: "Message limit reached. Please upgrade to premium to continue chatting.",
-            limitReached: true
+            error:
+              "Message limit reached. Please upgrade to premium to continue chatting.",
+            limitReached: true,
           });
         }
       }
 
       const data = insertMessageSchema.parse({
         ...req.body,
-        userId: user.id
+        userId: user.id,
       });
       const message = await storage.createMessage(data);
 
       if (data.isUser) {
         try {
           let character;
-          const isCustom = data.characterId.startsWith('custom_');
-          const characterIdNum = isCustom ? parseInt(data.characterId.replace('custom_', ''), 10) : null;
+          const isCustom = data.characterId.startsWith("custom_");
+          const characterIdNum = isCustom
+            ? parseInt(data.characterId.replace("custom_", ""), 10)
+            : null;
 
           // Check if user has access to advanced features
-          const hasAdvancedAccess = await storage.validateFeatureAccess(user.id, "advanced");
+          const hasAdvancedAccess = await storage.validateFeatureAccess(
+            user.id,
+            "advanced",
+          );
           if (!hasAdvancedAccess && data.script) {
             return res.status(403).json({
-              error: "Advanced character features require a premium subscription.",
-              premiumRequired: true
+              error:
+                "Advanced character features require a premium subscription.",
+              premiumRequired: true,
             });
           }
 
           if (isCustom && characterIdNum !== null) {
-            const customChar = await storage.getCustomCharacterById(characterIdNum);
+            const customChar =
+              await storage.getCustomCharacterById(characterIdNum);
             if (!customChar) throw new Error("Custom character not found");
             character = {
               id: `custom_${customChar.id}`,
               name: customChar.name,
               avatar: customChar.avatar,
               description: customChar.description,
-              persona: customChar.persona
+              persona: customChar.persona,
             };
           } else {
-            character = characters.find(c => c.id === data.characterId);
+            character = characters.find((c) => c.id === data.characterId);
             if (!character) throw new Error("Predefined character not found");
           }
 
-          const messages = await storage.getMessagesByCharacter(data.characterId);
-          const chatHistory = messages.map(m =>
-            `${m.isUser ? "User" : character.name}: ${m.content}`
-          ).join("\n");
+          const messages = await storage.getMessagesByCharacter(
+            data.characterId,
+          );
+          const chatHistory = messages
+            .map((m) => `${m.isUser ? "User" : character.name}: ${m.content}`)
+            .join("\n");
 
           const aiResponse = await generateCharacterResponse(
             character,
             data.content,
             chatHistory,
-            data.language
+            data.language,
           );
 
           const aiMessage = await storage.createMessage({
@@ -758,7 +827,7 @@ export async function registerRoutes(app: Express) {
             content: aiResponse,
             isUser: false,
             language: data.language,
-            script: data.script
+            script: data.script,
           });
 
           res.json([message, aiMessage]);
@@ -766,7 +835,7 @@ export async function registerRoutes(app: Express) {
           // If AI response fails, still return the user message but with an error
           res.status(207).json({
             messages: [message],
-            error: "Failed to generate AI response"
+            error: "Failed to generate AI response",
           });
         }
       } else {
@@ -780,18 +849,23 @@ export async function registerRoutes(app: Express) {
   // Add API access check for custom character API endpoints
   app.get("/api/custom-characters/api", async (req, res) => {
     try {
-      const hasApiAccess = await storage.validateFeatureAccess(req.user.id, "api");
+      const hasApiAccess = await storage.validateFeatureAccess(
+        req.user.id,
+        "api",
+      );
       if (!hasApiAccess) {
         return res.status(403).json({
           error: "API access requires a Pro subscription.",
-          upgradeRequired: true
+          upgradeRequired: true,
         });
       }
 
       const customChars = await storage.getCustomCharactersByUser(req.user.id);
       res.json(customChars);
     } catch (error: any) {
-      res.status(500).json({ error: "Failed to fetch custom characters API data" });
+      res
+        .status(500)
+        .json({ error: "Failed to fetch custom characters API data" });
     }
   });
 
@@ -804,7 +878,10 @@ export async function registerRoutes(app: Express) {
   app.post("/api/verify-payment", async (req, res) => {
     try {
       const { orderID, planId } = req.body;
-      console.log("Starting payment verification process:", { orderID, planId });
+      console.log("Starting payment verification process:", {
+        orderID,
+        planId,
+      });
 
       if (!orderID) {
         console.log("Payment verification failed: Missing order ID");
@@ -830,27 +907,37 @@ export async function registerRoutes(app: Express) {
       const paypalConfig = getPayPalConfig();
       if (!paypalConfig.clientId || !paypalConfig.clientSecret) {
         console.error("Missing PayPal credentials in configuration");
-        return res.status(500).json({ error: "Payment verification unavailable. Missing PayPal credentials." });
+        return res
+          .status(500)
+          .json({
+            error:
+              "Payment verification unavailable. Missing PayPal credentials.",
+          });
       }
 
       // Building PayPal API auth and request
-      const auth = Buffer.from(`${paypalConfig.clientId}:${paypalConfig.clientSecret}`).toString('base64');
+      const auth = Buffer.from(
+        `${paypalConfig.clientId}:${paypalConfig.clientSecret}`,
+      ).toString("base64");
       console.log("Making PayPal API request for order:", orderID);
 
-      const paypalResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/json',
-        }
-      });
+      const paypalResponse = await fetch(
+        `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
 
       if (!paypalResponse.ok) {
         const errorText = await paypalResponse.text();
         console.error("PayPal API error response:", errorText);
         return res.status(400).json({
           error: "PayPal verification failed",
-          details: `Status: ${paypalResponse.status} ${paypalResponse.statusText}`
+          details: `Status: ${paypalResponse.status} ${paypalResponse.statusText}`,
         });
       }
 
@@ -858,32 +945,43 @@ export async function registerRoutes(app: Express) {
       console.log("PayPal API response:", paypalData);
 
       // Verify payment was completed successfully
-      if (paypalData.status !== 'COMPLETED' && paypalData.status !== 'APPROVED') {
+      if (
+        paypalData.status !== "COMPLETED" &&
+        paypalData.status !== "APPROVED"
+      ) {
         console.log("Payment not completed. Status:", paypalData.status);
         return res.status(400).json({
           error: "Payment not completed",
-          details: paypalData
+          details: paypalData,
         });
       }
 
       // Verify payment amount matches plan price
-      const priceValue = parseFloat(plan.price.replace(/[^0-9.]/g, ''));
+      const priceValue = parseFloat(plan.price.replace(/[^0-9.]/g, ""));
       let paymentAmount = 0;
 
-      if (paypalData.purchase_units &&
+      if (
+        paypalData.purchase_units &&
         paypalData.purchase_units[0] &&
-        paypalData.purchase_units[0].amount) {
+        paypalData.purchase_units[0].amount
+      ) {
         paymentAmount = parseFloat(paypalData.purchase_units[0].amount.value);
       }
 
-      console.log("Verifying payment amount:", { expected: priceValue, received: paymentAmount });
+      console.log("Verifying payment amount:", {
+        expected: priceValue,
+        received: paymentAmount,
+      });
 
       if (paymentAmount < priceValue) {
-        console.log("Payment amount mismatch:", { expected: priceValue, received: paymentAmount });
+        console.log("Payment amount mismatch:", {
+          expected: priceValue,
+          received: paymentAmount,
+        });
         return res.status(400).json({
           error: "Payment amount does not match plan price",
           expected: priceValue,
-          received: paymentAmount
+          received: paymentAmount,
         });
       }
 
@@ -891,13 +989,13 @@ export async function registerRoutes(app: Express) {
       console.log("Payment verified successfully");
       res.json({
         success: true,
-        verification: paypalData
+        verification: paypalData,
       });
     } catch (error: any) {
       console.error("Payment verification error:", error);
       res.status(400).json({
         error: "Payment verification failed",
-        message: error.message
+        message: error.message,
       });
     }
   });
@@ -915,22 +1013,32 @@ export async function registerRoutes(app: Express) {
         throw new Error("Plan ID is required");
       }
 
-      console.log(`Subscription request for user ${user.id}, plan ${planId}, payment verified: ${paymentVerified}`);
+      console.log(
+        `Subscription request for user ${user.id}, plan ${planId}, payment verified: ${paymentVerified}`,
+      );
 
       // Only proceed if payment has been verified
       if (!paymentVerified) {
-        console.warn(`Subscription attempted without payment verification for user ${user.id}`);
-        throw new Error("Payment must be verified before subscription can be activated");
+        console.warn(
+          `Subscription attempted without payment verification for user ${user.id}`,
+        );
+        throw new Error(
+          "Payment must be verified before subscription can be activated",
+        );
       }
 
       // Get plan from database to ensure it exists
       const plan = await storage.getSubscriptionPlan(planId);
       if (!plan) {
-        console.error(`Invalid subscription plan ${planId} requested by user ${user.id}`);
+        console.error(
+          `Invalid subscription plan ${planId} requested by user ${user.id}`,
+        );
         throw new Error("Invalid subscription plan");
       }
 
-      console.log(`Processing subscription for user ${user.id} to plan ${plan.name} (${planId})`);
+      console.log(
+        `Processing subscription for user ${user.id} to plan ${plan.name} (${planId})`,
+      );
 
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 30);
@@ -938,15 +1046,15 @@ export async function registerRoutes(app: Express) {
       await storage.updateUserSubscription(user.id, {
         isPremium: true,
         subscriptionTier: planId,
-        subscriptionStatus: 'active',
-        subscriptionExpiresAt: expiresAt
+        subscriptionStatus: "active",
+        subscriptionExpiresAt: expiresAt,
       });
 
       console.log(`Subscription successfully activated for user ${user.id}`);
 
       res.json({
         success: true,
-        message: "Subscription activated successfully"
+        message: "Subscription activated successfully",
       });
     } catch (error: any) {
       console.error("Subscription error:", error);
@@ -961,14 +1069,14 @@ export async function registerRoutes(app: Express) {
       if (!parsedInput.success) {
         return res.status(400).json({
           error: "Invalid input",
-          details: parsedInput.error.errors
+          details: parsedInput.error.errors,
         });
       }
 
       const feedback = await feedbackStorage.createFeedback(parsedInput.data);
       res.status(201).json(feedback);
     } catch (error: any) {
-      console.error('Error saving feedback:', error);
+      console.error("Error saving feedback:", error);
       res.status(500).json({ error: "Failed to submit feedback" });
     }
   });
@@ -979,7 +1087,7 @@ export async function registerRoutes(app: Express) {
       const allFeedback = await feedbackStorage.getAllFeedback();
       res.json(allFeedback);
     } catch (error: any) {
-      console.error('Error fetching feedback:', error);
+      console.error("Error fetching feedback:", error);
       res.status(500).json({ error: "Failed to fetch feedback" });
     }
   });
@@ -991,13 +1099,13 @@ export async function registerRoutes(app: Express) {
       await feedbackStorage.deleteFeedback(feedbackId);
       res.json({ success: true });
     } catch (error: any) {
-      console.error('Error deleting feedback:', error);
+      console.error("Error deleting feedback:", error);
       res.status(500).json({ error: "Failed to delete feedback" });
     }
   });
 
   // Add complaint submission endpoint
-  app.post("/api/complaints", upload.single('image'), async (req, res) => {
+  app.post("/api/complaints", upload.single("image"), async (req, res) => {
     try {
       const { name, email, message } = req.body;
 
@@ -1007,12 +1115,12 @@ export async function registerRoutes(app: Express) {
         name,
         email,
         message,
-        imageUrl
+        imageUrl,
       });
 
       res.status(201).json(complaint);
     } catch (error: any) {
-      console.error('Error saving complaint:', error);
+      console.error("Error saving complaint:", error);
       res.status(500).json({ error: "Failed to submit complaint" });
     }
   });
@@ -1023,7 +1131,7 @@ export async function registerRoutes(app: Express) {
       const allComplaints = await complaintStorage.getAllComplaints();
       res.json(allComplaints);
     } catch (error: any) {
-      console.error('Error fetching complaints:', error);
+      console.error("Error fetching complaints:", error);
       res.status(500).json({ error: "Failed to fetch complaints" });
     }
   });
@@ -1036,34 +1144,39 @@ export async function registerRoutes(app: Express) {
       // Check for blocked status before authentication
       if (user?.isBlocked) {
         return res.status(403).json({
-          error: "Your account has been blocked. Please contact support."
+          error: "Your account has been blocked. Please contact support.",
         });
       }
 
       // Only proceed with authentication if user is not blocked
-      passport.authenticate("local", async (err: any, authenticatedUser: any) => {
-        if (err) return next(err);
-
-        if (!authenticatedUser) {
-          return res.status(401).json({
-            error: "Invalid username or password"
-          });
-        }
-
-        // Double check block status after authentication
-        const currentUser = await storage.getUserByUsername(authenticatedUser.username);
-        if (currentUser?.isBlocked) {
-          return res.status(403).json({
-            error: "Your account has been blocked. Please contact support."
-          });
-        }
-
-        req.logIn(authenticatedUser, async (err) => {
+      passport.authenticate(
+        "local",
+        async (err: any, authenticatedUser: any) => {
           if (err) return next(err);
-          await storage.updateLastLogin(authenticatedUser.id);
-          res.json(authenticatedUser);
-        });
-      })(req, res, next);
+
+          if (!authenticatedUser) {
+            return res.status(401).json({
+              error: "Invalid username or password",
+            });
+          }
+
+          // Double check block status after authentication
+          const currentUser = await storage.getUserByUsername(
+            authenticatedUser.username,
+          );
+          if (currentUser?.isBlocked) {
+            return res.status(403).json({
+              error: "Your account has been blocked. Please contact support.",
+            });
+          }
+
+          req.logIn(authenticatedUser, async (err) => {
+            if (err) return next(err);
+            await storage.updateLastLogin(authenticatedUser.id);
+            res.json(authenticatedUser);
+          });
+        },
+      )(req, res, next);
     } catch (error) {
       next(error);
     }
@@ -1081,7 +1194,9 @@ export async function registerRoutes(app: Express) {
       // Check if email already exists and is verified
       const existingUser = await storage.getUserByEmail(email);
       if (existingUser?.isEmailVerified) {
-        return res.status(400).json({ error: "Email already registered and verified" });
+        return res
+          .status(400)
+          .json({ error: "Email already registered and verified" });
       }
 
       const otp = await generateOTPemail();
@@ -1093,7 +1208,9 @@ export async function registerRoutes(app: Express) {
         email,
         verificationToken: otp,
         tokenExpiry: expiry,
-        registrationData: registrationData ? JSON.stringify(registrationData) : null
+        registrationData: registrationData
+          ? JSON.stringify(registrationData)
+          : null,
       });
 
       await sendVerificationEmail2(email, otp);
@@ -1131,7 +1248,7 @@ export async function registerRoutes(app: Express) {
         const user = await storage.createUser({
           ...userData,
           password: hashedPassword,
-          isEmailVerified: true
+          isEmailVerified: true,
         });
         await storage.deletePendingVerification(email);
 
@@ -1139,9 +1256,16 @@ export async function registerRoutes(app: Express) {
         req.login(user, (err) => {
           if (err) {
             console.error("Auto-login after registration failed:", err);
-            return res.json({ message: "Email verified and account created successfully. Please login.", user });
+            return res.json({
+              message:
+                "Email verified and account created successfully. Please login.",
+              user,
+            });
           }
-          res.json({ message: "Email verified and account created successfully", user });
+          res.json({
+            message: "Email verified and account created successfully",
+            user,
+          });
         });
       } else {
         await storage.deletePendingVerification(email);
@@ -1212,6 +1336,34 @@ export async function registerRoutes(app: Express) {
   });
 
   // Add new analytics endpoints before httpServer creation
+  // Endpoint for user location distribution
+  app.get("/api/admin/analytics/user-locations", isAdmin, async (req, res) => {
+    try {
+      // Query all users and count by country
+      const allUsers = await storage.getAllUsers();
+
+      // Count users by country
+      const countryData = allUsers.reduce(
+        (acc: Record<string, number>, user) => {
+          const country = user.countryName || "Unknown";
+          acc[country] = (acc[country] || 0) + 1;
+          return acc;
+        },
+        {},
+      );
+
+      // Convert to array and sort by count (descending)
+      const locationStats = Object.entries(countryData)
+        .map(([country, count]) => ({ country, count }))
+        .sort((a, b) => b.count - a.count);
+
+      res.json({ locations: locationStats });
+    } catch (error) {
+      console.error("Error getting user locations:", error);
+      res.status(500).json({ error: "Failed to get user location data" });
+    }
+  });
+
   app.get("/api/admin/analytics/activity", isAdmin, async (req, res) => {
     try {
       // Get user activity data for the last 24 hours
@@ -1220,14 +1372,16 @@ export async function registerRoutes(app: Express) {
 
       // Get all users who logged in within the last 24 hours
       const activeUsers = await storage.getAllUsers();
-      const hourlyActivity = Array(24).fill(0).map((_, hour) => ({
-        hour,
-        activeUsers: activeUsers.filter(user => {
-          if (!user.lastLoginAt) return false;
-          const loginHour = new Date(user.lastLoginAt).getHours();
-          return loginHour === hour;
-        }).length
-      }));
+      const hourlyActivity = Array(24)
+        .fill(0)
+        .map((_, hour) => ({
+          hour,
+          activeUsers: activeUsers.filter((user) => {
+            if (!user.lastLoginAt) return false;
+            const loginHour = new Date(user.lastLoginAt).getHours();
+            return loginHour === hour;
+          }).length,
+        }));
 
       res.json({ hourlyActivity });
     } catch (error: any) {
@@ -1240,22 +1394,25 @@ export async function registerRoutes(app: Express) {
     try {
       // Get message volume for the last 7 days
       const messages = await storage.getMessagesByCharacter("all");
-      const daily = Array(7).fill(0).map((_, index) => {
-        const date = new Date();
-        date.setDate(date.getDate() - index);
-        date.setHours(0, 0, 0, 0);
+      const daily = Array(7)
+        .fill(0)
+        .map((_, index) => {
+          const date = new Date();
+          date.setDate(date.getDate() - index);
+          date.setHours(0, 0, 0, 0);
 
-        const nextDate = new Date(date);
-        nextDate.setDate(nextDate.getDate() + 1);
+          const nextDate = new Date(date);
+          nextDate.setDate(nextDate.getDate() + 1);
 
-        return {
-          date: date.toISOString().split('T')[0],
-          messages: messages.filter(msg => {
-            const msgDate = new Date(msg.timestamp);
-            return msgDate >= date && msgDate < nextDate;
-          }).length
-        };
-      }).reverse();
+          return {
+            date: date.toISOString().split("T")[0],
+            messages: messages.filter((msg) => {
+              const msgDate = new Date(msg.timestamp);
+              return msgDate >= date && msgDate < nextDate;
+            }).length,
+          };
+        })
+        .reverse();
 
       res.json({ daily });
     } catch (error: any) {
@@ -1264,51 +1421,55 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.get("/api/admin/analytics/characters/popularity", isAdmin, async (req, res) => {
-    try {
-      const messages = await storage.getMessagesByCharacter("all");
-      const characterStats = new Map();
+  app.get(
+    "/api/admin/analytics/characters/popularity",
+    isAdmin,
+    async (req, res) => {
+      try {
+        const messages = await storage.getMessagesByCharacter("all");
+        const characterStats = new Map();
 
-      // Process messages to get character statistics
-      for (const msg of messages) {
-        if (!characterStats.has(msg.characterId)) {
-          characterStats.set(msg.characterId, {
-            messageCount: 0,
-            users: new Set()
+        // Process messages to get character statistics
+        for (const msg of messages) {
+          if (!characterStats.has(msg.characterId)) {
+            characterStats.set(msg.characterId, {
+              messageCount: 0,
+              users: new Set(),
+            });
+          }
+          const stats = characterStats.get(msg.characterId);
+          stats.messageCount++;
+          stats.users.add(msg.userId);
+        }
+
+        // Convert stats to response format
+        const charactersData = [];
+        for (const [charId, stats] of characterStats.entries()) {
+          let name = "Unknown";
+          if (charId.startsWith("custom_")) {
+            const customChar = await storage.getCustomCharacterById(
+              parseInt(charId.replace("custom_", "")),
+            );
+            if (customChar) name = customChar.name;
+          } else {
+            const predefinedChar = characters.find((c) => c.id === charId);
+            if (predefinedChar) name = predefinedChar.name;
+          }
+
+          charactersData.push({
+            name,
+            messageCount: stats.messageCount,
+            userCount: stats.users.size,
           });
         }
-        const stats = characterStats.get(msg.characterId);
-        stats.messageCount++;
-        stats.users.add(msg.userId);
+
+        res.json({ characters: charactersData });
+      } catch (error: any) {
+        console.error("Error fetching character popularity:", error);
+        res.status(500).json({ error: "Failed to fetch character popularity" });
       }
-
-      // Convert stats to response format
-      const charactersData = [];
-      for (const [charId, stats] of characterStats.entries()) {
-        let name = "Unknown";
-        if (charId.startsWith('custom_')) {
-          const customChar = await storage.getCustomCharacterById(
-            parseInt(charId.replace('custom_', ''))
-          );
-          if (customChar) name = customChar.name;
-        } else {
-          const predefinedChar = characters.find(c => c.id === charId);
-          if (predefinedChar) name = predefinedChar.name;
-        }
-
-        charactersData.push({
-          name,
-          messageCount: stats.messageCount,
-          userCount: stats.users.size
-        });
-      }
-
-      res.json({ characters: charactersData });
-    } catch (error: any) {
-      console.error("Error fetching character popularity:", error);
-      res.status(500).json({ error: "Failed to fetch character popularity" });
-    }
-  });
+    },
+  );
 
   // Add a public route for subscription plans
   app.get("/api/plans", async (req, res) => {
@@ -1326,7 +1487,7 @@ export async function registerRoutes(app: Express) {
     try {
       const notifications = await notificationDb.query.notifications.findMany({
         where: (notifications, { eq }) => eq(notifications.userId, req.user.id),
-        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
+        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)],
       });
 
       res.json(notifications);
@@ -1340,7 +1501,8 @@ export async function registerRoutes(app: Express) {
   app.patch("/api/notifications/:id/read", async (req, res) => {
     try {
       const notificationId = parseInt(req.params.id);
-      await notificationDb.update(notifications)
+      await notificationDb
+        .update(notifications)
         .set({ read: true })
         .where(eq(notifications.id, notificationId))
         .where(eq(notifications.userId, req.user.id))
@@ -1357,7 +1519,8 @@ export async function registerRoutes(app: Express) {
   app.post("/api/admin/notifications", isAdmin, async (req, res) => {
     try {
       const data = insertNotificationSchema.parse(req.body);
-      const notification = await notificationDb.insert(notifications)
+      const notification = await notificationDb
+        .insert(notifications)
         .values(data)
         .returning()
         .get();
@@ -1373,7 +1536,7 @@ export async function registerRoutes(app: Express) {
   app.get("/api/admin/notifications/all", isAdmin, async (req, res) => {
     try {
       const notifications = await notificationDb.query.notifications.findMany({
-        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)]
+        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)],
       });
 
       const notificationsWithUserDetails = await Promise.all(
@@ -1381,10 +1544,10 @@ export async function registerRoutes(app: Express) {
           const user = await storage.getUser(notification.userId);
           return {
             ...notification,
-            username: user?.username || 'Deleted User',
-            userEmail: user?.email || 'N/A'
+            username: user?.username || "Deleted User",
+            userEmail: user?.email || "N/A",
           };
-        })
+        }),
       );
 
       res.json(notificationsWithUserDetails);
@@ -1404,18 +1567,19 @@ export async function registerRoutes(app: Express) {
 
       // Create notifications for all users
       const notifications = await Promise.all(
-        users.map(user =>
-          notificationDb.insert(notifications)
+        users.map((user) =>
+          notificationDb
+            .insert(notifications)
             .values({
               userId: user.id,
               type,
               title,
               message,
-              read: false
+              read: false,
             })
             .returning()
-            .get()
-        )
+            .get(),
+        ),
       );
 
       res.json({ success: true, count: notifications.length });
@@ -1426,35 +1590,40 @@ export async function registerRoutes(app: Express) {
   });
 
   // Send notification to specific user
-  app.post("/api/admin/notifications/user/:userId", isAdmin, async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const { title, message, type } = req.body;
+  app.post(
+    "/api/admin/notifications/user/:userId",
+    isAdmin,
+    async (req, res) => {
+      try {
+        const { userId } = req.params;
+        const { title, message, type } = req.body;
 
-      // Verify user exists
-      const user = await storage.getUser(parseInt(userId));
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        // Verify user exists
+        const user = await storage.getUser(parseInt(userId));
+        if (!user) {
+          return res.status(404).json({ error: "User not found" });
+        }
+
+        // Create notification
+        const notification = await notificationDb
+          .insert(notifications)
+          .values({
+            userId: parseInt(userId),
+            type,
+            title,
+            message,
+            read: false,
+          })
+          .returning()
+          .get();
+
+        res.status(201).json(notification);
+      } catch (error: any) {
+        console.error("Error sending notification:", error);
+        res.status(500).json({ error: "Failed to send notification" });
       }
-
-      // Create notification
-      const notification = await notificationDb.insert(notifications)
-        .values({
-          userId: parseInt(userId),
-          type,
-          title,
-          message,
-          read: false
-        })
-        .returning()
-        .get();
-
-      res.status(201).json(notification);
-    } catch (error: any) {
-      console.error("Error sending notification:", error);
-      res.status(500).json({ error: "Failed to send notification" });
-    }
-  });
+    },
+  );
 
   // Add new endpoints for scheduled broadcasts before httpServer creation
   app.post("/api/admin/broadcasts/schedule", isAdmin, async (req, res) => {
@@ -1465,7 +1634,7 @@ export async function registerRoutes(app: Express) {
         type,
         title,
         message,
-        scheduledFor: new Date(scheduledFor).getTime()
+        scheduledFor: new Date(scheduledFor).getTime(),
       });
 
       res.status(201).json({ success: true, id: scheduledBroadcast });
@@ -1485,16 +1654,20 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/admin/broadcasts/scheduled/:id", isAdmin, async (req, res) => {
-    try {
-      const broadcastId = parseInt(req.params.id);
-      await deleteScheduledBroadcast(broadcastId);
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Error deleting scheduled broadcast:", error);
-      res.status(500).json({ error: "Failed to delete scheduled broadcast" });
-    }
-  });
+  app.delete(
+    "/api/admin/broadcasts/scheduled/:id",
+    isAdmin,
+    async (req, res) => {
+      try {
+        const broadcastId = parseInt(req.params.id);
+        await deleteScheduledBroadcast(broadcastId);
+        res.json({ success: true });
+      } catch (error: any) {
+        console.error("Error deleting scheduled broadcast:", error);
+        res.status(500).json({ error: "Failed to delete scheduled broadcast" });
+      }
+    },
+  );
 
   return httpServer;
 }

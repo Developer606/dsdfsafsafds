@@ -45,7 +45,11 @@ type AuthDialogProps = {
 export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [authStep, setAuthStep] = useState<AuthStep>("login");
   const [verificationEmail, setVerificationEmail] = useState("");
-  const [registrationData, setRegistrationData] = useState<{ username: string; email: string; password: string } | null>(null);
+  const [registrationData, setRegistrationData] = useState<{
+    username: string;
+    email: string;
+    password: string;
+  } | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -120,11 +124,15 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
 
   // Registration mutation
   const register = useMutation({
-    mutationFn: async (data: { username: string; email: string; password: string }) => {
+    mutationFn: async (data: {
+      username: string;
+      email: string;
+      password: string;
+    }) => {
       // Send OTP along with registration data
       const res = await apiRequest("POST", "/api/verify/send-otp", {
         email: data.email,
-        registrationData: data // Include full registration data
+        registrationData: data, // Include full registration data
       });
       if (!res.ok) {
         const error = await res.json();
@@ -161,10 +169,14 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
       // Ensure we're using the stored verification email
       const verifyData = {
         email: verificationEmail,
-        otp: data.otp
+        otp: data.otp,
       };
 
-      const res = await apiRequest("POST", "/api/verify/verify-otp", verifyData);
+      const res = await apiRequest(
+        "POST",
+        "/api/verify/verify-otp",
+        verifyData,
+      );
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Invalid verification code");
@@ -216,7 +228,11 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   });
 
   const resetPassword = useMutation({
-    mutationFn: async (data: { email: string; otp: string; newPassword: string }) => {
+    mutationFn: async (data: {
+      email: string;
+      otp: string;
+      newPassword: string;
+    }) => {
       const res = await apiRequest("POST", "/api/auth/reset-password", data);
       if (!res.ok) {
         const error = await res.json();
@@ -228,7 +244,8 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
       setAuthStep("login");
       toast({
         title: "Success",
-        description: "Password reset successfully. Please login with your new password.",
+        description:
+          "Password reset successfully. Please login with your new password.",
       });
     },
     onError: (error: Error) => {
@@ -264,7 +281,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
             >
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="username" className="text-sm font-medium">Username</Label>
+                  <Label htmlFor="username" className="text-sm font-medium">
+                    Username
+                  </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
                     <Input
@@ -281,7 +300,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-medium">
+                    Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
                     <Input
@@ -317,7 +338,11 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   {login.isPending ? (
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
                       className="mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"
                     />
                   ) : null}
@@ -351,12 +376,16 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              onSubmit={registerForm.handleSubmit((data) => register.mutate(data))}
+              onSubmit={registerForm.handleSubmit((data) =>
+                register.mutate(data),
+              )}
               className="space-y-4"
             >
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="username" className="text-sm font-medium">Username</Label>
+                  <Label htmlFor="username" className="text-sm font-medium">
+                    Username
+                  </Label>
                   <div className="relative">
                     <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
                     <Input
@@ -373,7 +402,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
                     <Input
@@ -391,7 +422,12 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="registerPassword" className="text-sm font-medium">Password</Label>
+                  <Label
+                    htmlFor="registerPassword"
+                    className="text-sm font-medium"
+                  >
+                    Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
                     <Input
@@ -403,7 +439,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     />
                     <button
                       type="button"
-                      onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                      onClick={() =>
+                        setShowRegisterPassword(!showRegisterPassword)
+                      }
                       className="absolute right-2 top-2 text-muted-foreground/50 hover:text-primary transition-colors"
                     >
                       {showRegisterPassword ? (
@@ -427,11 +465,17 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   {register.isPending ? (
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
                       className="mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full"
                     />
                   ) : null}
-                  {register.isPending ? "Creating account..." : "Create Account"}
+                  {register.isPending
+                    ? "Creating account..."
+                    : "Create Account"}
                 </Button>
                 <p className="text-center text-sm text-muted-foreground">
                   Already have an account?{" "}
@@ -448,14 +492,20 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
           )}
 
           {authStep === "verify" && (
-            <form onSubmit={otpForm.handleSubmit((data) => verifyOTP.mutate({ ...data, email: verificationEmail }))}>
+            <form
+              onSubmit={otpForm.handleSubmit((data) =>
+                verifyOTP.mutate({ ...data, email: verificationEmail }),
+              )}
+            >
               <div className="space-y-4">
                 <p className="text-sm text-center">
                   We've sent a verification code to {verificationEmail}.<br />
                   Please enter it below to verify your account.
                 </p>
                 <div>
-                  <Label htmlFor="otp" className="text-sm font-medium">Verification Code</Label>
+                  <Label htmlFor="otp" className="text-sm font-medium">
+                    Verification Code
+                  </Label>
                   <Input
                     id="otp"
                     {...otpForm.register("otp")}
@@ -495,14 +545,20 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
           )}
 
           {authStep === "forgot" && (
-            <form onSubmit={forgotPasswordForm.handleSubmit((data) => forgotPassword.mutate(data))}>
+            <form
+              onSubmit={forgotPasswordForm.handleSubmit((data) =>
+                forgotPassword.mutate(data),
+              )}
+            >
               <div className="space-y-4">
                 <p className="text-sm text-center">
-                  Enter your email address and we'll send you a code
-                  to reset your password.
+                  Enter your email address and we'll send you a code to reset
+                  your password.
                 </p>
                 <div>
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
                     <Input
@@ -541,13 +597,19 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
           )}
 
           {authStep === "reset" && (
-            <form onSubmit={resetPasswordForm.handleSubmit((data) => resetPassword.mutate(data))}>
+            <form
+              onSubmit={resetPasswordForm.handleSubmit((data) =>
+                resetPassword.mutate(data),
+              )}
+            >
               <div className="space-y-4">
                 <p className="text-sm text-center">
                   Enter the code sent to your email and your new password.
                 </p>
                 <div>
-                  <Label htmlFor="otp" className="text-sm font-medium">Reset Code</Label>
+                  <Label htmlFor="otp" className="text-sm font-medium">
+                    Reset Code
+                  </Label>
                   <Input
                     id="otp"
                     {...resetPasswordForm.register("otp")}
@@ -562,7 +624,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="newPassword" className="text-sm font-medium">New Password</Label>
+                  <Label htmlFor="newPassword" className="text-sm font-medium">
+                    New Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
                     <Input
@@ -602,7 +666,9 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                   <button
                     type="button"
                     className="text-primary hover:underline transition-colors font-medium"
-                    onClick={() => forgotPassword.mutate(forgotPasswordForm.getValues())}
+                    onClick={() =>
+                      forgotPassword.mutate(forgotPasswordForm.getValues())
+                    }
                   >
                     Resend
                   </button>

@@ -1,4 +1,4 @@
-import geoip from 'geoip-lite';
+import geoip from "geoip-lite";
 
 export interface GeoLocation {
   countryCode?: string;
@@ -16,32 +16,61 @@ export interface GeoLocation {
  */
 export function getLocationFromIp(ip: string): GeoLocation {
   try {
-    // Remove any port information from the IP address
-    const cleanIp = ip.split(':')[0].trim();
-    
-    // Filter out private IPs, localhost, etc.
-    if (
-      cleanIp === '127.0.0.1' || 
-      cleanIp === 'localhost' || 
-      cleanIp.startsWith('192.168.') || 
-      cleanIp.startsWith('10.') || 
-      cleanIp.startsWith('172.16.')
-    ) {
+    if (!ip) {
+      console.log("No IP address provided for location lookup");
       return {
         countryCode: undefined,
         countryName: undefined,
-        cityName: undefined
+        cityName: undefined,
+      };
+    }
+
+    // Handle comma-separated IPs (X-Forwarded-For can contain multiple IPs)
+    // Take the leftmost non-private IP which is typically the client's real IP
+    let cleanIp: string | null = null;
+    const ips = ip.split(",");
+
+    for (const potentialIp of ips) {
+      // Clean each IP (remove port, whitespace)
+      const trimmedIp = potentialIp.split(":")[0].trim();
+
+      // Skip private IPs, localhost, etc.
+      if (
+        trimmedIp === "127.0.0.1" ||
+        trimmedIp === "localhost" ||
+        trimmedIp.startsWith("192.168.") ||
+        trimmedIp.startsWith("10.") ||
+        trimmedIp.startsWith("172.16.") ||
+        trimmedIp === "::1" ||
+        trimmedIp === "undefined"
+      ) {
+        continue;
+      }
+
+      // Found a usable IP
+      cleanIp = trimmedIp;
+      break;
+    }
+
+    // If no usable IP was found
+    if (!cleanIp) {
+      console.log(`No usable public IP found in: ${ip}`);
+      return {
+        countryCode: undefined,
+        countryName: undefined,
+        cityName: undefined,
       };
     }
 
     // Look up the IP address
     const geo = geoip.lookup(cleanIp);
-    
+
     if (!geo) {
+      console.log(`No geolocation data found for IP: ${cleanIp}`);
       return {
         countryCode: undefined,
         countryName: undefined,
-        cityName: undefined
+        cityName: undefined,
       };
     }
 
@@ -52,14 +81,14 @@ export function getLocationFromIp(ip: string): GeoLocation {
       cityName: geo.city,
       region: geo.region,
       latitude: geo.ll[0],
-      longitude: geo.ll[1]
+      longitude: geo.ll[1],
     };
   } catch (error) {
-    console.error('Error getting location from IP:', error);
+    console.error("Error getting location from IP:", error);
     return {
       countryCode: undefined,
       countryName: undefined,
-      cityName: undefined
+      cityName: undefined,
     };
   }
 }
@@ -71,29 +100,29 @@ export function getLocationFromIp(ip: string): GeoLocation {
  */
 function getCountryName(countryCode?: string): string | undefined {
   if (!countryCode) return undefined;
-  
-  const countries: {[code: string]: string} = {
-    'US': 'United States',
-    'CA': 'Canada',
-    'GB': 'United Kingdom',
-    'AU': 'Australia',
-    'DE': 'Germany',
-    'FR': 'France',
-    'JP': 'Japan',
-    'IN': 'India',
-    'BR': 'Brazil',
-    'IT': 'Italy',
-    'ES': 'Spain',
-    'CN': 'China',
-    'RU': 'Russia',
-    'MX': 'Mexico',
-    'KR': 'South Korea',
-    'NL': 'Netherlands',
-    'SE': 'Sweden',
-    'CH': 'Switzerland',
-    'SG': 'Singapore',
-    'ZA': 'South Africa',
+
+  const countries: { [code: string]: string } = {
+    US: "United States",
+    CA: "Canada",
+    GB: "United Kingdom",
+    AU: "Australia",
+    DE: "Germany",
+    FR: "France",
+    JP: "Japan",
+    IN: "India",
+    BR: "Brazil",
+    IT: "Italy",
+    ES: "Spain",
+    CN: "China",
+    RU: "Russia",
+    MX: "Mexico",
+    KR: "South Korea",
+    NL: "Netherlands",
+    SE: "Sweden",
+    CH: "Switzerland",
+    SG: "Singapore",
+    ZA: "South Africa",
   };
-  
+
   return countries[countryCode] || countryCode;
 }

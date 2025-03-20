@@ -5,8 +5,12 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User as SelectUser, insertUserSchema, adminLoginSchema } from "@shared/schema";
-import cryptoRandomString from 'crypto-random-string';
+import {
+  User as SelectUser,
+  insertUserSchema,
+  adminLoginSchema,
+} from "@shared/schema";
+import cryptoRandomString from "crypto-random-string";
 
 declare global {
   namespace Express {
@@ -25,13 +29,15 @@ export async function hashPassword(password: string) {
 
 // Add OTP generation utility
 export function generateOTP() {
-  return cryptoRandomString({ length: 6, type: 'numeric' });
+  return cryptoRandomString({ length: 6, type: "numeric" });
 }
 
 // Add email verification utility
 export async function sendVerificationEmail(email: string, token: string) {
   // Implementation will be added when email service is set up
-  console.log(`Verification email would be sent to ${email} with token ${token}`);
+  console.log(
+    `Verification email would be sent to ${email} with token ${token}`,
+  );
   return true;
 }
 
@@ -52,16 +58,16 @@ export function isAdmin(req: Request, res: Response, next: NextFunction) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    secret: process.env.SESSION_SECRET || "your-secret-key",
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
-    name: 'sid', // Set a specific cookie name
+    name: "sid", // Set a specific cookie name
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-      sameSite: 'lax'
+      sameSite: "lax",
     },
   };
 
@@ -111,12 +117,12 @@ export function setupAuth(app: Express) {
       if (!parsedInput.success) {
         return res.status(400).json({
           error: "Invalid input",
-          details: parsedInput.error.errors
+          details: parsedInput.error.errors,
         });
       }
 
       // Don't allow registering as admin
-      if (req.body.isAdmin || req.body.role === 'admin') {
+      if (req.body.isAdmin || req.body.role === "admin") {
         return res.status(400).json({ error: "Cannot register as admin" });
       }
 
@@ -136,7 +142,7 @@ export function setupAuth(app: Express) {
       const user = await storage.createUser({
         ...req.body,
         password: hashedPassword,
-        role: 'user',
+        role: "user",
         isAdmin: false,
       });
 
@@ -144,13 +150,17 @@ export function setupAuth(app: Express) {
       req.login(user, (err) => {
         if (err) {
           console.error("Login after registration failed:", err);
-          return res.status(500).json({ error: "Login failed after registration" });
+          return res
+            .status(500)
+            .json({ error: "Login failed after registration" });
         }
         return res.status(201).json(user);
       });
     } catch (error: any) {
       console.error("Registration error:", error);
-      res.status(500).json({ error: "Registration failed", details: error.message });
+      res
+        .status(500)
+        .json({ error: "Registration failed", details: error.message });
     }
   });
 
@@ -161,12 +171,18 @@ export function setupAuth(app: Express) {
 
       // Verify admin credentials
       const user = await storage.getUserByUsername(username);
-      if (!user || !user.isAdmin || !(await comparePasswords(password, user.password))) {
+      if (
+        !user ||
+        !user.isAdmin ||
+        !(await comparePasswords(password, user.password))
+      ) {
         return res.status(401).json({ error: "Invalid admin credentials" });
       }
 
       // Update last login time with IP address
-      await storage.updateLastLogin(user.id, req.ip);
+      // Get the real client IP, considering X-Forwarded-For header
+      const clientIP = (req.headers["x-forwarded-for"] || req.ip) as string;
+      await storage.updateLastLogin(user.id, clientIP);
 
       // Log in the admin
       req.login(user, (err) => {
@@ -194,7 +210,9 @@ export function setupAuth(app: Express) {
         return res.status(401).json({ error: "Please use admin login" });
       }
 
-      await storage.updateLastLogin(user.id, req.ip);
+      // Get the real client IP, considering X-Forwarded-For header
+      const clientIP = (req.headers["x-forwarded-for"] || req.ip) as string;
+      await storage.updateLastLogin(user.id, clientIP);
 
       req.login(user, (err) => {
         if (err) {

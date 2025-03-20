@@ -88,25 +88,27 @@ export default function Home() {
 
   // Theme toggle function
   // Keep track of current theme
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      return document.documentElement.classList.contains("dark")
+        ? "dark"
+        : "dark";
     }
-    return 'light';
+    return "dark";
   });
-  
+
   const toggleTheme = () => {
     const doc = document.documentElement;
     const isDark = doc.classList.contains("dark");
 
     if (isDark) {
       doc.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setTheme('light');
+      localStorage.setItem("theme", "dark");
+      setTheme("dark");
     } else {
       doc.classList.add("dark");
       localStorage.setItem("theme", "dark");
-      setTheme('dark');
+      setTheme("dark");
     }
   };
 
@@ -275,11 +277,11 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#FFFDFA] dark:bg-slate-950">
-      <BackgroundSlideshow 
-        interval={8000} 
-        opacity={0.35} 
-        fadeTime={1.5} 
-        darkMode={theme === 'dark'} 
+      <BackgroundSlideshow
+        interval={8000}
+        opacity={0.35}
+        fadeTime={1.5}
+        darkMode={theme === "dark"}
       />
 
       <NotificationHeader />

@@ -1,14 +1,14 @@
-import Database from 'better-sqlite3';
-import { feedback, type InsertFeedback } from '@shared/schema';
-import { sql } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import Database from "better-sqlite3";
+import { feedback, type InsertFeedback } from "@shared/schema";
+import { sql } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 
 export class FeedbackStorage {
   private db: ReturnType<typeof drizzle>;
 
   constructor() {
-    const sqlite = new Database('feedback.db');
+    const sqlite = new Database("feedback.db");
     this.db = drizzle(sqlite);
 
     // Initialize the feedback table with updated schema
@@ -30,15 +30,21 @@ export class FeedbackStorage {
   }
 
   async createFeedback(data: InsertFeedback) {
-    const [newFeedback] = await this.db.insert(feedback).values({
-      ...data,
-      createdAt: new Date(),
-    }).returning();
+    const [newFeedback] = await this.db
+      .insert(feedback)
+      .values({
+        ...data,
+        createdAt: new Date(),
+      })
+      .returning();
     return newFeedback;
   }
 
   async getAllFeedback() {
-    return await this.db.select().from(feedback).orderBy(sql`created_at DESC`);
+    return await this.db
+      .select()
+      .from(feedback)
+      .orderBy(sql`created_at DESC`);
   }
 
   async deleteFeedback(id: number) {
@@ -48,8 +54,12 @@ export class FeedbackStorage {
   async getFeedbackStats() {
     const result = await Promise.all([
       this.db.select().from(feedback).all(),
-      this.db.select({ count: sql<number>`COUNT(DISTINCT email)` }).from(feedback).get(),
-      this.db.select({ count: sql<number>`COUNT(*)` })
+      this.db
+        .select({ count: sql<number>`COUNT(DISTINCT email)` })
+        .from(feedback)
+        .get(),
+      this.db
+        .select({ count: sql<number>`COUNT(*)` })
         .from(feedback)
         .where(sql`created_at >= datetime('now', '-7 days')`)
         .get(),

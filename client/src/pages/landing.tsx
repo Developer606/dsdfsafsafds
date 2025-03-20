@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, lazy, Suspense, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { motion } from "framer-motion";
@@ -6,30 +6,52 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
-import { AuthDialog } from "@/components/auth-dialog";
 import type { User } from "@shared/schema";
-import { FaEnvelope, FaGithub, FaTwitter } from "react-icons/fa";
-import { PolicyDialog } from "@/components/policy-dialog";
-// import { BackgroundSlideshow } from "@/components/background-slideshow";
+import {
+  FaEnvelope,
+  FaGithub,
+  FaTwitter,
+  FaInstagram,
+  FaComment,
+} from "react-icons/fa";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
+// Lazy load components
+const AuthDialog = lazy(() =>
+  import("@/components/auth-dialog").then((module) => ({
+    default: module.AuthDialog,
+  })),
+);
+
+const PolicyDialog = lazy(() =>
+  import("@/components/policy-dialog").then((module) => ({
+    default: module.PolicyDialog,
+  })),
+);
+
+const TypeWriter = lazy(() =>
+  import("@/components/type-writer").then((module) => ({
+    default: module.TypeWriter,
+  })),
+);
+
+// Animations
 const fadeIn = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6 },
-};
-
-const stagger = {
-  animate: {
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  transition: { duration: 0.4 },
 };
 
 const slideIn = {
-  initial: { x: -60, opacity: 0 },
+  initial: { x: -30, opacity: 0 },
   animate: { x: 0, opacity: 1 },
-  transition: { duration: 0.8, ease: "easeOut" },
+  transition: { duration: 0.5 },
 };
 
 // Featured characters data
@@ -57,148 +79,23 @@ const FEATURED_CHARACTERS = [
   },
 ];
 
-// Move policy content outside component for better performance
-const POLICY_CONTENT = {
-  return: (
-    <>
-      <h2>Return Policy</h2>
-      <p>
-        As AnimeChat AI provides digital services, we do not offer traditional
-        returns. However, if you're experiencing technical issues or have
-        concerns about our service, please contact our support team at
-        support@animechat.ai.
-      </p>
-
-      <h3>Digital Content and Services</h3>
-      <ul>
-        <li>All purchases are considered final once the service is accessed</li>
-        <li>Premium features are non-transferable</li>
-        <li>Account access cannot be returned or transferred</li>
-      </ul>
-    </>
-  ),
-  refund: (
-    <>
-      <h2>Refund Policy</h2>
-      <p>
-        We strive to provide the best possible experience with our AI chat
-        service. Our refund policy is designed to be fair and transparent.
-      </p>
-
-      <h3>Eligibility for Refunds</h3>
-      <ul>
-        <li>Service unavailability exceeding 24 hours</li>
-        <li>Technical issues preventing access to premium features</li>
-        <li>Billing errors or unauthorized charges</li>
-      </ul>
-
-      <p>
-        To request a refund, please contact our support team with your account
-        details and reason for the refund request.
-      </p>
-    </>
-  ),
-  privacy: (
-    <>
-      <h2>Privacy Policy</h2>
-      <p>
-        Your privacy is important to us. This policy outlines how we collect,
-        use, and protect your personal information.
-      </p>
-
-      <h3>Data Collection</h3>
-      <ul>
-        <li>Account information (email, username)</li>
-        <li>Chat history and interactions</li>
-        <li>Usage statistics and preferences</li>
-      </ul>
-
-      <h3>Data Protection</h3>
-      <p>
-        We employ industry-standard security measures to protect your personal
-        information and ensure data privacy.
-      </p>
-    </>
-  ),
-  about: (
-    <>
-      <h2>About AnimeChat AI</h2>
-      <p>
-        AnimeChat AI is an innovative platform that brings your favorite anime
-        characters to life through advanced artificial intelligence.
-      </p>
-
-      <h3>Our Mission</h3>
-      <p>
-        We aim to create meaningful and engaging conversations between users and
-        AI-powered anime characters, providing a unique and immersive experience
-        for anime fans worldwide.
-      </p>
-
-      <h3>Technology</h3>
-      <p>
-        Our platform utilizes state-of-the-art language models and character
-        development techniques to ensure authentic and engaging interactions.
-      </p>
-    </>
-  ),
-  disclaimer: (
-    <>
-      <h2>Disclaimer</h2>
-      <p>Please read this disclaimer carefully before using our service.</p>
-
-      <h3>AI-Generated Content</h3>
-      <ul>
-        <li>
-          Characters and responses are AI-generated and may not always be
-          accurate
-        </li>
-        <li>Conversations are simulated and for entertainment purposes only</li>
-        <li>We do not guarantee specific outcomes or experiences</li>
-      </ul>
-
-      <h3>User Responsibility</h3>
-      <p>
-        Users are responsible for their interactions and should use the service
-        appropriately and in accordance with our terms of service.
-      </p>
-    </>
-  ),
-};
+// Add background images array after FEATURED_CHARACTERS
+const BACKGROUND_IMAGES = [
+  "/images/gerrn_image-removebg-preview.png",
+  "/images/image (1).png",
+  "/images/image.png",
+];
 
 export default function LandingPage() {
+  const isMobile = useIsMobile();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [currentPolicy, setCurrentPolicy] = useState<
     keyof typeof POLICY_CONTENT | null
   >(null);
-
-  // Keep track of current theme
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window !== "undefined") {
-      return document.documentElement.classList.contains("dark")
-        ? "dark"
-        : "light";
-    }
-    return "light";
-  });
-
-  // Check for theme changes
-  useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === "class") {
-          const isDark = document.documentElement.classList.contains("dark");
-          setTheme(isDark ? "dark" : "light");
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, { attributes: true });
-
-    return () => observer.disconnect();
-  }, []);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false); // Added state for feedback dialog
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -253,386 +150,462 @@ export default function LandingPage() {
     }
   };
 
+  const POLICY_CONTENT = {
+    return: (
+      <>
+        <h2>Return Policy</h2>
+        <p>
+          As AnimeChat AI provides digital services, we do not offer traditional
+          returns. However, if you're experiencing technical issues or have
+          concerns about our service, please contact our support team at
+          support@animechat.ai.
+        </p>
+
+        <h3>Digital Content and Services</h3>
+        <ul>
+          <li>
+            All purchases are considered final once the service is accessed
+          </li>
+          <li>Premium features are non-transferable</li>
+          <li>Account access cannot be returned or transferred</li>
+        </ul>
+      </>
+    ),
+    refund: (
+      <>
+        <h2>Refund Policy</h2>
+        <p>
+          We strive to provide the best possible experience with our AI chat
+          service. Our refund policy is designed to be fair and transparent.
+        </p>
+
+        <h3>Eligibility for Refunds</h3>
+        <ul>
+          <li>Service unavailability exceeding 24 hours</li>
+          <li>Technical issues preventing access to premium features</li>
+          <li>Billing errors or unauthorized charges</li>
+        </ul>
+
+        <p>
+          To request a refund, please contact our support team with your account
+          details and reason for the refund request.
+        </p>
+      </>
+    ),
+    privacy: (
+      <>
+        <h2>Privacy Policy</h2>
+        <p>
+          Your privacy is important to us. This policy outlines how we collect,
+          use, and protect your personal information.
+        </p>
+
+        <h3>Data Collection</h3>
+        <ul>
+          <li>Account information (email, username)</li>
+          <li>Chat history and interactions</li>
+          <li>Usage statistics and preferences</li>
+        </ul>
+
+        <h3>Data Protection</h3>
+        <p>
+          We employ industry-standard security measures to protect your personal
+          information and ensure data privacy.
+        </p>
+      </>
+    ),
+    about: (
+      <>
+        <h2>About AnimeChat AI</h2>
+        <p>
+          AnimeChat AI is an innovative platform that brings your favorite anime
+          characters to life through advanced artificial intelligence.
+        </p>
+
+        <h3>Our Mission</h3>
+        <p>
+          We aim to create meaningful and engaging conversations between users
+          and AI-powered anime characters, providing a unique and immersive
+          experience for anime fans worldwide.
+        </p>
+
+        <h3>Technology</h3>
+        <p>
+          Our platform utilizes state-of-the-art language models and character
+          development techniques to ensure authentic and engaging interactions.
+        </p>
+      </>
+    ),
+    disclaimer: (
+      <>
+        <h2>Disclaimer</h2>
+        <p>Please read this disclaimer carefully before using our service.</p>
+
+        <h3>AI-Generated Content</h3>
+        <ul>
+          <li>
+            Characters and responses are AI-generated and may not always be
+            accurate
+          </li>
+          <li>
+            Conversations are simulated and for entertainment purposes only
+          </li>
+          <li>We do not guarantee specific outcomes or experiences</li>
+        </ul>
+
+        <h3>User Responsibility</h3>
+        <p>
+          Users are responsible for their interactions and should use the
+          service appropriately and in accordance with our terms of service.
+        </p>
+      </>
+    ),
+  };
+
+  // Add image transition effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) =>
+        prevIndex === BACKGROUND_IMAGES.length - 1 ? 0 : prevIndex + 1,
+      );
+    }, 5000); // Change image every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Anime background slideshow */}
-      {/* <BackgroundSlideshow 
-        interval={10000} 
-        opacity={0.25} 
-        fadeTime={2} 
-        darkMode={true} 
-      /> */}
+    <>
+      {isMobile ? (
+        // Mobile UI with video background
+        <div className="min-h-screen flex flex-col">
+          <div className="fixed inset-0">
+            <video
+              src="/images/backgrounds/videos.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-transparent" />
+          </div>
 
-      {/* Additional decorative layered backgrounds */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-blue-900/20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_1px,transparent_1px)] bg-[length:20px_20px]" />
-      </div>
-
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900/80 via-black/90 to-purple-900/80 animate-gradient-shift" />
-
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDYwIEwgNjAgMCIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIiBmaWxsPSJub25lIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20 animate-float" />
-
-      <motion.div
-        initial="initial"
-        animate="animate"
-        variants={stagger}
-        className="relative z-10 container mx-auto px-4 py-20 min-h-screen flex flex-col items-center"
-      >
-        <motion.div variants={slideIn} className="text-center mb-8">
-          <motion.h1
-            variants={fadeIn}
-            className="text-6xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 animate-pulse"
-          >
-            Chat with Anime Characters
-          </motion.h1>
-
-          <motion.p
-            variants={fadeIn}
-            className="text-lg text-center text-gray-300 mb-12 max-w-2xl mx-auto"
-          >
-            Experience immersive conversations with your favorite anime
-            characters powered by advanced AI technology.
-          </motion.p>
-        </motion.div>
-
-        <motion.div
-          variants={fadeIn}
-          whileHover={{ scale: 1.05 }}
-          className="mb-20"
-        >
-          <Button
-            size="lg"
-            className="text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:shadow-lg hover:shadow-blue-500/25 rounded-xl px-8 py-4 text-lg"
-            onClick={handleStartChatting}
-          >
-            Start Chatting Now
-          </Button>
-        </motion.div>
-
-        <motion.div
-          variants={fadeIn}
-          className="grid grid-cols-1 md:grid-cols-3 gap-12 mt-12 w-full max-w-5xl mx-auto"
-        >
-          <motion.div
-            className="text-center"
-            whileHover={{ y: -10 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="mb-6 flex justify-center">
-              <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-blue-500/30 transform hover:rotate-12 transition-transform duration-300">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 text-blue-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
+          <div className="relative z-10 flex flex-col min-h-screen">
+            <div className="flex-1 p-6 flex flex-col">
+              <div className="mb-auto pt-8">
+                <h1 className="text-4xl font-bold text-white mb-2">
+                  AnimeChat AI
+                </h1>
+                <p className="text-lg text-gray-200">
+                  Chat with your favorite anime characters
+                </p>
               </div>
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-3">
-              Multiple Characters
-            </h3>
-            <p className="text-gray-400">
-              Chat with a diverse cast of anime characters, each with their own
-              unique personality and backstory.
-            </p>
-          </motion.div>
 
-          <motion.div
-            className="text-center"
-            whileHover={{ y: -10 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="mb-6 flex justify-center">
-              <div className="w-16 h-16 bg-purple-600/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-purple-500/30 transform hover:rotate-12 transition-transform duration-300">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 text-purple-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m0 2a8 8 0 0 0-8 8c0 4.418 3.582 8 8 8s8-3.582 8-8c0-4.418-3.582-8-8-8"></path>
-                  <path d="M12 6v6l4 2"></path>
-                </svg>
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-3">
-              AI-Powered Responses
-            </h3>
-            <p className="text-gray-400">
-              Experience natural conversations powered by advanced language
-              models that maintain character authenticity.
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="text-center"
-            whileHover={{ y: -10 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="mb-6 flex justify-center">
-              <div className="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-blue-500/30 transform hover:rotate-12 transition-transform duration-300">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8 text-blue-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                </svg>
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-3">
-              Real-time Chat
-            </h3>
-            <p className="text-gray-400">
-              Enjoy instant responses and seamless conversation flow with our
-              real-time chat interface.
-            </p>
-          </motion.div>
-        </motion.div>
-
-        {/* New Featured Characters Section */}
-        <motion.div
-          variants={fadeIn}
-          className="w-full max-w-7xl mx-auto mt-32"
-        >
-          <motion.h2
-            variants={fadeIn}
-            className="text-4xl font-bold text-center text-white mb-12"
-          >
-            Featured Characters
-          </motion.h2>
-          <motion.div
-            variants={stagger}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {FEATURED_CHARACTERS.map((character, index) => (
-              <motion.div
-                key={character.name}
-                variants={fadeIn}
-                whileHover={{ y: -10, scale: 1.02 }}
-                className="relative group"
-              >
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-white/5 to-white/10 p-1">
-                  <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500 {character.color}" />
-                  <div className="relative bg-black/40 backdrop-blur-sm rounded-lg p-6 h-full">
-                    <motion.div
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: index * 0.2 }}
-                    >
-                      <img
-                        src={character.image}
-                        alt={character.name}
-                        className="w-full h-64 object-cover rounded-lg mb-4 transform group-hover:scale-105 transition-transform duration-500"
+              <div className="absolute top-[36%] right-5 transform -translate-y-1/2">
+                <div className="relative">
+                  <div className="max-w-[200px] text-right">
+                    <Suspense fallback={<div>Loading...</div>}>
+                      <TypeWriter
+                        text={[
+                          "Hi there! 👋",
+                          "Want to chat with me?",
+                          "I'm an anime character!",
+                          "Let's talk about anime...",
+                          "What's your favorite show?",
+                        ]}
+                        speed={40}
+                        className="text-white font-medium text-xl drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]"
                       />
-                      <h3 className="text-xl font-semibold text-white mb-2">
-                        {character.name}
-                      </h3>
-                      <p className="text-gray-300">{character.description}</p>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleStartChatting}
-                        className="mt-4 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg text-white font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300 w-full"
-                      >
-                        Chat Now
-                      </motion.button>
-                    </motion.div>
+                    </Suspense>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
-
-        <motion.div
-          variants={fadeIn}
-          className="w-full max-w-2xl mx-auto mt-32 bg-white/5 backdrop-blur-lg rounded-xl p-8 border border-white/10"
-        >
-          <h2 className="text-3xl font-bold text-white text-center mb-8">
-            Share Your Feedback
-          </h2>
-          <form onSubmit={handleSubmitFeedback} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Name
-                </label>
-                <Input
-                  id="name"
-                  name="name"
-                  placeholder="Your name"
-                  required
-                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                />
               </div>
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                >
-                  Email
-                </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="your@email.com"
-                  required
-                  className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-            <div>
-              <label
-                htmlFor="message"
-                className="block text-sm font-medium text-gray-300 mb-2"
-              >
-                Message
-              </label>
-              <Textarea
-                id="message"
-                name="message"
-                placeholder="Share your thoughts..."
-                required
-                className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 min-h-[120px]"
-              />
-            </div>
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex justify-center"
-            >
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 rounded-xl transition-all duration-300"
-              >
-                Submit Feedback
-              </Button>
-            </motion.div>
-          </form>
-        </motion.div>
-      </motion.div>
 
-      <motion.footer
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="relative z-10 w-full bg-black/30 backdrop-blur-sm border-t border-white/10 py-8 mt-20"
-      >
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-            <div className="text-center md:text-left">
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Contact Us
-              </h3>
-              <div className="flex flex-col space-y-2 items-center md:items-start">
-                <a
-                  href="mailto:support@animechat.ai"
-                  className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
-                >
-                  <FaEnvelope className="w-4 h-4" />
-                  support@animechat.ai
-                </a>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <p className="text-sm text-gray-400 mb-4">
-                © {new Date().getFullYear()} AnimeChat AI. All rights reserved.
-              </p>
-              <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-gray-400">
+              <div className="space-y-4 mb-8">
                 <button
-                  onClick={() => setCurrentPolicy("return")}
-                  className="hover:text-white transition-colors"
+                  className="absolute top-[50%] right-[50%] transform translate-x-1/2 -translate-y-1/2 w-40 h-12 bg-[#FF6584] text-white font-bold text-lg rounded-lg shadow-lg hover:bg-[#ff4f73] transition-all"
+                  onClick={handleStartChatting}
                 >
-                  Return Policy
+                  Start Chatting
                 </button>
-                <button
-                  onClick={() => setCurrentPolicy("refund")}
-                  className="hover:text-white transition-colors"
-                >
-                  Refund Policy
-                </button>
-                <button
-                  onClick={() => setCurrentPolicy("privacy")}
-                  className="hover:text-white transition-colors"
-                >
-                  Privacy Policy
-                </button>
-                <button
-                  onClick={() => setCurrentPolicy("about")}
-                  className="hover:text-white transition-colors"
-                >
-                  About
-                </button>
-                <button
-                  onClick={() => setCurrentPolicy("disclaimer")}
-                  className="hover:text-white transition-colors"
-                >
-                  Disclaimer
-                </button>
-              </div>
-            </div>
-
-            <div className="text-center md:text-right">
-              <h3 className="text-lg font-semibold text-white mb-2">
-                Follow Us
-              </h3>
-              <div className="flex justify-center md:justify-end space-x-4">
-                <a
-                  href="https://twitter.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <FaTwitter className="w-5 h-5" />
-                </a>
-                <a
-                  href="https://github.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <FaGithub className="w-5 h-5" />
-                </a>
               </div>
             </div>
           </div>
         </div>
-      </motion.footer>
+      ) : (
+        // Desktop UI with AnimeCon-inspired design
+        <div className="min-h-screen bg-[#0A0F1F] relative overflow-hidden">
+          {/* Curved background shape */}
+          <div className="absolute inset-0">
+            <svg
+              className="absolute h-[210vh] w-[320vh] left-[0vh] top-[-96vh]  bottome-[0vh] write-[20vh]"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M0,0 C40,0 40,100 0,100"
+                fill="#1B2340"
+                className="opacity-60"
+              />
+            </svg>
+          </div>
 
-      <PolicyDialog
-        open={currentPolicy !== null}
-        onOpenChange={(open) => !open && setCurrentPolicy(null)}
-        title={
-          currentPolicy
-            ? `${currentPolicy.charAt(0).toUpperCase()}${currentPolicy.slice(1)} Policy`
-            : ""
-        }
-        content={currentPolicy ? POLICY_CONTENT[currentPolicy] : null}
-      />
+          {/* Decorative patterns */}
+          <div className="absolute top-0 right-0 p-8">
+            <div className="grid grid-cols-3 gap-2">
+              {[...Array(9)].map((_, i) => (
+                <div key={i} className="w-2 h-2 rounded-full bg-[#FF6584]" />
+              ))}
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-0 p-12">
+            <div className="grid grid-cols-4 gap-2">
+              {[...Array(8)].map((i, _) => (
+                <div
+                  key={i}
+                  className="w-2 h-2 rounded-full bg-white opacity-50"
+                />
+              ))}
+            </div>
+          </div>
 
-      <AuthDialog
-        open={showAuthDialog}
-        onOpenChange={setShowAuthDialog}
-        onSuccess={handleSuccessfulAuth}
-      />
-    </div>
+          {/* Main content */}
+          <div className="relative z-10 container mx-auto px-4">
+            <div className="flex justify-end items-center pt-6">
+              <div className="flex items-center space-x-2">
+                <span className="text-white font-bold text-lg uppercase tracking-wider">
+                  AnimeChat AI
+                </span>
+                <svg
+                  className="w-4 h-4 text-[#FF6584]"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Replace the static background image with animated slideshow */}
+            <div className="absolute left-[-95vh] top-[0%] w-[240vh] h-[100vh]">
+              <motion.img
+                key={currentImageIndex}
+                src={BACKGROUND_IMAGES[currentImageIndex]}
+                alt="Anime Character"
+                className="w-full h-full object-contain"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1 }}
+              />
+            </div>
+
+            <motion.div
+              initial="initial"
+              animate="animate"
+              variants={fadeIn}
+              className="flex min-h-[calc(100vh-80px)] items-center"
+            >
+              <div className="max-w-2xl">
+                <motion.h1
+                  variants={slideIn}
+                  className="text- text-[3.7vw] font-black text-white uppercase  absolute left-[44vw] top-[8vw] "
+                >
+                  Chat with Anime
+                </motion.h1>
+                <motion.p
+                  variants={slideIn}
+                  className="text-[#FF6584] text-2xl font-medium mb-8 absolute left-[55vw] top-[17vw] transform -translate-x-1/2"
+                >
+                  <div className="relative">
+                    <div className="max-w-[300px] text-left">
+                      <Suspense fallback={<div>Loading...</div>}>
+                        <TypeWriter
+                          text={[
+                            "AI-Powered Conversations",
+                            "Experience the Future",
+                            "Talk with Smart AI!",
+                          ]}
+                          speed={40}
+                          className="text-[#FF6584] font-medium text-2xl"
+                        />
+                      </Suspense>
+                    </div>
+                  </div>
+                </motion.p>
+
+                <motion.button
+                  variants={slideIn}
+                  className="bg-[#FF6584] text-white font-bold uppercase py-4 px-8 rounded-full text-lg hover:bg-[#ff4f73] transition-colors absolute left-[56vw] top-[25vw] transform -translate-x-1/2"
+                  onClick={handleStartChatting}
+                >
+                  Start Chatting Now
+                </motion.button>
+              </div>
+            </motion.div>
+
+            {/* Featured Characters */}
+            {/* <motion.div
+              variants={fadeIn}
+              className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16"
+            >
+              {FEATURED_CHARACTERS.map((character) => (
+                <div
+                  key={character.name}
+                  className="bg-[#1B2340] rounded-lg p-6 hover:transform hover:scale-105 transition-transform duration-300"
+                >
+                  <h3 className="text-white text-xl font-bold mb-2">
+                    {character.name}
+                  </h3>
+                  <p className="text-gray-300 mb-4">{character.description}</p>
+                  <button
+                    className="bg-[#FF6584] text-white px-4 py-2 rounded-full hover:bg-[#ff4f73] transition-colors"
+                    onClick={handleStartChatting}
+                  >
+                    Chat Now
+                  </button>
+                </div>
+              ))}
+            </motion.div> */}
+
+            {/* Feedback Dialog */}
+            <Dialog
+              open={showFeedbackDialog}
+              onOpenChange={setShowFeedbackDialog}
+            >
+              <DialogContent className="bg-[#0A0F1F] border-blue-500/20">
+                <DialogHeader>
+                  <DialogTitle className="text-blue-300">
+                    Share Your Feedback
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmitFeedback} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        htmlFor="name"
+                        className="block text-sm font-medium text-blue-300 mb-2"
+                      >
+                        Name
+                      </label>
+                      <Input
+                        id="name"
+                        name="name"
+                        placeholder="Your name"
+                        required
+                        className="bg-blue-900/10 border-blue-500/20 text-blue-100 placeholder:text-blue-400/50 focus:border-cyan-500"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-blue-300 mb-2"
+                      >
+                        Email
+                      </label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="your@email.com"
+                        required
+                        className="bg-blue-900/10 border-blue-500/20 text-blue-100 placeholder:text-blue-400/50 focus:border-cyan-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="message"
+                      className="block text-sm font-medium text-blue-300 mb-2"
+                    >
+                      Message
+                    </label>
+                    <Textarea
+                      id="message"
+                      name="message"
+                      placeholder="Share your thoughts..."
+                      required
+                      className="bg-blue-900/10 border-blue-500/20 text-blue-100 placeholder:text-blue-400/50 focus:border-cyan-500 min-h-[120px]"
+                    />
+                  </div>
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex justify-center"
+                  >
+                    <Button
+                      type="submit"
+                      className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-3 rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(0,149,255,0.3)] hover:shadow-[0_0_30px_rgba(0,149,255,0.5)]"
+                    >
+                      Send Feedback
+                    </Button>
+                  </motion.div>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <div className="absolute top-8 right-[30vh] flex items-center space-x-4 text-[#FF6584]">
+              <div className="text-center">
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-blue-400/80">
+                  {Object.keys(POLICY_CONTENT).map((policy) => (
+                    <button
+                      key={policy}
+                      onClick={() =>
+                        setCurrentPolicy(policy as keyof typeof POLICY_CONTENT)
+                      }
+                      className="hover:text-cyan-400 transition-colors"
+                    >
+                      {policy.charAt(0).toUpperCase() + policy.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-blue-400/80 mb-4">
+                © {new Date().getFullYear()} AnimeChat AI. All rights reserved.
+              </p>
+            </div>
+
+            {/* Social Links */}
+            <div className="absolute bottom-8 right-8 flex items-center space-x-4 text-[#FF6584]">
+              <motion.button
+                onClick={() => setShowFeedbackDialog(true)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaComment className="w-10 h-10 cursor-pointer hover:text-white transition-colors" />
+              </motion.button>
+              <FaTwitter className="w-10 h-10 cursor-pointer hover:text-white transition-colors" />
+              <FaInstagram className="w-10 h-10 cursor-pointer hover:text-white transition-colors" />
+              <FaGithub className="w-10 h-10 cursor-pointer hover:text-white transition-colors" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auth Dialog */}
+      <Suspense fallback={null}>
+        {showAuthDialog && (
+          <AuthDialog
+            open={showAuthDialog}
+            onOpenChange={setShowAuthDialog}
+            onSuccess={handleSuccessfulAuth}
+          />
+        )}
+      </Suspense>
+      {/* Policy Dialog */}
+      <Suspense fallback={null}>
+        {currentPolicy && (
+          <PolicyDialog
+            open={currentPolicy !== null}
+            onOpenChange={() => setCurrentPolicy(null)}
+            title={`${
+              currentPolicy.charAt(0).toUpperCase() + currentPolicy.slice(1)
+            } Policy`}
+            content={POLICY_CONTENT[currentPolicy]}
+          />
+        )}
+      </Suspense>
+    </>
   );
 }
