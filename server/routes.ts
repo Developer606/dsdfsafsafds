@@ -1143,6 +1143,50 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Username availability check endpoint
+  app.get("/api/auth/check-username/:username", async (req, res) => {
+    try {
+      const { username } = req.params;
+      if (!username || username.trim().length < 3) {
+        return res.status(400).json({
+          available: false,
+          error: "Username must be at least 3 characters"
+        });
+      }
+
+      const existingUser = await storage.getUserByUsername(username);
+      return res.json({
+        available: !existingUser,
+        message: existingUser ? "Username already taken" : "Username available"
+      });
+    } catch (error: any) {
+      console.error("Error checking username availability:", error);
+      res.status(500).json({ error: "Failed to check username availability" });
+    }
+  });
+
+  // Email availability check endpoint
+  app.get("/api/auth/check-email/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      if (!email || !isValidEmail(email)) {
+        return res.status(400).json({
+          available: false,
+          error: "Invalid email format"
+        });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      return res.json({
+        available: !existingUser,
+        message: existingUser ? "Email already registered" : "Email available"
+      });
+    } catch (error: any) {
+      console.error("Error checking email availability:", error);
+      res.status(500).json({ error: "Failed to check email availability" });
+    }
+  });
+
   // Add complaint submission endpoint
   app.post("/api/complaints", upload.single("image"), async (req, res) => {
     try {

@@ -57,6 +57,15 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  
+  // States for real-time username and email validation
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameMessage, setUsernameMessage] = useState<string>("");
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  
+  const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
+  const [emailMessage, setEmailMessage] = useState<string>("");
+  const [checkingEmail, setCheckingEmail] = useState(false);
   const { toast } = useToast();
 
   const loginForm = useForm({
@@ -474,14 +483,42 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground/50" />
                     <Input
                       id="username"
-                      {...registerForm.register("username")}
-                      className="pl-10 bg-background/50"
+                      {...registerForm.register("username", {
+                        onChange: async (e) => {
+                          const username = e.target.value;
+                          if (username.length >= 3) {
+                            setCheckingUsername(true);
+                            try {
+                              const res = await fetch(`/api/auth/check-username/${username}`);
+                              const data = await res.json();
+                              setUsernameAvailable(data.available);
+                              setUsernameMessage(data.message);
+                            } catch (error) {
+                              console.error("Error checking username:", error);
+                            } finally {
+                              setCheckingUsername(false);
+                            }
+                          } else {
+                            setUsernameAvailable(null);
+                            setUsernameMessage("");
+                          }
+                        }
+                      })}
+                      className={`pl-10 bg-background/50 ${
+                        usernameAvailable === true ? "border-green-500" : 
+                        usernameAvailable === false ? "border-red-500" : ""
+                      }`}
                       placeholder="Choose a username"
                     />
                   </div>
                   {registerForm.formState.errors.username && (
                     <p className="text-sm text-destructive mt-1">
                       {registerForm.formState.errors.username.message}
+                    </p>
+                  )}
+                  {usernameMessage && !registerForm.formState.errors.username && (
+                    <p className={`text-sm mt-1 ${usernameAvailable ? "text-green-500" : "text-destructive"}`}>
+                      {checkingUsername ? "Checking username..." : usernameMessage}
                     </p>
                   )}
                 </div>
@@ -494,14 +531,42 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     <Input
                       id="email"
                       type="email"
-                      {...registerForm.register("email")}
-                      className="pl-10 bg-background/50"
+                      {...registerForm.register("email", {
+                        onChange: async (e) => {
+                          const email = e.target.value;
+                          if (email && email.includes('@') && email.includes('.')) {
+                            setCheckingEmail(true);
+                            try {
+                              const res = await fetch(`/api/auth/check-email/${email}`);
+                              const data = await res.json();
+                              setEmailAvailable(data.available);
+                              setEmailMessage(data.message);
+                            } catch (error) {
+                              console.error("Error checking email:", error);
+                            } finally {
+                              setCheckingEmail(false);
+                            }
+                          } else {
+                            setEmailAvailable(null);
+                            setEmailMessage("");
+                          }
+                        }
+                      })}
+                      className={`pl-10 bg-background/50 ${
+                        emailAvailable === true ? "border-green-500" : 
+                        emailAvailable === false ? "border-red-500" : ""
+                      }`}
                       placeholder="Enter your email"
                     />
                   </div>
                   {registerForm.formState.errors.email && (
                     <p className="text-sm text-destructive mt-1">
                       {registerForm.formState.errors.email.message}
+                    </p>
+                  )}
+                  {emailMessage && !registerForm.formState.errors.email && (
+                    <p className={`text-sm mt-1 ${emailAvailable ? "text-green-500" : "text-destructive"}`}>
+                      {checkingEmail ? "Checking email..." : emailMessage}
                     </p>
                   )}
                 </div>
