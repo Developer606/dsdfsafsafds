@@ -101,7 +101,7 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
   });
 
   const login = useMutation({
-    mutationFn: async (data: { username: string; password: string }) => {
+    mutationFn: async (data: { username: string; password: string; rememberMe?: boolean }) => {
       const res = await apiRequest("POST", "/api/login", data);
       if (!res.ok) {
         const error = await res.json();

@@ -1209,6 +1209,15 @@ export async function registerRoutes(app: Express) {
             });
           }
 
+          // Set session expiration based on remember me option
+          if (req.body.rememberMe) {
+            // If remember me is checked, set cookie to expire in 30 days
+            req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+          } else {
+            // Otherwise, use default session expiration (typically browser session)
+            req.session.cookie.expires = undefined;
+          }
+          
           req.logIn(authenticatedUser, async (err) => {
             if (err) return next(err);
             await storage.updateLastLogin(authenticatedUser.id);
