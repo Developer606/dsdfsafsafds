@@ -396,6 +396,31 @@ export class DatabaseStorage implements IStorage {
       .set({ password: hashedPassword })
       .where(eq(users.id, userId));
   }
+  
+  async updateUserProfile(
+    userId: number,
+    data: {
+      fullName?: string;
+      age?: number;
+      gender?: string;
+      bio?: string;
+      profileCompleted?: boolean;
+    },
+  ): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        fullName: data.fullName,
+        age: data.age,
+        gender: data.gender,
+        bio: data.bio,
+        profileCompleted: data.profileCompleted ?? true,
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  }
 
   async createPendingVerification(
     data: InsertPendingVerification,

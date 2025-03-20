@@ -692,6 +692,45 @@ export async function registerRoutes(app: Express) {
   app.get("/api/user", async (req, res) => {
     res.json(req.user);
   });
+  
+  // Update user profile endpoint
+  app.post("/api/user/profile", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    try {
+      const { fullName, age, gender, bio } = req.body;
+      
+      // Validate the input data
+      if (!fullName || fullName.trim() === "") {
+        return res.status(400).json({ error: "Full name is required" });
+      }
+      
+      if (age === undefined || isNaN(Number(age)) || Number(age) < 13) {
+        return res.status(400).json({ error: "Valid age is required (must be 13 or older)" });
+      }
+      
+      if (!gender || gender.trim() === "") {
+        return res.status(400).json({ error: "Gender is required" });
+      }
+      
+      // Update the user profile
+      const updatedUser = await storage.updateUserProfile(req.user.id, {
+        fullName,
+        age: Number(age),
+        gender,
+        bio,
+        profileCompleted: true,
+      });
+      
+      // Return the updated user
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
 
   app.post("/api/custom-characters", async (req, res) => {
     try {
