@@ -31,6 +31,7 @@ import {
   Bell,
   AlertCircle,
   CreditCard,
+  Edit2,
 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { SubscriptionManagement } from "@/components/subscription-management";
@@ -274,6 +275,15 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Profile dialog states
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    fullName: user?.fullName || "",
+    age: user?.age || "",
+    gender: user?.gender || "",
+    bio: user?.bio || ""
+  });
 
   if (isLoading) {
     return (
@@ -677,6 +687,51 @@ export default function Home() {
                   </div>
                   <h2 className="text-xl font-bold">{user?.username}</h2>
                   <p className="text-gray-400">{user?.email}</p>
+                </div>
+                
+                {/* Personal Information Section */}
+                <div className="bg-gray-800/60 rounded-lg border border-gray-700 p-4 mb-5">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-lg font-bold">Personal Information</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setProfileForm({
+                          fullName: user?.fullName || "",
+                          age: user?.age || "",
+                          gender: user?.gender || "",
+                          bio: user?.bio || ""
+                        });
+                        setShowProfileDialog(true);
+                      }}
+                      className="text-red-400 hover:bg-red-400/10 hover:text-red-300 p-1 h-8"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="border-b border-gray-700 pb-2">
+                      <p className="text-xs text-gray-400">Full Name</p>
+                      <p className="text-sm">{user?.fullName || "Not specified"}</p>
+                    </div>
+                    
+                    <div className="border-b border-gray-700 pb-2">
+                      <p className="text-xs text-gray-400">Age</p>
+                      <p className="text-sm">{user?.age || "Not specified"}</p>
+                    </div>
+                    
+                    <div className="border-b border-gray-700 pb-2">
+                      <p className="text-xs text-gray-400">Gender</p>
+                      <p className="text-sm">{user?.gender || "Not specified"}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-gray-400">Bio</p>
+                      <p className="text-sm">{user?.bio || "Not specified"}</p>
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="bg-gray-800/60 rounded-lg border border-gray-700 p-4 mb-5">
