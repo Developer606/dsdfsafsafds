@@ -50,7 +50,8 @@ import {
   getAllApiKeys,
   verifyAdminCredentials,
   addAdminUser,
-  updateAdminUser
+  updateAdminUser,
+  getAdminUser
 } from "./admin-db";
 
 // Configure multer for file uploads
