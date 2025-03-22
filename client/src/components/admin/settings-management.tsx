@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -84,8 +84,18 @@ export function SettingsManagement() {
   const [activeTab, setActiveTab] = useState("apiKeys");
   const [isNewKeyDialogOpen, setIsNewKeyDialogOpen] = useState(false);
 
+  // Define interface for API key
+  interface ApiKey {
+    id: number;
+    service: string;
+    key: string;
+    description?: string;
+    createdAt: string;
+    updatedAt?: string;
+  }
+  
   // API Keys Tab
-  const { data: apiKeys = [], isLoading: isLoadingApiKeys, refetch: refetchApiKeys } = useQuery({
+  const { data: apiKeys = [], isLoading: isLoadingApiKeys, refetch: refetchApiKeys } = useQuery<ApiKey[]>({
     queryKey: ["/api/admin/api-keys"],
     staleTime: 60000, // 1 minute
   });
@@ -126,8 +136,17 @@ export function SettingsManagement() {
     addApiKey.mutate(data);
   };
 
+  // Define interface for admin profile
+  interface AdminProfile {
+    id: number;
+    username: string;
+    email: string;
+    createdAt: string;
+    updatedAt?: string;
+  }
+  
   // Admin Profile Tab
-  const { data: adminProfile, isLoading: isLoadingProfile } = useQuery({
+  const { data: adminProfile, isLoading: isLoadingProfile } = useQuery<AdminProfile>({
     queryKey: ["/api/admin/profile"],
     staleTime: 60000, // 1 minute
   });
@@ -141,14 +160,14 @@ export function SettingsManagement() {
   });
 
   // Set form values when profile data is loaded
-  useState(() => {
+  useEffect(() => {
     if (adminProfile) {
       profileForm.reset({
         username: adminProfile.username,
         email: adminProfile.email,
       });
     }
-  });
+  }, [adminProfile]);
 
   const updateProfile = useMutation({
     mutationFn: async (data: z.infer<typeof profileUpdateSchema>) => {
