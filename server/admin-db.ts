@@ -216,3 +216,38 @@ export async function getAllApiKeys(): Promise<typeof apiKeys.$inferSelect[]> {
     return [];
   }
 }
+
+// Update admin user details
+export async function updateAdminUser(userId: number, updates: {
+  username?: string;
+  email?: string;
+  password?: string;
+}): Promise<boolean> {
+  try {
+    const updateData: any = { ...updates };
+    
+    // Hash the password if it's being updated
+    if (updates.password) {
+      updateData.password = await hashPassword(updates.password);
+    }
+    
+    await adminDb.update(adminUsers)
+      .set(updateData)
+      .where(eq(adminUsers.id, userId));
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating admin user:', error);
+    return false;
+  }
+}
+
+// Get admin user details
+export async function getAdminUser(username: string): Promise<typeof adminUsers.$inferSelect | undefined> {
+  try {
+    return await adminDb.select().from(adminUsers).where(eq(adminUsers.username, username)).get();
+  } catch (error) {
+    console.error('Error retrieving admin user:', error);
+    return undefined;
+  }
+}

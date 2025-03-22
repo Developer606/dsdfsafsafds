@@ -44,6 +44,14 @@ import {
   deleteScheduledBroadcast,
 } from "./notification-db";
 import { getPayPalConfig } from "./config/index";
+import {
+  getApiKey,
+  setApiKey,
+  getAllApiKeys,
+  verifyAdminCredentials,
+  addAdminUser,
+  updateAdminUser
+} from "./admin-db";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -655,6 +663,122 @@ export async function registerRoutes(app: Express) {
     } catch (error: any) {
       console.error("Error deleting plan:", error);
       res.status(500).json({ error: "Failed to delete plan" });
+    }
+  });
+  
+  // Admin API key management endpoints
+  app.get("/api/admin/api-keys", isAdmin, async (req, res) => {
+    try {
+      const apiKeys = await getAllApiKeys();
+      res.json(apiKeys);
+    } catch (error: any) {
+      console.error("Error fetching API keys:", error);
+      res.status(500).json({ error: "Failed to fetch API keys" });
+    }
+  });
+  
+  app.post("/api/admin/api-keys", isAdmin, async (req, res) => {
+    try {
+      const { service, key, description } = req.body;
+      
+      if (!service || !key) {
+        return res.status(400).json({ error: "Service name and key are required" });
+      }
+      
+      const success = await setApiKey(service, key, description);
+      
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ error: "Failed to save API key" });
+      }
+    } catch (error: any) {
+      console.error("Error saving API key:", error);
+      res.status(500).json({ error: "Failed to save API key" });
+    }
+  });
+  
+  // Admin user profile management endpoints
+  app.get("/api/admin/profile", isAdmin, async (req, res) => {
+    try {
+      // Use username from session to get admin details
+      const adminUsername = req.user?.username;
+      if (!adminUsername) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const adminUser = await getAdminUser(adminUsername);
+      
+      if (!adminUser) {
+        return res.status(404).json({ error: "Admin user not found" });
+      }
+      
+      // Don't send the password hash
+      const { password, ...adminDetails } = adminUser;
+      
+      res.json(adminDetails);
+    } catch (error: any) {
+      console.error("Error fetching admin profile:", error);
+      res.status(500).json({ error: "Failed to fetch admin profile" });
+    }
+  });
+  
+  app.patch("/api/admin/profile", isAdmin, async (req, res) => {
+    try {
+      const { username, email, currentPassword, newPassword } = req.body;
+      
+      // Get current admin user from session
+      const adminUsername = req.user?.username;
+      if (!adminUsername) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const adminUser = await getAdminUser(adminUsername);
+      if (!adminUser) {
+        return res.status(404).json({ error: "Admin user not found" });
+      }
+      
+      // If changing password, verify the current password
+      if (newPassword) {
+        if (!currentPassword) {
+          return res.status(400).json({ error: "Current password is required to set a new password" });
+        }
+        
+        const isValid = await verifyAdminCredentials(adminUsername, currentPassword);
+        if (!isValid) {
+          return res.status(401).json({ error: "Current password is incorrect" });
+        }
+      }
+      
+      // Prepare update object
+      const updates: any = {};
+      if (username && username !== adminUser.username) updates.username = username;
+      if (email && email !== adminUser.email) updates.email = email;
+      if (newPassword) updates.password = newPassword;
+      
+      // Only update if there are changes
+      if (Object.keys(updates).length === 0) {
+        return res.json({ message: "No changes were made" });
+      }
+      
+      const success = await updateAdminUser(adminUser.id, updates);
+      
+      if (success) {
+        // Return updated admin details
+        const updatedAdmin = await getAdminUser(updates.username || adminUsername);
+        const { password, ...adminDetails } = updatedAdmin || { password: '' };
+        
+        res.json({ 
+          success: true, 
+          message: "Admin profile updated successfully",
+          admin: adminDetails
+        });
+      } else {
+        res.status(500).json({ error: "Failed to update admin profile" });
+      }
+    } catch (error: any) {
+      console.error("Error updating admin profile:", error);
+      res.status(500).json({ error: "Failed to update admin profile" });
     }
   });
 
