@@ -768,6 +768,12 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-4">
           <NotificationPopover />
+          <Link href="/admin/dashboard/settings">
+            <Button variant="outline" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
+            </Button>
+          </Link>
           <Button variant="outline" className="gap-2" onClick={handleLogout}>
             <LogOut className="h-4 w-4" />
             Logout
