@@ -3,7 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./db";
 import { initializeNotifications } from "./notification-db";
-import { initializeAdminDb } from "./admin-db";
 import { startScheduler } from "./scheduler";
 import path from "path";
 
