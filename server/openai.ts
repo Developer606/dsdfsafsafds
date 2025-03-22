@@ -22,20 +22,35 @@ try {
 
 // First try to get token from admin database, then fallback to environment variable
 let token: string | null = null;
+let tokenInitialized = false;
 
-// Using an IIFE to allow async operation at module level
-(async () => {
-  token = await getApiKey("GITHUB_TOKEN");
-  
-  // Fallback to environment variable if not in database
-  if (!token) {
-    token = process.env["GITHUB_TOKEN"] || null;
+// Function to initialize the token
+async function initializeToken(): Promise<string | null> {
+  if (tokenInitialized) {
+    return token;
   }
   
-  if (!token) {
-    console.error("Missing GITHUB_TOKEN. API responses will use fallback messages.");
+  try {
+    // Get token from admin database
+    token = await getApiKey("GITHUB_TOKEN");
+    
+    // Fallback to environment variable if not in database
+    if (!token) {
+      token = process.env["GITHUB_TOKEN"] || null;
+    }
+    
+    if (!token) {
+      console.warn("Missing GITHUB_TOKEN. API responses will use fallback messages.");
+    }
+    
+    tokenInitialized = true;
+    return token;
+  } catch (error) {
+    console.error("Error initializing token:", error);
+    tokenInitialized = true;
+    return null;
   }
-})();
+}
 
 export async function generateCharacterResponse(
   character: Character,
@@ -45,15 +60,18 @@ export async function generateCharacterResponse(
   script?: string,
 ): Promise<string> {
   try {
+    // Initialize token if not already done
+    const currentToken = await initializeToken();
+    
     // If no token available, return fallback message
-    if (!token) {
+    if (!currentToken) {
       console.warn("No API token available for LLM service");
       return "I'm having trouble connecting to my brain right now. Could we chat a bit later?";
     }
     
     const client = ModelClient(
       "https://models.inference.ai.azure.com",
-      new AzureKeyCredential(token),
+      new AzureKeyCredential(currentToken),
     );
 
     const scriptInstruction =
@@ -131,6 +149,9 @@ Assistant (${character.name}): `;
 
 // Entry point
 export async function main() {
+  // Initialize token first
+  await initializeToken();
+  
   const character: Character = {
     id: "test-character",
     name: "Alex",
