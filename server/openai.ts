@@ -4,21 +4,38 @@ import { type Character } from "@shared/characters";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { getApiKey } from "./admin-db";
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Read API key from JSON file
-const apiKeys = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "api-keys.json"), "utf8"),
-);
-
-const token = process.env["GITHUB_TOKEN"];
-
-if (!token) {
-  throw new Error("Missing GITHUB_TOKEN. Please set it in your environment.");
+// Legacy JSON file support for backward compatibility
+let apiKeys = {};
+try {
+  apiKeys = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "api-keys.json"), "utf8"),
+  );
+} catch (error) {
+  console.log("api-keys.json file not found or invalid, using admin database instead");
 }
+
+// First try to get token from admin database, then fallback to environment variable
+let token: string | null = null;
+
+// Using an IIFE to allow async operation at module level
+(async () => {
+  token = await getApiKey("GITHUB_TOKEN");
+  
+  // Fallback to environment variable if not in database
+  if (!token) {
+    token = process.env["GITHUB_TOKEN"] || null;
+  }
+  
+  if (!token) {
+    console.error("Missing GITHUB_TOKEN. API responses will use fallback messages.");
+  }
+})();
 
 export async function generateCharacterResponse(
   character: Character,
@@ -28,6 +45,12 @@ export async function generateCharacterResponse(
   script?: string,
 ): Promise<string> {
   try {
+    // If no token available, return fallback message
+    if (!token) {
+      console.warn("No API token available for LLM service");
+      return "I'm having trouble connecting to my brain right now. Could we chat a bit later?";
+    }
+    
     const client = ModelClient(
       "https://models.inference.ai.azure.com",
       new AzureKeyCredential(token),
