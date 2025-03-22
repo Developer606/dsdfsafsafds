@@ -111,7 +111,8 @@ Assistant (${character.name}): `;
       throw response.body.error;
     }
 
-    let generatedText = response.body.choices[0].message.content.trim();
+    // Safely extract text content with fallback
+    let generatedText = response.body.choices?.[0]?.message?.content?.trim() || "";
 
     if (generatedText) {
       generatedText = generatedText.replace(
@@ -131,7 +132,10 @@ Assistant (${character.name}): `;
 // Entry point
 export async function main() {
   const character: Character = {
+    id: "test-character",
     name: "Alex",
+    avatar: "default-avatar.png",
+    description: "A friendly assistant",
     persona:
       "A friendly AI assistant who loves to chat and help with tech questions.",
   };

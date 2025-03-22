@@ -32,6 +32,7 @@ export async function initializeAdminDb() {
     CREATE TABLE IF NOT EXISTS admin_users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL UNIQUE,
       password TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'admin',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -67,6 +68,7 @@ async function initializeDefaultAdmin() {
       const hashedPassword = await hashPassword('admin123');
       await adminDb.insert(adminUsers).values({
         username: 'SysRoot_99',
+        email: 'admin@animechat.app',
         password: hashedPassword,
         role: 'admin',
       });

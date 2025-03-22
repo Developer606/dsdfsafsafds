@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./db";
 import { initializeNotifications } from "./notification-db";
 import { startScheduler } from "./scheduler";
+import { initializeAdminDb } from "./admin-db";
 import path from "path";
 
 const app = express();
@@ -70,6 +71,10 @@ app.use((req, res, next) => {
     // Run database migrations before starting the server
     await runMigrations();
 
+    // Initialize admin database
+    await initializeAdminDb();
+    log("Admin database initialized successfully");
+    
     // Initialize notifications database
     await initializeNotifications();
     log("Notifications database initialized successfully");
