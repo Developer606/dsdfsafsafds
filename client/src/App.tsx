@@ -11,7 +11,6 @@ import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import { ComplaintsSection } from "@/components/complaints-section";
 import { FeedbackSection } from "@/components/feedback-section";
-import { SettingsManagement } from "@/components/admin/settings-management";
 import { ProtectedRoute } from "./lib/protected-route";
 import { ThemeProvider } from "./lib/theme-context";
 
@@ -48,11 +47,6 @@ function Router() {
       <ProtectedRoute
         path="/admin/dashboard/feedback"
         component={FeedbackSection}
-        requireAdmin
-      />
-      <ProtectedRoute
-        path="/admin/dashboard/settings"
-        component={SettingsManagement}
         requireAdmin
       />
 
