@@ -43,11 +43,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { type Character } from "@shared/characters";
-import { type CustomCharacter, type User, type Notification } from "@shared/schema";
+import {
+  type CustomCharacter,
+  type User,
+  type Notification,
+} from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useTheme } from "@/lib/theme-context";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 const container = {
@@ -115,9 +123,9 @@ export default function Home() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to mark notification as read"
+        description: "Failed to mark notification as read",
       });
-    }
+    },
   });
 
   // Use theme context instead of local state
@@ -265,9 +273,11 @@ export default function Home() {
   };
 
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<'home' | 'search' | 'create' | 'library' | 'profile'>('home');
+  const [activeTab, setActiveTab] = useState<
+    "home" | "search" | "create" | "library" | "profile"
+  >("home");
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Complaint dialog states
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
   const [complaint, setComplaint] = useState("");
@@ -299,489 +309,1058 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#FFFDFA] dark:bg-slate-950">
-      <BackgroundSlideshow
-        interval={8000}
-        opacity={0.35}
-        fadeTime={1.5}
-        darkMode={theme === "dark"}
-      />
+      {/* Background slideshow only for desktop */}
+      {!isMobile && (
+        <BackgroundSlideshow
+          interval={8000}
+          opacity={0.35}
+          fadeTime={1.5}
+          darkMode={theme === "dark"}
+        />
+      )}
 
       {!isMobile && <NotificationHeader />}
 
       {isMobile ? (
-        // Mobile UI design inspired by WakuWaku Android app
-        <div className="flex flex-col h-screen bg-black text-white">
-          {/* Mobile header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-            <div className="flex items-center">
-              <Search className="h-5 w-5 mr-2" />
-            </div>
-            <div className="flex items-center justify-center">
-              <h1 className="text-lg font-semibold text-red-400">
-                <span className="font-bold">Anime</span>Chat
-              </h1>
-            </div>
-            <div className="flex items-center space-x-2">
-              {/* Notification bell */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full h-8 w-8 text-gray-300 relative"
-                  >
-                    <Bell className="h-5 w-5" />
-                    {notifications && notifications.filter(n => !n.read).length > 0 && (
-                      <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                        {notifications.filter(n => !n.read).length}
-                      </span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 p-0 bg-gray-900 border-gray-700 text-white">
-                  <div className="p-3 border-b border-gray-700">
-                    <h3 className="font-semibold text-red-400">
-                      Notifications
-                    </h3>
-                  </div>
-                  <AnimatePresence>
-                    {notifications && notifications.length > 0 ? (
-                      <div className="max-h-[300px] overflow-y-auto">
-                        {notifications.map((notification) => (
-                          <motion.div
-                            key={notification.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className={cn(
-                              "p-3 border-b border-gray-700 hover:bg-gray-800 cursor-pointer transition-colors",
-                              !notification.read && "bg-gray-800"
-                            )}
-                            onClick={() => markAsReadMutation.mutate(Number(notification.id))}
-                          >
-                            <h4 className="font-medium text-sm text-gray-200">
-                              {notification.title}
-                            </h4>
-                            <p className="text-sm text-gray-400 mt-1">
-                              {notification.message}
-                            </p>
-                            <span className="text-xs text-gray-500 mt-2 block">
-                              {new Date(notification.createdAt).toLocaleDateString()}
-                            </span>
-                          </motion.div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-3 text-center text-gray-400">
-                        No notifications
-                      </div>
-                    )}
-                  </AnimatePresence>
-                </PopoverContent>
-              </Popover>
-              
-              {/* Subscription button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full h-8 w-8 text-gray-300"
-                onClick={() => setShowSubscription(true)}
+        // Combined UI design from both references
+        <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white">
+          {/* Gradient background header */}
+          <div className="bg-gradient-to-r from-amber-400 via-pink-500 to-purple-500 pt-3 pb-8 px-4 relative">
+            {/* Top navigation bar */}
+            <div className="flex items-center justify-between mb-4">
+              <motion.div
+                whileTap={{ scale: 0.9 }}
+                className="p-2 rounded-full bg-white/10 backdrop-blur-sm shadow-sm"
               >
-                <CreditCard className="h-5 w-5" />
-              </Button>
-              
-              {/* User menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full h-8 w-8"
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-white"
+                >
+                  <line x1="4" x2="20" y1="12" y2="12"></line>
+                  <line x1="4" x2="20" y1="6" y2="6"></line>
+                  <line x1="4" x2="20" y1="18" y2="18"></line>
+                </svg>
+              </motion.div>
+
+              <div className="flex items-center">
+                <h1 className="text-lg font-semibold text-white">
+                  <span className="font-bold">Anime</span>
+                  <span>Chat</span>
+                </h1>
+              </div>
+
+              <div className="flex items-center space-x-1">
+                {/* Notification bell */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      className="p-2 rounded-full relative flex items-center justify-center"
+                    >
+                      <Bell className="h-5 w-5 text-white" />
+                      {notifications &&
+                        notifications.filter((n) => !n.read).length > 0 && (
+                          <span className="absolute top-0 right-0 h-5 w-5 bg-white text-pink-500 rounded-full text-xs flex items-center justify-center shadow-sm font-medium">
+                            {notifications.filter((n) => !n.read).length}
+                          </span>
+                        )}
+                    </motion.button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-0 bg-white dark:bg-gray-800 border-0 rounded-xl shadow-xl text-gray-800 dark:text-white">
+                    <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                      <h3 className="font-semibold text-pink-500 dark:text-pink-400">
+                        Notifications
+                      </h3>
+                    </div>
+                    <AnimatePresence>
+                      {notifications && notifications.length > 0 ? (
+                        <div className="max-h-[400px] overflow-y-auto">
+                          {notifications.map((notification) => (
+                            <motion.div
+                              key={notification.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              whileTap={{
+                                backgroundColor: "rgba(236, 72, 153, 0.08)",
+                              }}
+                              className={cn(
+                                "p-4 border-b border-gray-100 dark:border-gray-700 cursor-pointer transition-all",
+                                !notification.read
+                                  ? "bg-pink-50 dark:bg-pink-900/20"
+                                  : "hover:bg-gray-50 dark:hover:bg-gray-800/50",
+                              )}
+                              onClick={() =>
+                                markAsReadMutation.mutate(
+                                  Number(notification.id),
+                                )
+                              }
+                            >
+                              <h4 className="font-medium text-sm text-gray-800 dark:text-white">
+                                {notification.title}
+                              </h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                {notification.message}
+                              </p>
+                              <span className="text-xs text-gray-400 mt-2 block">
+                                {new Date(
+                                  notification.createdAt,
+                                ).toLocaleDateString()}
+                              </span>
+                            </motion.div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-5 text-center text-gray-500 dark:text-gray-400">
+                          <div className="inline-flex rounded-full bg-pink-100 dark:bg-pink-900/30 p-3 mb-3">
+                            <Bell className="h-6 w-6 text-pink-500 dark:text-pink-400" />
+                          </div>
+                          <p>No notifications yet</p>
+                        </div>
+                      )}
+                    </AnimatePresence>
+                  </PopoverContent>
+                </Popover>
+
+                {/* User menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      className="p-2 rounded-full flex items-center justify-center"
+                    >
+                      <UserIcon className="h-5 w-5 text-white" />
+                    </motion.button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-64 bg-white dark:bg-gray-800 border-0 rounded-xl shadow-xl text-gray-800 dark:text-white p-1"
                   >
-                    <UserIcon className="h-5 w-5 text-gray-300" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-gray-900 border-gray-700 text-gray-200">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-gray-700" />
-                  <DropdownMenuItem disabled className="text-gray-400">
-                    Email: {user?.email}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled className="text-gray-400">
-                    Username: {user?.username}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem disabled className="text-gray-400">
-                    Status: {user?.subscriptionStatus}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-gray-700" />
-                  <DropdownMenuItem
-                    onClick={toggleTheme}
-                    className="flex items-center"
-                  >
-                    {theme === 'dark' ? 
-                      <Sun className="mr-2 h-4 w-4" /> : 
-                      <Moon className="mr-2 h-4 w-4" />
-                    }
-                    {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                  </DropdownMenuItem>
-                  {/* Complaint button */}
-                  <DropdownMenuItem 
-                    className="flex items-center"
-                    onClick={() => setShowComplaintDialog(true)}
-                  >
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    Submit Complaint
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-gray-700" />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="text-red-400"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <div className="p-3 mb-1 flex items-center">
+                      <div className="w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center mr-3">
+                        <UserIcon className="h-5 w-5 text-pink-500 dark:text-pink-400" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{user?.username}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {user?.email}
+                        </p>
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-700" />
+                    <DropdownMenuItem
+                      className="text-gray-500 dark:text-gray-400 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 my-1 p-3"
+                      disabled
+                    >
+                      Status:{" "}
+                      <span className="ml-1 font-medium text-gray-800 dark:text-white">
+                        {user?.subscriptionStatus}
+                      </span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-700" />
+                    <DropdownMenuItem
+                      onClick={toggleTheme}
+                      className="flex items-center rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 my-1 p-3"
+                    >
+                      {theme === "dark" ? (
+                        <Sun className="mr-3 h-5 w-5 text-amber-500" />
+                      ) : (
+                        <Moon className="mr-3 h-5 w-5 text-indigo-500" />
+                      )}
+                      {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                    </DropdownMenuItem>
+                    {/* Subscription button */}
+                    <DropdownMenuItem
+                      className="flex items-center rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 my-1 p-3"
+                      onClick={() => setShowSubscription(true)}
+                    >
+                      <CreditCard className="mr-3 h-5 w-5 text-green-500" />
+                      Manage Subscription
+                    </DropdownMenuItem>
+                    {/* Complaint button */}
+                    <DropdownMenuItem
+                      className="flex items-center rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:bg-gray-50 dark:focus:bg-gray-700 my-1 p-3"
+                      onClick={() => setShowComplaintDialog(true)}
+                    >
+                      <AlertCircle className="mr-3 h-5 w-5 text-amber-500" />
+                      Report an Issue
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-gray-100 dark:bg-gray-700" />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="flex items-center rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 focus:bg-red-50 dark:focus:bg-red-900/20 text-red-500 my-1 p-3"
+                    >
+                      <LogOut className="mr-3 h-5 w-5" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative z-10 mb-4">
+              <div className="bg-white dark:bg-gray-800 rounded-full flex items-center pl-4 pr-3 py-3 shadow-lg">
+                <Search className="h-5 w-5 text-gray-400 dark:text-gray-500 mr-3" />
+                <Input
+                  type="text"
+                  placeholder="Search characters..."
+                  className="bg-transparent border-0 text-gray-800 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus-visible:ring-0 focus-visible:ring-offset-0 px-0 py-0 h-auto text-base"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Wave effect at bottom of header */}
+            <div className="absolute bottom-0 left-0 right-0 h-8 overflow-hidden">
+              <div className="bg-gray-50 dark:bg-gray-900 h-16 w-full rounded-t-[50%]"></div>
             </div>
           </div>
 
           {/* Main content area based on active tab */}
           <div className="flex-1 overflow-y-auto">
             {/* Home Tab Content */}
-            {activeTab === 'home' && (
+            {activeTab === "home" && (
               <div className="pb-20">
-                {/* Featured character section */}
+                {/* Horizontal character avatars */}
                 <div className="px-4 pt-4">
-                  <div className="relative rounded-lg overflow-hidden">
-                    {characters && characters.length > 0 && (
-                      <div className="relative">
-                        <div className="aspect-[3/4] rounded-xl overflow-hidden relative">
-                          <img 
-                            src={characters[0].avatar} 
-                            alt={characters[0].name}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"></div>
-                        </div>
-                        <div className="absolute bottom-0 left-0 p-4 w-full">
-                          <div className="text-xs text-gray-300">Up on your watchlist!</div>
-                          <h2 className="text-xl font-bold text-white">{characters[0].name}</h2>
-                          <div className="flex items-center mt-1">
-                            <span className="text-xs text-gray-400">2023</span>
-                            <span className="mx-2 text-gray-500">•</span>
-                            <div className="flex">
-                              {[1, 2, 3, 4, 5].map((star, i) => (
-                                <span key={i} className="text-yellow-500 text-xs">
-                                  {i < 3 ? "★" : "☆"}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
+                  <div className="flex overflow-x-auto pb-4 space-x-4 hide-scrollbar">
+                    {/* Add user status button */}
+                    <div className="flex flex-col items-center w-16 flex-shrink-0">
+                      <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-pink-500 bg-gradient-to-br from-pink-200 to-pink-300 dark:from-pink-900 dark:to-purple-900 flex items-center justify-center">
+                        <Plus className="h-8 w-8 text-pink-500 dark:text-pink-400" />
                       </div>
-                    )}
-                  </div>
-                </div>
+                      <span className="text-xs mt-1 font-medium">Status</span>
+                    </div>
 
-                {/* Top Rated section */}
-                <div className="px-4 pt-5">
-                  <h2 className="text-lg font-bold mb-3">Top Rated</h2>
-                  <div className="flex overflow-x-auto pb-4 space-x-3 hide-scrollbar">
-                    {characters?.slice(0, 5).map((character) => (
+                    {/* Character avatars */}
+                    {characters?.slice(0, 8).map((character) => (
                       <Link key={character.id} href={`/chat/${character.id}`}>
-                        <div className="w-24 shrink-0">
-                          <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-800 mb-1 relative">
+                        <div className="flex flex-col items-center w-16 flex-shrink-0">
+                          <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
                             <img
                               src={character.avatar}
                               alt={character.name}
                               className="w-full h-full object-cover"
                             />
                             {character.id.startsWith("custom_") && (
-                              <button
-                                className="absolute top-1 right-1 p-1 bg-red-500/90 text-white rounded-full z-10"
+                              <div className="absolute bottom-0 right-0 bg-green-500 rounded-full w-4 h-4 border-2 border-white dark:border-gray-800"></div>
+                            )}
+                          </div>
+                          <span className="text-xs mt-1 font-medium truncate w-full text-center">
+                            {character.name.split(" ")[0]}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Category Grid */}
+                <div className="px-4 pt-2 pb-4">
+                  <h2 className="text-lg font-bold mb-3">Categories</h2>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-white"
+                        >
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                      </div>
+                      <span className="text-xs mt-1 font-medium">Chat</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-white"
+                        >
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                      </div>
+                      <span className="text-xs mt-1 font-medium">Top</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center shadow-md">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-white"
+                        >
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                      </div>
+                      <span className="text-xs mt-1 font-medium">Recent</span>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-md">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-white"
+                        >
+                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                      </div>
+                      <span className="text-xs mt-1 font-medium">Custom</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Featured character section */}
+                <div className="px-4 pt-1">
+                  <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-lg font-bold">Featured</h2>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      className="text-xs font-medium text-pink-500 dark:text-pink-400"
+                    >
+                      See all
+                    </motion.button>
+                  </div>
+                  <div className="relative rounded-xl overflow-hidden shadow-lg">
+                    {characters && characters.length > 0 && (
+                      <div className="relative">
+                        <div className="aspect-[3/4] rounded-xl overflow-hidden relative">
+                          <img
+                            src={characters[0].avatar}
+                            alt={characters[0].name}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 p-5 w-full">
+                          <div className="inline-block px-2 py-1 bg-[#BB86FC]/20 rounded-full text-xs text-[#BB86FC] font-medium mb-2">
+                            Featured
+                          </div>
+                          <h2 className="text-2xl font-bold text-white leading-tight">
+                            {characters[0].name}
+                          </h2>
+                          <div className="flex items-center mt-2">
+                            <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
+                              New
+                            </span>
+                            <span className="mx-2 text-[#888888]">•</span>
+                            <div className="flex">
+                              {[1, 2, 3, 4, 5].map((star, i) => (
+                                <span
+                                  key={i}
+                                  className={`${i < 3 ? "text-[#BB86FC]" : "text-[#444444]"} text-xs`}
+                                >
+                                  ★
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="mt-3 px-4 py-2 bg-[#BB86FC] text-black font-medium text-sm rounded-full shadow-lg flex items-center"
+                            onClick={() =>
+                              setLocation(`/chat/${characters[0].id}`)
+                            }
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />
+                            Start Chat
+                          </motion.button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Top Rated section - Material Design Carousel */}
+                <div className="px-4 pt-5">
+                  <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-lg font-bold">Top Rated</h2>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      className="text-xs font-medium text-[#03DAC6]"
+                    >
+                      See all
+                    </motion.button>
+                  </div>
+                  <div className="flex overflow-x-auto pb-4 space-x-4 hide-scrollbar -mx-1 px-1">
+                    {characters?.slice(0, 5).map((character) => (
+                      <Link key={character.id} href={`/chat/${character.id}`}>
+                        <motion.div
+                          whileTap={{ scale: 0.95 }}
+                          className="w-28 shrink-0"
+                        >
+                          <div className="aspect-[3/4] rounded-xl overflow-hidden bg-[#333333] mb-2 relative shadow-md">
+                            <img
+                              src={character.avatar}
+                              alt={character.name}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/60 to-transparent"></div>
+                            {character.id.startsWith("custom_") && (
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                className="absolute top-2 right-2 p-1.5 bg-[#CF6679] text-white rounded-full z-10 shadow-sm"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   handleDeleteCharacter(character.id);
                                 }}
                               >
-                                <Trash2 className="h-3 w-3" />
-                              </button>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </motion.button>
                             )}
+                            <div className="absolute bottom-0 left-0 w-full p-2">
+                              <div className="flex">
+                                {[1, 2, 3, 4, 5]
+                                  .slice(0, Math.ceil(Math.random() * 5))
+                                  .map((_, i) => (
+                                    <span
+                                      key={i}
+                                      className="text-[#BB86FC] text-xs"
+                                    >
+                                      ★
+                                    </span>
+                                  ))}
+                              </div>
+                            </div>
                           </div>
-                          <h3 className="text-xs font-medium text-gray-300 line-clamp-1">
+                          <h3 className="text-sm font-medium text-white line-clamp-1">
                             {character.name}
                           </h3>
-                        </div>
+                          <p className="text-xs text-[#BBBBBB] line-clamp-1">
+                            Popular character
+                          </p>
+                        </motion.div>
                       </Link>
                     ))}
                   </div>
                 </div>
-                
-                {/* Recently Added Section */}
+
+                {/* Recently Added Section - Material Design Grid */}
                 <div className="px-4 pt-5">
-                  <h2 className="text-lg font-bold mb-3">Recently Added</h2>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-lg font-bold">Recently Added</h2>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      className="text-xs font-medium text-[#03DAC6]"
+                    >
+                      See all
+                    </motion.button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     {characters?.slice(5, 9).map((character) => (
                       <Link key={character.id} href={`/chat/${character.id}`}>
-                        <div className="relative">
-                          <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-800 mb-1 relative">
+                        <motion.div
+                          whileTap={{ scale: 0.95 }}
+                          className="relative"
+                        >
+                          <div className="aspect-[3/4] rounded-xl overflow-hidden bg-[#333333] mb-2 relative shadow-md">
                             <img
                               src={character.avatar}
                               alt={character.name}
                               className="w-full h-full object-cover"
                             />
+                            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[#121212] to-transparent">
+                              <h3 className="text-sm font-medium text-white line-clamp-1">
+                                {character.name}
+                              </h3>
+                              <p className="text-xs text-[#BBBBBB] mt-1 line-clamp-1">
+                                New arrival
+                              </p>
+                            </div>
+                            {character.id.startsWith("custom_") && (
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                className="absolute top-2 right-2 p-1.5 bg-[#CF6679] text-white rounded-full z-10 shadow-sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDeleteCharacter(character.id);
+                                }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </motion.button>
+                            )}
                           </div>
-                          <h3 className="text-xs font-medium text-gray-300 line-clamp-1">
-                            {character.name}
-                          </h3>
-                        </div>
+                        </motion.div>
                       </Link>
                     ))}
                   </div>
                 </div>
               </div>
             )}
-            
-            {/* Search Tab Content */}
-            {activeTab === 'search' && (
+
+            {/* Search Tab Content - Material Design Search */}
+            {activeTab === "search" && (
               <div className="p-4 pb-20">
                 <div className="relative mb-5">
-                  <Input
-                    type="text"
-                    placeholder="Search characters..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white pr-10 rounded-full"
-                  />
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <div className="bg-[#2A2A2A] rounded-full flex items-center pl-4 pr-3 py-2 shadow-md">
+                    <Search className="h-5 w-5 text-[#BB86FC] mr-3" />
+                    <Input
+                      type="text"
+                      placeholder="Search characters..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="bg-transparent border-0 text-white placeholder-[#888888] focus-visible:ring-0 focus-visible:ring-offset-0 px-0 text-base font-medium"
+                    />
+                    {searchQuery && (
+                      <motion.button
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setSearchQuery("")}
+                        className="ml-2 p-1 rounded-full text-[#888888] hover:text-white"
+                      >
+                        <AlertCircle className="h-4 w-4" />
+                      </motion.button>
+                    )}
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-2 gap-3 mt-4">
+
+                {searchQuery && (
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-[#BBBBBB] text-sm">
+                      Results for "{searchQuery}"
+                    </p>
+                    <span className="text-xs px-2 py-1 rounded-full bg-[#333333] text-[#BBBBBB]">
+                      {
+                        characters?.filter(
+                          (char) =>
+                            char.name
+                              .toLowerCase()
+                              .includes(searchQuery.toLowerCase()) ||
+                            char.description
+                              .toLowerCase()
+                              .includes(searchQuery.toLowerCase()),
+                        ).length
+                      }{" "}
+                      found
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 mt-4">
                   {characters
-                    ?.filter(char => 
-                      searchQuery === "" || 
-                      char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      char.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    ?.filter(
+                      (char) =>
+                        searchQuery === "" ||
+                        char.name
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()) ||
+                        char.description
+                          .toLowerCase()
+                          .includes(searchQuery.toLowerCase()),
                     )
                     .map((character) => (
                       <Link key={character.id} href={`/chat/${character.id}`}>
-                        <div className="relative">
-                          <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-800 mb-1 relative">
+                        <motion.div
+                          whileTap={{ scale: 0.95 }}
+                          className="relative"
+                        >
+                          <div className="aspect-[3/4] rounded-xl overflow-hidden bg-[#2A2A2A] mb-2 relative shadow-md">
                             <img
                               src={character.avatar}
                               alt={character.name}
                               className="w-full h-full object-cover"
                             />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#121212]/90 via-[#121212]/30 to-transparent"></div>
+
+                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                              <h3 className="text-sm font-medium text-white line-clamp-1">
+                                {character.name}
+                              </h3>
+                              <p className="text-xs text-[#BBBBBB] mt-1 line-clamp-2">
+                                {character.description.substring(0, 50)}
+                              </p>
+                            </div>
                           </div>
-                          <h3 className="text-xs font-medium text-gray-300 line-clamp-1">
-                            {character.name}
-                          </h3>
-                        </div>
+                        </motion.div>
                       </Link>
-                    ))
-                  }
+                    ))}
                 </div>
-                
-                {searchQuery !== "" && 
-                 characters?.filter(char => 
-                   char.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                   char.description.toLowerCase().includes(searchQuery.toLowerCase())
-                 ).length === 0 && (
-                  <div className="text-center mt-10 text-gray-400">
-                    <Search className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                    <p>No characters found matching "{searchQuery}"</p>
+
+                {searchQuery !== "" &&
+                  characters?.filter(
+                    (char) =>
+                      char.name
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                      char.description
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase()),
+                  ).length === 0 && (
+                    <div className="text-center mt-16 p-6">
+                      <div className="bg-[#333333] rounded-full p-5 inline-flex mb-4">
+                        <Search className="h-10 w-10 text-[#888888]" />
+                      </div>
+                      <h3 className="text-lg font-medium text-white mb-2">
+                        No results found
+                      </h3>
+                      <p className="text-[#BBBBBB]">
+                        No characters matched your search for "{searchQuery}"
+                      </p>
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setSearchQuery("")}
+                        className="mt-4 px-4 py-2 bg-[#2A2A2A] text-[#BB86FC] rounded-full font-medium text-sm inline-flex items-center"
+                      >
+                        Clear search
+                      </motion.button>
+                    </div>
+                  )}
+              </div>
+            )}
+
+            {/* Create Tab Content - Material Design Create UI */}
+            {activeTab === "create" && (
+              <div className="p-4 pb-20 text-center">
+                <div className="mt-8 mb-5">
+                  <motion.div
+                    className="mx-auto w-24 h-24 flex items-center justify-center rounded-full bg-[#BB86FC]/10 mb-6 shadow-lg"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  >
+                    <Plus className="h-12 w-12 text-[#BB86FC]" />
+                  </motion.div>
+                  <h2 className="text-2xl font-bold mb-3">
+                    Create a Character
+                  </h2>
+                  <p className="text-[#BBBBBB] mb-8 max-w-xs mx-auto">
+                    Design your own custom anime character with a unique
+                    personality
+                  </p>
+
+                  {user && user.isPremium ? (
+                    <div className="mb-5 bg-[#2A2A2A] rounded-xl p-4 max-w-xs mx-auto">
+                      <div className="flex items-center justify-center mb-2">
+                        <div className="w-8 h-8 rounded-full bg-[#BB86FC]/20 flex items-center justify-center mr-2">
+                          <CreditCard className="h-4 w-4 text-[#BB86FC]" />
+                        </div>
+                        <span className="font-medium text-[#BB86FC]">
+                          Premium Subscription
+                        </span>
+                      </div>
+                      <p className="text-sm text-[#BBBBBB]">
+                        You can create unlimited characters with your premium
+                        subscription!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mb-5 bg-[#2A2A2A] rounded-xl p-4 max-w-xs mx-auto">
+                      <div className="flex items-center justify-center mb-2">
+                        <div className="w-8 h-8 rounded-full bg-[#03DAC6]/20 flex items-center justify-center mr-2">
+                          <Settings className="h-4 w-4 text-[#03DAC6]" />
+                        </div>
+                        <span className="font-medium text-white">
+                          Free Trial
+                        </span>
+                      </div>
+                      <p className="text-sm text-[#BBBBBB] mb-3">
+                        You have created {user?.trialCharactersCreated || 0} out
+                        of 3 available characters
+                      </p>
+                      <div className="w-full bg-[#333333] rounded-full h-2">
+                        <div
+                          className="bg-[#03DAC6] h-2 rounded-full"
+                          style={{
+                            width: `${((user?.trialCharactersCreated || 0) / 3) * 100}%`,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleCreateClick}
+                    className="bg-[#BB86FC] hover:bg-[#BB86FC]/90 text-black font-medium rounded-full px-8 py-3 text-base shadow-lg"
+                  >
+                    <Plus className="h-5 w-5 mr-2 inline-block" />
+                    Create New Character
+                  </motion.button>
+                </div>
+              </div>
+            )}
+
+            {/* Library Tab Content - Material Design Library */}
+            {activeTab === "library" && (
+              <div className="p-4 pb-20">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-xl font-bold">Character Library</h2>
+                  <div className="flex items-center">
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      className="ml-2 text-xs font-medium text-[#03DAC6] flex items-center"
+                    >
+                      <Settings className="h-3.5 w-3.5 mr-1" />
+                      Sort
+                    </motion.button>
+                  </div>
+                </div>
+
+                {characters && characters.length > 0 ? (
+                  <div className="space-y-3">
+                    <AnimatePresence>
+                      {characters.map((character, index) => (
+                        <motion.div
+                          key={character.id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          <Link href={`/chat/${character.id}`}>
+                            <motion.div
+                              whileTap={{ scale: 0.98 }}
+                              className="flex items-center bg-[#2A2A2A] p-4 rounded-xl shadow-md"
+                            >
+                              <div className="relative">
+                                <img
+                                  src={character.avatar}
+                                  alt={character.name}
+                                  className="w-16 h-16 rounded-xl object-cover mr-4 border-2 border-[#333333]"
+                                />
+                                {character.id.startsWith("custom_") && (
+                                  <div className="absolute -top-1.5 -right-1.5 bg-[#BB86FC] rounded-full p-0.5 border-2 border-[#1E1E1E]">
+                                    <div className="flex items-center justify-center">
+                                      <span className="text-[8px] font-bold px-1.5 text-black">
+                                        CUSTOM
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-medium text-white mb-1">
+                                  {character.name}
+                                </h3>
+                                <p className="text-xs text-[#BBBBBB] line-clamp-2">
+                                  {character.description}
+                                </p>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                {character.id.startsWith("custom_") && (
+                                  <motion.button
+                                    whileTap={{ scale: 0.9 }}
+                                    className="p-2 text-[#CF6679] hover:bg-[#CF6679]/10 rounded-full"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleDeleteCharacter(character.id);
+                                    }}
+                                  >
+                                    <Trash2 className="h-5 w-5" />
+                                  </motion.button>
+                                )}
+                                <motion.button
+                                  whileTap={{ scale: 0.9 }}
+                                  className="p-2 text-[#03DAC6] hover:bg-[#03DAC6]/10 rounded-full mt-auto"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setLocation(`/chat/${character.id}`);
+                                  }}
+                                >
+                                  <MessageSquare className="h-5 w-5" />
+                                </motion.button>
+                              </div>
+                            </motion.div>
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <div className="text-center mt-10 p-6">
+                    <div className="bg-[#333333] rounded-full p-5 inline-flex mb-4">
+                      <Library className="h-10 w-10 text-[#888888]" />
+                    </div>
+                    <h3 className="text-lg font-medium text-white mb-2">
+                      No characters
+                    </h3>
+                    <p className="text-[#BBBBBB] mb-4">
+                      Your library is empty. Add some characters to chat with!
+                    </p>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleCreateClick}
+                      className="px-5 py-2 bg-[#BB86FC] text-black rounded-full font-medium text-sm inline-flex items-center"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Character
+                    </motion.button>
                   </div>
                 )}
               </div>
             )}
-            
-            {/* Create Tab Content - handled by the modal, but could have a content preview */}
-            {activeTab === 'create' && (
-              <div className="p-4 pb-20 text-center">
-                <div className="mt-10 mb-5">
-                  <div className="mx-auto w-20 h-20 flex items-center justify-center rounded-full bg-red-500/10 mb-4">
-                    <Plus className="h-10 w-10 text-red-400" />
-                  </div>
-                  <h2 className="text-xl font-bold mb-2">Create a Character</h2>
-                  <p className="text-gray-400 mb-6">Create your own custom character to chat with</p>
-                  
-                  {user && user.isPremium ? (
-                    <div className="text-sm text-gray-300 mb-4">
-                      You can create unlimited characters with your premium subscription!
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-300 mb-4">
-                      Free trial: {user?.trialCharactersCreated || 0}/3 characters created
-                    </div>
-                  )}
-                  
-                  <Button
-                    onClick={handleCreateClick}
-                    className="bg-red-500 hover:bg-red-600 text-white rounded-full px-8"
+
+            {/* Profile Tab Content - Material Design Profile */}
+            {activeTab === "profile" && (
+              <div className="p-4 pb-20">
+                <div className="mb-6 text-center">
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="w-24 h-24 rounded-full bg-[#BB86FC]/10 flex items-center justify-center mx-auto mb-4 border-4 border-[#BB86FC]/20"
                   >
-                    <Plus className="h-5 w-5 mr-2" />
-                    Create New Character
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {/* Library Tab Content */}
-            {activeTab === 'library' && (
-              <div className="p-4 pb-20">
-                <h2 className="text-lg font-bold mb-4">Your Character Library</h2>
-                
-                <div className="space-y-3">
-                  {characters?.map((character) => (
-                    <Link key={character.id} href={`/chat/${character.id}`}>
-                      <div className="flex items-center bg-gray-800/60 p-3 rounded-lg border border-gray-700">
-                        <img
-                          src={character.avatar}
-                          alt={character.name}
-                          className="w-14 h-14 rounded-lg object-cover mr-3"
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-medium text-sm text-white">
-                            {character.name}
-                          </h3>
-                          <p className="text-xs text-gray-400 line-clamp-1">
-                            {character.description}
-                          </p>
-                        </div>
-                        {character.id.startsWith("custom_") && (
-                          <button
-                            className="p-2 text-red-400 hover:text-red-500"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleDeleteCharacter(character.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Profile Tab Content */}
-            {activeTab === 'profile' && (
-              <div className="p-4 pb-20">
-                <div className="mb-5 text-center">
-                  <div className="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mx-auto mb-3">
-                    <UserIcon className="h-10 w-10 text-gray-400" />
+                    <UserIcon className="h-12 w-12 text-[#BB86FC]" />
+                  </motion.div>
+                  <h2 className="text-2xl font-bold text-white">
+                    {user?.username}
+                  </h2>
+                  <p className="text-[#BBBBBB]">{user?.email}</p>
+
+                  <div className="mt-4 flex justify-center">
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      className="px-4 py-1.5 rounded-full bg-[#333333] flex items-center text-sm font-medium text-[#BB86FC]"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </motion.button>
                   </div>
-                  <h2 className="text-xl font-bold">{user?.username}</h2>
-                  <p className="text-gray-400">{user?.email}</p>
                 </div>
-                
-                <div className="bg-gray-800/60 rounded-lg border border-gray-700 p-4 mb-5">
-                  <h3 className="text-lg font-bold mb-3">Subscription Status</h3>
-                  <div className={`p-3 rounded-lg mb-3 ${user?.isPremium ? 'bg-red-500/20 border border-red-500/30' : 'bg-gray-700'}`}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">{user?.subscriptionTier || 'Free'}</p>
-                        <p className="text-sm text-gray-400">{user?.subscriptionStatus}</p>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setShowSubscription(true)}
-                        className="border-red-400 text-red-400 hover:bg-red-400/10 hover:text-red-300"
+
+                <div className="bg-[#2A2A2A] rounded-xl p-4 mb-5 shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold">Subscription</h3>
+                    {user?.isPremium ? (
+                      <span className="px-2 py-1 bg-[#BB86FC]/20 rounded-full text-xs font-medium text-[#BB86FC]">
+                        Premium
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 bg-[#333333] rounded-full text-xs font-medium text-white">
+                        Free
+                      </span>
+                    )}
+                  </div>
+
+                  <div
+                    className={`p-4 rounded-xl mb-3 ${
+                      user?.isPremium
+                        ? "bg-gradient-to-br from-[#BB86FC]/30 to-[#BB86FC]/10 border border-[#BB86FC]/30"
+                        : "bg-[#333333]"
+                    }`}
+                  >
+                    <div className="flex items-center mb-2">
+                      <div
+                        className={`w-10 h-10 rounded-full ${
+                          user?.isPremium ? "bg-[#BB86FC]/20" : "bg-[#444444]"
+                        } flex items-center justify-center mr-3`}
                       >
-                        {user?.isPremium ? 'Manage' : 'Upgrade'}
-                      </Button>
+                        <CreditCard
+                          className={`h-5 w-5 ${
+                            user?.isPremium ? "text-[#BB86FC]" : "text-white"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">
+                          {user?.subscriptionTier || "Free Tier"}
+                        </p>
+                        <p className="text-sm text-[#BBBBBB]">
+                          {user?.subscriptionStatus || "Basic access"}
+                        </p>
+                      </div>
                     </div>
+
+                    {user?.isPremium ? (
+                      <p className="text-xs text-[#BBBBBB] mb-3">
+                        Your premium plan gives you access to all features
+                        including unlimited character creation.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-[#BBBBBB] mb-3">
+                        Upgrade to Premium for unlimited character creation and
+                        exclusive features.
+                      </p>
+                    )}
+
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowSubscription(true)}
+                      className={`w-full py-2 rounded-lg text-sm font-medium ${
+                        user?.isPremium
+                          ? "bg-[#BB86FC] text-black"
+                          : "bg-[#03DAC6] text-black"
+                      }`}
+                    >
+                      {user?.isPremium
+                        ? "Manage Subscription"
+                        : "Upgrade to Premium"}
+                    </motion.button>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+                  <h3 className="text-lg font-bold mb-3">Settings</h3>
+
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full flex items-center justify-between p-3 bg-[#2A2A2A] rounded-xl shadow-md hover:bg-[#333333] transition-colors"
                     onClick={toggleTheme}
                   >
-                    {theme === 'dark' ? 
-                      <Sun className="mr-2 h-4 w-4" /> : 
-                      <Moon className="mr-2 h-4 w-4" />
-                    }
-                    {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white"
+                    <div className="flex items-center">
+                      {theme === "dark" ? (
+                        <Sun className="mr-3 h-5 w-5 text-[#03DAC6]" />
+                      ) : (
+                        <Moon className="mr-3 h-5 w-5 text-[#03DAC6]" />
+                      )}
+                      <div>
+                        <p className="font-medium text-white">
+                          {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                        </p>
+                        <p className="text-xs text-[#BBBBBB]">
+                          Change app appearance
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      className={`w-10 h-6 rounded-full ${theme === "dark" ? "bg-[#333333]" : "bg-[#03DAC6]/30"} flex items-center ${theme === "dark" ? "justify-start" : "justify-end"} p-0.5`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full ${theme === "dark" ? "bg-[#666666]" : "bg-[#03DAC6]"}`}
+                      ></div>
+                    </div>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full flex items-center p-3 bg-[#2A2A2A] rounded-xl shadow-md hover:bg-[#333333] transition-colors"
                     onClick={() => setShowComplaintDialog(true)}
                   >
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    Submit Complaint
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start border-gray-700 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                    <AlertCircle className="mr-3 h-5 w-5 text-[#03DAC6]" />
+                    <div>
+                      <p className="font-medium text-white">Submit Feedback</p>
+                      <p className="text-xs text-[#BBBBBB]">
+                        Help us improve the app
+                      </p>
+                    </div>
+                  </motion.button>
+
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full flex items-center p-3 bg-[#2A2A2A] rounded-xl shadow-md hover:bg-[#333333] transition-colors"
                     onClick={handleLogout}
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </Button>
+                    <LogOut className="mr-3 h-5 w-5 text-[#CF6679]" />
+                    <div>
+                      <p className="font-medium text-[#CF6679]">Logout</p>
+                      <p className="text-xs text-[#BBBBBB]">
+                        Sign out of your account
+                      </p>
+                    </div>
+                  </motion.button>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Bottom navigation bar */}
-          <div className="mt-auto border-t border-gray-800 py-2 bg-black">
-            <div className="flex justify-around items-center">
-              <button
-                className={`flex flex-col items-center p-2 ${
-                  activeTab === 'home' ? "text-red-400" : "text-gray-400"
+          {/* Bottom navigation bar - Modern Design */}
+          <div className="mt-auto bg-white dark:bg-gray-800 py-2 shadow-lg z-10 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex justify-around items-center px-1">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className={`flex flex-col items-center py-2 px-3 rounded-xl ${
+                  activeTab === "home"
+                    ? "text-pink-500 dark:text-pink-400"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
-                onClick={() => setActiveTab('home')}
+                onClick={() => setActiveTab("home")}
               >
-                <HomeIcon className="h-5 w-5" />
-                <span className="text-xs mt-1">Home</span>
-              </button>
-              <button
-                className={`flex flex-col items-center p-2 ${
-                  activeTab === 'search' ? "text-red-400" : "text-gray-400"
+                <HomeIcon className="h-6 w-6" />
+                <span className="text-xs mt-1 font-medium">Home</span>
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className={`flex flex-col items-center py-2 px-3 rounded-xl ${
+                  activeTab === "search"
+                    ? "text-pink-500 dark:text-pink-400"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
-                onClick={() => setActiveTab('search')}
+                onClick={() => setActiveTab("search")}
               >
-                <Search className="h-5 w-5" />
-                <span className="text-xs mt-1">Search</span>
-              </button>
-              <button
-                className={`flex flex-col items-center p-2 ${
-                  activeTab === 'create' ? "text-red-400" : "text-gray-400"
-                }`}
+                <Search className="h-6 w-6" />
+                <span className="text-xs mt-1 font-medium">Explore</span>
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className="flex flex-col items-center py-2 px-3 relative text-white"
                 onClick={handleCreateClick}
               >
-                <Plus className="h-5 w-5" />
-                <span className="text-xs mt-1">Create</span>
-              </button>
-              <button
-                className={`flex flex-col items-center p-2 ${
-                  activeTab === 'library' ? "text-red-400" : "text-gray-400"
+                <div className="absolute -top-6 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 p-3.5 shadow-lg">
+                  <Plus className="h-6 w-6" />
+                </div>
+                <span className="text-xs mt-7 font-medium text-gray-400 dark:text-gray-500">
+                  Create
+                </span>
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className={`flex flex-col items-center py-2 px-3 rounded-xl ${
+                  activeTab === "library"
+                    ? "text-pink-500 dark:text-pink-400"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
-                onClick={() => setActiveTab('library')}
+                onClick={() => setActiveTab("library")}
               >
-                <Library className="h-5 w-5" />
-                <span className="text-xs mt-1">Library</span>
-              </button>
-              <button
-                className={`flex flex-col items-center p-2 ${
-                  activeTab === 'profile' ? "text-red-400" : "text-gray-400"
+                <Library className="h-6 w-6" />
+                <span className="text-xs mt-1 font-medium">Library</span>
+              </motion.button>
+
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                className={`flex flex-col items-center py-2 px-3 rounded-xl ${
+                  activeTab === "profile"
+                    ? "text-pink-500 dark:text-pink-400"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
-                onClick={() => setActiveTab('profile')}
+                onClick={() => setActiveTab("profile")}
               >
-                <UserIcon className="h-5 w-5" />
-                <span className="text-xs mt-1">Profile</span>
-              </button>
+                <UserIcon className="h-6 w-6" />
+                <span className="text-xs mt-1 font-medium">Profile</span>
+              </motion.button>
             </div>
           </div>
         </div>
@@ -924,13 +1503,23 @@ export default function Home() {
       )}
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className={`${isMobile ? 'max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white' : 'sm:max-w-[425px] bg-white dark:bg-slate-900 border-2 border-yellow-500/20 dark:border-amber-500/20 rounded-3xl'}`}>
+        <DialogContent
+          className={`${isMobile ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" : "sm:max-w-[425px] bg-white dark:bg-slate-900 border-2 border-yellow-500/20 dark:border-amber-500/20 rounded-3xl"}`}
+        >
           <DialogHeader>
-            <DialogTitle className={isMobile ? "text-xl font-bold text-red-400" : "text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600"}>
+            <DialogTitle
+              className={
+                isMobile
+                  ? "text-xl font-bold text-red-400"
+                  : "text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600"
+              }
+            >
               Create New Character
             </DialogTitle>
             {!user?.isPremium && (
-              <DialogDescription className={isMobile ? "text-gray-400" : "text-amber-600"}>
+              <DialogDescription
+                className={isMobile ? "text-gray-400" : "text-amber-600"}
+              >
                 Free Trial: {user?.trialCharactersCreated || 0}/3 characters
                 created
               </DialogDescription>
@@ -947,7 +1536,11 @@ export default function Home() {
               onChange={(e) =>
                 setNewCharacter({ ...newCharacter, name: e.target.value })
               }
-              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500" : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"}
+              className={
+                isMobile
+                  ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                  : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"
+              }
             />
             <Input
               placeholder="Avatar URL"
@@ -955,7 +1548,11 @@ export default function Home() {
               onChange={(e) =>
                 setNewCharacter({ ...newCharacter, avatar: e.target.value })
               }
-              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500" : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"}
+              className={
+                isMobile
+                  ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500"
+                  : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500"
+              }
             />
             <Textarea
               placeholder="Character Description"
@@ -966,7 +1563,11 @@ export default function Home() {
                   description: e.target.value,
                 })
               }
-              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[100px]" : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"}
+              className={
+                isMobile
+                  ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[100px]"
+                  : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"
+              }
             />
             <Textarea
               placeholder="Character Persona"
@@ -974,7 +1575,11 @@ export default function Home() {
               onChange={(e) =>
                 setNewCharacter({ ...newCharacter, persona: e.target.value })
               }
-              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[100px]" : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"}
+              className={
+                isMobile
+                  ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[100px]"
+                  : "border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 min-h-[100px]"
+              }
             />
             <motion.div
               whileHover={{ scale: 1.02 }}
@@ -982,7 +1587,11 @@ export default function Home() {
               className="pt-2"
             >
               <Button
-                className={isMobile ? "w-full bg-red-500 hover:bg-red-600 text-white" : "w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg"}
+                className={
+                  isMobile
+                    ? "w-full bg-red-500 hover:bg-red-600 text-white"
+                    : "w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 text-white shadow-lg"
+                }
                 onClick={handleSubmit}
                 disabled={createCharacter.isPending}
               >
@@ -994,9 +1603,17 @@ export default function Home() {
       </Dialog>
 
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent className={isMobile ? "rounded-xl bg-gray-900 border-gray-800 text-white" : "rounded-3xl"}>
+        <DialogContent
+          className={
+            isMobile
+              ? "rounded-xl bg-gray-900 border-gray-800 text-white"
+              : "rounded-3xl"
+          }
+        >
           <DialogHeader>
-            <DialogTitle className={isMobile ? "text-white" : ""}>Delete Character</DialogTitle>
+            <DialogTitle className={isMobile ? "text-white" : ""}>
+              Delete Character
+            </DialogTitle>
             <DialogDescription className={isMobile ? "text-gray-400" : ""}>
               Are you sure you want to delete this character? This action cannot
               be undone.
@@ -1029,29 +1646,43 @@ export default function Home() {
         onClose={() => setShowSubscription(false)}
         isMobile={isMobile}
       />
-      
+
       {/* Complaint Dialog */}
       <Dialog open={showComplaintDialog} onOpenChange={setShowComplaintDialog}>
-        <DialogContent className={`${isMobile ? 'max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white' : 'sm:max-w-[425px]'}`}>
+        <DialogContent
+          className={`${isMobile ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" : "sm:max-w-[425px]"}`}
+        >
           <DialogHeader>
-            <DialogTitle className={isMobile ? "text-xl font-bold text-red-400" : "text-2xl font-bold"}>
+            <DialogTitle
+              className={
+                isMobile
+                  ? "text-xl font-bold text-red-400"
+                  : "text-2xl font-bold"
+              }
+            >
               Submit Complaint
             </DialogTitle>
             <DialogDescription className={isMobile ? "text-gray-400" : ""}>
               Tell us what went wrong. We'll look into it right away.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <Textarea
               placeholder="Describe your issue in detail..."
               value={complaint}
               onChange={(e) => setComplaint(e.target.value)}
-              className={isMobile ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[120px]" : "min-h-[120px]"}
+              className={
+                isMobile
+                  ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 min-h-[120px]"
+                  : "min-h-[120px]"
+              }
             />
-            
+
             <div className="grid w-full max-w-sm items-center gap-1.5">
-              <label className={`text-sm font-medium ${isMobile ? "text-gray-300" : ""}`}>
+              <label
+                className={`text-sm font-medium ${isMobile ? "text-gray-300" : ""}`}
+              >
                 Attach screenshot (optional)
               </label>
               <input
@@ -1074,12 +1705,16 @@ export default function Home() {
               <Button
                 type="button"
                 variant={isMobile ? "outline" : "secondary"}
-                className={isMobile ? "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white" : ""}
+                className={
+                  isMobile
+                    ? "bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white"
+                    : ""
+                }
                 onClick={() => fileInputRef.current?.click()}
               >
                 Select Image
               </Button>
-              
+
               {imagePreview && (
                 <div className="mt-2 relative">
                   <img
@@ -1103,7 +1738,7 @@ export default function Home() {
               )}
             </div>
           </div>
-          
+
           <div className="flex justify-end gap-3 mt-4">
             <Button
               type="button"
@@ -1114,13 +1749,19 @@ export default function Home() {
                 setSelectedImage(null);
                 setImagePreview(null);
               }}
-              className={isMobile ? "text-gray-400 hover:text-white hover:bg-gray-800" : ""}
+              className={
+                isMobile
+                  ? "text-gray-400 hover:text-white hover:bg-gray-800"
+                  : ""
+              }
             >
               Cancel
             </Button>
             <Button
               type="button"
-              className={isMobile ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+              className={
+                isMobile ? "bg-red-500 hover:bg-red-600 text-white" : ""
+              }
               onClick={() => {
                 // Submit the complaint
                 const formData = new FormData();
@@ -1128,34 +1769,36 @@ export default function Home() {
                 if (selectedImage) {
                   formData.append("image", selectedImage);
                 }
-                
+
                 fetch("/api/complaints", {
                   method: "POST",
                   body: formData,
                 })
-                .then(response => {
-                  if (!response.ok) {
-                    throw new Error("Failed to submit complaint");
-                  }
-                  return response.json();
-                })
-                .then(() => {
-                  toast({
-                    title: "Complaint submitted",
-                    description: "We've received your complaint and will review it shortly.",
+                  .then((response) => {
+                    if (!response.ok) {
+                      throw new Error("Failed to submit complaint");
+                    }
+                    return response.json();
+                  })
+                  .then(() => {
+                    toast({
+                      title: "Complaint submitted",
+                      description:
+                        "We've received your complaint and will review it shortly.",
+                    });
+                    setShowComplaintDialog(false);
+                    setComplaint("");
+                    setSelectedImage(null);
+                    setImagePreview(null);
+                  })
+                  .catch((error) => {
+                    toast({
+                      variant: "destructive",
+                      title: "Error",
+                      description:
+                        error.message || "Failed to submit complaint",
+                    });
                   });
-                  setShowComplaintDialog(false);
-                  setComplaint("");
-                  setSelectedImage(null);
-                  setImagePreview(null);
-                })
-                .catch(error => {
-                  toast({
-                    variant: "destructive",
-                    title: "Error",
-                    description: error.message || "Failed to submit complaint",
-                  });
-                });
               }}
             >
               Submit
