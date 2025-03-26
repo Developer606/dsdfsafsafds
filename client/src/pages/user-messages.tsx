@@ -121,6 +121,10 @@ export default function UserMessages() {
 
   // Initialize WebSocket connection
   useEffect(() => {
+    if (!currentUser?.id || !userId) return;
+    
+    console.log(`Setting up WebSocket for user ${currentUser.id} to chat with user ${userId}`);
+    
     const initWebSocket = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
       const socket = new WebSocket(`${protocol}://${window.location.host}/ws`);
@@ -132,40 +136,52 @@ export default function UserMessages() {
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log("Received WebSocket message:", data);
           
           switch (data.type) {
             case "new_message":
               // Handle incoming message
-              if (data.message.senderId === userId || data.message.receiverId === userId) {
+              if (!data.message) break;
+              
+              console.log("New message received:", data.message);
+              console.log("Current users:", { currentUserId: currentUser?.id, chatWithUserId: userId });
+              
+              // If the message involves the current conversation participants
+              const involvesChatUser = 
+                (data.message.senderId === userId && data.message.receiverId === currentUser?.id) || 
+                (data.message.senderId === currentUser?.id && data.message.receiverId === userId);
+                
+              if (involvesChatUser) {
+                console.log("Message is part of current conversation, refreshing chat");
+                // Always refresh the messages in this conversation
                 queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
                 
-                // If the message is from the user we're chatting with (userId) to us (currentUser.id)
+                // If the message is from the user we're chatting with, mark it as read
                 if (data.message.senderId === userId && data.message.receiverId === currentUser?.id) {
-                  // When we receive a message from the other user, mark it as read
+                  console.log("Marking message as read:", data.message.id);
                   socket.send(JSON.stringify({
                     type: "message_status_update",
                     messageId: data.message.id,
                     status: "read"
                   }));
-                  
-                  // Force refresh messages to show the new one
-                  queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
-                }
-                
-                // If we sent a message and this is a delivery confirmation
-                if (data.message.senderId === currentUser?.id && data.message.receiverId === userId) {
-                  // Our message to the other user was delivered, refresh the UI
-                  queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
                 }
               }
               break;
               
+            case "message_sent":
+              console.log("Message sent confirmation received:", data);
+              // Message successfully sent, refresh the conversation
+              queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
+              break;
+              
             case "message_status_update":
+              console.log("Message status update received:", data);
               // Update message status in UI
               queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
               break;
               
             case "typing_indicator":
+              console.log("Typing indicator received:", data);
               // Show typing indicator when the other user is typing
               if (data.senderId === userId) {
                 setIsTyping(data.isTyping);
@@ -194,11 +210,12 @@ export default function UserMessages() {
     initWebSocket();
     
     return () => {
+      console.log("Cleaning up WebSocket connection");
       if (websocket && websocket.readyState === WebSocket.OPEN) {
         websocket.close();
       }
     };
-  }, [userId, queryClient, currentUser?.id]);
+  }, [userId, currentUser?.id, queryClient]);
   
   // Scroll to bottom when new messages arrive
   useEffect(() => {

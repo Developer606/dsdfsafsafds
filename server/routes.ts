@@ -261,7 +261,13 @@ export async function registerRoutes(app: Express) {
   // Function to handle user messages
   async function handleUserMessage(senderId: number, message: any) {
     try {
+      console.log("Handling user message:", { senderId, message });
       const { receiverId, content } = message;
+      
+      if (!receiverId || !content) {
+        console.error("Invalid message format:", message);
+        return;
+      }
       
       // Create message in database
       const newMessage = await storage.createUserMessage({
@@ -271,36 +277,67 @@ export async function registerRoutes(app: Express) {
         status: "sent"
       });
       
+      console.log("Created new message in database:", newMessage);
+      
       // Send message to all connections of the receiver
       const receiverConnections = userConnections.get(receiverId);
+      console.log(`Receiver ${receiverId} has ${receiverConnections?.size || 0} active connections`);
+      
       if (receiverConnections && receiverConnections.size > 0) {
         const messageData = JSON.stringify({
           type: "new_message",
           message: newMessage
         });
         
+        let delivered = false;
+        
         receiverConnections.forEach(conn => {
           if (conn.readyState === WebSocket.OPEN) {
+            console.log(`Sending message to receiver ${receiverId}`);
             conn.send(messageData);
-            
-            // Update message status to delivered
-            storage.updateMessageStatus(newMessage.id, "delivered");
+            delivered = true;
           }
         });
+        
+        // Only update status if at least one connection received the message
+        if (delivered) {
+          console.log(`Updating message ${newMessage.id} status to delivered`);
+          await storage.updateMessageStatus(newMessage.id, "delivered");
+        }
       }
       
       // Send confirmation back to sender's connections
       const senderConnections = userConnections.get(senderId);
+      console.log(`Sender ${senderId} has ${senderConnections?.size || 0} active connections`);
+      
       if (senderConnections) {
         const confirmationData = JSON.stringify({
           type: "message_sent",
           messageId: newMessage.id,
+          message: newMessage,
           timestamp: newMessage.timestamp
         });
         
         senderConnections.forEach(conn => {
           if (conn.readyState === WebSocket.OPEN) {
+            console.log(`Sending confirmation to sender ${senderId}`);
             conn.send(confirmationData);
+          }
+        });
+      }
+      
+      // Also send the message to the sender's connections to ensure both sides see the message
+      // This ensures the sender can immediately see their own message
+      if (senderConnections) {
+        const messageDataForSender = JSON.stringify({
+          type: "new_message",
+          message: newMessage
+        });
+        
+        senderConnections.forEach(conn => {
+          if (conn.readyState === WebSocket.OPEN) {
+            console.log(`Sending message copy to sender ${senderId}`);
+            conn.send(messageDataForSender);
           }
         });
       }
@@ -312,25 +349,40 @@ export async function registerRoutes(app: Express) {
   // Function to handle message status updates
   async function handleMessageStatusUpdate(userId: number, message: any) {
     try {
+      console.log("Handling message status update:", { userId, message });
       const { messageId, status } = message;
+      
+      if (!messageId || !status) {
+        console.error("Invalid message status update format:", message);
+        return;
+      }
       
       // Update message status in database
       await storage.updateMessageStatus(messageId, status);
+      console.log(`Updated message ${messageId} status to ${status} in database`);
       
       // Get the message details using storage interface
-      // We'll retrieve all messages between the users and find the specific one
-      // First we need to find the message sender and receiver      
-      // Using a temporary approach since we don't have a getMessageById method
+      console.log("Fetching message details...");
       const allUserMessages = await storage.getUserMessages(userId, 0); // Get all messages
       const msg = allUserMessages.find(m => m.id === messageId);
       
-      if (!msg) return;
+      if (!msg) {
+        console.log(`Message ${messageId} not found`);
+        return;
+      }
+      
+      console.log("Found message:", msg);
       
       // Only proceed if this user is the receiver of the message
-      if (msg.receiverId !== userId) return;
+      if (msg.receiverId !== userId) {
+        console.log(`User ${userId} is not the receiver of message ${messageId}`);
+        return;
+      }
       
       // Notify the sender about the status update
       const senderConnections = userConnections.get(msg.senderId);
+      console.log(`Sender ${msg.senderId} has ${senderConnections?.size || 0} active connections`);
+      
       if (senderConnections) {
         const statusData = JSON.stringify({
           type: "message_status_update",
@@ -340,6 +392,7 @@ export async function registerRoutes(app: Express) {
         
         senderConnections.forEach(conn => {
           if (conn.readyState === WebSocket.OPEN) {
+            console.log(`Notifying sender ${msg.senderId} about message ${messageId} status update to ${status}`);
             conn.send(statusData);
           }
         });
