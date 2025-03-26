@@ -790,6 +790,7 @@ export class DatabaseStorage implements IStorage {
         return false;
     }
   }
+}
 
   // User messaging methods implementation
   async createUserMessage(message: InsertUserMessage): Promise<UserMessage> {
@@ -900,7 +901,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         sql`${userConversations.user1Id} = ${userId} OR ${userConversations.user2Id} = ${userId}`
       )
-      .orderBy(sql`${userConversations.lastMessageTimestamp} DESC`);
+      .orderBy(userConversations.lastMessageTimestamp, "desc");
   }
   
   async getUnreadMessageCount(userId: number): Promise<number> {
@@ -936,14 +937,11 @@ export class DatabaseStorage implements IStorage {
       return existingConversation;
     }
     
-    // Create new conversation with default values
     const [newConversation] = await db
       .insert(userConversations)
       .values({
         user1Id: smallerId,
         user2Id: largerId,
-        lastMessageId: null,
-        lastMessageTimestamp: null,
         unreadCountUser1: 0,
         unreadCountUser2: 0,
         createdAt: new Date(),

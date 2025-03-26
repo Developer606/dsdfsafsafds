@@ -154,7 +154,7 @@ export async function registerRoutes(app: Express) {
       const sessionId = decodeURIComponent(sessionMatch[1]);
 
       try {
-        // Verify session exists and user is admin
+        // Verify session exists
         const session: any = await new Promise((resolve, reject) => {
           storage.sessionStore.get(
             sessionId.replace("s:", ""),
@@ -165,10 +165,8 @@ export async function registerRoutes(app: Express) {
           );
         });
 
-        if (!session?.passport?.user) return false;
-
-        const user = await storage.getUser(session.passport.user);
-        return user?.isAdmin === true;
+        // Allow any authenticated user (not just admins)
+        return !!session?.passport?.user;
       } catch (error) {
         console.error("WebSocket authentication error:", error);
         return false;
@@ -176,25 +174,228 @@ export async function registerRoutes(app: Express) {
     },
   });
 
-  // Track authenticated WebSocket clients
-  const clients = new Set<WebSocket>();
+  // Map to track user connections by userId
+  const userConnections = new Map<number, Set<WebSocket>>();
+  // Set for admin clients (for admin-only broadcasts)
+  const adminClients = new Set<WebSocket>();
 
-  wss.on("connection", (ws: WebSocket) => {
-    clients.add(ws);
+  wss.on("connection", async (ws: WebSocket, req: IncomingMessage) => {
+    // Parse the user ID from the session
+    try {
+      const cookies = req.headers.cookie;
+      if (!cookies) return;
 
-    ws.on("close", () => {
-      clients.delete(ws);
-    });
+      const sessionMatch = cookies.match(/connect\.sid=([^;]+)/);
+      if (!sessionMatch) return;
+
+      const sessionId = decodeURIComponent(sessionMatch[1]);
+      
+      const session: any = await new Promise((resolve, reject) => {
+        storage.sessionStore.get(
+          sessionId.replace("s:", ""),
+          (err, session) => {
+            if (err) reject(err);
+            else resolve(session);
+          },
+        );
+      });
+
+      const userId = session?.passport?.user;
+      if (!userId) return;
+
+      // Get the user to check if they're an admin
+      const user = await storage.getUser(userId);
+      if (!user) return;
+
+      // Assign this connection to the user
+      if (!userConnections.has(userId)) {
+        userConnections.set(userId, new Set());
+      }
+      userConnections.get(userId)?.add(ws);
+
+      // Also add admins to the admin set
+      if (user.isAdmin) {
+        adminClients.add(ws);
+      }
+
+      // Store the userId in the WebSocket for later use
+      (ws as any).userId = userId;
+      console.log(`User ${userId} connected via WebSocket`);
+
+      // Handle user messages
+      ws.on("message", async (data: WebSocket.Data) => {
+        try {
+          const message = JSON.parse(data.toString());
+          
+          // Handle different message types
+          switch (message.type) {
+            case "user_message":
+              await handleUserMessage(userId, message);
+              break;
+            case "message_status_update":
+              await handleMessageStatusUpdate(userId, message);
+              break;
+            case "typing_indicator":
+              await handleTypingIndicator(userId, message);
+              break;
+          }
+        } catch (error) {
+          console.error("Error processing WebSocket message:", error);
+        }
+      });
+
+      // Remove connection when closed
+      ws.on("close", () => {
+        userConnections.get(userId)?.delete(ws);
+        if (userConnections.get(userId)?.size === 0) {
+          userConnections.delete(userId);
+        }
+        adminClients.delete(ws);
+        console.log(`User ${userId} disconnected from WebSocket`);
+      });
+    } catch (error) {
+      console.error("Error handling WebSocket connection:", error);
+    }
   });
 
-  // Updated broadcast function to use tracked clients
-  const broadcastUpdate = (type: string) => {
-    const message = JSON.stringify({ type });
-    clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
+  // Function to handle user messages
+  async function handleUserMessage(senderId: number, message: any) {
+    try {
+      const { receiverId, content } = message;
+      
+      // Create message in database
+      const newMessage = await storage.createUserMessage({
+        senderId,
+        receiverId,
+        content,
+        status: "sent"
+      });
+      
+      // Send message to all connections of the receiver
+      const receiverConnections = userConnections.get(receiverId);
+      if (receiverConnections && receiverConnections.size > 0) {
+        const messageData = JSON.stringify({
+          type: "new_message",
+          message: newMessage
+        });
+        
+        receiverConnections.forEach(conn => {
+          if (conn.readyState === WebSocket.OPEN) {
+            conn.send(messageData);
+            
+            // Update message status to delivered
+            storage.updateMessageStatus(newMessage.id, "delivered");
+          }
+        });
       }
-    });
+      
+      // Send confirmation back to sender's connections
+      const senderConnections = userConnections.get(senderId);
+      if (senderConnections) {
+        const confirmationData = JSON.stringify({
+          type: "message_sent",
+          messageId: newMessage.id,
+          timestamp: newMessage.timestamp
+        });
+        
+        senderConnections.forEach(conn => {
+          if (conn.readyState === WebSocket.OPEN) {
+            conn.send(confirmationData);
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error handling user message:", error);
+    }
+  }
+  
+  // Function to handle message status updates
+  async function handleMessageStatusUpdate(userId: number, message: any) {
+    try {
+      const { messageId, status } = message;
+      
+      // Update message status in database
+      await storage.updateMessageStatus(messageId, status);
+      
+      // Get the message to find the sender
+      const messages = await db
+        .select()
+        .from(userMessages)
+        .where(eq(userMessages.id, messageId));
+      
+      if (messages.length === 0) return;
+      
+      const msg = messages[0];
+      
+      // Only proceed if this user is the receiver of the message
+      if (msg.receiverId !== userId) return;
+      
+      // Notify the sender about the status update
+      const senderConnections = userConnections.get(msg.senderId);
+      if (senderConnections) {
+        const statusData = JSON.stringify({
+          type: "message_status_update",
+          messageId,
+          status
+        });
+        
+        senderConnections.forEach(conn => {
+          if (conn.readyState === WebSocket.OPEN) {
+            conn.send(statusData);
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error updating message status:", error);
+    }
+  }
+  
+  // Function to handle typing indicators
+  async function handleTypingIndicator(senderId: number, message: any) {
+    try {
+      const { receiverId, isTyping } = message;
+      
+      // Send typing indicator to receiver
+      const receiverConnections = userConnections.get(receiverId);
+      if (receiverConnections) {
+        const typingData = JSON.stringify({
+          type: "typing_indicator",
+          senderId,
+          isTyping
+        });
+        
+        receiverConnections.forEach(conn => {
+          if (conn.readyState === WebSocket.OPEN) {
+            conn.send(typingData);
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error sending typing indicator:", error);
+    }
+  }
+
+  // Updated broadcast function to use tracked clients
+  const broadcastUpdate = (type: string, adminOnly = false) => {
+    const message = JSON.stringify({ type });
+    
+    if (adminOnly) {
+      // Send only to admin clients
+      adminClients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(message);
+        }
+      });
+    } else {
+      // Send to all connected users
+      for (const connections of userConnections.values()) {
+        connections.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(message);
+          }
+        });
+      }
+    }
   };
 
   // Set up authentication routes and middleware
