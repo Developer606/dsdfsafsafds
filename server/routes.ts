@@ -693,6 +693,37 @@ export async function registerRoutes(app: Express) {
     res.json(req.user);
   });
   
+  // Search users by username endpoint
+  app.get("/api/users/search", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    try {
+      const query = req.query.q as string;
+      
+      if (!query || query.trim() === "") {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+      
+      const users = await storage.searchUsersByUsername(query);
+      
+      // Remove sensitive information before sending to client
+      const sanitizedUsers = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        fullName: user.fullName || user.username,
+        profileCompleted: user.profileCompleted || false,
+        lastLoginAt: user.lastLoginAt
+      }));
+      
+      res.json(sanitizedUsers);
+    } catch (error) {
+      console.error("Error searching users:", error);
+      res.status(500).json({ error: "Failed to search users" });
+    }
+  });
+  
   // Update user profile endpoint
   app.post("/api/user/profile", async (req, res) => {
     if (!req.isAuthenticated()) {
