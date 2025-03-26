@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { motion } from "framer-motion";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { apiRequest } from "@/lib/queryClient";
+import { useSocket } from "@/lib/socket-io-client";
 
 // Types for message and conversation
 interface UserMessage {
@@ -37,9 +38,9 @@ export default function UserMessages() {
   const isMobile = useIsMobile();
   const [messageText, setMessageText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const socketManager = useSocket();
   
   // Query to get current user
   const { data: currentUser } = useQuery({
@@ -119,103 +120,75 @@ export default function UserMessages() {
     },
   });
 
-  // Initialize WebSocket connection
+  // Initialize Socket.IO connection and message listeners
   useEffect(() => {
     if (!currentUser?.id || !userId) return;
     
-    console.log(`Setting up WebSocket for user ${currentUser.id} to chat with user ${userId}`);
+    console.log(`Setting up Socket.IO for user ${currentUser.id} to chat with user ${userId}`);
     
-    const initWebSocket = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const socket = new WebSocket(`${protocol}://${window.location.host}/ws`);
+    // Connect to the Socket.IO server
+    const socket = socketManager.connect();
+    
+    // Set up message listeners
+    const newMessageHandler = (data: any) => {
+      if (!data.message) return;
       
-      socket.onopen = () => {
-        console.log("WebSocket connection established");
-      };
+      console.log("New message received:", data.message);
+      console.log("Current users:", { currentUserId: currentUser?.id, chatWithUserId: userId });
       
-      socket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log("Received WebSocket message:", data);
-          
-          switch (data.type) {
-            case "new_message":
-              // Handle incoming message
-              if (!data.message) break;
-              
-              console.log("New message received:", data.message);
-              console.log("Current users:", { currentUserId: currentUser?.id, chatWithUserId: userId });
-              
-              // If the message involves the current conversation participants
-              const involvesChatUser = 
-                (data.message.senderId === userId && data.message.receiverId === currentUser?.id) || 
-                (data.message.senderId === currentUser?.id && data.message.receiverId === userId);
-                
-              if (involvesChatUser) {
-                console.log("Message is part of current conversation, refreshing chat");
-                // Always refresh the messages in this conversation
-                queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
-                
-                // If the message is from the user we're chatting with, mark it as read
-                if (data.message.senderId === userId && data.message.receiverId === currentUser?.id) {
-                  console.log("Marking message as read:", data.message.id);
-                  socket.send(JSON.stringify({
-                    type: "message_status_update",
-                    messageId: data.message.id,
-                    status: "read"
-                  }));
-                }
-              }
-              break;
-              
-            case "message_sent":
-              console.log("Message sent confirmation received:", data);
-              // Message successfully sent, refresh the conversation
-              queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
-              break;
-              
-            case "message_status_update":
-              console.log("Message status update received:", data);
-              // Update message status in UI
-              queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
-              break;
-              
-            case "typing_indicator":
-              console.log("Typing indicator received:", data);
-              // Show typing indicator when the other user is typing
-              if (data.senderId === userId) {
-                setIsTyping(data.isTyping);
-              }
-              break;
-          }
-        } catch (error) {
-          console.error("Error handling WebSocket message:", error);
+      // If the message involves the current conversation participants
+      const involvesChatUser = 
+        (data.message.senderId === userId && data.message.receiverId === currentUser?.id) || 
+        (data.message.senderId === currentUser?.id && data.message.receiverId === userId);
+      
+      if (involvesChatUser) {
+        console.log("Message is part of current conversation, refreshing chat");
+        // Always refresh the messages in this conversation
+        queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
+        
+        // If the message is from the user we're chatting with, mark it as read
+        if (data.message.senderId === userId && data.message.receiverId === currentUser?.id) {
+          console.log("Marking message as read:", data.message.id);
+          socketManager.updateMessageStatus(data.message.id, "read");
         }
-      };
-      
-      socket.onclose = () => {
-        console.log("WebSocket connection closed");
-        // Attempt to reconnect after a delay
-        setTimeout(initWebSocket, 3000);
-      };
-      
-      socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        socket.close();
-      };
-      
-      setWebsocket(socket);
-    };
-    
-    initWebSocket();
-    
-    return () => {
-      console.log("Cleaning up WebSocket connection");
-      if (websocket && websocket.readyState === WebSocket.OPEN) {
-        websocket.close();
       }
     };
-  }, [userId, currentUser?.id, queryClient]);
+    
+    const messageSentHandler = (data: any) => {
+      console.log("Message sent confirmation received:", data);
+      // Message successfully sent, refresh the conversation
+      queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
+    };
+    
+    const messageStatusHandler = (data: any) => {
+      console.log("Message status update received:", data);
+      // Update message status in UI
+      queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
+    };
+    
+    const typingIndicatorHandler = (data: any) => {
+      console.log("Typing indicator received:", data);
+      // Show typing indicator when the other user is typing
+      if (data.senderId === userId) {
+        setIsTyping(data.isTyping);
+      }
+    };
+    
+    // Register event listeners
+    const removeNewMessageListener = socketManager.addEventListener('new_message', newMessageHandler);
+    const removeMessageSentListener = socketManager.addEventListener('message_sent', messageSentHandler);
+    const removeMessageStatusListener = socketManager.addEventListener('message_status', messageStatusHandler);
+    const removeTypingListener = socketManager.addEventListener('typing_indicator', typingIndicatorHandler);
+    
+    // Cleanup function
+    return () => {
+      console.log("Cleaning up Socket.IO listeners");
+      removeNewMessageListener();
+      removeMessageSentListener();
+      removeMessageStatusListener();
+      removeTypingListener();
+    };
+  }, [userId, currentUser?.id, queryClient, socketManager]);
   
   // Scroll to bottom when new messages arrive
   useEffect(() => {
