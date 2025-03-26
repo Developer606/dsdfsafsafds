@@ -376,3 +376,53 @@ export const insertScheduledBroadcastSchema = createInsertSchema(scheduledBroadc
 // Add scheduled broadcast types
 export type ScheduledBroadcast = typeof scheduledBroadcasts.$inferSelect;
 export type InsertScheduledBroadcast = z.infer<typeof insertScheduledBroadcastSchema>;
+
+// User chat message status types
+export type MessageStatus = "sent" | "delivered" | "read";
+
+// User-to-user messages table
+export const userMessages = sqliteTable("user_messages", {
+  id: integer("id").primaryKey(),
+  senderId: integer("sender_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  receiverId: integer("receiver_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  status: text("status").notNull().default("sent"),
+  timestamp: integer("timestamp", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// User-to-user conversations table to track conversations between users
+export const userConversations = sqliteTable("user_conversations", {
+  id: integer("id").primaryKey(),
+  user1Id: integer("user1_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  user2Id: integer("user2_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  lastMessageId: integer("last_message_id").references(() => userMessages.id),
+  lastMessageTimestamp: integer("last_message_timestamp", { mode: "timestamp_ms" }),
+  unreadCountUser1: integer("unread_count_user1").notNull().default(0),
+  unreadCountUser2: integer("unread_count_user2").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// User message schema
+export const insertUserMessageSchema = createInsertSchema(userMessages).pick({
+  senderId: true,
+  receiverId: true,
+  content: true,
+  status: true,
+});
+
+// User types
+export type UserMessage = typeof userMessages.$inferSelect;
+export type InsertUserMessage = z.infer<typeof insertUserMessageSchema>;
+export type UserConversation = typeof userConversations.$inferSelect;
