@@ -148,6 +148,9 @@ export class DatabaseStorage implements IStorage {
 
     // Initialize admin user when storage is created
     this.initializeAdmin();
+    
+    // Initialize the user messaging database
+    this.initializeUserMessaging();
   }
   
   // User messaging methods implementation
@@ -792,9 +795,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   // This is just a placeholder comment for initialization timing
-  private initializeUserMessaging() {
-    // Nothing to initialize here - all user messaging tables are handled in schema.ts
-    console.log("User messaging methods initialized");
+  private async initializeUserMessaging() {
+    try {
+      // Initialize the messages database
+      const { initializeMessagesDb } = await import("./messages-db");
+      await initializeMessagesDb();
+      console.log("Messages database initialized successfully");
+    } catch (error) {
+      console.error("Failed to initialize messages database:", error);
+    }
   }
 }
 
