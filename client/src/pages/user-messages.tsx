@@ -139,11 +139,9 @@ export default function UserMessages() {
               if (data.message.senderId === userId || data.message.receiverId === userId) {
                 queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
                 
-                // If the message is from the other user to us, mark as read
-                // userId is the OTHER user we're chatting with
-                // currentUser.id is OUR user ID
+                // If the message is from the user we're chatting with (userId) to us (currentUser.id)
                 if (data.message.senderId === userId && data.message.receiverId === currentUser?.id) {
-                  // When: Message FROM the current chat partner TO us
+                  // When we receive a message from the other user, mark it as read
                   socket.send(JSON.stringify({
                     type: "message_status_update",
                     messageId: data.message.id,
@@ -151,6 +149,12 @@ export default function UserMessages() {
                   }));
                   
                   // Force refresh messages to show the new one
+                  queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
+                }
+                
+                // If we sent a message and this is a delivery confirmation
+                if (data.message.senderId === currentUser?.id && data.message.receiverId === userId) {
+                  // Our message to the other user was delivered, refresh the UI
                   queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
                 }
               }
@@ -194,7 +198,7 @@ export default function UserMessages() {
         websocket.close();
       }
     };
-  }, [userId, queryClient]);
+  }, [userId, queryClient, currentUser?.id]);
   
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -348,7 +352,7 @@ export default function UserMessages() {
                         <span className="ml-2">
                           {message.status === "sent" && "✓"}
                           {message.status === "delivered" && "✓✓"}
-                          {message.status === "read" && "✓✓"}
+                          {message.status === "read" && <span className="text-blue-300">✓✓</span>}
                         </span>
                       )}
                     </div>
