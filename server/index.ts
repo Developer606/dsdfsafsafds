@@ -1,10 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./db";
 import { initializeNotifications } from "./notification-db";
 import { startScheduler } from "./scheduler";
 import { initializeAdminDb } from "./admin-db";
+import { setupSocketIOServer } from "./socket-io-server";
 import path from "path";
 
 const app = express();

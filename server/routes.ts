@@ -44,6 +44,7 @@ import {
   deleteScheduledBroadcast,
 } from "./notification-db";
 import { getPayPalConfig } from "./config/index";
+import { setupSocketIOServer } from "./socket-io-server";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -114,7 +115,7 @@ async function getBackgroundImages(): Promise<string[]> {
   }
 }
 
-export async function registerRoutes(app: Express) {
+export async function registerRoutes(app: Express): Promise<Server> {
   // Configure session middleware first
   app.use(
     session({
@@ -134,6 +135,9 @@ export async function registerRoutes(app: Express) {
   app.use(passport.session());
 
   const httpServer = createServer(app);
+  
+  // Set up Socket.IO server with our enhanced implementation
+  const io = setupSocketIOServer(httpServer);
 
   // Initialize WebSocket server with session verification
   const wss = new WebSocketServer({

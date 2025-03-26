@@ -1,0 +1,310 @@
+import { io, Socket } from 'socket.io-client';
+import { queryClient } from './queryClient';
+
+// Singleton to manage the socket connection
+class SocketIOManager {
+  private static instance: SocketIOManager;
+  private socket: Socket | null = null;
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  private isConnecting: boolean = false;
+  private listeners: Map<string, Set<(data: any) => void>> = new Map();
+  
+  private constructor() {}
+  
+  public static getInstance(): SocketIOManager {
+    if (!SocketIOManager.instance) {
+      SocketIOManager.instance = new SocketIOManager();
+    }
+    return SocketIOManager.instance;
+  }
+  
+  /**
+   * Initialize and connect the socket
+   * @returns The socket instance
+   */
+  public connect(): Socket {
+    if (this.socket && this.socket.connected) {
+      return this.socket;
+    }
+    
+    if (this.isConnecting) {
+      return this.socket as Socket;
+    }
+    
+    this.isConnecting = true;
+    
+    // Get session ID from cookies or localStorage
+    const sessionId = document.cookie.split(';')
+      .find(c => c.trim().startsWith('connect.sid='))
+      ?.split('=')[1];
+    
+    // Connect to the server with authentication
+    this.socket = io({
+      transports: ['websocket'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+      auth: {
+        sessionId
+      }
+    });
+    
+    this.setupEventHandlers();
+    
+    return this.socket;
+  }
+  
+  /**
+   * Set up event handlers for socket events
+   */
+  private setupEventHandlers() {
+    if (!this.socket) return;
+    
+    this.socket.on('connect', () => {
+      console.log('Connected to Socket.IO server');
+      this.isConnecting = false;
+      this.notifyListeners('connection_status', { connected: true });
+      
+      // Clear reconnect timer if it exists
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = null;
+      }
+    });
+    
+    this.socket.on('disconnect', (reason) => {
+      console.log(`Disconnected from Socket.IO server: ${reason}`);
+      this.notifyListeners('connection_status', { connected: false });
+      
+      // If disconnected due to network issues, try to reconnect
+      if (reason === 'io server disconnect' || reason === 'transport close') {
+        this.attemptReconnect();
+      }
+    });
+    
+    this.socket.on('connect_error', (error) => {
+      console.error('Socket.IO connection error:', error);
+      this.isConnecting = false;
+      this.notifyListeners('connection_error', { error: error.message });
+      
+      // Attempt to reconnect after delay
+      this.attemptReconnect();
+    });
+    
+    // Handle ping event to keep connection alive
+    this.socket.on('ping', () => {
+      this.socket?.emit('pong');
+    });
+    
+    // Handle new messages
+    this.socket.on('new_message', (data) => {
+      console.log('Received new message:', data);
+      this.notifyListeners('new_message', data);
+      
+      // Invalidate queries to refresh UI
+      if (data.message) {
+        // Invalidate conversation list
+        queryClient.invalidateQueries({ queryKey: ['/api/user/conversations'] });
+        
+        // Invalidate specific conversation
+        if (data.message.senderId) {
+          queryClient.invalidateQueries({ 
+            queryKey: ['/api/user-messages', data.message.senderId] 
+          });
+        }
+        if (data.message.receiverId) {
+          queryClient.invalidateQueries({ 
+            queryKey: ['/api/user-messages', data.message.receiverId] 
+          });
+        }
+      }
+      
+      // Auto mark as delivered if we're the receiver
+      const currentUserId = this.getCurrentUserId();
+      if (data.message && data.message.receiverId === currentUserId) {
+        this.socket?.emit('message_status_update', {
+          messageId: data.message.id,
+          status: 'delivered'
+        });
+      }
+    });
+    
+    // Handle message sent confirmation
+    this.socket.on('message_sent', (data) => {
+      console.log('Message sent confirmation:', data);
+      this.notifyListeners('message_sent', data);
+      
+      // Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: ['/api/user-messages'] });
+    });
+    
+    // Handle message status updates
+    this.socket.on('message_status', (data) => {
+      console.log('Message status update:', data);
+      this.notifyListeners('message_status', data);
+      
+      // Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: ['/api/user-messages'] });
+    });
+    
+    // Handle typing indicators
+    this.socket.on('typing_indicator', (data) => {
+      console.log('Typing indicator:', data);
+      this.notifyListeners('typing_indicator', data);
+    });
+    
+    // Handle errors
+    this.socket.on('error', (error) => {
+      console.error('Socket.IO error:', error);
+      this.notifyListeners('error', error);
+    });
+  }
+  
+  /**
+   * Attempt to reconnect to the server
+   */
+  private attemptReconnect() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+    }
+    
+    this.reconnectTimer = setTimeout(() => {
+      console.log('Attempting to reconnect to Socket.IO server...');
+      
+      if (this.socket) {
+        this.socket.connect();
+      } else {
+        this.connect();
+      }
+    }, 3000);
+  }
+  
+  /**
+   * Get the current user ID from the session
+   */
+  private getCurrentUserId(): number | null {
+    try {
+      // Try to get user info from localStorage or other client storage
+      const userJson = localStorage.getItem('user');
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        return user.id;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting current user ID:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Send a message to another user
+   */
+  public sendMessage(receiverId: number, content: string): void {
+    if (!this.socket || !this.socket.connected) {
+      this.connect();
+    }
+    
+    this.socket?.emit('user_message', {
+      receiverId,
+      content
+    });
+  }
+  
+  /**
+   * Update message status (read/delivered)
+   */
+  public updateMessageStatus(messageId: number, status: 'sent' | 'delivered' | 'read'): void {
+    if (!this.socket || !this.socket.connected) {
+      this.connect();
+    }
+    
+    this.socket?.emit('message_status_update', {
+      messageId,
+      status
+    });
+  }
+  
+  /**
+   * Send typing indicator
+   */
+  public sendTypingIndicator(receiverId: number, isTyping: boolean): void {
+    if (!this.socket || !this.socket.connected) {
+      this.connect();
+    }
+    
+    this.socket?.emit('typing_indicator', {
+      receiverId,
+      isTyping
+    });
+  }
+  
+  /**
+   * Disconnect the socket
+   */
+  public disconnect(): void {
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+    
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+  }
+  
+  /**
+   * Add an event listener
+   */
+  public addEventListener(event: string, callback: (data: any) => void): () => void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    
+    this.listeners.get(event)?.add(callback);
+    
+    // Return a function to remove the listener
+    return () => this.removeEventListener(event, callback);
+  }
+  
+  /**
+   * Remove an event listener
+   */
+  public removeEventListener(event: string, callback: (data: any) => void): void {
+    if (this.listeners.has(event)) {
+      this.listeners.get(event)?.delete(callback);
+    }
+  }
+  
+  /**
+   * Notify all listeners of an event
+   */
+  private notifyListeners(event: string, data: any): void {
+    if (this.listeners.has(event)) {
+      this.listeners.get(event)?.forEach(callback => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`Error in ${event} listener:`, error);
+        }
+      });
+    }
+  }
+  
+  /**
+   * Check if the socket is connected
+   */
+  public isConnected(): boolean {
+    return !!this.socket && this.socket.connected;
+  }
+}
+
+// Export singleton instance
+export const socketManager = SocketIOManager.getInstance();
+
+// Hook for React components
+export function useSocket() {
+  return socketManager;
+}
