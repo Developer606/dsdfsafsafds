@@ -9,7 +9,9 @@ import {
   User as SelectUser,
   insertUserSchema,
   adminLoginSchema,
+  users,
 } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import cryptoRandomString from "crypto-random-string";
 
 declare global {
@@ -169,14 +171,41 @@ export function setupAuth(app: Express) {
     try {
       const { username, password } = req.body;
 
-      // Verify admin credentials
-      const user = await storage.getUserByUsername(username);
-      if (
-        !user ||
-        !user.isAdmin ||
-        !(await comparePasswords(password, user.password))
-      ) {
+      // Import the verifyAdminCredentials function
+      const { verifyAdminCredentials } = await import("./admin-db");
+
+      // First try to authenticate against the admin database
+      const isValidAdminUser = await verifyAdminCredentials(username, password);
+
+      if (!isValidAdminUser) {
         return res.status(401).json({ error: "Invalid admin credentials" });
+      }
+
+      // If admin credentials are valid, get or create a corresponding user in the main database
+      let user = await storage.getUserByUsername(username);
+
+      if (!user) {
+        // If we don't have a corresponding user in the main database, create one
+        user = await storage.createUser({
+          username: username,
+          // Use a random secure password for the main database record
+          password: await hashPassword(randomBytes(32).toString("hex")),
+          email: `${username}@admin.internal`, // Use a placeholder email
+          isAdmin: true,
+          role: "admin",
+        });
+      } else if (!user.isAdmin) {
+        // Update user to have admin privileges if they don't already
+        await storage.updateUserStatus(user.id, { isRestricted: false });
+        // This is a workaround since there's no direct method to update isAdmin
+        // We'll need to use the database directly
+        const db = (await import("./db")).db;
+        await db
+          .update(users)
+          .set({ isAdmin: true, role: "admin" })
+          .where(eq(users.id, user.id));
+        // Refresh user object
+        user = (await storage.getUser(user.id)) as typeof user;
       }
 
       // Update last login time with IP address
@@ -184,7 +213,7 @@ export function setupAuth(app: Express) {
       const clientIP = (req.headers["x-forwarded-for"] || req.ip) as string;
       await storage.updateLastLogin(user.id, clientIP);
 
-      // Log in the admin
+      // Log in the admin to the regular session
       req.login(user, (err) => {
         if (err) {
           return res.status(500).json({ error: "Admin login failed" });
@@ -192,6 +221,7 @@ export function setupAuth(app: Express) {
         res.json(user);
       });
     } catch (error) {
+      console.error("Admin login error:", error);
       next(error);
     }
   });
