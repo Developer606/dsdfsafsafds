@@ -1,4 +1,4 @@
-import { createServer } from "http";
+import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import express from "express";
 import session from "express-session";
@@ -115,7 +115,7 @@ async function getBackgroundImages(): Promise<string[]> {
   }
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express, existingServer?: Server): Promise<Server> {
   // Configure session middleware first
   app.use(
     session({
@@ -134,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const httpServer = createServer(app);
+  const httpServer = existingServer || createServer(app);
   
   // Set up Socket.IO server with our enhanced implementation
   const io = setupSocketIOServer(httpServer);

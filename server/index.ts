@@ -85,7 +85,11 @@ app.use((req, res, next) => {
     startScheduler();
     log("Broadcast scheduler started successfully");
 
-    const server = await registerRoutes(app);
+    // Create HTTP server first
+    const httpServer = createServer(app);
+    
+    // Register routes and setup Socket.IO
+    await registerRoutes(app);
 
     // Global error handler with better logging
     app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
@@ -105,13 +109,13 @@ app.use((req, res, next) => {
     });
 
     if (app.get("env") === "development") {
-      await setupVite(app, server);
+      await setupVite(app, httpServer);
     } else {
       serveStatic(app);
     }
 
     const PORT = 5000;
-    server.listen(PORT, "0.0.0.0", () => {
+    httpServer.listen(PORT, "0.0.0.0", () => {
       log(`Server started successfully on port ${PORT}`);
     });
   } catch (error) {

@@ -1,7 +1,6 @@
 import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { storage } from './storage';
-import { createUserMessage } from './messageHandlers';
 import { MessageStatus } from '@shared/schema';
 
 // Define tracking interface for messages
