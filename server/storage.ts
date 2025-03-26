@@ -155,7 +155,10 @@ export class DatabaseStorage implements IStorage {
   
   // User messaging methods implementation
   async createUserMessage(message: InsertUserMessage): Promise<UserMessage> {
-    const [newMessage] = await db
+    // Import the messages database to avoid circular imports
+    const { messagesDb } = await import("./messages-db");
+    
+    const [newMessage] = await messagesDb
       .insert(userMessages)
       .values({
         ...message,
@@ -168,7 +171,7 @@ export class DatabaseStorage implements IStorage {
     const user2Id = Math.max(message.senderId, message.receiverId);
     
     // Check if conversation exists
-    const [existingConversation] = await db
+    const [existingConversation] = await messagesDb
       .select()
       .from(userConversations)
       .where(
@@ -177,7 +180,7 @@ export class DatabaseStorage implements IStorage {
     
     if (existingConversation) {
       // Update existing conversation
-      await db
+      await messagesDb
         .update(userConversations)
         .set({
           lastMessageId: newMessage.id,
@@ -195,7 +198,7 @@ export class DatabaseStorage implements IStorage {
         );
     } else {
       // Create new conversation
-      await db
+      await messagesDb
         .insert(userConversations)
         .values({
           user1Id,
@@ -212,8 +215,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserMessages(userId: number, otherUserId: number): Promise<UserMessage[]> {
+    // Import the messages database to avoid circular imports
+    const { messagesDb } = await import("./messages-db");
+    
     // Get messages between two users (in either direction)
-    return await db
+    return await messagesDb
       .select()
       .from(userMessages)
       .where(
@@ -224,14 +230,17 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateMessageStatus(messageId: number, status: MessageStatus): Promise<void> {
-    await db
+    // Import the messages database to avoid circular imports
+    const { messagesDb } = await import("./messages-db");
+    
+    await messagesDb
       .update(userMessages)
       .set({ status })
       .where(eq(userMessages.id, messageId));
       
     // If status is read, update the conversation's unread count
     if (status === "read") {
-      const [message] = await db
+      const [message] = await messagesDb
         .select()
         .from(userMessages)
         .where(eq(userMessages.id, messageId));
@@ -241,7 +250,7 @@ export class DatabaseStorage implements IStorage {
         const user2Id = Math.max(message.senderId, message.receiverId);
         const readerId = message.receiverId; // The reader is the recipient
         
-        await db
+        await messagesDb
           .update(userConversations)
           .set({
             unreadCountUser1: readerId === user1Id ? 0 : userConversations.unreadCountUser1,
@@ -255,8 +264,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getUserConversations(userId: number): Promise<UserConversation[]> {
+    // Import the messages database to avoid circular imports
+    const { messagesDb } = await import("./messages-db");
+    
     // Get all conversations where the user is either user1 or user2
-    return await db
+    return await messagesDb
       .select()
       .from(userConversations)
       .where(
@@ -282,12 +294,15 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createConversation(user1Id: number, user2Id: number): Promise<UserConversation> {
+    // Import the messages database to avoid circular imports
+    const { messagesDb } = await import("./messages-db");
+    
     // Ensure user1Id is always the smaller ID for consistency
     const [smallerId, largerId] = user1Id < user2Id 
       ? [user1Id, user2Id] 
       : [user2Id, user1Id];
     
-    const [existingConversation] = await db
+    const [existingConversation] = await messagesDb
       .select()
       .from(userConversations)
       .where(
@@ -298,7 +313,7 @@ export class DatabaseStorage implements IStorage {
       return existingConversation;
     }
     
-    const [newConversation] = await db
+    const [newConversation] = await messagesDb
       .insert(userConversations)
       .values({
         user1Id: smallerId,
