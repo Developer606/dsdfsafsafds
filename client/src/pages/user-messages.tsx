@@ -209,31 +209,21 @@ export default function UserMessages() {
   // Handle typing indicator
   useEffect(() => {
     const handleTyping = () => {
-      if (!websocket || websocket.readyState !== WebSocket.OPEN) return;
-      
-      websocket.send(JSON.stringify({
-        type: "typing_indicator",
-        receiverId: userId,
-        isTyping: messageText.length > 0
-      }));
+      socketManager.sendTypingIndicator(userId, messageText.length > 0);
     };
     
     const typingTimer = setTimeout(handleTyping, 500);
     return () => clearTimeout(typingTimer);
-  }, [messageText, websocket, userId]);
+  }, [messageText, userId, socketManager]);
   
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!messageText.trim()) return;
     
-    // Send via WebSocket if available
-    if (websocket && websocket.readyState === WebSocket.OPEN) {
-      websocket.send(JSON.stringify({
-        type: "user_message",
-        receiverId: userId,
-        content: messageText
-      }));
+    // Send via Socket.IO
+    if (socketManager.isConnected()) {
+      socketManager.sendMessage(userId, messageText);
     } else {
       // Fallback to API
       sendMessageMutation.mutate(messageText);
