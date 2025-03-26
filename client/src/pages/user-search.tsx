@@ -182,13 +182,15 @@ export default function UserSearch() {
                             </p>
                           )}
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-pink-500 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20"
-                        >
-                          <MessageSquare className="h-5 w-5" />
-                        </Button>
+                        <Link href={`/messages/${user.id}`}>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-pink-500 hover:text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20"
+                          >
+                            <MessageSquare className="h-5 w-5" />
+                          </Button>
+                        </Link>
                       </div>
                     </CardContent>
                   </Card>

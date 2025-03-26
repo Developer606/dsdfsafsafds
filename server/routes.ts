@@ -426,6 +426,8 @@ export async function registerRoutes(app: Express) {
       "/api/notifications",
       "/api/subscribe",
       "/api/verify-payment",
+      "/api/users/search",
+      "/api/user-messages",
     ],
     authCheck,
   );
@@ -1992,6 +1994,113 @@ export async function registerRoutes(app: Express) {
       }
     },
   );
+  
+  // User-to-user messaging endpoints
+  app.get("/api/user-messages/conversations", async (req, res) => {
+    try {
+      const conversations = await storage.getUserConversations(req.user.id);
+      
+      // Enrich conversations with user details
+      const enrichedConversations = await Promise.all(
+        conversations.map(async (conversation) => {
+          const otherUserId = conversation.user1Id === req.user.id 
+            ? conversation.user2Id 
+            : conversation.user1Id;
+          
+          const otherUser = await storage.getUser(otherUserId);
+          
+          return {
+            ...conversation,
+            otherUser: otherUser ? {
+              id: otherUser.id,
+              username: otherUser.username,
+              fullName: otherUser.fullName || otherUser.username,
+              lastLoginAt: otherUser.lastLoginAt,
+            } : null,
+            unreadCount: conversation.user1Id === req.user.id 
+              ? conversation.unreadCountUser1 
+              : conversation.unreadCountUser2
+          };
+        })
+      );
+      
+      res.json(enrichedConversations);
+    } catch (error) {
+      console.error("Error fetching user conversations:", error);
+      res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+  });
+  
+  app.get("/api/user-messages/unread-count", async (req, res) => {
+    try {
+      const unreadCount = await storage.getUnreadMessageCount(req.user.id);
+      res.json({ unreadCount });
+    } catch (error) {
+      console.error("Error fetching unread count:", error);
+      res.status(500).json({ error: "Failed to fetch unread count" });
+    }
+  });
+  
+  app.get("/api/user-messages/:userId", async (req, res) => {
+    try {
+      const otherUserId = parseInt(req.params.userId);
+      const messages = await storage.getUserMessages(req.user.id, otherUserId);
+      
+      // Mark messages as read when fetched
+      for (const message of messages) {
+        if (message.receiverId === req.user.id && message.status !== "read") {
+          await storage.updateMessageStatus(message.id, "read");
+        }
+      }
+      
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+  
+  app.post("/api/user-messages/:userId", async (req, res) => {
+    try {
+      const receiverId = parseInt(req.params.userId);
+      const { content } = req.body;
+      
+      if (!content || content.trim() === "") {
+        return res.status(400).json({ error: "Message content is required" });
+      }
+      
+      const message = await storage.createUserMessage({
+        senderId: req.user.id,
+        receiverId,
+        content,
+        status: "sent"
+      });
+      
+      res.status(201).json(message);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+  
+  app.post("/api/user-messages/:userId/read", async (req, res) => {
+    try {
+      const otherUserId = parseInt(req.params.userId);
+      const messages = await storage.getUserMessages(req.user.id, otherUserId);
+      
+      // Mark all messages from other user as read
+      for (const message of messages) {
+        if (message.receiverId === req.user.id && message.status !== "read") {
+          await storage.updateMessageStatus(message.id, "read");
+        }
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ error: "Failed to mark messages as read" });
+    }
+  });
 
   return httpServer;
 }
