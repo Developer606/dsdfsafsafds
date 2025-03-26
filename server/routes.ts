@@ -2040,6 +2040,41 @@ export async function registerRoutes(app: Express) {
     }
   });
   
+  // Get user by ID endpoint
+  app.get("/api/users/:userId", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+      
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Remove sensitive information before sending to client
+      const sanitizedUser = {
+        id: user.id,
+        username: user.username,
+        fullName: user.fullName || user.username,
+        profileCompleted: user.profileCompleted || false,
+        lastLoginAt: user.lastLoginAt
+      };
+      
+      res.json(sanitizedUser);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+  
   app.get("/api/user-messages/:userId", async (req, res) => {
     try {
       const otherUserId = parseInt(req.params.userId);

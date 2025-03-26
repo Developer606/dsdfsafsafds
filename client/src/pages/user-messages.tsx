@@ -53,13 +53,17 @@ export default function UserMessages() {
   
   // Query to get other user details
   const { data: otherUser, isLoading: isLoadingUser } = useQuery({
-    queryKey: ["/api/users/profile", userId],
+    queryKey: ["/api/users", userId],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/users/search?q=${userId}`);
-        if (!response.ok) throw new Error("Failed to fetch user");
-        const users = await response.json();
-        return users.find((user: UserProfile) => user.id === userId) || null;
+        const response = await fetch(`/api/users/${userId}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            return null; // User not found
+          }
+          throw new Error("Failed to fetch user");
+        }
+        return await response.json();
       } catch (error) {
         console.error("Error fetching user:", error);
         toast({
