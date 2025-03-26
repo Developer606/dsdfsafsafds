@@ -1435,6 +1435,17 @@ export default function Home() {
               </Button>
             </div>
 
+            <div className="mb-4">
+              <Link href="/search">
+                <Button
+                  className="w-full bg-gradient-to-br from-purple-400/90 to-pink-500/90 hover:from-purple-400 hover:to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+                >
+                  <MessageSquare className="h-5 w-5 mr-2" />
+                  Chat
+                </Button>
+              </Link>
+            </div>
+
             <AnimatePresence>
               {characters?.map((character) => (
                 <motion.div
