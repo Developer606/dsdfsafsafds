@@ -139,9 +139,11 @@ export default function UserMessages() {
               if (data.message.senderId === userId || data.message.receiverId === userId) {
                 queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
                 
-                // If the message is from the other user (the one we're chatting with) to us, mark as read
+                // If the message is from the other user to us, mark as read
+                // userId is the OTHER user we're chatting with
+                // currentUser.id is OUR user ID
                 if (data.message.senderId === userId && data.message.receiverId === currentUser?.id) {
-                  // This message is from the current chat partner to our user
+                  // When: Message FROM the current chat partner TO us
                   socket.send(JSON.stringify({
                     type: "message_status_update",
                     messageId: data.message.id,
