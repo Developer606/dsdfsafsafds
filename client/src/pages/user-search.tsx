@@ -35,7 +35,7 @@ export default function UserSearch() {
   }, [searchQuery]);
 
   // Fetch search results
-  const { data: users = [], isLoading } = useQuery<UserSearchResult[]>({
+  const { data: users = [], isLoading } = useQuery({
     queryKey: ["/api/users/search", debouncedQuery],
     queryFn: async () => {
       if (!debouncedQuery || debouncedQuery.trim().length < 2) return [];
@@ -44,7 +44,8 @@ export default function UserSearch() {
         if (!response.ok) {
           throw new Error("Failed to search users");
         }
-        return response.json();
+        const data = await response.json();
+        return data as UserSearchResult[];
       } catch (error) {
         console.error("Error searching users:", error);
         toast({
@@ -201,14 +202,12 @@ export default function UserSearch() {
       {/* Mobile navigation bar */}
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-around">
-          <Link href="/home">
-            <a className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                <polyline points="9 22 9 12 15 12 15 22"></polyline>
-              </svg>
-              <span className="text-xs mt-1">Home</span>
-            </a>
+          <Link href="/home" className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span className="text-xs mt-1">Home</span>
           </Link>
           <div className="flex flex-col items-center justify-center text-pink-500">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
@@ -217,23 +216,19 @@ export default function UserSearch() {
             </svg>
             <span className="text-xs mt-1">Search</span>
           </div>
-          <Link href="/create">
-            <a className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              <span className="text-xs mt-1">Create</span>
-            </a>
+          <Link href="/create" className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span className="text-xs mt-1">Create</span>
           </Link>
-          <Link href="/profile">
-            <a className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span className="text-xs mt-1">Profile</span>
-            </a>
+          <Link href="/profile" className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span className="text-xs mt-1">Profile</span>
           </Link>
         </div>
       )}

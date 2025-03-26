@@ -33,7 +33,7 @@ function Router() {
         )}
       />
       <ProtectedRoute path="/chat/:characterId" component={Chat} />
-      <ProtectedRoute path="/user-search" component={UserSearch} />
+      <ProtectedRoute path="/search" component={UserSearch} />
 
       {/* Admin-only routes */}
       <ProtectedRoute

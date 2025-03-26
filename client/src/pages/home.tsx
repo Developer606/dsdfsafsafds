@@ -569,7 +569,7 @@ export default function Home() {
                 <div className="px-4 pt-2 pb-4">
                   <h2 className="text-lg font-bold mb-3">Categories</h2>
                   <div className="grid grid-cols-4 gap-3">
-                    <Link href="/user-search">
+                    <Link href="/search">
                       <div className="flex flex-col items-center">
                         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md">
                           <svg
