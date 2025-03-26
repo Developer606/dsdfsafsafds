@@ -139,13 +139,17 @@ export default function UserMessages() {
               if (data.message.senderId === userId || data.message.receiverId === userId) {
                 queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
                 
-                // If the sender is the current chat partner, mark as read
-                if (data.message.senderId === userId) {
+                // If the message is from the other user (the one we're chatting with) to us, mark as read
+                if (data.message.senderId === userId && data.message.receiverId === currentUser?.id) {
+                  // This message is from the current chat partner to our user
                   socket.send(JSON.stringify({
                     type: "message_status_update",
                     messageId: data.message.id,
                     status: "read"
                   }));
+                  
+                  // Force refresh messages to show the new one
+                  queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
                 }
               }
               break;
@@ -156,7 +160,7 @@ export default function UserMessages() {
               break;
               
             case "typing_indicator":
-              // Show typing indicator
+              // Show typing indicator when the other user is typing
               if (data.senderId === userId) {
                 setIsTyping(data.isTyping);
               }
