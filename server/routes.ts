@@ -317,15 +317,14 @@ export async function registerRoutes(app: Express) {
       // Update message status in database
       await storage.updateMessageStatus(messageId, status);
       
-      // Get the message to find the sender
-      const messages = await db
-        .select()
-        .from(userMessages)
-        .where(eq(userMessages.id, messageId));
+      // Get the message details using storage interface
+      // We'll retrieve all messages between the users and find the specific one
+      // First we need to find the message sender and receiver      
+      // Using a temporary approach since we don't have a getMessageById method
+      const allUserMessages = await storage.getUserMessages(userId, 0); // Get all messages
+      const msg = allUserMessages.find(m => m.id === messageId);
       
-      if (messages.length === 0) return;
-      
-      const msg = messages[0];
+      if (!msg) return;
       
       // Only proceed if this user is the receiver of the message
       if (msg.receiverId !== userId) return;
