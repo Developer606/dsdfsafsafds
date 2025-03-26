@@ -35,6 +35,7 @@ export interface IStorage {
   createUser(insertUser: InsertUser): Promise<User>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  searchUsersByUsername(query: string): Promise<User[]>;
   getUser(id: number): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   getUserStats(): Promise<{
@@ -200,6 +201,14 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .where(eq(users.username, username));
     return user;
+  }
+  
+  async searchUsersByUsername(query: string): Promise<User[]> {
+    // Use the LIKE operator for pattern matching with % wildcard
+    return await db
+      .select()
+      .from(users)
+      .where(sql`${users.username} LIKE ${`%${query}%`} AND ${users.isAdmin} = false`);
   }
 
   async getUser(id: number): Promise<User | undefined> {
