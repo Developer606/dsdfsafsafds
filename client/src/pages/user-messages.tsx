@@ -106,7 +106,7 @@ export default function UserMessages() {
   // Mutation to send message
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      return apiRequest("/api/user-messages/" + userId, "POST", {
+      return apiRequest("POST", `/api/user-messages/${userId}`, {
         content
       });
     },
