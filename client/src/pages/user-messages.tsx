@@ -79,7 +79,7 @@ export default function UserMessages() {
   });
   
   // Query to get messages
-  const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
+  const { data: messagesData = { messages: [], pagination: { total: 0, page: 1, pages: 1, limit: 20 } }, isLoading: isLoadingMessages } = useQuery({
     queryKey: ["/api/user-messages", userId],
     queryFn: async () => {
       try {
@@ -93,12 +93,15 @@ export default function UserMessages() {
           title: "Error",
           description: "Failed to load messages",
         });
-        return [];
+        return { messages: [], pagination: { total: 0, page: 1, pages: 1, limit: 20 } };
       }
     },
     enabled: !!userId,
     refetchInterval: 5000, // Fallback polling in case WebSocket fails
   });
+  
+  // Extract messages from the response
+  const messages = messagesData.messages || [];
   
   // Mutation to send message
   const sendMessageMutation = useMutation({
