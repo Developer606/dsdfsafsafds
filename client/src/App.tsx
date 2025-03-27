@@ -11,6 +11,7 @@ import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import UserSearch from "@/pages/user-search";
 import UserMessages from "@/pages/user-messages";
+import Conversations from "@/pages/conversations";
 import { ComplaintsSection } from "@/components/complaints-section";
 import { FeedbackSection } from "@/components/feedback-section";
 import { ProtectedRoute } from "./lib/protected-route";
@@ -36,6 +37,8 @@ function Router() {
       <ProtectedRoute path="/chat/:characterId" component={Chat} />
       <ProtectedRoute path="/search" component={UserSearch} />
       <ProtectedRoute path="/messages/:userId" component={UserMessages} />
+      <ProtectedRoute path="/conversations" component={Conversations} />
+      <ProtectedRoute path="/users/search" component={UserSearch} />
 
       {/* Admin-only routes */}
       <ProtectedRoute

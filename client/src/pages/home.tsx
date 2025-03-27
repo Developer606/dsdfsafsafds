@@ -31,6 +31,7 @@ import {
   Bell,
   AlertCircle,
   CreditCard,
+  Users,
 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { SubscriptionManagement } from "@/components/subscription-management";
@@ -1340,15 +1341,11 @@ export default function Home() {
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                className={`flex flex-col items-center py-2 px-3 rounded-xl ${
-                  activeTab === "library"
-                    ? "text-pink-500 dark:text-pink-400"
-                    : "text-gray-400 dark:text-gray-500"
-                }`}
-                onClick={() => setActiveTab("library")}
+                className="flex flex-col items-center py-2 px-3 rounded-xl text-gray-400 dark:text-gray-500"
+                onClick={() => setLocation("/conversations")}
               >
-                <Library className="h-6 w-6" />
-                <span className="text-xs mt-1 font-medium">Library</span>
+                <MessageSquare className="h-6 w-6" />
+                <span className="text-xs mt-1 font-medium">Messages</span>
               </motion.button>
 
               <motion.button
@@ -1442,6 +1439,17 @@ export default function Home() {
                 >
                   <MessageSquare className="h-5 w-5 mr-2" />
                   Chat
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="mb-4">
+              <Link href="/conversations">
+                <Button
+                  className="w-full bg-gradient-to-br from-blue-400/90 to-indigo-500/90 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+                >
+                  <Users className="h-5 w-5 mr-2" />
+                  Messages
                 </Button>
               </Link>
             </div>
