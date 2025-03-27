@@ -33,6 +33,13 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
   const userConnections = new Map<number, Set<Socket>>();
   const messageTrackingMap = new Map<string, MessageTracking>();
   const typingUsers = new Map<number, Set<number>>();
+  
+  // Rate limiting for real-time messages
+  interface RateLimit {
+    count: number;
+    resetTime: number;
+  }
+  const messageLimits = new Map<number, RateLimit>();
 
   // Wrapper for console.log with socket.io prefix
   const log = (message: string) => {
@@ -136,6 +143,15 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
           return;
         }
         
+        // Check rate limit
+        if (!checkMessageRateLimit(userId)) {
+          socket.emit('error', { 
+            message: 'Rate limit exceeded. Please wait before sending more messages.',
+            code: 'RATE_LIMIT_EXCEEDED'
+          });
+          return;
+        }
+        
         // Update user's last activity timestamp
         updateUserActivity(userId);
         
@@ -201,8 +217,11 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         log(`Status update for message ${messageId} to ${status} by user ${userId}`);
         
         // Verify this user is the receiver of the message
-        const allMessages = await storage.getUserMessages(userId, 0);
-        const message = allMessages.find(m => m.id === messageId);
+        // Get user messages with a large limit to find the specific message
+        // The second parameter is otherUserId, but we pass 0 as a placeholder since we're looking for a message by ID
+        const allMessagesResult = await storage.getUserMessages(userId, 0, 1, 1000);
+        // Now we need to find the message in the messages array
+        const message = allMessagesResult.messages.find(m => m.id === messageId);
         
         if (!message) {
           log(`Message ${messageId} not found or user ${userId} is not authorized`);
@@ -239,6 +258,28 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         const { receiverId, isTyping } = data;
         if (receiverId === undefined || isTyping === undefined) {
           return;
+        }
+        
+        // Use a simplified rate limit for typing indicators (100 per minute)
+        // We don't need to be as strict since these are short-lived events
+        const now = Date.now();
+        const typingLimit = 100; // Higher limit for typing indicators
+        
+        // Check and update typing rate limit
+        let typingRateLimit = messageLimits.get(userId * -1); // Use negative ID to separate from normal messages
+        if (!typingRateLimit || typingRateLimit.resetTime <= now) {
+          typingRateLimit = {
+            count: 0,
+            resetTime: now + 60000 // 1 minute reset
+          };
+        }
+        
+        typingRateLimit.count++;
+        messageLimits.set(userId * -1, typingRateLimit);
+        
+        // Skip if exceeding limit
+        if (typingRateLimit.count > typingLimit) {
+          return; // Silently drop excessive typing indicators
         }
         
         // Update typing status tracking
@@ -344,6 +385,35 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
     });
   }
 
+  // Helper function to check rate limits
+  function checkMessageRateLimit(userId: number): boolean {
+    const now = Date.now();
+    const maxMessages = 30; // Maximum messages per minute
+    const resetTime = 60000; // 1 minute in ms
+    
+    // Get or create rate limit for this user
+    let rateLimit = messageLimits.get(userId);
+    if (!rateLimit || rateLimit.resetTime <= now) {
+      // Create a new rate limit if none exists or the existing one has expired
+      rateLimit = {
+        count: 0,
+        resetTime: now + resetTime
+      };
+    }
+    
+    // Increment count
+    rateLimit.count++;
+    messageLimits.set(userId, rateLimit);
+    
+    // Check if limit is exceeded
+    if (rateLimit.count > maxMessages) {
+      log(`User ${userId} exceeded message rate limit (${rateLimit.count}/${maxMessages})`);
+      return false; // Exceeds limit
+    }
+    
+    return true; // Within limit
+  }
+
   // Set up maintenance interval
   setInterval(() => {
     // Clean up expired message tracking
@@ -353,6 +423,13 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
     Array.from(messageTrackingMap.entries()).forEach(([trackingId, messageData]) => {
       if (now - messageData.timestamp.getTime() > ONE_DAY) {
         messageTrackingMap.delete(trackingId);
+      }
+    });
+    
+    // Clean up expired rate limits
+    Array.from(messageLimits.entries()).forEach(([userId, rateLimit]) => {
+      if (rateLimit.resetTime <= now) {
+        messageLimits.delete(userId);
       }
     });
     

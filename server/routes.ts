@@ -39,6 +39,7 @@ import {
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, hashPassword } from "./auth";
 import { authenticateJWT } from "./middleware/jwt-auth";
+import { rateLimiter, messageRateLimiter, authRateLimiter } from "./middleware/rate-limiter";
 import { feedbackStorage } from "./feedback-storage";
 import { complaintStorage } from "./complaint-storage";
 import {
@@ -1667,7 +1668,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   });
 
   // Endpoint for password reset request
-  app.post("/api/auth/forgot-password", async (req, res) => {
+  app.post("/api/auth/forgot-password", authRateLimiter(), async (req, res) => {
     try {
       const { email } = req.body;
 
@@ -1695,7 +1696,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   });
 
   // Endpoint for resetting password with OTP
-  app.post("/api/auth/reset-password", async (req, res) => {
+  app.post("/api/auth/reset-password", authRateLimiter(), async (req, res) => {
     try {
       const { email, otp, newPassword } = req.body;
 
@@ -2142,23 +2143,45 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   app.get("/api/user-messages/:userId", async (req, res) => {
     try {
       const otherUserId = parseInt(req.params.userId);
-      const messages = await storage.getUserMessages(req.user.id, otherUserId);
+      
+      // Extract pagination parameters from query string
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      // Validate pagination parameters
+      if (page < 1 || limit < 1 || limit > 100) {
+        return res.status(400).json({ 
+          error: "Invalid pagination parameters. Page must be >= 1 and limit must be between 1 and 100." 
+        });
+      }
+      
+      // Get paginated messages
+      const result = await storage.getUserMessages(req.user.id, otherUserId, page, limit);
       
       // Mark messages as read when fetched
-      for (const message of messages) {
+      for (const message of result.messages) {
         if (message.receiverId === req.user.id && message.status !== "read") {
           await storage.updateMessageStatus(message.id, "read");
         }
       }
       
-      res.json(messages);
+      // Return the paginated results with metadata
+      res.json({
+        messages: result.messages,
+        pagination: {
+          total: result.total,
+          page: result.page,
+          pages: result.pages,
+          limit
+        }
+      });
     } catch (error) {
       console.error("Error fetching messages:", error);
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
   
-  app.post("/api/user-messages/:userId", async (req, res) => {
+  app.post("/api/user-messages/:userId", messageRateLimiter(30, 60000), async (req, res) => {
     try {
       const receiverId = parseInt(req.params.userId);
       const { content } = req.body;
@@ -2181,19 +2204,25 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
-  app.post("/api/user-messages/:userId/read", async (req, res) => {
+  app.post("/api/user-messages/:userId/read", rateLimiter(50, 60000), async (req, res) => {
     try {
       const otherUserId = parseInt(req.params.userId);
-      const messages = await storage.getUserMessages(req.user.id, otherUserId);
+      
+      // We need to get all messages, not just the paginated ones
+      // Set a large limit to get all messages in one request
+      const result = await storage.getUserMessages(req.user.id, otherUserId, 1, 1000);
       
       // Mark all messages from other user as read
-      for (const message of messages) {
+      for (const message of result.messages) {
         if (message.receiverId === req.user.id && message.status !== "read") {
           await storage.updateMessageStatus(message.id, "read");
         }
       }
       
-      res.json({ success: true });
+      res.json({ 
+        success: true,
+        messagesRead: result.messages.filter(m => m.receiverId === req.user.id && m.status !== "read").length
+      });
     } catch (error) {
       console.error("Error marking messages as read:", error);
       res.status(500).json({ error: "Failed to mark messages as read" });

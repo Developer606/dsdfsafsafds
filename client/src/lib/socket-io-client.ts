@@ -158,8 +158,48 @@ class SocketIOManager {
     // Handle errors
     this.socket.on('error', (error) => {
       console.error('Socket.IO error:', error);
+      
+      // Special handling for rate limit errors
+      if (error.code === 'RATE_LIMIT_EXCEEDED') {
+        console.warn('Rate limit exceeded:', error.message);
+        // Show a toast or notification to the user
+        if (typeof window !== 'undefined') {
+          this.showRateLimitToast(error.message);
+        }
+      }
+      
       this.notifyListeners('error', error);
     });
+  }
+  
+  /**
+   * Helper method to show a toast notification for rate limits
+   */
+  private showRateLimitToast(message: string) {
+    // Create a toast element
+    const toast = document.createElement('div');
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.backgroundColor = '#f44336';
+    toast.style.color = 'white';
+    toast.style.padding = '12px 20px';
+    toast.style.borderRadius = '4px';
+    toast.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    toast.style.zIndex = '9999';
+    toast.style.minWidth = '250px';
+    toast.textContent = message || 'Rate limit exceeded. Please wait before sending more messages.';
+    
+    // Add to DOM
+    document.body.appendChild(toast);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+      if (document.body.contains(toast)) {
+        document.body.removeChild(toast);
+      }
+    }, 5000);
+  }
   }
   
   /**

@@ -127,7 +127,17 @@ export interface IStorage {
   
   // User-to-user messaging methods
   createUserMessage(message: InsertUserMessage): Promise<UserMessage>;
-  getUserMessages(userId: number, otherUserId: number): Promise<UserMessage[]>;
+  getUserMessages(
+    userId: number, 
+    otherUserId: number, 
+    page?: number, 
+    limit?: number
+  ): Promise<{ 
+    messages: UserMessage[], 
+    total: number, 
+    page: number, 
+    pages: number 
+  }>;
   updateMessageStatus(messageId: number, status: MessageStatus): Promise<void>;
   getUserConversations(userId: number): Promise<UserConversation[]>;
   getUnreadMessageCount(userId: number): Promise<number>;
@@ -214,19 +224,49 @@ export class DatabaseStorage implements IStorage {
     return newMessage;
   }
   
-  async getUserMessages(userId: number, otherUserId: number): Promise<UserMessage[]> {
+  async getUserMessages(
+    userId: number, 
+    otherUserId: number, 
+    page: number = 1, 
+    limit: number = 20
+  ): Promise<{ messages: UserMessage[], total: number, page: number, pages: number }> {
     // Import the messages database to avoid circular imports
     const { messagesDb } = await import("./messages-db");
     
-    // Get messages between two users (in either direction)
-    return await messagesDb
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+    
+    // Get total count for pagination metadata
+    const totalResult = await messagesDb
+      .select({ count: sql<number>`count(*)` })
+      .from(userMessages)
+      .where(
+        sql`(${userMessages.senderId} = ${userId} AND ${userMessages.receiverId} = ${otherUserId}) OR
+            (${userMessages.senderId} = ${otherUserId} AND ${userMessages.receiverId} = ${userId})`
+      );
+    
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+    
+    // Get paginated messages between two users (in either direction)
+    const messages = await messagesDb
       .select()
       .from(userMessages)
       .where(
         sql`(${userMessages.senderId} = ${userId} AND ${userMessages.receiverId} = ${otherUserId}) OR
             (${userMessages.senderId} = ${otherUserId} AND ${userMessages.receiverId} = ${userId})`
       )
-      .orderBy(userMessages.timestamp);
+      .orderBy(sql`${userMessages.timestamp} DESC`)
+      .limit(limit)
+      .offset(offset);
+    
+    // Return messages in chronological order (oldest first)
+    return {
+      messages: messages.reverse(),
+      total,
+      page,
+      pages: totalPages
+    };
   }
   
   async updateMessageStatus(messageId: number, status: MessageStatus): Promise<void> {
