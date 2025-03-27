@@ -33,10 +33,8 @@ class SocketIOManager {
     
     this.isConnecting = true;
     
-    // Get session ID from cookies or localStorage
-    const sessionId = document.cookie.split(';')
-      .find(c => c.trim().startsWith('connect.sid='))
-      ?.split('=')[1];
+    // Get JWT token from localStorage
+    const token = localStorage.getItem('jwt_token');
     
     // Connect to the server with authentication
     this.socket = io({
@@ -47,7 +45,7 @@ class SocketIOManager {
       reconnectionDelayMax: 5000,
       timeout: 20000,
       auth: {
-        sessionId
+        token
       }
     });
     
@@ -59,7 +57,7 @@ class SocketIOManager {
   /**
    * Set up event handlers for socket events
    */
-  private setupEventHandlers() {
+  private setupEventHandlers(): void {
     if (!this.socket) return;
     
     this.socket.on('connect', () => {
@@ -155,8 +153,19 @@ class SocketIOManager {
       this.notifyListeners('typing_indicator', data);
     });
     
+    // Handle rate limit errors
+    this.socket.on('rate_limit_exceeded', (data) => {
+      console.warn('Rate limit exceeded:', data);
+      this.notifyListeners('rate_limit', data);
+      
+      // Show toast notification
+      if (typeof window !== 'undefined') {
+        this.showRateLimitToast(data.message);
+      }
+    });
+    
     // Handle errors
-    this.socket.on('error', (error) => {
+    this.socket.on('error', (error: any) => {
       console.error('Socket.IO error:', error);
       
       // Special handling for rate limit errors
@@ -175,7 +184,7 @@ class SocketIOManager {
   /**
    * Helper method to show a toast notification for rate limits
    */
-  private showRateLimitToast(message: string) {
+  private showRateLimitToast(message: string): void {
     // Create a toast element
     const toast = document.createElement('div');
     toast.style.position = 'fixed';
@@ -200,12 +209,11 @@ class SocketIOManager {
       }
     }, 5000);
   }
-  }
   
   /**
    * Attempt to reconnect to the server
    */
-  private attemptReconnect() {
+  private attemptReconnect(): void {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
     }
@@ -303,7 +311,10 @@ class SocketIOManager {
       this.listeners.set(event, new Set());
     }
     
-    this.listeners.get(event)?.add(callback);
+    const listeners = this.listeners.get(event);
+    if (listeners) {
+      listeners.add(callback);
+    }
     
     // Return a function to remove the listener
     return () => this.removeEventListener(event, callback);
@@ -313,8 +324,9 @@ class SocketIOManager {
    * Remove an event listener
    */
   public removeEventListener(event: string, callback: (data: any) => void): void {
-    if (this.listeners.has(event)) {
-      this.listeners.get(event)?.delete(callback);
+    const listeners = this.listeners.get(event);
+    if (listeners) {
+      listeners.delete(callback);
     }
   }
   
@@ -322,8 +334,9 @@ class SocketIOManager {
    * Notify all listeners of an event
    */
   private notifyListeners(event: string, data: any): void {
-    if (this.listeners.has(event)) {
-      this.listeners.get(event)?.forEach(callback => {
+    const listeners = this.listeners.get(event);
+    if (listeners) {
+      listeners.forEach(callback => {
         try {
           callback(data);
         } catch (error) {

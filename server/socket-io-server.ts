@@ -8,6 +8,7 @@ import {
   updateUserActivity,
   cleanupInactiveUsers
 } from './services/user-status';
+import { verifyToken } from './utils/jwt';
 
 // Define tracking interface for messages
 interface MessageTracking {
@@ -49,32 +50,51 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
   // Middleware for authentication
   io.use(async (socket, next) => {
     try {
+      // Get token from auth data (preferred) or fallback to sessionId for backward compatibility
+      const token = socket.handshake.auth.token;
       const sessionId = socket.handshake.auth.sessionId;
       
-      if (!sessionId) {
-        log(`Connection rejected - no session ID`);
-        return next(new Error('Authentication error'));
+      // First attempt JWT authentication
+      if (token) {
+        // Verify the JWT token
+        const decoded = verifyToken(token);
+        if (decoded && decoded.id) {
+          // Store user ID in socket for later use
+          socket.data.userId = decoded.id;
+          socket.data.authMethod = 'jwt';
+          log(`JWT authenticated connection for user ${socket.data.userId}`);
+          return next();
+        } else {
+          log(`Connection rejected - invalid JWT token`);
+        }
       }
-
-      // Verify session exists and contains user
-      const parsedSessionId = decodeURIComponent(sessionId).replace('s:', '').split('.')[0];
       
-      const sessionData: any = await new Promise((resolve, reject) => {
-        storage.sessionStore.get(parsedSessionId, (err, session) => {
-          if (err) reject(err);
-          else resolve(session);
+      // Fallback to session-based authentication
+      if (sessionId) {
+        // Verify session exists and contains user
+        const parsedSessionId = decodeURIComponent(sessionId).replace('s:', '').split('.')[0];
+        
+        const sessionData: any = await new Promise((resolve, reject) => {
+          storage.sessionStore.get(parsedSessionId, (err, session) => {
+            if (err) reject(err);
+            else resolve(session);
+          });
         });
-      });
 
-      if (!sessionData?.passport?.user) {
-        log(`Connection rejected - invalid session: ${parsedSessionId}`);
-        return next(new Error('Authentication error'));
+        if (sessionData?.passport?.user) {
+          // Store user ID in socket for later use
+          socket.data.userId = sessionData.passport.user;
+          socket.data.authMethod = 'session';
+          log(`Session authenticated connection for user ${socket.data.userId}`);
+          return next();
+        } else {
+          log(`Connection rejected - invalid session: ${parsedSessionId}`);
+        }
       }
-
-      // Store user ID in socket for later use
-      socket.data.userId = sessionData.passport.user;
-      log(`Authenticated connection for user ${socket.data.userId}`);
-      next();
+      
+      // If we reach here, both authentication methods failed
+      log(`Connection rejected - no valid authentication`);
+      next(new Error('Authentication required'));
     } catch (error) {
       log(`Error during authentication: ${error}`);
       next(new Error('Authentication error'));
