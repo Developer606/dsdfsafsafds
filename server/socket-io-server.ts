@@ -2,6 +2,12 @@ import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { storage } from './storage';
 import { MessageStatus } from '@shared/schema';
+import { 
+  markUserOnline, 
+  markUserOffline, 
+  updateUserActivity,
+  cleanupInactiveUsers
+} from './services/user-status';
 
 // Define tracking interface for messages
 interface MessageTracking {
@@ -84,6 +90,9 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
     }
     userConnections.get(userId)?.add(socket);
     
+    // Mark user as online in the status tracking service
+    markUserOnline(userId, socket.id);
+    
     // Mark messages as delivered if any pending
     deliverPendingMessages(userId);
 
@@ -95,16 +104,20 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         userSockets.delete(socket);
         if (userSockets.size === 0) {
           userConnections.delete(userId);
+          
+          // Mark user as offline in the status tracking service
+          markUserOffline(userId);
+          
           // Clear typing indicators when user disconnects
           typingUsers.delete(userId);
           
           // Notify all users who this user was typing to
-          for (const [receiverId, senderSet] of typingUsers.entries()) {
+          Array.from(typingUsers.entries()).forEach(([receiverId, senderSet]) => {
             if (senderSet.has(userId)) {
               senderSet.delete(userId);
               notifyTypingStatus(receiverId, userId, false);
             }
-          }
+          });
         }
       }
     });
@@ -122,6 +135,9 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
           log(`Invalid message format: ${JSON.stringify(data)}`);
           return;
         }
+        
+        // Update user's last activity timestamp
+        updateUserActivity(userId);
         
         log(`Message from user ${userId} to ${receiverId}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`);
         
@@ -277,7 +293,7 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
   function deliverPendingMessages(userId: number) {
     let delivered = false;
     // Check message tracking map for any undelivered messages
-    for (const [trackingId, messageData] of messageTrackingMap.entries()) {
+    Array.from(messageTrackingMap.entries()).forEach(([trackingId, messageData]) => {
       if (messageData.receiverId === userId && messageData.status === 'sent') {
         // Attempt to deliver the message
         const isDelivered = emitToUser(userId, 'new_message', {
@@ -306,16 +322,16 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
           });
         }
       }
-    }
+    });
     
     // Clean up old tracking entries
     const now = Date.now();
     const ONE_DAY = 24 * 60 * 60 * 1000;
-    for (const [trackingId, messageData] of messageTrackingMap.entries()) {
+    Array.from(messageTrackingMap.entries()).forEach(([trackingId, messageData]) => {
       if (now - messageData.timestamp.getTime() > ONE_DAY) {
         messageTrackingMap.delete(trackingId);
       }
-    }
+    });
     
     return delivered;
   }
@@ -334,11 +350,14 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
     const now = Date.now();
     const ONE_DAY = 24 * 60 * 60 * 1000;
     
-    for (const [trackingId, messageData] of messageTrackingMap.entries()) {
+    Array.from(messageTrackingMap.entries()).forEach(([trackingId, messageData]) => {
       if (now - messageData.timestamp.getTime() > ONE_DAY) {
         messageTrackingMap.delete(trackingId);
       }
-    }
+    });
+    
+    // Clean up inactive user status tracking
+    cleanupInactiveUsers();
   }, 60 * 60 * 1000); // Run every hour
 
   return io;

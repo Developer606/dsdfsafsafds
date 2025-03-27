@@ -18,6 +18,12 @@ import { WebSocketServer, WebSocket } from "ws";
 import type { IncomingMessage } from "http";
 import { parse } from "url";
 import fetch from "node-fetch";
+import { 
+  isUserOnline, 
+  getLastActiveTime, 
+  getOnlineUserCount,
+  getOnlineUsers
+} from "./services/user-status";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import {
@@ -32,6 +38,7 @@ import {
 } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, hashPassword } from "./auth";
+import { authenticateJWT } from "./middleware/jwt-auth";
 import { feedbackStorage } from "./feedback-storage";
 import { complaintStorage } from "./complaint-storage";
 import {
@@ -2190,6 +2197,74 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     } catch (error) {
       console.error("Error marking messages as read:", error);
       res.status(500).json({ error: "Failed to mark messages as read" });
+    }
+  });
+  
+  // User status endpoint - check if a user is online
+  app.get("/api/users/status/:userId", authenticateJWT, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      // Get user from database first to verify they exist
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Check if user is online using the user status service
+      const online = isUserOnline(userId);
+      const lastActive = getLastActiveTime(userId);
+      
+      res.json({
+        userId,
+        username: user.username,
+        online,
+        lastActive
+      });
+    } catch (error) {
+      console.error("Error checking user status:", error);
+      res.status(500).json({ error: "Failed to check user status" });
+    }
+  });
+  
+  // Get all online users
+  app.get("/api/users/online", authenticateJWT, async (req, res) => {
+    try {
+      // Get list of online users using the imported function
+      const onlineUserIds = getOnlineUsers();
+      
+      // Get user details for all online users
+      const onlineUsers = [];
+      for (const userId of onlineUserIds) {
+        const user = await storage.getUser(userId);
+        if (user) {
+          onlineUsers.push({
+            id: user.id,
+            username: user.username
+          });
+        }
+      }
+      
+      res.json({
+        count: onlineUsers.length,
+        users: onlineUsers
+      });
+    } catch (error) {
+      console.error("Error getting online users:", error);
+      res.status(500).json({ error: "Failed to get online users" });
+    }
+  });
+  
+  // Get count of online users
+  app.get("/api/users/online/count", authenticateJWT, async (req, res) => {
+    try {
+      // Get count of online users from the status service
+      const count = getOnlineUserCount();
+      
+      res.json({ count });
+    } catch (error) {
+      console.error("Error getting online user count:", error);
+      res.status(500).json({ error: "Failed to get online user count" });
     }
   });
 
