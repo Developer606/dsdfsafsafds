@@ -32,6 +32,7 @@ export async function initializeMessagesDb() {
       last_message_timestamp INTEGER,
       unread_count_user1 INTEGER NOT NULL DEFAULT 0,
       unread_count_user2 INTEGER NOT NULL DEFAULT 0,
+      is_blocked INTEGER NOT NULL DEFAULT 0,
       created_at INTEGER DEFAULT (strftime('%s', 'now') * 1000)
     )
   `);
