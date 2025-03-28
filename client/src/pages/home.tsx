@@ -1342,6 +1342,7 @@ export default function Home() {
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 className="flex flex-col items-center py-2 px-3 rounded-xl text-gray-400 dark:text-gray-500"
+                onClick={() => setLocation("/user-messages/search")}
               >
                 <MessageSquare className="h-6 w-6" />
                 <span className="text-xs mt-1 font-medium">Messages</span>
@@ -1443,12 +1444,14 @@ export default function Home() {
             </div>
             
             <div className="mb-4">
-              <Button
-                className="w-full bg-gradient-to-br from-blue-400/90 to-indigo-500/90 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-              >
-                <Users className="h-5 w-5 mr-2" />
-                Messages
-              </Button>
+              <Link href="/user-messages/search">
+                <Button
+                  className="w-full bg-gradient-to-br from-blue-400/90 to-indigo-500/90 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+                >
+                  <Users className="h-5 w-5 mr-2" />
+                  Messages
+                </Button>
+              </Link>
             </div>
 
             <AnimatePresence>
