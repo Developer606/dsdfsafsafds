@@ -613,6 +613,47 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       res.status(500).json({ error: "Failed to test IP location" });
     }
   });
+  
+  // Content moderation routes
+  app.get("/api/admin/flagged-messages", isAdmin, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const includeReviewed = req.query.includeReviewed === 'true';
+      
+      const { getFlaggedMessages } = await import("./content-moderation");
+      const flaggedMessages = await getFlaggedMessages(limit, offset, includeReviewed);
+      res.json(flaggedMessages);
+    } catch (error) {
+      console.error("Error fetching flagged messages:", error);
+      res.status(500).json({ error: "Failed to fetch flagged messages" });
+    }
+  });
+  
+  app.get("/api/admin/flagged-messages/stats", isAdmin, async (req, res) => {
+    try {
+      const { getFlaggedMessageStats } = await import("./content-moderation");
+      const stats = await getFlaggedMessageStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching flagged message stats:", error);
+      res.status(500).json({ error: "Failed to fetch flagged message stats" });
+    }
+  });
+  
+  app.put("/api/admin/flagged-messages/:id/review", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { reviewed } = req.body;
+      
+      const { markFlaggedMessageAsReviewed } = await import("./content-moderation");
+      await markFlaggedMessageAsReviewed(id, reviewed);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating flagged message review status:", error);
+      res.status(500).json({ error: "Failed to update flagged message" });
+    }
+  });
 
   // Public test endpoint for development/debugging only (remove in production)
   app.get("/api/debug/ip-location", async (req, res) => {
