@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -110,6 +111,31 @@ import {
 import { ChevronDown, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+
+// Define the type for flagged message stats
+interface FlaggedMessageStats {
+  total: number;
+  unreviewed: number;
+  byReason: Record<string, number>;
+}
+
+// Flagged Messages Counter Component
+function FlaggedMessagesCounter() {
+  const { data: flaggedStats = { total: 0, unreviewed: 0, byReason: {} } } = useQuery<FlaggedMessageStats>({
+    queryKey: ["/api/admin/flagged-messages/stats"],
+    staleTime: 5000, // Refresh every 5 seconds
+  });
+
+  if (!flaggedStats || flaggedStats.unreviewed === 0) {
+    return null;
+  }
+
+  return (
+    <Badge variant="destructive" className="ml-2 absolute -top-2 -right-2">
+      {flaggedStats.unreviewed}
+    </Badge>
+  );
+}
 
 // Type definitions for stats and analytics data
 interface DashboardStats {
@@ -310,7 +336,16 @@ export default function AdminDashboard() {
     staleTime: 0, // Allow immediate refreshes for real-time chart updates
   });
 
-  const { data: recentMessages = [], isLoading: messagesLoading } = useQuery({
+  // Define type for recent messages
+  interface RecentMessage {
+    id: number;
+    username: string;
+    characterName: string;
+    content: string;
+    timestamp: string;
+  }
+  
+  const { data: recentMessages = [], isLoading: messagesLoading } = useQuery<RecentMessage[]>({
     queryKey: ["/api/admin/messages/recent"],
     staleTime: 0, // Allow immediate refreshes
   });
@@ -335,6 +370,26 @@ export default function AdminDashboard() {
   >({
     queryKey: ["/api/admin/complaints"],
     staleTime: Infinity,
+  });
+  
+  // Define type for flagged messages
+  interface FlaggedMessage {
+    id: number;
+    senderId: number;
+    receiverId: number;
+    messageId: number;
+    content: string;
+    reason: string;
+    timestamp: string;
+    reviewed: boolean;
+    senderUsername: string;
+    receiverUsername: string;
+  }
+
+  // Query for flagged messages
+  const { data: flaggedMessages = [], isLoading: flaggedMessagesLoading } = useQuery<FlaggedMessage[]>({
+    queryKey: ["/api/admin/flagged-messages"],
+    staleTime: 10000, // Refresh every 10 seconds
   });
 
   const {
@@ -361,7 +416,18 @@ export default function AdminDashboard() {
     staleTime: 0, // Allow immediate refreshes
   });
 
-  const { data: plans = [], isLoading: plansLoading } = useQuery({
+  // Extend the existing SubscriptionPlan type with parsed features
+  interface SubscriptionPlanWithFeatures {
+    id: string;
+    name: string;
+    createdAt: Date;
+    price: string;
+    features: string; // Raw JSON string from database
+    parsedFeatures?: string[]; // Optional parsed features for display
+    updatedAt: Date;
+  }
+  
+  const { data: plans = [], isLoading: plansLoading } = useQuery<SubscriptionPlanWithFeatures[]>({
     queryKey: ["/api/admin/plans"],
     staleTime: Infinity,
   });
@@ -774,10 +840,12 @@ export default function AdminDashboard() {
             Logout
           </Button>
           <Link href="/admin/content-moderation">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2 relative">
               <Shield className="h-4 w-4" />
               Content Moderation
-              {/* If we had flagged message count, we could display it here */}
+              
+              {/* Query flagged message count and display it as a badge */}
+              <FlaggedMessagesCounter />
             </Button>
           </Link>
           <Link href="/admin/dashboard/complaints">
@@ -1075,6 +1143,97 @@ export default function AdminDashboard() {
           </div>
         </div>
       </Card>
+      
+      {/* Flagged Messages Section */}
+      <Card className="mt-8">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Flagged Messages</h2>
+            <Shield className="h-5 w-5 text-red-500" />
+          </div>
+          {flaggedMessagesLoading ? (
+            <div className="flex justify-center p-4">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : flaggedMessages.length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground">
+              No flagged messages found
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Sender</TableHead>
+                    <TableHead>Receiver</TableHead>
+                    <TableHead>Message</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Timestamp</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {flaggedMessages.map((message: any) => (
+                    <TableRow key={message.id} className="bg-red-50 dark:bg-red-950/10">
+                      <TableCell>{message.senderUsername}</TableCell>
+                      <TableCell>{message.receiverUsername}</TableCell>
+                      <TableCell className="max-w-md">
+                        <div className="line-clamp-2">{message.content}</div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                          {message.reason}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(message.timestamp).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              apiRequest("POST", `/api/admin/flagged-messages/${message.id}/reviewed`, {
+                                reviewed: true
+                              })
+                                .then(() => {
+                                  queryClient.invalidateQueries({ queryKey: ["/api/admin/flagged-messages"] });
+                                  queryClient.invalidateQueries({ queryKey: ["/api/admin/flagged-messages/stats"] });
+                                  toast({
+                                    title: "Success",
+                                    description: "Message marked as reviewed",
+                                  });
+                                })
+                                .catch(() => {
+                                  toast({
+                                    title: "Error",
+                                    description: "Failed to mark message as reviewed",
+                                    variant: "destructive",
+                                  });
+                                });
+                            }}
+                          >
+                            Mark Reviewed
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              
+              <div className="mt-4 text-right">
+                <Link href="/admin/content-moderation">
+                  <Button variant="default">
+                    View All Flagged Messages
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
 
       <Card className="mt-8">
         <div className="p-6">
@@ -1196,7 +1355,7 @@ export default function AdminDashboard() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      {plans?.map((plan: any) => (
+                      {plans?.map((plan: SubscriptionPlanWithFeatures) => (
                         <DropdownMenuItem
                           key={plan.id}
                           onClick={() =>
@@ -1515,7 +1674,7 @@ export default function AdminDashboard() {
                           >
                             Free Plan
                           </DropdownMenuItem>
-                          {plans.map((plan) => (
+                          {plans.map((plan: SubscriptionPlanWithFeatures) => (
                             <DropdownMenuItem
                               key={plan.id}
                               onClick={() =>
@@ -1697,7 +1856,7 @@ export default function AdminDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {plans?.map((plan: any) => (
+                {plans?.map((plan: SubscriptionPlanWithFeatures) => (
                   <TableRow key={plan.id}>
                     <TableCell>{plan.id}</TableCell>
                     <TableCell>{plan.name}</TableCell>

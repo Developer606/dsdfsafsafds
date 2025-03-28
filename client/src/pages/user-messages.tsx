@@ -211,7 +211,7 @@ export default function UserMessages() {
   // Track message status changes for animations
   useEffect(() => {
     if (currentUser && messages.length > 0) {
-      messages.forEach((message) => {
+      messages.forEach((message: UserMessage) => {
         if (message.senderId === currentUser.id) {
           trackStatusChange(message.id, message.status);
         }

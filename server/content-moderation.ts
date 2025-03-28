@@ -35,28 +35,44 @@ export async function initializeFlaggedMessagesDb() {
 const prohibitedWords: Record<string, string[]> = {
   'violence': [
     'bomb', 'kill', 'murder', 'terrorist', 'shooting', 'attack', 'explosive', 'weapon',
-    'violent', 'violence', 'suicide', 'torture'
+    'violent', 'violence', 'suicide', 'torture', 'assassinate', 'massacre', 'slaughter',
+    'detonate', 'hostage', 'bloodshed', 'stab', 'strangle', 'assault', 'terror attack'
   ],
   'sexual_exploitation': [
-    'child pornography', 'cp', 'minor', 'underage', 'jailbait', 'pedo',
-    'rape', 'assault', 'molest', 'trafficking', 'forced'
+    'child pornography', 'cp', 'minor', 'underage', 'jailbait', 'pedo', 'pedophile',
+    'rape', 'assault', 'molest', 'trafficking', 'forced', 'nonconsensual', 'revenge porn',
+    'child abuse', 'sexual abuse', 'grooming', 'explicit', 'bestiality', 'zoophilia'
   ],
   'hate_speech': [
     'nigger', 'faggot', 'chink', 'spic', 'kike', 'retard', 'nazi', 'hitler',
-    'genocide', 'holocaust', 'slavery'
+    'genocide', 'holocaust', 'slavery', 'white power', 'white supremacy', 'lynching',
+    'kkk', 'jew hater', 'antisemite', 'antisemitic', 'racial slur', 'racial purity'
   ],
   'self_harm': [
-    'suicide', 'self-harm', 'cutting', 'hang myself', 'kill myself', 'end my life'
+    'suicide', 'self-harm', 'cutting', 'hang myself', 'kill myself', 'end my life',
+    'overdose', 'self-mutilation', 'slit wrists', 'jump off', 'death wish', 'suicidal'
+  ],
+  'drugs_illegal': [
+    'cocaine', 'heroin', 'meth', 'crystal meth', 'methamphetamine', 'drug dealer',
+    'drug trafficking', 'fentanyl', 'illegal drugs', 'drug smuggling', 'drug cartel'
+  ],
+  'threats': [
+    'death threat', 'threaten', 'hunting you', 'coming for you', 'find your address',
+    'find your family', 'hack you', 'doxx', 'swat', 'swatting', 'stalk', 'stalking'
   ]
 };
 
-// Multilingual equivalents could be added for common languages
+// Multilingual equivalents for common languages
 const multilingualProhibitedWords: Record<string, string[]> = {
-  'es': ['bomba', 'matar', 'violar', 'terrorista', 'suicidio'], // Spanish
-  'fr': ['bombe', 'tuer', 'viol', 'terroriste', 'suicide'], // French
-  'de': ['bombe', 'töten', 'vergewaltigung', 'terrorist', 'selbstmord'], // German
-  'ja': ['爆弾', '殺す', 'レイプ', 'テロリスト', '自殺'], // Japanese
-  'zh': ['炸弹', '杀', '强奸', '恐怖分子', '自杀'] // Chinese
+  'es': ['bomba', 'matar', 'violar', 'terrorista', 'suicidio', 'pornografía infantil', 'drogas', 'amenaza', 'odio racial'], // Spanish
+  'fr': ['bombe', 'tuer', 'viol', 'terroriste', 'suicide', 'pédophilie', 'pornographie enfantine', 'drogues', 'menace', 'haine raciale'], // French
+  'de': ['bombe', 'töten', 'vergewaltigung', 'terrorist', 'selbstmord', 'kinderpornographie', 'drogen', 'drohung', 'rassenhass'], // German
+  'ja': ['爆弾', '殺す', 'レイプ', 'テロリスト', '自殺', '児童ポルノ', '薬物', '脅迫', '人種差別'], // Japanese
+  'zh': ['炸弹', '杀', '强奸', '恐怖分子', '自杀', '儿童色情', '毒品', '威胁', '种族仇恨'], // Chinese
+  'ko': ['폭탄', '살인', '강간', '테러리스트', '자살', '아동 포르노', '마약', '협박', '인종 혐오'], // Korean
+  'hi': ['बम', 'हत्या', 'बलात्कार', 'आतंकवादी', 'आत्महत्या', 'बाल अश्लीलता', 'ड्रग्स', 'धमकी', 'नस्लीय घृणा'], // Hindi
+  'ar': ['قنبلة', 'قتل', 'اغتصاب', 'إرهابي', 'انتحار', 'إباحية الأطفال', 'مخدرات', 'تهديد', 'كراهية عرقية'], // Arabic
+  'pt': ['bomba', 'matar', 'estupro', 'terrorista', 'suicídio', 'pornografia infantil', 'drogas', 'ameaça', 'ódio racial'] // Portuguese
 };
 
 /**
@@ -129,24 +145,25 @@ export async function flagMessage(
  * Get all flagged messages with user details for admin review
  */
 export async function getFlaggedMessages(limit = 100, offset = 0, includeReviewed = false): Promise<any[]> {
-  let queryBase = flaggedMessagesDb
-    .select()
-    .from(schema.flaggedMessages);
-    
-  // Apply the where condition first if needed
-  if (!includeReviewed) {
-    queryBase = queryBase.where(sql`${schema.flaggedMessages.reviewed} = 0`);
-  }
+  // Create the select query
+  const query = includeReviewed
+    ? flaggedMessagesDb
+        .select()
+        .from(schema.flaggedMessages)
+    : flaggedMessagesDb
+        .select()
+        .from(schema.flaggedMessages)
+        .where(sql`${schema.flaggedMessages.reviewed} = 0`);
   
   // Then apply sorting and pagination
-  const flaggedMessages = await queryBase
+  const flaggedMessages = await query
     .orderBy(sql`${schema.flaggedMessages.timestamp} DESC`)
     .limit(limit)
     .offset(offset);
   
   // Enhance with user information
   const enhancedMessages = await Promise.all(
-    flaggedMessages.map(async (message) => {
+    flaggedMessages.map(async (message: schema.FlaggedMessage) => {
       const sender = await storage.getUser(message.senderId);
       const receiver = await storage.getUser(message.receiverId);
       
