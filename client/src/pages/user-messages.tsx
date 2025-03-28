@@ -116,8 +116,15 @@ export default function UserMessages() {
   // Extract messages and conversation status from the response
   const messages = messagesData.messages || [];
   
-  // Check for conversation blocked status from the API response
-  const isConversationBlocked = messagesData.conversationStatus?.isBlocked || false;
+  // Create local state for conversation blocked status that can be updated by socket events
+  const [isConversationBlocked, setIsConversationBlocked] = useState<boolean>(false);
+  
+  // Update local state whenever the API response changes
+  useEffect(() => {
+    const blockedStatus = messagesData.conversationStatus?.isBlocked || false;
+    console.log(`Setting conversation blocked status from API: ${blockedStatus}`);
+    setIsConversationBlocked(blockedStatus);
+  }, [messagesData.conversationStatus]);
   
   console.log("Conversation status:", { isBlocked: isConversationBlocked, userId });
   
@@ -265,7 +272,11 @@ export default function UserMessages() {
       if (data.otherUserId === userId) {
         console.log(`Conversation status update: isBlocked=${data.isBlocked}`);
         
-        // Force refetch of the conversation to update UI with the new blocked status
+        // Directly update our local state with the new blocked status
+        setIsConversationBlocked(!!data.isBlocked);
+        console.log(`[Socket] Directly updated conversation blocked status to: ${!!data.isBlocked}`);
+        
+        // Also force refetch of the conversation to update UI with any other changes
         refetchMessages();
         
         // Show notification based on new status
@@ -310,7 +321,7 @@ export default function UserMessages() {
       removeStatusUpdateListener();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, currentUser?.id, queryClient, socketManager, trackStatusChange]);
+  }, [userId, currentUser?.id, queryClient, socketManager, trackStatusChange, isConversationBlocked, setIsConversationBlocked]);
   
   // Scroll to bottom when new messages arrive
   useEffect(() => {

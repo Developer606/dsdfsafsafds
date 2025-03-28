@@ -901,7 +901,19 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           return false;
         };
         
-        // Emit refresh_conversation event to both users
+        // Send specific conversation status update event with the new blocked status
+        // This ensures clients have the exact current state
+        emitToUser(user1Id, 'conversation_status_update', { 
+          otherUserId: user2Id,
+          isBlocked: blocked
+        });
+        emitToUser(user2Id, 'conversation_status_update', { 
+          otherUserId: user1Id,
+          isBlocked: blocked
+        });
+        console.log(`[BLOCK API] Broadcast conversation_status_update events to users ${user1Id} and ${user2Id} with isBlocked=${blocked}`);
+        
+        // Also emit refresh_conversation event to both users to trigger a UI refresh
         emitToUser(user1Id, 'refresh_conversation', { otherUserId: user2Id });
         emitToUser(user2Id, 'refresh_conversation', { otherUserId: user1Id });
         console.log(`[BLOCK API] Broadcast refresh_conversation events to users ${user1Id} and ${user2Id}`);
