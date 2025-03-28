@@ -402,6 +402,12 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
           isBlocked: conversation?.isBlocked || false
         });
         
+        // Emit a refresh conversation event to both users
+        // This will trigger an immediate UI refresh in the client
+        socket.emit('refresh_conversation', { otherUserId });
+        emitToUser(otherUserId, 'refresh_conversation', { otherUserId: userId });
+        log(`Sent refresh_conversation event to users ${userId} and ${otherUserId}`);
+        
         // If the conversation exists and isn't blocked, also refresh messages
         if (conversation && !conversation.isBlocked) {
           const messages = await storage.getUserMessages(userId, otherUserId, { page: 1, limit: 50 });

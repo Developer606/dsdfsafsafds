@@ -882,6 +882,33 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const updatedConversation = await storage.getConversationBetweenUsers(user1Id, user2Id);
       console.log(`[BLOCK API] Updated conversation status:`, updatedConversation);
       
+      // Broadcast a refresh event via WebSockets to both users 
+      // This uses the Server-Side Broadcasting system
+      const io = req.app.get('io');
+      if (io) {
+        // Use the emitToUser function which will notify all active sessions for a given user
+        const emitToUser = (userId, event, data) => {
+          // Find all socket connections for this user
+          const connections = Array.from(io.sockets.sockets.values())
+            .filter(socket => socket.data && socket.data.userId === userId);
+            
+          if (connections.length > 0) {
+            console.log(`[BLOCK API] Broadcasting ${event} to user ${userId} (${connections.length} active connections)`);
+            // Emit to all connections for this user
+            connections.forEach(socket => socket.emit(event, data));
+            return true;
+          }
+          return false;
+        };
+        
+        // Emit refresh_conversation event to both users
+        emitToUser(user1Id, 'refresh_conversation', { otherUserId: user2Id });
+        emitToUser(user2Id, 'refresh_conversation', { otherUserId: user1Id });
+        console.log(`[BLOCK API] Broadcast refresh_conversation events to users ${user1Id} and ${user2Id}`);
+      } else {
+        console.log(`[BLOCK API] Warning: Socket.IO server not available for broadcasting`);
+      }
+      
       console.log(`[BLOCK API] Successfully ${blocked ? 'blocked' : 'unblocked'} conversation`);
       res.json({ 
         success: true, 
@@ -902,6 +929,30 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const user2Id = parseInt(req.params.user2Id);
       
       await storage.deleteConversationMessages(user1Id, user2Id);
+      
+      // Broadcast a refresh event via WebSockets to both users
+      const io = req.app.get('io');
+      if (io) {
+        // Use the emitToUser function which will notify all active sessions for a given user
+        const emitToUser = (userId, event, data) => {
+          // Find all socket connections for this user
+          const connections = Array.from(io.sockets.sockets.values())
+            .filter(socket => socket.data && socket.data.userId === userId);
+            
+          if (connections.length > 0) {
+            console.log(`[CLEAR API] Broadcasting ${event} to user ${userId} (${connections.length} active connections)`);
+            // Emit to all connections for this user
+            connections.forEach(socket => socket.emit(event, data));
+            return true;
+          }
+          return false;
+        };
+        
+        // Emit refresh_conversation event to both users
+        emitToUser(user1Id, 'refresh_conversation', { otherUserId: user2Id });
+        emitToUser(user2Id, 'refresh_conversation', { otherUserId: user1Id });
+        console.log(`[CLEAR API] Broadcast refresh_conversation events to users ${user1Id} and ${user2Id}`);
+      }
       
       res.json({ success: true });
     } catch (error) {

@@ -233,12 +233,70 @@ export default function UserMessages() {
       }
     };
     
+    // Handle conversation refresh events (e.g., when conversation is blocked/unblocked)
+    const refreshConversationHandler = (data: any) => {
+      console.log("Conversation refresh event received:", data);
+      
+      // Make sure the event is relevant to the current conversation
+      if (data.otherUserId && (data.otherUserId === userId || data.otherUserId === currentUser?.id)) {
+        console.log("Refresh event is for the current conversation, forcing update");
+        
+        // Force immediate refresh of messages and conversation status
+        refetchMessages();
+        
+        // Invalidate the cache to ensure we get fresh data
+        queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
+        
+        // When the server sends a refresh event, it means something important changed
+        // Let's add a toast notification to inform the user
+        toast({
+          title: "Conversation Updated",
+          description: "This conversation has been updated by a moderator.",
+          duration: 5000
+        });
+      }
+    };
+    
+    // Handle conversation status updates
+    const conversationStatusUpdateHandler = (data: any) => {
+      console.log("Conversation status update received:", data);
+      
+      // Make sure the event is relevant to the current conversation
+      if (data.otherUserId === userId) {
+        console.log(`Conversation status update: isBlocked=${data.isBlocked}`);
+        
+        // Force refetch of the conversation to update UI with the new blocked status
+        refetchMessages();
+        
+        // Show notification based on new status
+        if (data.isBlocked) {
+          toast({
+            variant: "destructive",
+            title: "Conversation Blocked",
+            description: "This conversation has been blocked by a moderator for violating our community guidelines.",
+            duration: 8000
+          });
+        } else {
+          // If conversation was previously blocked, notify user it's now unblocked
+          if (isConversationBlocked) {
+            toast({
+              title: "Conversation Unblocked",
+              description: "This conversation has been unblocked. You can now send messages.",
+              duration: 5000
+            });
+          }
+        }
+      }
+    };
+    
     // Register event listeners
     const removeNewMessageListener = socketManager.addEventListener('new_message', newMessageHandler);
     const removeMessageSentListener = socketManager.addEventListener('message_sent', messageSentHandler);
     const removeMessageStatusListener = socketManager.addEventListener('message_status', messageStatusHandler);
     const removeTypingListener = socketManager.addEventListener('typing_indicator', typingIndicatorHandler);
     const removeServerErrorListener = socketManager.addEventListener('server_error', serverErrorHandler);
+    const removeRefreshListener = socketManager.addEventListener('refresh_conversation', refreshConversationHandler);
+    const removeStatusUpdateListener = socketManager.addEventListener('conversation_status_update', conversationStatusUpdateHandler);
     
     // Cleanup function
     return () => {
@@ -248,6 +306,8 @@ export default function UserMessages() {
       removeMessageStatusListener();
       removeTypingListener();
       removeServerErrorListener();
+      removeRefreshListener();
+      removeStatusUpdateListener();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, currentUser?.id, queryClient, socketManager, trackStatusChange]);
