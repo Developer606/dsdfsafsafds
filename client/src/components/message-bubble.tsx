@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageStatusIndicator } from "./message-status-indicator";
+import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 
 interface MessageBubbleProps {
   id: number;
@@ -8,6 +10,9 @@ interface MessageBubbleProps {
   status: "sent" | "delivered" | "read";
   isCurrentUser: boolean;
   hasDeliveryAnimation?: boolean;
+  chatStyle?: "whatsapp" | "chatgpt" | "messenger";
+  avatar?: string;
+  userName?: string;
 }
 
 export function MessageBubble({
@@ -16,7 +21,10 @@ export function MessageBubble({
   timestamp,
   status,
   isCurrentUser,
-  hasDeliveryAnimation = false
+  hasDeliveryAnimation = false,
+  chatStyle = "whatsapp",
+  avatar,
+  userName
 }: MessageBubbleProps) {
   // Format time string
   const formatTime = (timestamp: string) => {
@@ -46,32 +54,130 @@ export function MessageBubble({
     }
   };
 
+  // ChatGPT style
+  if (chatStyle === "chatgpt") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={cn(
+          "py-8 px-4 md:px-6 w-full",
+          isCurrentUser ? "bg-white dark:bg-slate-800" : "bg-gray-50 dark:bg-slate-900"
+        )}
+      >
+        <div className="flex gap-4 items-start max-w-3xl mx-auto">
+          {!isCurrentUser && avatar && (
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+              <img src={avatar} alt={userName || "User"} className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="flex-1">
+            <p className="text-sm font-medium mb-1 text-gray-500 dark:text-gray-400">
+              {isCurrentUser ? "You" : userName}
+            </p>
+            <div className="prose dark:prose-invert max-w-none">
+              <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">
+                {content}
+              </p>
+            </div>
+          </div>
+          {isCurrentUser && (
+            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-medium text-blue-600 dark:text-blue-300">Y</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Messenger style
+  if (chatStyle === "messenger") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={cn(
+          "px-2 sm:px-4 py-1 sm:py-2",
+          isCurrentUser ? "ml-auto" : "mr-auto",
+          "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+        )}
+      >
+        <div className={cn(
+          "flex",
+          isCurrentUser ? "justify-end" : "justify-start",
+          "items-end gap-2"
+        )}>
+          {!isCurrentUser && avatar && (
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+              <img src={avatar} alt={userName || "User"} className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className={cn(
+            "flex flex-col",
+            isCurrentUser ? "items-end" : "items-start"
+          )}>
+            <div className={cn(
+              "px-3 py-2 rounded-2xl max-w-full",
+              isCurrentUser 
+                ? "bg-[#0084ff] text-white" 
+                : "bg-[#f0f0f0] dark:bg-slate-700 text-black dark:text-white"
+            )}>
+              <p className="text-sm sm:text-base whitespace-pre-wrap break-words">
+                {content}
+              </p>
+            </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {formatTime(timestamp)}
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // WhatsApp style (default)
   return (
     <motion.div
-      layout
-      key={id}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={bubbleVariants}
-      className={`flex max-w-[75%] ${isCurrentUser ? 'ml-auto' : 'mr-auto'}`}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={cn(
+        "px-2 sm:px-4 py-1 sm:py-2",
+        isCurrentUser ? "ml-auto" : "mr-auto",
+        "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+      )}
     >
-      <div 
-        className={`
-          ${isCurrentUser 
-            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-tl-2xl rounded-tr-md rounded-bl-2xl' 
-            : 'bg-white dark:bg-gray-800 rounded-tl-md rounded-tr-2xl rounded-br-2xl shadow-sm'}
-        `}
-      >
-        <div className="p-3">
-          <p>{content}</p>
-          <div className={`text-xs mt-1 flex items-center justify-end ${isCurrentUser ? 'text-white/70' : 'text-gray-500'}`}>
-            <span>{formatTime(timestamp)}</span>
-            
+      <div className={cn(
+        "flex flex-col",
+        isCurrentUser ? "items-end" : "items-start"
+      )}>
+        <div className={cn(
+          "px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg",
+          isCurrentUser 
+            ? "bg-[#e7ffdb] dark:bg-emerald-800 rounded-tr-none" 
+            : "bg-white dark:bg-slate-800 rounded-tl-none",
+          "max-w-full"
+        )}>
+          {!isCurrentUser && userName && (
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1">
+              {userName}
+            </p>
+          )}
+          <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+            {content}
+          </p>
+          <div className="flex items-center justify-end gap-1 mt-1">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {formatTime(timestamp)}
+            </span>
             {isCurrentUser && (
-              <AnimatePresence mode="wait">
-                <MessageStatusIndicator key={`${id}-${status}`} status={status} animate={hasDeliveryAnimation} />
-              </AnimatePresence>
+              <div className="flex">
+                <Check className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+                <Check className="h-3 w-3 -ml-1 text-gray-500 dark:text-gray-400" />
+              </div>
             )}
           </div>
         </div>

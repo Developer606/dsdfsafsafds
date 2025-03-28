@@ -17,7 +17,9 @@ try {
     fs.readFileSync(path.join(__dirname, "api-keys.json"), "utf8"),
   );
 } catch (error) {
-  console.log("api-keys.json file not found or invalid, using admin database instead");
+  console.log(
+    "api-keys.json file not found or invalid, using admin database instead",
+  );
 }
 
 // First try to get token from admin database, then fallback to environment variable
@@ -29,20 +31,22 @@ async function initializeToken(): Promise<string | null> {
   if (tokenInitialized) {
     return token;
   }
-  
+
   try {
     // Get token from admin database
     token = await getApiKey("GITHUB_TOKEN");
-    
+
     // Fallback to environment variable if not in database
     if (!token) {
       token = process.env["GITHUB_TOKEN"] || null;
     }
-    
+
     if (!token) {
-      console.warn("Missing GITHUB_TOKEN. API responses will use fallback messages.");
+      console.warn(
+        "Missing GITHUB_TOKEN. API responses will use fallback messages.",
+      );
     }
-    
+
     tokenInitialized = true;
     return token;
   } catch (error) {
@@ -62,13 +66,13 @@ export async function generateCharacterResponse(
   try {
     // Initialize token if not already done
     const currentToken = await initializeToken();
-    
+
     // If no token available, return fallback message
     if (!currentToken) {
       console.warn("No API token available for LLM service");
       return "I'm having trouble connecting to my brain right now. Could we chat a bit later?";
     }
-    
+
     const client = ModelClient(
       "https://models.inference.ai.azure.com",
       new AzureKeyCredential(currentToken),
@@ -118,7 +122,7 @@ Assistant (${character.name}): `;
     const response = await client.path("/chat/completions").post({
       body: {
         messages: [{ role: "user", content: prompt }],
-        model: "Llama-3.2-90B-Vision-Instruct",
+        model: "mistral-small-2503",
         temperature: 0.8,
         max_tokens: 2048,
         top_p: 0.1,
@@ -130,7 +134,8 @@ Assistant (${character.name}): `;
     }
 
     // Safely extract text content with fallback
-    let generatedText = response.body.choices?.[0]?.message?.content?.trim() || "";
+    let generatedText =
+      response.body.choices?.[0]?.message?.content?.trim() || "";
 
     if (generatedText) {
       generatedText = generatedText.replace(
@@ -151,7 +156,7 @@ Assistant (${character.name}): `;
 export async function main() {
   // Initialize token first
   await initializeToken();
-  
+
   const character: Character = {
     id: "test-character",
     name: "Alex",

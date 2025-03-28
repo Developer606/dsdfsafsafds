@@ -52,6 +52,7 @@ interface UserProfile {
   username: string;
   fullName?: string;
   lastLoginAt?: string;
+  avatarUrl?: string;
 }
 
 interface ConversationStatus {
@@ -858,7 +859,7 @@ export default function UserMessages() {
               const hasStatusAnimation = shouldAnimateStatus(message.id);
               
               return (
-                <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} ${chatStyle === "chatgpt" ? "w-full" : ""}`}>
                   <MessageBubble
                     id={message.id}
                     content={message.content}
@@ -866,6 +867,9 @@ export default function UserMessages() {
                     status={message.status}
                     isCurrentUser={isCurrentUser}
                     hasDeliveryAnimation={hasStatusAnimation}
+                    chatStyle={chatStyle}
+                    avatar={isCurrentUser ? undefined : otherUser.avatarUrl}
+                    userName={isCurrentUser ? undefined : (otherUser.fullName || otherUser.username)}
                   />
                 </div>
               );
