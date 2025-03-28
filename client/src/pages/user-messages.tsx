@@ -208,6 +208,18 @@ export default function UserMessages() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
+  // Track message status changes for animations
+  useEffect(() => {
+    if (currentUser && messages.length > 0) {
+      messages.forEach((message) => {
+        if (message.senderId === currentUser.id) {
+          trackStatusChange(message.id, message.status);
+        }
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, currentUser]);
+  
   // Mark messages as read on component mount
   useEffect(() => {
     if (userId) {
@@ -326,14 +338,6 @@ export default function UserMessages() {
             {messages.map((message: UserMessage) => {
               const isCurrentUser = currentUser && message.senderId === currentUser.id;
               const hasStatusAnimation = shouldAnimateStatus(message.id);
-
-              // Track the current message status for animations
-              useEffect(() => {
-                if (isCurrentUser) {
-                  trackStatusChange(message.id, message.status);
-                }
-              // eslint-disable-next-line react-hooks/exhaustive-deps
-              }, [message.status, message.id, isCurrentUser]);
               
               return (
                 <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
