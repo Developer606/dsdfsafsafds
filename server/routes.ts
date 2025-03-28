@@ -2231,12 +2231,38 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         return res.status(400).json({ error: "Message content is required" });
       }
       
+      // Check message content for prohibited words
+      const { checkMessageContent, flagMessage } = await import("./content-moderation");
+      const contentCheck = checkMessageContent(content);
+      
+      // Create message in database
       const message = await storage.createUserMessage({
         senderId: req.user.id,
         receiverId,
         content,
         status: "sent"
       });
+      
+      // If flagged, handle content moderation
+      if (contentCheck.flagged) {
+        console.log(`[REST API] FLAGGED MESSAGE from user ${req.user.id}: ${contentCheck.reason}`);
+        
+        // Flag the message in the moderation system
+        try {
+          await flagMessage(
+            message.id,
+            req.user.id,
+            receiverId,
+            content,
+            contentCheck.reason || 'Prohibited content'
+          );
+          
+          // Notify admins about flagged content via socket if available
+          // The socket server will handle sending notifications to online admins
+        } catch (err) {
+          console.error(`Error flagging message: ${err}`);
+        }
+      }
       
       res.status(201).json(message);
     } catch (error) {
