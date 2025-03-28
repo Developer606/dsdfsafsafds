@@ -7,6 +7,7 @@ import { initializeNotifications } from "./notification-db";
 import { startScheduler } from "./scheduler";
 import { initializeAdminDb } from "./admin-db";
 import { setupSocketIOServer } from "./socket-io-server";
+import { initializeFlaggedMessagesDb } from "./content-moderation";
 import path from "path";
 
 const app = express();
@@ -80,6 +81,10 @@ app.use((req, res, next) => {
     // Initialize notifications database
     await initializeNotifications();
     log("Notifications database initialized successfully");
+    
+    // Initialize flagged messages database
+    await initializeFlaggedMessagesDb();
+    log("Flagged messages database initialized successfully");
 
     // Start the broadcast scheduler
     startScheduler();
