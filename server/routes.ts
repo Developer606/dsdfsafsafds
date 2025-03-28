@@ -858,15 +858,37 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     try {
       const user1Id = parseInt(req.params.user1Id);
       const user2Id = parseInt(req.params.user2Id);
-      const { blocked } = req.body;
+      
+      // Ensure the blocked parameter is a boolean
+      let blocked = false;
+      if (typeof req.body.blocked === 'boolean') {
+        blocked = req.body.blocked;
+      } else if (typeof req.body.blocked === 'string') {
+        blocked = req.body.blocked.toLowerCase() === 'true';
+      }
       
       console.log(`[BLOCK API] Received request to ${blocked ? 'block' : 'unblock'} conversation between users ${user1Id} and ${user2Id}`);
-      console.log(`[BLOCK API] Request body:`, req.body);
+      console.log(`[BLOCK API] Original request body:`, req.body);
+      console.log(`[BLOCK API] Parsed blocked value:`, blocked);
       
+      // Force clear any existing state by getting the current conversation status
+      const currentConversation = await storage.getConversationBetweenUsers(user1Id, user2Id);
+      console.log(`[BLOCK API] Current conversation status:`, currentConversation);
+      
+      // Update the conversation status
       await storage.updateConversationStatus(user1Id, user2Id, { isBlocked: blocked });
       
+      // Verify the update worked by fetching the updated conversation
+      const updatedConversation = await storage.getConversationBetweenUsers(user1Id, user2Id);
+      console.log(`[BLOCK API] Updated conversation status:`, updatedConversation);
+      
       console.log(`[BLOCK API] Successfully ${blocked ? 'blocked' : 'unblocked'} conversation`);
-      res.json({ success: true, message: `Conversation ${blocked ? 'blocked' : 'unblocked'} successfully` });
+      res.json({ 
+        success: true, 
+        message: `Conversation ${blocked ? 'blocked' : 'unblocked'} successfully`,
+        previousStatus: currentConversation?.isBlocked,
+        newStatus: updatedConversation?.isBlocked
+      });
     } catch (error) {
       console.error("Error updating conversation status:", error);
       res.status(500).json({ error: "Failed to update conversation status" });

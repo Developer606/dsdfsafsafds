@@ -410,74 +410,123 @@ export class DatabaseStorage implements IStorage {
     const minUserId = Math.min(user1Id, user2Id);
     const maxUserId = Math.max(user1Id, user2Id);
     
-    console.log(`[updateConversationStatus] Setting conversation between users ${minUserId} and ${maxUserId} to isBlocked=${data.isBlocked}`);
+    // Ensure isBlocked is a boolean value
+    const isBlocked = !!data.isBlocked;
+    
+    console.log(`[updateConversationStatus] Setting conversation between users ${minUserId} and ${maxUserId} to isBlocked=${isBlocked}`);
     
     // Check if conversation exists in messages database
     const conversation = await this.getConversationBetweenUsers(minUserId, maxUserId);
     console.log(`[updateConversationStatus] Found conversation in messages.db:`, conversation);
     
-    // Update in messages.db
-    if (conversation) {
-      // Update existing conversation
-      console.log(`[updateConversationStatus] Updating existing conversation in messages.db`);
-      await messagesDb
-        .update(userConversations)
-        .set({ 
-          isBlocked: data.isBlocked 
-        })
+    try {
+      // Update in messages.db
+      if (conversation) {
+        // Update existing conversation
+        console.log(`[updateConversationStatus] Updating existing conversation in messages.db to isBlocked=${isBlocked}`);
+        await messagesDb
+          .update(userConversations)
+          .set({ 
+            isBlocked: isBlocked 
+          })
+          .where(
+            sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
+          );
+      } else {
+        // Create new conversation with blocked status
+        console.log(`[updateConversationStatus] Creating new conversation in messages.db with isBlocked=${isBlocked}`);
+        await messagesDb
+          .insert(userConversations)
+          .values({
+            user1Id: minUserId,
+            user2Id: maxUserId,
+            isBlocked: isBlocked,
+            unreadCountUser1: 0,
+            unreadCountUser2: 0,
+            createdAt: new Date()
+          });
+      }
+      
+      // Also update in the main database (sqlite.db)
+      // Check if conversation exists in main database
+      const [mainConversation] = await db
+        .select()
+        .from(userConversations)
         .where(
           sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
         );
-    } else {
-      // Create new conversation with blocked status
-      console.log(`[updateConversationStatus] Creating new conversation in messages.db with isBlocked=${data.isBlocked}`);
-      await messagesDb
-        .insert(userConversations)
-        .values({
-          user1Id: minUserId,
-          user2Id: maxUserId,
-          isBlocked: data.isBlocked,
-          unreadCountUser1: 0,
-          unreadCountUser2: 0,
-          createdAt: new Date()
-        });
-    }
-    
-    // Also update in the main database (sqlite.db)
-    // Check if conversation exists in main database
-    const [mainConversation] = await db
-      .select()
-      .from(userConversations)
-      .where(
-        sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
-      );
-    
-    console.log(`[updateConversationStatus] Found conversation in sqlite.db:`, mainConversation);
-    
-    if (mainConversation) {
-      // Update existing conversation in main database
-      console.log(`[updateConversationStatus] Updating existing conversation in sqlite.db to isBlocked=${data.isBlocked}`);
-      await db
-        .update(userConversations)
-        .set({ 
-          isBlocked: data.isBlocked 
-        })
+      
+      console.log(`[updateConversationStatus] Found conversation in sqlite.db:`, mainConversation);
+      
+      if (mainConversation) {
+        // Update existing conversation in main database
+        console.log(`[updateConversationStatus] Updating existing conversation in sqlite.db to isBlocked=${isBlocked}`);
+        await db
+          .update(userConversations)
+          .set({ 
+            isBlocked: isBlocked 
+          })
+          .where(
+            sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
+          );
+      } else {
+        // Create new conversation with blocked status in main database
+        console.log(`[updateConversationStatus] Creating new conversation in sqlite.db with isBlocked=${isBlocked}`);
+        await db
+          .insert(userConversations)
+          .values({
+            user1Id: minUserId,
+            user2Id: maxUserId,
+            isBlocked: isBlocked,
+            unreadCountUser1: 0,
+            unreadCountUser2: 0,
+            createdAt: new Date()
+          });
+      }
+      
+      // Verify the update was successful
+      const verifyConversation = await this.getConversationBetweenUsers(minUserId, maxUserId);
+      if (verifyConversation?.isBlocked !== isBlocked) {
+        console.error(`[updateConversationStatus] WARNING: Update verification failed in messages.db! Expected isBlocked=${isBlocked} but got ${verifyConversation?.isBlocked}`);
+        
+        // Force update if verification failed
+        if (verifyConversation) {
+          console.log(`[updateConversationStatus] Forcing update in messages.db to isBlocked=${isBlocked}`);
+          await messagesDb
+            .update(userConversations)
+            .set({ isBlocked: isBlocked })
+            .where(
+              sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
+            );
+        }
+      }
+      
+      // Verify update in main database
+      const [verifyMainConversation] = await db
+        .select()
+        .from(userConversations)
         .where(
           sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
         );
-    } else {
-      // Create new conversation with blocked status in main database
-      console.log(`[updateConversationStatus] Creating new conversation in sqlite.db with isBlocked=${data.isBlocked}`);
-      await db
-        .insert(userConversations)
-        .values({
-          user1Id: minUserId,
-          user2Id: maxUserId,
-          isBlocked: data.isBlocked,
-          unreadCountUser1: 0,
-          unreadCountUser2: 0,
-          createdAt: new Date()
-        });
+        
+      if (verifyMainConversation?.isBlocked !== isBlocked) {
+        console.error(`[updateConversationStatus] WARNING: Update verification failed in sqlite.db! Expected isBlocked=${isBlocked} but got ${verifyMainConversation?.isBlocked}`);
+        
+        // Force update if verification failed
+        if (verifyMainConversation) {
+          console.log(`[updateConversationStatus] Forcing update in sqlite.db to isBlocked=${isBlocked}`);
+          await db
+            .update(userConversations)
+            .set({ isBlocked: isBlocked })
+            .where(
+              sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
+            );
+        }
+      }
+      
+    } catch (error) {
+      console.error(`[updateConversationStatus] Error updating conversation status:`, error);
+      throw error;
     }
   }
   

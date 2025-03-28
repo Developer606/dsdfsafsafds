@@ -1104,12 +1104,20 @@ export default function AdminContentModeration() {
                         <div className="flex flex-wrap gap-2">
                           <Button 
                             variant="default" 
-                            className="bg-amber-600 hover:bg-amber-700"
-                            onClick={() => blockConversation.mutate({
-                              user1Id: selectedMessage.senderId,
-                              user2Id: selectedMessage.receiverId,
-                              blocked: !conversationDetails.data?.isBlocked
-                            })}
+                            className={conversationDetails.data?.isBlocked 
+                              ? "bg-green-600 hover:bg-green-700" 
+                              : "bg-amber-600 hover:bg-amber-700"}
+                            onClick={() => {
+                              // Explicitly set the blocked value based on current status
+                              const newBlockedStatus = !conversationDetails.data?.isBlocked;
+                              console.log(`Changing conversation blocked status to: ${newBlockedStatus}`);
+                              
+                              blockConversation.mutate({
+                                user1Id: selectedMessage.senderId,
+                                user2Id: selectedMessage.receiverId,
+                                blocked: newBlockedStatus
+                              });
+                            }}
                             disabled={blockConversation.isPending}
                           >
                             {blockConversation.isPending ? (
