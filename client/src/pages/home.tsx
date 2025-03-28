@@ -1433,25 +1433,33 @@ export default function Home() {
             </div>
 
             <div className="mb-4">
-              <Link href="/search">
-                <Button
-                  className="w-full bg-gradient-to-br from-purple-400/90 to-pink-500/90 hover:from-purple-400 hover:to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-                >
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Chat
-                </Button>
-              </Link>
+              <Button
+                className="w-full bg-gradient-to-br from-purple-400/90 to-pink-500/90 hover:from-purple-400 hover:to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+                onClick={() => setLocation("/search")}
+              >
+                <Search className="h-5 w-5 mr-2" />
+                Search Characters
+              </Button>
             </div>
             
             <div className="mb-4">
-              <Link href="/conversations">
-                <Button
-                  className="w-full bg-gradient-to-br from-blue-400/90 to-indigo-500/90 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-                >
-                  <Users className="h-5 w-5 mr-2" />
-                  Messages
-                </Button>
-              </Link>
+              <Button
+                className="w-full bg-gradient-to-br from-pink-400/90 to-red-500/90 hover:from-pink-400 hover:to-red-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+                onClick={() => setLocation("/users/search")}
+              >
+                <Users className="h-5 w-5 mr-2" />
+                Find Users
+              </Button>
+            </div>
+            
+            <div className="mb-4">
+              <Button
+                className="w-full bg-gradient-to-br from-blue-400/90 to-indigo-500/90 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+                onClick={() => setLocation("/conversations")}
+              >
+                <MessageSquare className="h-5 w-5 mr-2" />
+                Messages
+              </Button>
             </div>
 
             <AnimatePresence>
