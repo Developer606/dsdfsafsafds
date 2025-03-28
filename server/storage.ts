@@ -410,12 +410,16 @@ export class DatabaseStorage implements IStorage {
     const minUserId = Math.min(user1Id, user2Id);
     const maxUserId = Math.max(user1Id, user2Id);
     
+    console.log(`[updateConversationStatus] Setting conversation between users ${minUserId} and ${maxUserId} to isBlocked=${data.isBlocked}`);
+    
     // Check if conversation exists in messages database
     const conversation = await this.getConversationBetweenUsers(minUserId, maxUserId);
+    console.log(`[updateConversationStatus] Found conversation in messages.db:`, conversation);
     
     // Update in messages.db
     if (conversation) {
       // Update existing conversation
+      console.log(`[updateConversationStatus] Updating existing conversation in messages.db`);
       await messagesDb
         .update(userConversations)
         .set({ 
@@ -426,6 +430,7 @@ export class DatabaseStorage implements IStorage {
         );
     } else {
       // Create new conversation with blocked status
+      console.log(`[updateConversationStatus] Creating new conversation in messages.db with isBlocked=${data.isBlocked}`);
       await messagesDb
         .insert(userConversations)
         .values({
@@ -447,8 +452,11 @@ export class DatabaseStorage implements IStorage {
         sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
       );
     
+    console.log(`[updateConversationStatus] Found conversation in sqlite.db:`, mainConversation);
+    
     if (mainConversation) {
       // Update existing conversation in main database
+      console.log(`[updateConversationStatus] Updating existing conversation in sqlite.db to isBlocked=${data.isBlocked}`);
       await db
         .update(userConversations)
         .set({ 
@@ -459,6 +467,7 @@ export class DatabaseStorage implements IStorage {
         );
     } else {
       // Create new conversation with blocked status in main database
+      console.log(`[updateConversationStatus] Creating new conversation in sqlite.db with isBlocked=${data.isBlocked}`);
       await db
         .insert(userConversations)
         .values({

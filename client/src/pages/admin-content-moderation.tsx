@@ -302,10 +302,15 @@ export default function AdminContentModeration() {
   // Mutation for blocking a conversation
   const blockConversation = useMutation({
     mutationFn: async ({ user1Id, user2Id, blocked }: { user1Id: number; user2Id: number; blocked: boolean }) => {
+      console.log(`Sending block request: users ${user1Id} and ${user2Id}, blocked=${blocked}`);
       const res = await apiRequest("POST", `/api/admin/conversations/${user1Id}/${user2Id}/block`, { blocked });
-      return res.json();
+      const data = await res.json();
+      console.log("Block conversation response:", data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Block conversation success:", data);
+      
       if (selectedMessage) {
         // Update conversation users to trigger a refetch
         setConversationUsers({
@@ -323,6 +328,7 @@ export default function AdminContentModeration() {
       });
     },
     onError: (error: any) => {
+      console.error("Block conversation error:", error);
       toast({
         variant: "destructive",
         title: "Error",

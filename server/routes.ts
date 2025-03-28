@@ -860,9 +860,13 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const user2Id = parseInt(req.params.user2Id);
       const { blocked } = req.body;
       
+      console.log(`[BLOCK API] Received request to ${blocked ? 'block' : 'unblock'} conversation between users ${user1Id} and ${user2Id}`);
+      console.log(`[BLOCK API] Request body:`, req.body);
+      
       await storage.updateConversationStatus(user1Id, user2Id, { isBlocked: blocked });
       
-      res.json({ success: true });
+      console.log(`[BLOCK API] Successfully ${blocked ? 'blocked' : 'unblocked'} conversation`);
+      res.json({ success: true, message: `Conversation ${blocked ? 'blocked' : 'unblocked'} successfully` });
     } catch (error) {
       console.error("Error updating conversation status:", error);
       res.status(500).json({ error: "Failed to update conversation status" });
