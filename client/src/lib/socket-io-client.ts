@@ -258,6 +258,24 @@ class SocketIOManager {
       this.connect();
     }
     
+    // First check if we have conversation data cached in the query client
+    const queryCache = queryClient.getQueryCache();
+    const queryKey = ['/api/user-messages', receiverId];
+    const queryData = queryCache.find({ queryKey })?.state?.data as { 
+      messages: any[], 
+      pagination: any, 
+      conversationStatus?: { isBlocked: boolean } 
+    } | undefined;
+    
+    // If the conversation is blocked in cache, don't send the message
+    if (queryData?.conversationStatus?.isBlocked) {
+      this.notifyListeners('server_error', { 
+        message: 'This conversation has been blocked by a moderator for violating community guidelines.',
+        code: 'CONVERSATION_BLOCKED'
+      });
+      return;
+    }
+    
     this.socket?.emit('user_message', {
       receiverId,
       content

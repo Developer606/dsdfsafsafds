@@ -110,7 +110,11 @@ export default function UserMessages() {
   
   // Extract messages and conversation status from the response
   const messages = messagesData.messages || [];
+  
+  // Check for conversation blocked status from the API response
   const isConversationBlocked = messagesData.conversationStatus?.isBlocked || false;
+  
+  console.log("Conversation status:", { isBlocked: isConversationBlocked, userId });
   
   // Mutation to send message
   const sendMessageMutation = useMutation({
