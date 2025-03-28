@@ -31,8 +31,8 @@ export async function initializeFlaggedMessagesDb() {
   console.log("Flagged messages database initialized successfully");
 }
 
-// List of prohibited words to filter (expandable)
-const prohibitedWords: Record<string, string[]> = {
+// Default list of prohibited words to filter
+const defaultProhibitedWords: Record<string, string[]> = {
   'violence': [
     'bomb', 'kill', 'murder', 'terrorist', 'shooting', 'attack', 'explosive', 'weapon',
     'violent', 'violence', 'suicide', 'torture', 'assassinate', 'massacre', 'slaughter',
@@ -61,6 +61,45 @@ const prohibitedWords: Record<string, string[]> = {
     'find your family', 'hack you', 'doxx', 'swat', 'swatting', 'stalk', 'stalking'
   ]
 };
+
+// Custom words added by admins
+let customProhibitedWords: Record<string, string[]> = {
+  'violence': [],
+  'sexual_exploitation': [],
+  'hate_speech': [],
+  'self_harm': [],
+  'drugs_illegal': [],
+  'threats': [],
+  'custom': [] // For custom categories
+};
+
+// Combined prohibited words (default + custom)
+let prohibitedWords: Record<string, string[]> = { ...defaultProhibitedWords };
+
+// Initialize and merge prohibited words
+function initializeProhibitedWords() {
+  // Combine default and custom words
+  prohibitedWords = { ...defaultProhibitedWords };
+  
+  // Add all custom words to their respective categories
+  for (const category in customProhibitedWords) {
+    if (category === 'custom') {
+      // Add custom category if it has words
+      if (customProhibitedWords.custom.length > 0) {
+        prohibitedWords.custom = [...customProhibitedWords.custom];
+      }
+    } else if (prohibitedWords[category]) {
+      // Add custom words to existing categories
+      prohibitedWords[category] = [
+        ...prohibitedWords[category],
+        ...customProhibitedWords[category]
+      ];
+    }
+  }
+}
+
+// Initialize words
+initializeProhibitedWords();
 
 // Multilingual equivalents for common languages
 const multilingualProhibitedWords: Record<string, string[]> = {
@@ -223,4 +262,128 @@ export async function getFlaggedMessageStats(): Promise<{
   });
   
   return { total, unreviewed, byReason };
+}
+
+/**
+ * Get all prohibited words by category
+ * @returns Object with categories and their prohibited words
+ */
+export function getProhibitedWords(): {
+  defaultWords: Record<string, string[]>;
+  customWords: Record<string, string[]>;
+} {
+  return {
+    defaultWords: defaultProhibitedWords,
+    customWords: customProhibitedWords
+  };
+}
+
+/**
+ * Add a new prohibited word to a category
+ * @param category The category to add the word to (violence, sexual_exploitation, etc.)
+ * @param word The word or phrase to add
+ * @returns Success status
+ */
+export function addProhibitedWord(category: string, word: string): { success: boolean; error?: string } {
+  // Validate word
+  if (!word || word.trim() === '') {
+    return { success: false, error: 'Word cannot be empty' };
+  }
+  
+  // Normalize word
+  word = word.toLowerCase().trim();
+  
+  // Check if category exists
+  if (!customProhibitedWords[category] && category !== 'custom') {
+    // If category doesn't exist, but it's in default words, add it to custom words
+    if (defaultProhibitedWords[category]) {
+      customProhibitedWords[category] = [];
+    } else {
+      return { success: false, error: 'Invalid category' };
+    }
+  }
+  
+  // If it's a custom category, ensure it exists
+  if (category === 'custom' && !customProhibitedWords.custom) {
+    customProhibitedWords.custom = [];
+  }
+  
+  // Check if word already exists in category (either default or custom)
+  if (
+    (defaultProhibitedWords[category] && defaultProhibitedWords[category].includes(word)) ||
+    (customProhibitedWords[category] && customProhibitedWords[category].includes(word))
+  ) {
+    return { success: false, error: 'Word already exists in this category' };
+  }
+  
+  // Add word to custom list
+  customProhibitedWords[category].push(word);
+  
+  // Reinitialize prohibited words
+  initializeProhibitedWords();
+  
+  return { success: true };
+}
+
+/**
+ * Remove a prohibited word from a category
+ * @param category The category to remove the word from
+ * @param word The word to remove
+ * @returns Success status
+ */
+export function removeProhibitedWord(category: string, word: string): { success: boolean; error?: string } {
+  // Validate inputs
+  if (!category || !word) {
+    return { success: false, error: 'Invalid parameters' };
+  }
+  
+  // Normalize word
+  word = word.toLowerCase().trim();
+  
+  // Check if category exists in custom words
+  if (!customProhibitedWords[category]) {
+    return { success: false, error: 'Category not found in custom words' };
+  }
+  
+  // Check if word exists in category
+  const index = customProhibitedWords[category].indexOf(word);
+  if (index === -1) {
+    return { success: false, error: 'Word not found in this category' };
+  }
+  
+  // Remove word
+  customProhibitedWords[category].splice(index, 1);
+  
+  // Reinitialize prohibited words
+  initializeProhibitedWords();
+  
+  return { success: true };
+}
+
+/**
+ * Add a new category for prohibited words
+ * @param category The name of the new category
+ * @returns Success status
+ */
+export function addProhibitedCategory(category: string): { success: boolean; error?: string } {
+  // Validate category name
+  if (!category || category.trim() === '') {
+    return { success: false, error: 'Category name cannot be empty' };
+  }
+  
+  // Normalize category name
+  category = category.toLowerCase().trim();
+  
+  // Check if category already exists
+  if (customProhibitedWords[category] || defaultProhibitedWords[category]) {
+    return { success: false, error: 'Category already exists' };
+  }
+  
+  // Add new category
+  customProhibitedWords[category] = [];
+  
+  // Reinitialize prohibited words
+  initializeProhibitedWords();
+  
+  return { success: true };
 }

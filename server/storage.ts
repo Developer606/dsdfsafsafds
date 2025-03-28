@@ -130,8 +130,7 @@ export interface IStorage {
   getUserMessages(
     userId: number, 
     otherUserId: number, 
-    page?: number, 
-    limit?: number
+    options?: { page?: number, limit?: number }
   ): Promise<{ 
     messages: UserMessage[], 
     total: number, 
@@ -142,6 +141,9 @@ export interface IStorage {
   getUserConversations(userId: number): Promise<UserConversation[]>;
   getUnreadMessageCount(userId: number): Promise<number>;
   createConversation(user1Id: number, user2Id: number): Promise<UserConversation>;
+  getConversationBetweenUsers(user1Id: number, user2Id: number): Promise<UserConversation | null>;
+  updateConversationStatus(user1Id: number, user2Id: number, data: { isBlocked: boolean }): Promise<void>;
+  deleteConversationMessages(user1Id: number, user2Id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -227,9 +229,10 @@ export class DatabaseStorage implements IStorage {
   async getUserMessages(
     userId: number, 
     otherUserId: number, 
-    page: number = 1, 
-    limit: number = 20
+    options?: { page?: number, limit?: number }
   ): Promise<{ messages: UserMessage[], total: number, page: number, pages: number }> {
+    const page = options?.page || 1;
+    const limit = options?.limit || 20;
     // Import the messages database to avoid circular imports
     const { messagesDb } = await import("./messages-db");
     
@@ -365,6 +368,112 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return newConversation;
+  }
+  
+  /**
+   * Get a conversation between two users
+   * @param user1Id First user ID
+   * @param user2Id Second user ID
+   * @returns The conversation or null if it doesn't exist
+   */
+  async getConversationBetweenUsers(user1Id: number, user2Id: number): Promise<UserConversation | null> {
+    // Import the messages database to avoid circular imports
+    const { messagesDb } = await import("./messages-db");
+    
+    // Make sure user1Id is always the smaller ID for consistency
+    const minUserId = Math.min(user1Id, user2Id);
+    const maxUserId = Math.max(user1Id, user2Id);
+    
+    // Get conversation between users
+    const [conversation] = await messagesDb
+      .select()
+      .from(userConversations)
+      .where(
+        sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
+      );
+    
+    return conversation || null;
+  }
+  
+  /**
+   * Update conversation status (block/unblock)
+   * @param user1Id First user ID
+   * @param user2Id Second user ID
+   * @param data Update data (isBlocked)
+   * @returns The updated conversation
+   */
+  async updateConversationStatus(user1Id: number, user2Id: number, data: { isBlocked: boolean }): Promise<void> {
+    // Import the messages database to avoid circular imports
+    const { messagesDb } = await import("./messages-db");
+    
+    // Make sure user1Id is always the smaller ID for consistency
+    const minUserId = Math.min(user1Id, user2Id);
+    const maxUserId = Math.max(user1Id, user2Id);
+    
+    // Check if conversation exists
+    const conversation = await this.getConversationBetweenUsers(minUserId, maxUserId);
+    
+    if (conversation) {
+      // Update existing conversation
+      await messagesDb
+        .update(userConversations)
+        .set({ 
+          isBlocked: data.isBlocked 
+        })
+        .where(
+          sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
+        );
+    } else {
+      // Create new conversation with blocked status
+      await messagesDb
+        .insert(userConversations)
+        .values({
+          user1Id: minUserId,
+          user2Id: maxUserId,
+          isBlocked: data.isBlocked,
+          unreadCountUser1: 0,
+          unreadCountUser2: 0,
+          createdAt: new Date()
+        });
+    }
+  }
+  
+  /**
+   * Delete all messages between two users
+   * @param user1Id First user ID
+   * @param user2Id Second user ID
+   */
+  async deleteConversationMessages(user1Id: number, user2Id: number): Promise<void> {
+    // Import the messages database to avoid circular imports
+    const { messagesDb } = await import("./messages-db");
+    
+    // Delete messages in both directions
+    await messagesDb
+      .delete(userMessages)
+      .where(
+        sql`(${userMessages.senderId} = ${user1Id} AND ${userMessages.receiverId} = ${user2Id}) OR
+            (${userMessages.senderId} = ${user2Id} AND ${userMessages.receiverId} = ${user1Id})`
+      );
+    
+    // Reset conversation but keep it in place
+    const minUserId = Math.min(user1Id, user2Id);
+    const maxUserId = Math.max(user1Id, user2Id);
+    
+    const conversation = await this.getConversationBetweenUsers(minUserId, maxUserId);
+    
+    if (conversation) {
+      await messagesDb
+        .update(userConversations)
+        .set({ 
+          lastMessageId: null,
+          lastMessageTimestamp: null,
+          unreadCountUser1: 0,
+          unreadCountUser2: 0
+        })
+        .where(
+          sql`${userConversations.user1Id} = ${minUserId} AND ${userConversations.user2Id} = ${maxUserId}`
+        );
+    }
   }
 
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {

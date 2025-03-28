@@ -654,6 +654,235 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       res.status(500).json({ error: "Failed to update flagged message" });
     }
   });
+  
+  // Content moderation prohibited words management
+  app.get("/api/admin/content-moderation/prohibited-words", isAdmin, async (req, res) => {
+    try {
+      const { getProhibitedWords } = await import("./content-moderation");
+      const words = getProhibitedWords();
+      res.json(words);
+    } catch (error) {
+      console.error("Error fetching prohibited words:", error);
+      res.status(500).json({ error: "Failed to fetch prohibited words" });
+    }
+  });
+  
+  app.post("/api/admin/content-moderation/prohibited-words", isAdmin, async (req, res) => {
+    try {
+      const { category, word } = req.body;
+      
+      if (!category || !word) {
+        return res.status(400).json({ error: "Category and word are required" });
+      }
+      
+      const { addProhibitedWord } = await import("./content-moderation");
+      const result = addProhibitedWord(category, word);
+      
+      if (result.success) {
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error) {
+      console.error("Error adding prohibited word:", error);
+      res.status(500).json({ error: "Failed to add prohibited word" });
+    }
+  });
+  
+  app.delete("/api/admin/content-moderation/prohibited-words", isAdmin, async (req, res) => {
+    try {
+      const { category, word } = req.body;
+      
+      if (!category || !word) {
+        return res.status(400).json({ error: "Category and word are required" });
+      }
+      
+      const { removeProhibitedWord } = await import("./content-moderation");
+      const result = removeProhibitedWord(category, word);
+      
+      if (result.success) {
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error) {
+      console.error("Error removing prohibited word:", error);
+      res.status(500).json({ error: "Failed to remove prohibited word" });
+    }
+  });
+  
+  app.post("/api/admin/content-moderation/prohibited-categories", isAdmin, async (req, res) => {
+    try {
+      const { category } = req.body;
+      
+      if (!category) {
+        return res.status(400).json({ error: "Category name is required" });
+      }
+      
+      const { addProhibitedCategory } = await import("./content-moderation");
+      const result = addProhibitedCategory(category);
+      
+      if (result.success) {
+        res.json({ success: true });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error) {
+      console.error("Error adding prohibited category:", error);
+      res.status(500).json({ error: "Failed to add prohibited category" });
+    }
+  });
+  
+  // Admin endpoints for message history and user management
+  
+  // Get conversation history between two users
+  app.get("/api/admin/message-history/:senderId/:receiverId", isAdmin, async (req, res) => {
+    try {
+      const senderId = parseInt(req.params.senderId);
+      const receiverId = parseInt(req.params.receiverId);
+      const limit = parseInt(req.query.limit as string) || 7;
+      
+      const messages = await storage.getUserMessages(senderId, receiverId, { limit });
+      
+      res.json({ messages });
+    } catch (error) {
+      console.error("Error fetching message history:", error);
+      res.status(500).json({ error: "Failed to fetch message history" });
+    }
+  });
+  
+  // Get detailed user information
+  app.get("/api/admin/users/:userId", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Add additional user details as needed
+      res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        isBlocked: user.isBlocked || false,
+        isRestricted: user.isRestricted || false,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt
+      });
+    } catch (error) {
+      console.error("Error fetching user details:", error);
+      res.status(500).json({ error: "Failed to fetch user details" });
+    }
+  });
+  
+  // Get conversation details between two users
+  app.get("/api/admin/conversations/:user1Id/:user2Id", isAdmin, async (req, res) => {
+    try {
+      const user1Id = parseInt(req.params.user1Id);
+      const user2Id = parseInt(req.params.user2Id);
+      
+      const conversation = await storage.getConversationBetweenUsers(user1Id, user2Id);
+      
+      if (!conversation) {
+        // If conversation doesn't exist yet, return default values
+        return res.json({
+          user1Id,
+          user2Id,
+          isBlocked: false,
+          lastMessageId: null,
+          lastMessageTimestamp: null
+        });
+      }
+      
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error fetching conversation details:", error);
+      res.status(500).json({ error: "Failed to fetch conversation details" });
+    }
+  });
+  
+  // Get message history between two users (admin access)
+  app.get("/api/admin/conversations/:user1Id/:user2Id/messages", isAdmin, async (req, res) => {
+    try {
+      const user1Id = parseInt(req.params.user1Id);
+      const user2Id = parseInt(req.params.user2Id);
+      
+      // Extract pagination parameters
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      // Validate pagination parameters
+      if (page < 1 || limit < 1 || limit > 100) {
+        return res.status(400).json({ 
+          error: "Invalid pagination parameters. Page must be >= 1 and limit must be between 1 and 100." 
+        });
+      }
+      
+      // Get messages between users
+      const result = await storage.getUserMessages(user1Id, user2Id, { page, limit });
+      
+      // Get user details for both participants
+      const user1 = await storage.getUser(user1Id);
+      const user2 = await storage.getUser(user2Id);
+      
+      // Enrich result with user information
+      const enrichedResult = {
+        ...result,
+        user1: user1 ? {
+          id: user1.id,
+          username: user1.username,
+          email: user1.email,
+          isBlocked: user1.isBlocked,
+          isRestricted: user1.isRestricted
+        } : null,
+        user2: user2 ? {
+          id: user2.id,
+          username: user2.username,
+          email: user2.email,
+          isBlocked: user2.isBlocked,
+          isRestricted: user2.isRestricted
+        } : null
+      };
+      
+      res.json(enrichedResult);
+    } catch (error) {
+      console.error("Error fetching conversation messages:", error);
+      res.status(500).json({ error: "Failed to fetch conversation messages" });
+    }
+  });
+  
+  // Block or unblock a conversation between users
+  app.post("/api/admin/conversations/:user1Id/:user2Id/block", isAdmin, async (req, res) => {
+    try {
+      const user1Id = parseInt(req.params.user1Id);
+      const user2Id = parseInt(req.params.user2Id);
+      const { blocked } = req.body;
+      
+      await storage.updateConversationStatus(user1Id, user2Id, { isBlocked: blocked });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating conversation status:", error);
+      res.status(500).json({ error: "Failed to update conversation status" });
+    }
+  });
+  
+  // Clear conversation history between users
+  app.delete("/api/admin/conversations/:user1Id/:user2Id/messages", isAdmin, async (req, res) => {
+    try {
+      const user1Id = parseInt(req.params.user1Id);
+      const user2Id = parseInt(req.params.user2Id);
+      
+      await storage.deleteConversationMessages(user1Id, user2Id);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error clearing conversation history:", error);
+      res.status(500).json({ error: "Failed to clear conversation history" });
+    }
+  });
 
   // Public test endpoint for development/debugging only (remove in production)
   app.get("/api/debug/ip-location", async (req, res) => {
@@ -2197,7 +2426,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       }
       
       // Get paginated messages
-      const result = await storage.getUserMessages(req.user.id, otherUserId, page, limit);
+      const result = await storage.getUserMessages(req.user.id, otherUserId, { page, limit });
       
       // Mark messages as read when fetched
       for (const message of result.messages) {
@@ -2277,7 +2506,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       
       // We need to get all messages, not just the paginated ones
       // Set a large limit to get all messages in one request
-      const result = await storage.getUserMessages(req.user.id, otherUserId, 1, 1000);
+      const result = await storage.getUserMessages(req.user.id, otherUserId, { page: 1, limit: 1000 });
       
       // Mark all messages from other user as read
       for (const message of result.messages) {
