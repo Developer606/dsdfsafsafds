@@ -39,6 +39,8 @@ function Router() {
       <ProtectedRoute path="/messages/:userId" component={UserMessages} />
       <ProtectedRoute path="/conversations" component={Conversations} />
       <ProtectedRoute path="/users/search" component={UserSearch} />
+      <ProtectedRoute path="/user-messages/search" component={UserSearch} />
+      <ProtectedRoute path="/user-messages/:userId" component={UserMessages} />
 
       {/* Admin-only routes */}
       <ProtectedRoute
