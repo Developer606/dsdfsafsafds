@@ -1512,57 +1512,63 @@ export default function Home() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Main Content Area */}
-          <div className="flex-1 p-8 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center max-w-2xl mx-auto mb-8"
-            >
-              <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
-                Immerse in Anime & Manga
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
-                Chat with your favorite characters and bring your anime world to
-                life
-              </p>
+          {/* Main Content Area - Character List */}
+          <div className="flex-1 overflow-y-auto dark:bg-slate-900/90 backdrop-blur-sm">
+            <div className="mx-auto max-w-sm px-4 py-8">
+              {/* Create Character Button */}
+              <Button
+                onClick={handleCreateClick}
+                className="w-full bg-amber-400 hover:bg-amber-500 text-gray-900 mb-6 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group flex items-center justify-center"
+              >
+                <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                Create Character
+              </Button>
               
-              {/* Search Bar */}
-              <div className="relative max-w-md mx-auto mb-10">
-                <input 
-                  type="text"
-                  placeholder="Search characters..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-5 py-3 pr-10 rounded-xl border border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 focus:ring-2 focus:ring-yellow-500/20 dark:focus:ring-amber-500/20 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
-                />
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-amber-500 dark:text-amber-400" />
+              {/* Character List */}
+              <div className="space-y-3">
+                {characters
+                  .filter(character => 
+                    searchQuery === "" ? true : character.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map(character => (
+                    <motion.div
+                      key={character.id}
+                      className="relative group"
+                    >
+                      <Link href={`/chat/${character.id}`}>
+                        <div className="bg-slate-900 rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-200 border border-slate-800 hover:border-slate-700">
+                          <div className="flex items-center">
+                            <img 
+                              src={character.avatar} 
+                              alt={character.name}
+                              className="w-12 h-12 rounded-full object-cover mr-3"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-medium text-white">{character.name}</h3>
+                              <p className="text-sm text-gray-400 truncate">{character.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                      
+                      {character.id.startsWith("custom_") && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-3 right-3 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteCharacter(character.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </motion.div>
+                  ))}
               </div>
-            </motion.div>
-            
-            {/* Character Grid */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {characters
-                .filter((character) =>
-                  searchQuery === "" ? true : character.name.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((character) => (
-                  <CharacterCard 
-                    key={character.id}
-                    character={character}
-                    onDeleteClick={
-                      character.id.startsWith("custom_") 
-                        ? () => handleDeleteCharacter(character.id) 
-                        : undefined
-                    }
-                  />
-                ))}
-            </motion.div>
+            </div>
           </div>
         </div>
       )}
