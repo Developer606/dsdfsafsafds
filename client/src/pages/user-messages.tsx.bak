@@ -709,7 +709,7 @@ export default function UserMessages() {
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-2">
                   <Button
-                    variant="ghost"
+                    variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
                     size="icon"
                     onClick={toggleChatStyle}
                     className={cn(
@@ -746,7 +746,7 @@ export default function UserMessages() {
           </TooltipProvider>
           
           <Button
-            variant="ghost"
+            variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
             size="icon"
             onClick={toggleTheme}
             className={cn(
@@ -763,7 +763,7 @@ export default function UserMessages() {
           </Button>
           
           <Button
-            variant="ghost"
+            variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
             size="icon"
             onClick={() => setShowFeedbackDialog(true)}
             className={cn(
@@ -779,7 +779,7 @@ export default function UserMessages() {
           </Button>
           
           <Button
-            variant="ghost"
+            variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
             size="icon"
             onClick={handleClearChat}
             className={cn(
@@ -795,7 +795,7 @@ export default function UserMessages() {
           </Button>
           
           <Button
-            variant="ghost"
+            variant={chatStyle === "whatsapp" ? "whatsapp" : chatStyle === "messenger" ? "messenger" : "ghost"}
             size="icon"
             onClick={handleLogout}
             className={cn(
