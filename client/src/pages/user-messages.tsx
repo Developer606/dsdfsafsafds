@@ -8,10 +8,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Send, MoreVertical } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { TypingIndicator } from "@/components/typing-indicator";
 import { apiRequest } from "@/lib/queryClient";
 import { useSocket } from "@/lib/socket-io-client";
+import { MessageBubble } from "@/components/message-bubble";
+import { useMessageStatusTracker } from "@/lib/message-status-tracker";
 
 // Types for message and conversation
 interface UserMessage {
@@ -41,6 +43,7 @@ export default function UserMessages() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const socketManager = useSocket();
+  const { trackStatusChange, shouldAnimateStatus } = useMessageStatusTracker();
   
   // Query to get current user
   const { data: currentUser } = useQuery({
@@ -165,6 +168,12 @@ export default function UserMessages() {
     
     const messageStatusHandler = (data: any) => {
       console.log("Message status update received:", data);
+      
+      // Track status change for animation
+      if (data.messageId && data.status) {
+        trackStatusChange(data.messageId, data.status);
+      }
+      
       // Update message status in UI
       queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
     };
@@ -191,7 +200,8 @@ export default function UserMessages() {
       removeMessageStatusListener();
       removeTypingListener();
     };
-  }, [userId, currentUser?.id, queryClient, socketManager]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, currentUser?.id, queryClient, socketManager, trackStatusChange]);
   
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -312,46 +322,46 @@ export default function UserMessages() {
             <p className="text-sm">Send a message to start chatting!</p>
           </div>
         ) : (
-          messages.map((message: UserMessage) => {
-            const isCurrentUser = currentUser && message.senderId === currentUser.id;
-            
-            return (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
-              >
-                <div className={`max-w-[75%] ${isCurrentUser 
-                  ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-tl-2xl rounded-tr-md rounded-bl-2xl' 
-                  : 'bg-white dark:bg-gray-800 rounded-tl-md rounded-tr-2xl rounded-br-2xl shadow-sm'}`}
-                >
-                  <div className="p-3">
-                    <p>{message.content}</p>
-                    <div className={`text-xs mt-1 flex items-center ${isCurrentUser ? 'text-white/70' : 'text-gray-500'}`}>
-                      <span>{formatTime(message.timestamp)}</span>
-                      
-                      {isCurrentUser && (
-                        <span className="ml-2">
-                          {message.status === "sent" && "✓"}
-                          {message.status === "delivered" && "✓✓"}
-                          {message.status === "read" && <span className="text-blue-300">✓✓</span>}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+          <AnimatePresence>
+            {messages.map((message: UserMessage) => {
+              const isCurrentUser = currentUser && message.senderId === currentUser.id;
+              const hasStatusAnimation = shouldAnimateStatus(message.id);
+
+              // Track the current message status for animations
+              useEffect(() => {
+                if (isCurrentUser) {
+                  trackStatusChange(message.id, message.status);
+                }
+              // eslint-disable-next-line react-hooks/exhaustive-deps
+              }, [message.status, message.id, isCurrentUser]);
+              
+              return (
+                <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+                  <MessageBubble
+                    id={message.id}
+                    content={message.content}
+                    timestamp={message.timestamp}
+                    status={message.status}
+                    isCurrentUser={isCurrentUser}
+                    hasDeliveryAnimation={hasStatusAnimation}
+                  />
                 </div>
-              </motion.div>
-            );
-          })
+              );
+            })}
+          </AnimatePresence>
         )}
         
         {isTyping && (
-          <div className="flex justify-start">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="flex justify-start"
+          >
             <div className="bg-white dark:bg-gray-800 p-3 rounded-tl-md rounded-tr-2xl rounded-br-2xl shadow-sm">
               <TypingIndicator />
             </div>
-          </div>
+          </motion.div>
         )}
         
         <div ref={messagesEndRef} />
