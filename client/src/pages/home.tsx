@@ -1443,14 +1443,12 @@ export default function Home() {
             </div>
             
             <div className="mb-4">
-              <Link href="/conversations">
-                <Button
-                  className="w-full bg-gradient-to-br from-blue-400/90 to-indigo-500/90 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-                >
-                  <Users className="h-5 w-5 mr-2" />
-                  Messages
-                </Button>
-              </Link>
+              <Button
+                className="w-full bg-gradient-to-br from-blue-400/90 to-indigo-500/90 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+              >
+                <Users className="h-5 w-5 mr-2" />
+                Messages
+              </Button>
             </div>
 
             <AnimatePresence>
