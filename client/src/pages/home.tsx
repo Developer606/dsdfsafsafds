@@ -1513,19 +1513,55 @@ export default function Home() {
           </motion.div>
 
           {/* Main Content Area */}
-          <div className="flex-1 p-8">
+          <div className="flex-1 p-8 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center max-w-2xl mx-auto"
+              className="text-center max-w-2xl mx-auto mb-8"
             >
               <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
                 Immerse in Anime & Manga
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-400">
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
                 Chat with your favorite characters and bring your anime world to
                 life
               </p>
+              
+              {/* Search Bar */}
+              <div className="relative max-w-md mx-auto mb-10">
+                <input 
+                  type="text"
+                  placeholder="Search characters..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-5 py-3 pr-10 rounded-xl border border-yellow-200 dark:border-amber-800 focus:border-yellow-500 dark:focus:border-amber-500 focus:ring-2 focus:ring-yellow-500/20 dark:focus:ring-amber-500/20 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm"
+                />
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-amber-500 dark:text-amber-400" />
+              </div>
+            </motion.div>
+            
+            {/* Character Grid */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {characters
+                .filter((character) =>
+                  searchQuery === "" ? true : character.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((character) => (
+                  <CharacterCard 
+                    key={character.id}
+                    character={character}
+                    onDeleteClick={
+                      character.id.startsWith("custom_") 
+                        ? () => handleDeleteCharacter(character.id) 
+                        : undefined
+                    }
+                  />
+                ))}
             </motion.div>
           </div>
         </div>
