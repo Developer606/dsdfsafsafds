@@ -12,7 +12,7 @@ import { verifyToken } from './utils/jwt';
 import { 
   checkMessageContent, 
   flagMessage 
-} from './content-moderation-impl';
+} from './content-moderation';
 
 // Define tracking interface for messages
 interface MessageTracking {
