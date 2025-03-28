@@ -157,7 +157,7 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className={isMobile 
         ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white max-h-[90vh] overflow-y-auto" 
-        : "sm:max-w-[800px]"
+        : "sm:max-w-[600px] max-h-[80vh] overflow-y-auto"
       }>
         <DialogHeader>
           <DialogTitle className={isMobile 
@@ -200,8 +200,8 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
                   key={plan.id}
                   className={`${isMobile
                     ? plan.id === 'pro' 
-                      ? "p-6 rounded-lg border border-red-500 bg-[#121824] text-white shadow-md" 
-                      : "p-6 rounded-lg border border-gray-700 bg-[#121824] text-white shadow-sm"
+                      ? "p-4 rounded-lg border border-red-500 bg-[#121824] text-white shadow-md" 
+                      : "p-4 rounded-lg border border-gray-700 bg-[#121824] text-white shadow-sm"
                     : "p-6 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors"
                   } ${isCurrentPlan ? (isMobile ? 'border-red-400 border-2' : 'border-primary border-2') : ''}`}
                 >
@@ -218,17 +218,17 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
                       </Badge>
                     )}
                   </div>
-                  <p className={isMobile ? "text-4xl font-bold mt-2 text-white" : "text-3xl font-bold mt-2"}>
+                  <p className={isMobile ? "text-3xl font-bold mt-2 text-white" : "text-3xl font-bold mt-2"}>
                     {plan.price}
                   </p>
-                  <ul className="mt-4 space-y-2">
+                  <ul className={`mt-3 ${isMobile ? "space-y-1" : "space-y-2"}`}>
                     {JSON.parse(plan.features).map((feature: string, index: number) => (
                       <li key={index} className="flex items-center gap-2">
                         <Check className={isMobile 
-                          ? `h-4 w-4 ${isCurrentPlan ? "text-red-400" : "text-red-400"} flex-shrink-0` 
+                          ? `h-3.5 w-3.5 ${isCurrentPlan ? "text-red-400" : "text-red-400"} flex-shrink-0` 
                           : `h-4 w-4 ${isCurrentPlan ? "text-primary" : "text-green-500"} flex-shrink-0`} 
                         />
-                        <span className={isMobile ? "text-sm text-gray-300" : "text-sm"}>
+                        <span className={isMobile ? "text-xs text-gray-300" : "text-sm"}>
                           {feature}
                         </span>
                       </li>
@@ -236,7 +236,7 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
                   </ul>
                   <Button 
                     className={isMobile 
-                      ? "w-full mt-6 bg-red-500 hover:bg-red-600 text-white rounded-md"
+                      ? "w-full mt-3 bg-red-500 hover:bg-red-600 text-white rounded-md h-8 text-xs"
                       : "w-full mt-6"
                     }
                     onClick={() => handleSubscribe(plan.id)}
