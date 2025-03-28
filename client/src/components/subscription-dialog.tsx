@@ -28,6 +28,12 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
   const [paymentStep, setPaymentStep] = useState<"select" | "payment" | "processing">("select");
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
+  // Fetch current user
+  const { data: currentUser } = useQuery<any>({
+    queryKey: ["/api/user"],
+    enabled: open
+  });
+
   // Fetch plans from the API endpoint
   const { data: plans, isLoading, error: plansError } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/plans"],
@@ -168,47 +174,79 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
               ? "Create and customize your own anime characters with our flexible subscription plans"
               : "Securely process your payment to activate your subscription"}
           </DialogDescription>
+          
+          {paymentStep === "select" && currentUser && (
+            <div className={`mt-4 p-3 rounded-lg ${isMobile ? "bg-[#121824] border border-gray-700" : "bg-muted"}`}>
+              <div className="flex items-center justify-center gap-2">
+                <CreditCard className={isMobile ? "h-4 w-4 text-red-400" : "h-4 w-4 text-primary"} />
+                <span className={isMobile ? "text-sm font-medium text-white" : "text-sm font-medium"}>
+                  {currentUser.isPremium && currentUser.subscriptionTier
+                    ? `You are currently on the ${currentUser.subscriptionTier.charAt(0).toUpperCase() + currentUser.subscriptionTier.slice(1)} plan`
+                    : "You are currently on the Free plan"}
+                </span>
+              </div>
+            </div>
+          )}
         </DialogHeader>
 
         {paymentStep === "select" && (
           <div className="mt-4 grid grid-cols-1 gap-4">
-            {plans?.map((plan) => (
-              <div
-                key={plan.id}
-                className={isMobile
-                  ? plan.id === 'pro' 
-                    ? "p-6 rounded-lg border border-red-500 bg-[#121824] text-white shadow-md" 
-                    : "p-6 rounded-lg border border-gray-700 bg-[#121824] text-white shadow-sm"
-                  : "p-6 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors"
-                }
-              >
-                <h3 className={isMobile ? "text-xl font-semibold text-red-400" : "text-xl font-semibold"}>
-                  {plan.name}
-                </h3>
-                <p className={isMobile ? "text-4xl font-bold mt-2 text-white" : "text-3xl font-bold mt-2"}>
-                  {plan.price}
-                </p>
-                <ul className="mt-4 space-y-2">
-                  {JSON.parse(plan.features).map((feature: string, index: number) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <Check className={isMobile ? "h-4 w-4 text-red-400 flex-shrink-0" : "h-4 w-4 text-green-500 flex-shrink-0"} />
-                      <span className={isMobile ? "text-sm text-gray-300" : "text-sm"}>
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Button 
-                  className={isMobile 
-                    ? "w-full mt-6 bg-red-500 hover:bg-red-600 text-white rounded-md"
-                    : "w-full mt-6"
-                  }
-                  onClick={() => handleSubscribe(plan.id)}
+            {plans?.map((plan) => {
+              // Check if this is the user's current plan
+              const isCurrentPlan = currentUser?.isPremium && currentUser?.subscriptionTier === plan.id;
+              
+              return (
+                <div
+                  key={plan.id}
+                  className={`${isMobile
+                    ? plan.id === 'pro' 
+                      ? "p-6 rounded-lg border border-red-500 bg-[#121824] text-white shadow-md" 
+                      : "p-6 rounded-lg border border-gray-700 bg-[#121824] text-white shadow-sm"
+                    : "p-6 rounded-lg border bg-card text-card-foreground shadow-sm hover:border-primary transition-colors"
+                  } ${isCurrentPlan ? (isMobile ? 'border-red-400 border-2' : 'border-primary border-2') : ''}`}
                 >
-                  Select Plan
-                </Button>
-              </div>
-            ))}
+                  <div className="flex justify-between items-start">
+                    <h3 className={isMobile ? "text-xl font-semibold text-red-400" : "text-xl font-semibold"}>
+                      {plan.name}
+                    </h3>
+                    {isCurrentPlan && (
+                      <Badge variant={isMobile ? "outline" : "default"} className={isMobile ? "border-red-400 text-red-400" : ""}>
+                        <span className="flex items-center gap-1">
+                          <Check className="h-3 w-3" />
+                          Current Plan
+                        </span>
+                      </Badge>
+                    )}
+                  </div>
+                  <p className={isMobile ? "text-4xl font-bold mt-2 text-white" : "text-3xl font-bold mt-2"}>
+                    {plan.price}
+                  </p>
+                  <ul className="mt-4 space-y-2">
+                    {JSON.parse(plan.features).map((feature: string, index: number) => (
+                      <li key={index} className="flex items-center gap-2">
+                        <Check className={isMobile 
+                          ? `h-4 w-4 ${isCurrentPlan ? "text-red-400" : "text-red-400"} flex-shrink-0` 
+                          : `h-4 w-4 ${isCurrentPlan ? "text-primary" : "text-green-500"} flex-shrink-0`} 
+                        />
+                        <span className={isMobile ? "text-sm text-gray-300" : "text-sm"}>
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    className={isMobile 
+                      ? "w-full mt-6 bg-red-500 hover:bg-red-600 text-white rounded-md"
+                      : "w-full mt-6"
+                    }
+                    onClick={() => handleSubscribe(plan.id)}
+                    disabled={isCurrentPlan}
+                  >
+                    {isCurrentPlan ? "Current Plan" : "Select Plan"}
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         )}
 
