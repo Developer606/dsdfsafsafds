@@ -35,17 +35,10 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
   });
 
   // Fetch plans from the API endpoint
-  const { data: plans, isLoading, error: plansError } = useQuery<SubscriptionPlan[]>({
+  const { data: plans = [], isLoading, error: plansError } = useQuery<SubscriptionPlan[]>({
     queryKey: ["/api/plans"],
     enabled: open,
-    retry: 3,
-    onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load subscription plans. Please try again."
-      });
-    }
+    retry: 3
   });
 
   // Reset dialog state when it closes
@@ -155,10 +148,13 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className={isMobile 
-        ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white max-h-[90vh] overflow-y-auto" 
-        : "sm:max-w-[600px] max-h-[80vh] overflow-y-auto"
-      }>
+      <DialogContent 
+        className={isMobile 
+          ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white max-h-[90vh] overflow-y-auto" 
+          : "sm:max-w-[600px] max-h-[80vh] overflow-y-auto"
+        }
+        aria-describedby="subscription-dialog-description"
+      >
         <DialogHeader>
           <DialogTitle className={isMobile 
             ? "text-xl font-bold text-center text-red-400" 
@@ -166,10 +162,13 @@ export function SubscriptionDialog({ open, onClose, isMobile = false }: Subscrip
           }>
             {paymentStep === "select" ? "Choose Your Subscription Plan" : "Complete Your Subscription"}
           </DialogTitle>
-          <DialogDescription className={isMobile 
-            ? "text-center text-gray-400" 
-            : "text-center"
-          }>
+          <DialogDescription 
+            id="subscription-dialog-description"
+            className={isMobile 
+              ? "text-center text-gray-400" 
+              : "text-center"
+            }
+          >
             {paymentStep === "select" 
               ? "Create and customize your own anime characters with our flexible subscription plans"
               : "Securely process your payment to activate your subscription"}
