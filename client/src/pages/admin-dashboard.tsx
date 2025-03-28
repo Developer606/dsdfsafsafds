@@ -62,6 +62,7 @@ import {
   LogOut,
   Bell,
   ArrowLeft,
+  Shield,
 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -763,7 +764,7 @@ export default function AdminDashboard() {
             </Button>
           </Link>
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-            Feedback Management
+            Admin Dashboard
           </h1>
         </div>
         <div className="flex items-center gap-4">
@@ -772,6 +773,13 @@ export default function AdminDashboard() {
             <LogOut className="h-4 w-4" />
             Logout
           </Button>
+          <Link href="/admin/content-moderation">
+            <Button variant="outline" className="gap-2">
+              <Shield className="h-4 w-4" />
+              Content Moderation
+              {/* If we had flagged message count, we could display it here */}
+            </Button>
+          </Link>
           <Link href="/admin/dashboard/complaints">
             <Button variant="outline" className="gap-2">
               <AlertCircle className="h-4 w-4" />

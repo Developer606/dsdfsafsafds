@@ -9,6 +9,7 @@ import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
+import AdminContentModeration from "@/pages/admin-content-moderation";
 import UserSearch from "@/pages/user-search";
 import UserMessages from "@/pages/user-messages";
 import Conversations from "@/pages/conversations";
@@ -56,6 +57,11 @@ function Router() {
       <ProtectedRoute
         path="/admin/dashboard/feedback"
         component={FeedbackSection}
+        requireAdmin
+      />
+      <ProtectedRoute
+        path="/admin/content-moderation"
+        component={AdminContentModeration}
         requireAdmin
       />
 
