@@ -9,6 +9,10 @@ import {
   cleanupInactiveUsers
 } from './services/user-status';
 import { verifyToken } from './utils/jwt';
+import { 
+  checkMessageContent, 
+  flagMessage 
+} from './content-moderation-impl';
 
 // Define tracking interface for messages
 interface MessageTracking {
@@ -177,6 +181,9 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         
         log(`Message from user ${userId} to ${receiverId}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`);
         
+        // Check message content for prohibited words
+        const contentCheck = checkMessageContent(content);
+        
         // Create message in database
         const message = await storage.createUserMessage({
           senderId: userId,
@@ -185,6 +192,44 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
           status: 'sent'
         });
         
+        // If flagged, handle content moderation
+        if (contentCheck.flagged) {
+          log(`FLAGGED MESSAGE from user ${userId}: ${contentCheck.reason}`);
+          
+          // Flag the message in the moderation system
+          try {
+            await flagMessage(
+              message.id,
+              userId,
+              receiverId,
+              content,
+              contentCheck.reason || 'Prohibited content'
+            );
+            
+            // Notify admins about flagged content (if they're online)
+            const adminUsers = await storage.getAllUsers().then(users => 
+              users.filter(user => user.isAdmin));
+            
+            adminUsers.forEach(admin => {
+              emitToUser(admin.id, 'admin_notification', {
+                type: 'flagged_message',
+                message: `Message from user ${userId} was flagged: ${contentCheck.reason}`,
+                timestamp: new Date(),
+                messageId: message.id
+              });
+            });
+          } catch (err) {
+            log(`Error flagging message: ${err}`);
+          }
+        }
+        
+        // Make sure we have the message object before proceeding
+        if (!message) {
+          log('Error: Message object is undefined');
+          socket.emit('error', { message: 'Failed to create message' });
+          return;
+        }
+
         // Track this message for delivery status
         const trackingId = `msg_${message.id}`;
         messageTrackingMap.set(trackingId, {

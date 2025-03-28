@@ -426,3 +426,35 @@ export const insertUserMessageSchema = createInsertSchema(userMessages).pick({
 export type UserMessage = typeof userMessages.$inferSelect;
 export type InsertUserMessage = z.infer<typeof insertUserMessageSchema>;
 export type UserConversation = typeof userConversations.$inferSelect;
+
+// Flagged messages for content moderation
+export const flaggedMessages = sqliteTable("flagged_messages", {
+  id: integer("id").primaryKey(),
+  messageId: integer("message_id").notNull(),
+  senderId: integer("sender_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  receiverId: integer("receiver_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  reason: text("reason").notNull(),
+  reviewed: integer("reviewed", { mode: "boolean" }).notNull().default(false),
+  timestamp: integer("timestamp", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Flagged message schema for validation
+export const insertFlaggedMessageSchema = createInsertSchema(flaggedMessages).pick({
+  messageId: true,
+  senderId: true,
+  receiverId: true,
+  content: true,
+  reason: true,
+  reviewed: true,
+});
+
+// Flagged message types
+export type FlaggedMessage = typeof flaggedMessages.$inferSelect;
+export type InsertFlaggedMessage = z.infer<typeof insertFlaggedMessageSchema>;
