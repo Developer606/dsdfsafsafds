@@ -418,8 +418,8 @@ export default function UserMessages() {
   
   // Add chat style toggle function with premium check
   const toggleChatStyle = () => {
-    // Check if user is premium
-    if (!currentUser?.isPremium) {
+    // Check if user is free or on basic plan
+    if (!currentUser?.isPremium || currentUser?.subscriptionTier === "basic") {
       setShowSubscriptionDialog(true);
       return;
     }
@@ -438,16 +438,16 @@ export default function UserMessages() {
     });
   };
   
-  // Reset to WhatsApp style if user loses premium status
+  // Reset to WhatsApp style if user loses premium status or is on basic plan
   useEffect(() => {
-    if (!currentUser?.isPremium && chatStyle !== "whatsapp") {
+    if ((!currentUser?.isPremium || currentUser?.subscriptionTier === "basic") && chatStyle !== "whatsapp") {
       setChatStyle("whatsapp");
       toast({
         title: "Style Reset",
-        description: "Chat style has been reset to WhatsApp. Upgrade to Premium to access additional styles.",
+        description: "Chat style has been reset to WhatsApp. Upgrade to Premium or Pro plan to access additional styles.",
       });
     }
-  }, [currentUser?.isPremium, chatStyle, toast]);
+  }, [currentUser?.isPremium, currentUser?.subscriptionTier, chatStyle, toast]);
   
   // Clear chat function
   const clearChat = useMutation({
@@ -741,7 +741,17 @@ export default function UserMessages() {
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Change Chat Style (Premium)</p>
+                {currentUser?.isPremium && currentUser?.subscriptionTier !== "basic" ? (
+                  <p>Switch to {
+                    chatStyle === "whatsapp"
+                      ? "ChatGPT"
+                      : chatStyle === "chatgpt"
+                      ? "Messenger"
+                      : "WhatsApp"
+                  } style</p>
+                ) : (
+                  <p>Upgrade to Premium or Pro plan to access additional chat styles</p>
+                )}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
