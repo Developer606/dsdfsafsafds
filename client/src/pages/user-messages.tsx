@@ -87,13 +87,16 @@ export default function UserMessages() {
   });
   
   // Query to get messages
-  const { data: messagesData = { messages: [], pagination: { total: 0, page: 1, pages: 1, limit: 20 } }, isLoading: isLoadingMessages } = useQuery({
+  const { data: messagesData = { messages: [], pagination: { total: 0, page: 1, pages: 1, limit: 20 } }, isLoading: isLoadingMessages, refetch: refetchMessages } = useQuery({
     queryKey: ["/api/user-messages", userId],
     queryFn: async () => {
       try {
+        console.log(`Fetching messages for conversation with user ${userId}`);
         const response = await fetch(`/api/user-messages/${userId}`);
         if (!response.ok) throw new Error("Failed to fetch messages");
-        return await response.json();
+        const data = await response.json();
+        console.log(`Received ${data.messages?.length || 0} messages, conversation status:`, data.conversationStatus);
+        return data;
       } catch (error) {
         console.error("Error fetching messages:", error);
         toast({
@@ -106,6 +109,8 @@ export default function UserMessages() {
     },
     enabled: !!userId,
     refetchInterval: 5000, // Fallback polling in case WebSocket fails
+    // Reduced staleTime to ensure we get fresh data more often
+    staleTime: 1000,
   });
   
   // Extract messages and conversation status from the response
@@ -264,16 +269,29 @@ export default function UserMessages() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, currentUser]);
   
-  // Mark messages as read on component mount
+  // Mark messages as read on component mount and handle refresh
   useEffect(() => {
     if (userId) {
+      // Mark messages as read
       fetch(`/api/user-messages/${userId}/read`, {
         method: "POST",
       }).catch(error => {
         console.error("Error marking messages as read:", error);
       });
+      
+      // Force refresh conversation when component mounts to ensure we have latest status
+      socketManager.refreshConversation(userId);
+      
+      // Set an interval to periodically check conversation status
+      const statusCheckInterval = setInterval(() => {
+        if (!isConversationBlocked) {
+          refetchMessages();
+        }
+      }, 10000); // Check every 10 seconds
+      
+      return () => clearInterval(statusCheckInterval);
     }
-  }, [userId]);
+  }, [userId, socketManager, isConversationBlocked, refetchMessages]);
   
   // Handle typing indicator
   useEffect(() => {

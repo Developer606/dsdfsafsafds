@@ -166,6 +166,25 @@ class SocketIOManager {
       this.notifyListeners('typing_indicator', data);
     });
     
+    // Handle conversation status updates (block/unblock)
+    this.socket.on('conversation_status_update', (data) => {
+      console.log('Conversation status update:', data);
+      this.notifyListeners('conversation_status_update', data);
+      
+      // Invalidate queries to refresh UI
+      if (data.otherUserId) {
+        queryClient.invalidateQueries({ 
+          queryKey: ['/api/user-messages', data.otherUserId] 
+        });
+      }
+    });
+    
+    // Handle refreshed messages
+    this.socket.on('messages_refreshed', (data) => {
+      console.log('Messages refreshed:', data);
+      this.notifyListeners('messages_refreshed', data);
+    });
+    
     // Handle rate limit errors
     this.socket.on('rate_limit_exceeded', (data) => {
       console.warn('Rate limit exceeded:', data);
@@ -372,6 +391,33 @@ class SocketIOManager {
    */
   public isConnected(): boolean {
     return !!this.socket && this.socket.connected;
+  }
+  
+  /**
+   * Force refresh conversation data
+   * @param otherUserId The ID of the other user in the conversation
+   */
+  public refreshConversation(otherUserId: number): void {
+    if (!this.socket || !this.socket.connected) {
+      this.connect();
+    }
+    
+    console.log(`[Socket.IO] Manually refreshing conversation with user ${otherUserId}`);
+    
+    // Invalidate the conversation cache
+    queryClient.invalidateQueries({ 
+      queryKey: ['/api/user-messages', otherUserId]
+    });
+    
+    // Also inform the server to refresh its state
+    this.socket?.emit('refresh_conversation', { otherUserId });
+    
+    // Force a re-check of conversation status
+    setTimeout(() => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/user-messages', otherUserId]
+      });
+    }, 1000);
   }
 }
 

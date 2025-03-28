@@ -30,6 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { socketManager } from "@/lib/socket-io-client";
 import { format } from "date-fns";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -317,14 +318,44 @@ export default function AdminContentModeration() {
           user1Id: selectedMessage.senderId,
           user2Id: selectedMessage.receiverId
         });
-        // Invalidate the query cache
+        
+        // Invalidate all conversation-related queries across the app
+        // This ensures both admin and user views are updated
         queryClient.invalidateQueries({ 
           queryKey: ["/api/admin/conversations", selectedMessage.senderId, selectedMessage.receiverId] 
         });
+        
+        // Also invalidate user message queries for both users
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/user-messages", selectedMessage.senderId] 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/user-messages", selectedMessage.receiverId] 
+        });
+        
+        // Refresh flagged messages list to show most current data
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/admin/flagged-messages"] 
+        });
+        
+        // Also refresh the conversation details
+        messageConversation.mutate({
+          senderId: selectedMessage.senderId,
+          receiverId: selectedMessage.receiverId
+        });
+        
+        // Use socket manager to force refresh conversations for both users
+        // This ensures real-time updates for users who are currently viewing the conversation
+        socketManager.refreshConversation(selectedMessage.receiverId);
+        socketManager.refreshConversation(selectedMessage.senderId);
+        
+        console.log("Triggered real-time refresh of conversation for users", 
+          selectedMessage.senderId, "and", selectedMessage.receiverId);
       }
+      
       toast({
         title: "Success",
-        description: "Conversation block status updated",
+        description: data.message || "Conversation block status updated",
       });
     },
     onError: (error: any) => {
@@ -345,10 +376,19 @@ export default function AdminContentModeration() {
     },
     onSuccess: () => {
       if (selectedMessage) {
+        // Refresh the conversation for admin view
         messageConversation.mutate({
           senderId: selectedMessage.senderId,
           receiverId: selectedMessage.receiverId
         });
+        
+        // Use socket manager to force refresh conversations for both users
+        // This ensures real-time updates for users who are currently viewing the conversation
+        socketManager.refreshConversation(selectedMessage.receiverId);
+        socketManager.refreshConversation(selectedMessage.senderId);
+        
+        console.log("Triggered real-time refresh of conversation after clearing history for users", 
+          selectedMessage.senderId, "and", selectedMessage.receiverId);
       }
       toast({
         title: "Success",

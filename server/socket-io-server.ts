@@ -380,6 +380,38 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
       }
     });
 
+    // Handle refresh conversation requests
+    socket.on('refresh_conversation', async (data) => {
+      try {
+        const { otherUserId } = data;
+        if (typeof otherUserId !== 'number') {
+          log(`Invalid refresh conversation format: ${JSON.stringify(data)}`);
+          return;
+        }
+        
+        log(`Refresh conversation request from user ${userId} for conversation with ${otherUserId}`);
+        
+        // Get the latest conversation status
+        const minUserId = Math.min(userId, otherUserId);
+        const maxUserId = Math.max(userId, otherUserId);
+        const conversation = await storage.getConversationBetweenUsers(minUserId, maxUserId);
+        
+        // Send conversation status update to the requesting user
+        socket.emit('conversation_status_update', {
+          otherUserId,
+          isBlocked: conversation?.isBlocked || false
+        });
+        
+        // If the conversation exists and isn't blocked, also refresh messages
+        if (conversation && !conversation.isBlocked) {
+          const messages = await storage.getUserMessages(userId, otherUserId, { page: 1, limit: 50 });
+          socket.emit('messages_refreshed', { messages });
+        }
+      } catch (error) {
+        log(`Error handling refresh conversation: ${error}`);
+      }
+    });
+    
     // Send regular pings to keep connection alive
     const pingInterval = setInterval(() => {
       socket.emit('ping');
