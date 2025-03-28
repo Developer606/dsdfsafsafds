@@ -409,6 +409,7 @@ export const userConversations = sqliteTable("user_conversations", {
   lastMessageTimestamp: integer("last_message_timestamp", { mode: "timestamp_ms" }),
   unreadCountUser1: integer("unread_count_user1").notNull().default(0),
   unreadCountUser2: integer("unread_count_user2").notNull().default(0),
+  isBlocked: integer("is_blocked", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),

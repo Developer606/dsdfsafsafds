@@ -286,11 +286,17 @@ export default function AdminContentModeration() {
   });
   
   // Query for conversation details
-  const conversationDetails = useMutation({
-    mutationFn: async ({ user1Id, user2Id }: { user1Id: number; user2Id: number }) => {
-      const res = await apiRequest("GET", `/api/admin/conversations/${user1Id}/${user2Id}`);
+  const [conversationUsers, setConversationUsers] = useState<{ user1Id?: number, user2Id?: number }>({});
+  
+  // Query for conversation details
+  const conversationDetails = useQuery({
+    queryKey: ["/api/admin/conversations", conversationUsers.user1Id, conversationUsers.user2Id],
+    queryFn: async () => {
+      if (!conversationUsers.user1Id || !conversationUsers.user2Id) return null;
+      const res = await apiRequest("GET", `/api/admin/conversations/${conversationUsers.user1Id}/${conversationUsers.user2Id}`);
       return res.json();
-    }
+    },
+    enabled: !!(conversationUsers.user1Id && conversationUsers.user2Id),
   });
   
   // Mutation for blocking a conversation
@@ -301,9 +307,14 @@ export default function AdminContentModeration() {
     },
     onSuccess: () => {
       if (selectedMessage) {
-        conversationDetails.mutate({
+        // Update conversation users to trigger a refetch
+        setConversationUsers({
           user1Id: selectedMessage.senderId,
           user2Id: selectedMessage.receiverId
+        });
+        // Invalidate the query cache
+        queryClient.invalidateQueries({ 
+          queryKey: ["/api/admin/conversations", selectedMessage.senderId, selectedMessage.receiverId] 
         });
       }
       toast({
@@ -545,7 +556,7 @@ export default function AdminContentModeration() {
                               });
                               
                               // Load conversation details
-                              conversationDetails.mutate({
+                              setConversationUsers({
                                 user1Id: message.senderId,
                                 user2Id: message.receiverId
                               });
