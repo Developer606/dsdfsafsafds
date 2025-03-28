@@ -756,70 +756,106 @@ export default function UserMessages() {
             </Tooltip>
           </TooltipProvider>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className={cn(
-              "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
-              chatStyle === "whatsapp"
-                ? "text-white hover:bg-white/10"
-                : chatStyle === "messenger"
-                ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
-                : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-            )}
-          >
-            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleTheme}
+                  className={cn(
+                    "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
+                    chatStyle === "whatsapp"
+                      ? "text-white hover:bg-white/10"
+                      : chatStyle === "messenger"
+                      ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
+                      : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  )}
+                >
+                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Toggle theme</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowFeedbackDialog(true)}
-            className={cn(
-              "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
-              chatStyle === "whatsapp"
-                ? "text-white hover:bg-white/10"
-                : chatStyle === "messenger"
-                ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
-                : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-            )}
-          >
-            <MessageCircle className="h-4 w-4" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowFeedbackDialog(true)}
+                  className={cn(
+                    "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
+                    chatStyle === "whatsapp"
+                      ? "text-white hover:bg-white/10"
+                      : chatStyle === "messenger"
+                      ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
+                      : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  )}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Leave feedback</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleClearChat}
-            className={cn(
-              "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
-              chatStyle === "whatsapp"
-                ? "text-white hover:bg-white/10"
-                : chatStyle === "messenger"
-                ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
-                : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-            )}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleClearChat}
+                  className={cn(
+                    "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
+                    chatStyle === "whatsapp"
+                      ? "text-white hover:bg-white/10"
+                      : chatStyle === "messenger"
+                      ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
+                      : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  )}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Clear chat history</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleLogout}
-            className={cn(
-              "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
-              chatStyle === "whatsapp"
-                ? "text-white hover:bg-white/10"
-                : chatStyle === "messenger"
-                ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
-                : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-            )}
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleLogout}
+                  className={cn(
+                    "h-8 w-8 sm:h-9 sm:w-9 rounded-full",
+                    chatStyle === "whatsapp"
+                      ? "text-white hover:bg-white/10"
+                      : chatStyle === "messenger"
+                      ? "text-[#0084ff] hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
+                      : "text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  )}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Logout</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
       
