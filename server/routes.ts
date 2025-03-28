@@ -2703,6 +2703,39 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
+  // Clear chat history with a user
+  app.delete("/api/user-messages/:userId/clear", rateLimiter(10, 60000), async (req, res) => {
+    try {
+      const otherUserId = parseInt(req.params.userId);
+      const currentUserId = req.user.id;
+      
+      // Delete all messages between the users but keep the conversation record
+      await storage.deleteConversationMessages(currentUserId, otherUserId);
+      
+      // Broadcast a refresh event via WebSockets to both users
+      const io = req.app.get('io');
+      if (io) {
+        // Use the emitToUser function which will notify all active sessions for a given user
+        socketService.emitToUser(currentUserId, 'refresh_conversation', { 
+          otherUserId: otherUserId,
+          force: true 
+        });
+        socketService.emitToUser(otherUserId, 'refresh_conversation', { 
+          otherUserId: currentUserId,
+          force: true 
+        });
+      }
+      
+      res.json({ 
+        success: true,
+        message: "Chat history cleared successfully" 
+      });
+    } catch (error) {
+      console.error("Error clearing chat history:", error);
+      res.status(500).json({ error: "Failed to clear chat history" });
+    }
+  });
+  
   // Get conversation status between users
   app.get("/api/conversations/:userId/status", async (req, res) => {
     try {
