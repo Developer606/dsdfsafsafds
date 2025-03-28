@@ -396,13 +396,14 @@ class SocketIOManager {
   /**
    * Force refresh conversation data
    * @param otherUserId The ID of the other user in the conversation
+   * @param force Whether to force a thorough refresh
    */
-  public refreshConversation(otherUserId: number): void {
+  public refreshConversation(otherUserId: number, force: boolean = false): void {
     if (!this.socket || !this.socket.connected) {
       this.connect();
     }
     
-    console.log(`[Socket.IO] Manually refreshing conversation with user ${otherUserId}`);
+    console.log(`[Socket.IO] Manually refreshing conversation with user ${otherUserId} (force=${force})`);
     
     // Invalidate the conversation cache
     queryClient.invalidateQueries({ 
@@ -410,12 +411,35 @@ class SocketIOManager {
     });
     
     // Also inform the server to refresh its state
-    this.socket?.emit('refresh_conversation', { otherUserId });
+    this.socket?.emit('refresh_conversation', { otherUserId, force });
+    
+    // Also fetch the conversation status directly from API
+    if (force) {
+      fetch(`/api/conversations/${otherUserId}/status`)
+        .then(res => res.json())
+        .then(data => {
+          console.log(`[Socket.IO] Direct conversation status check:`, data);
+          
+          // Emit a synthetic status update to ensure UI is in sync
+          this.notifyListeners('conversation_status_update', {
+            otherUserId: otherUserId,
+            isBlocked: data.isBlocked,
+            timestamp: data.timestamp,
+            source: 'direct_api_check'
+          });
+        })
+        .catch(err => console.error(`[Socket.IO] Error checking conversation status:`, err));
+    }
     
     // Force a re-check of conversation status
     setTimeout(() => {
       queryClient.invalidateQueries({ 
         queryKey: ['/api/user-messages', otherUserId]
+      });
+      
+      // Also check conversations list
+      queryClient.invalidateQueries({
+        queryKey: ['/api/user/conversations']
       });
     }, 1000);
   }

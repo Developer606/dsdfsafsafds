@@ -248,6 +248,23 @@ export default function UserMessages() {
       if (data.otherUserId && (data.otherUserId === userId || data.otherUserId === currentUser?.id)) {
         console.log("Refresh event is for the current conversation, forcing update");
         
+        // Check if this is a force refresh
+        const isForce = data.force === true;
+        
+        if (isForce) {
+          console.log(`[Socket] Force refreshing conversation with ${userId}`);
+          
+          // Force a direct API call to check conversation status
+          fetch(`/api/conversations/${userId}/status`)
+            .then(res => res.json())
+            .then(statusData => {
+              console.log(`[Socket] Direct conversation status check:`, statusData);
+              // Update state directly from the API response
+              setIsConversationBlocked(!!statusData.isBlocked);
+            })
+            .catch(err => console.error(`[Socket] Error checking conversation status:`, err));
+        }
+        
         // Force immediate refresh of messages and conversation status
         refetchMessages();
         
@@ -269,18 +286,37 @@ export default function UserMessages() {
       console.log("Conversation status update received:", data);
       
       // Make sure the event is relevant to the current conversation
-      if (data.otherUserId === userId) {
-        console.log(`Conversation status update: isBlocked=${data.isBlocked}`);
+      if (data.otherUserId == userId) { // Intentionally using loose equality for string/number comparison
+        console.log(`Conversation status update for current conversation: isBlocked=${data.isBlocked}, timestamp=${data.timestamp}`);
+        
+        // Ensure we have the boolean value
+        const newBlockedStatus = !!data.isBlocked;
         
         // Directly update our local state with the new blocked status
-        setIsConversationBlocked(!!data.isBlocked);
-        console.log(`[Socket] Directly updated conversation blocked status to: ${!!data.isBlocked}`);
+        setIsConversationBlocked(newBlockedStatus);
+        console.log(`[Socket] Updated conversation blocked status to: ${newBlockedStatus}`);
         
-        // Also force refetch of the conversation to update UI with any other changes
+        // Force refetch to ensure UI is in sync with the latest data
         refetchMessages();
+        queryClient.invalidateQueries({ queryKey: [`/api/user-messages/${userId}`] });
+        
+        // Also fetch conversation status directly from API to ensure our UI is in sync
+        setTimeout(() => {
+          fetch(`/api/conversations/${userId}/status`)
+            .then(res => res.json())
+            .then(statusData => {
+              console.log(`[API] Direct conversation status check:`, statusData);
+              // Update state again if API response differs from socket event
+              if (statusData.isBlocked !== newBlockedStatus) {
+                console.log(`[API] Correcting conversation blocked status to: ${statusData.isBlocked}`);
+                setIsConversationBlocked(statusData.isBlocked);
+              }
+            })
+            .catch(err => console.error("Error fetching conversation status:", err));
+        }, 1000); // Delay slightly to allow DB updates to complete
         
         // Show notification based on new status
-        if (data.isBlocked) {
+        if (newBlockedStatus) {
           toast({
             variant: "destructive",
             title: "Conversation Blocked",
@@ -351,7 +387,7 @@ export default function UserMessages() {
       });
       
       // Force refresh conversation when component mounts to ensure we have latest status
-      socketManager.refreshConversation(userId);
+      socketManager.refreshConversation(userId, true); // Pass true to force a thorough refresh
       
       // Set an interval to periodically check conversation status
       const statusCheckInterval = setInterval(() => {

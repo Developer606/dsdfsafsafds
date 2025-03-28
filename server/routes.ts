@@ -875,48 +875,115 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const currentConversation = await storage.getConversationBetweenUsers(user1Id, user2Id);
       console.log(`[BLOCK API] Current conversation status:`, currentConversation);
       
-      // Update the conversation status
+      // Import database modules directly to ensure we can do direct operations if needed
+      const { messagesDb } = await import("./messages-db");
+      
+      // Update the conversation status through storage interface first
       await storage.updateConversationStatus(user1Id, user2Id, { isBlocked: blocked });
       
       // Verify the update worked by fetching the updated conversation
       const updatedConversation = await storage.getConversationBetweenUsers(user1Id, user2Id);
       console.log(`[BLOCK API] Updated conversation status:`, updatedConversation);
       
+      // Force direct update to ensure state consistency
+      try {
+        const minUserId = Math.min(user1Id, user2Id);
+        const maxUserId = Math.max(user1Id, user2Id);
+        
+        // Run direct SQL to force the status - this ensures database is in sync
+        await messagesDb.exec(`
+          UPDATE userConversations 
+          SET isBlocked = ${blocked ? 1 : 0} 
+          WHERE (user1Id = ${minUserId} AND user2Id = ${maxUserId})
+        `);
+        
+        // Also update in main database directly
+        await db.exec(`
+          UPDATE userConversations 
+          SET isBlocked = ${blocked ? 1 : 0} 
+          WHERE (user1Id = ${minUserId} AND user2Id = ${maxUserId})
+        `);
+        
+        console.log(`[BLOCK API] Forced direct database update completed successfully`);
+      } catch (dbError) {
+        console.error(`[BLOCK API] Error during direct database update:`, dbError);
+      }
+      
+      // Get the FINAL conversation status to be sure
+      const finalConversation = await storage.getConversationBetweenUsers(user1Id, user2Id);
+      console.log(`[BLOCK API] Final conversation status:`, finalConversation);
+      
       // Broadcast a refresh event via WebSockets to both users 
       // This uses the Server-Side Broadcasting system
       const io = req.app.get('io');
       if (io) {
-        // Use the emitToUser function which will notify all active sessions for a given user
-        const emitToUser = (userId, event, data) => {
-          // Find all socket connections for this user
-          const connections = Array.from(io.sockets.sockets.values())
-            .filter(socket => socket.data && socket.data.userId === userId);
+        try {
+          console.log(`[BLOCK API] Broadcasting update to users via Socket.IO...`);
+          
+          // Use direct IO server broadcasts to rooms for reliability
+          io.to(`user:${user1Id}`).emit('conversation_status_update', {
+            otherUserId: user2Id,
+            isBlocked: blocked,
+            timestamp: new Date().toISOString()
+          });
+          
+          io.to(`user:${user2Id}`).emit('conversation_status_update', {
+            otherUserId: user1Id,
+            isBlocked: blocked,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Also send refresh events for redundancy
+          io.to(`user:${user1Id}`).emit('refresh_conversation', { 
+            otherUserId: user2Id,
+            force: true 
+          });
+          
+          io.to(`user:${user2Id}`).emit('refresh_conversation', { 
+            otherUserId: user1Id,
+            force: true 
+          });
+          
+          // Try also sending directly to individual connections
+          const user1Sockets = Array.from(io.sockets.sockets.values())
+            .filter(socket => socket.data && socket.data.userId === user1Id);
+          
+          const user2Sockets = Array.from(io.sockets.sockets.values())
+            .filter(socket => socket.data && socket.data.userId === user2Id);
+          
+          console.log(`[BLOCK API] Found ${user1Sockets.length} sockets for user ${user1Id}`);
+          console.log(`[BLOCK API] Found ${user2Sockets.length} sockets for user ${user2Id}`);
+          
+          user1Sockets.forEach(socket => {
+            socket.emit('conversation_status_update', { 
+              otherUserId: user2Id,
+              isBlocked: blocked,
+              timestamp: new Date().toISOString()
+            });
             
-          if (connections.length > 0) {
-            console.log(`[BLOCK API] Broadcasting ${event} to user ${userId} (${connections.length} active connections)`);
-            // Emit to all connections for this user
-            connections.forEach(socket => socket.emit(event, data));
-            return true;
-          }
-          return false;
-        };
-        
-        // Send specific conversation status update event with the new blocked status
-        // This ensures clients have the exact current state
-        emitToUser(user1Id, 'conversation_status_update', { 
-          otherUserId: user2Id,
-          isBlocked: blocked
-        });
-        emitToUser(user2Id, 'conversation_status_update', { 
-          otherUserId: user1Id,
-          isBlocked: blocked
-        });
-        console.log(`[BLOCK API] Broadcast conversation_status_update events to users ${user1Id} and ${user2Id} with isBlocked=${blocked}`);
-        
-        // Also emit refresh_conversation event to both users to trigger a UI refresh
-        emitToUser(user1Id, 'refresh_conversation', { otherUserId: user2Id });
-        emitToUser(user2Id, 'refresh_conversation', { otherUserId: user1Id });
-        console.log(`[BLOCK API] Broadcast refresh_conversation events to users ${user1Id} and ${user2Id}`);
+            socket.emit('refresh_conversation', { 
+              otherUserId: user2Id,
+              force: true 
+            });
+          });
+          
+          user2Sockets.forEach(socket => {
+            socket.emit('conversation_status_update', { 
+              otherUserId: user1Id,
+              isBlocked: blocked,
+              timestamp: new Date().toISOString()
+            });
+            
+            socket.emit('refresh_conversation', { 
+              otherUserId: user1Id,
+              force: true 
+            });
+          });
+          
+          console.log(`[BLOCK API] Socket broadcasts completed successfully`);
+        } catch (socketError) {
+          console.error(`[BLOCK API] Error during socket broadcast:`, socketError);
+        }
       } else {
         console.log(`[BLOCK API] Warning: Socket.IO server not available for broadcasting`);
       }
@@ -2610,6 +2677,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
+  // Mark user messages as read
   app.post("/api/user-messages/:userId/read", rateLimiter(50, 60000), async (req, res) => {
     try {
       const otherUserId = parseInt(req.params.userId);
@@ -2632,6 +2700,32 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     } catch (error) {
       console.error("Error marking messages as read:", error);
       res.status(500).json({ error: "Failed to mark messages as read" });
+    }
+  });
+  
+  // Get conversation status between users
+  app.get("/api/conversations/:userId/status", async (req, res) => {
+    try {
+      const otherUserId = parseInt(req.params.userId);
+      const currentUserId = req.user.id;
+      
+      // Ensure we check in consistent order (smaller ID first)
+      const minUserId = Math.min(currentUserId, otherUserId);
+      const maxUserId = Math.max(currentUserId, otherUserId);
+      
+      // Get conversation status from storage
+      const conversation = await storage.getConversationBetweenUsers(minUserId, maxUserId);
+      
+      console.log(`[Status API] Conversation status between ${currentUserId} and ${otherUserId}:`, conversation);
+      
+      res.json({ 
+        isBlocked: !!conversation?.isBlocked,
+        timestamp: new Date().toISOString(),
+        conversationId: conversation?.id
+      });
+    } catch (error) {
+      console.error("Error fetching conversation status:", error);
+      res.status(500).json({ error: "Failed to fetch conversation status" });
     }
   });
   
