@@ -2425,6 +2425,12 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         });
       }
       
+      // Check if the conversation is blocked
+      const minUserId = Math.min(req.user.id, otherUserId);
+      const maxUserId = Math.max(req.user.id, otherUserId);
+      const conversation = await storage.getConversationBetweenUsers(minUserId, maxUserId);
+      const isBlocked = conversation?.isBlocked || false;
+      
       // Get paginated messages
       const result = await storage.getUserMessages(req.user.id, otherUserId, { page, limit });
       
@@ -2443,6 +2449,9 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           page: result.page,
           pages: result.pages,
           limit
+        },
+        conversationStatus: {
+          isBlocked
         }
       });
     } catch (error) {
@@ -2458,6 +2467,18 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       
       if (!content || content.trim() === "") {
         return res.status(400).json({ error: "Message content is required" });
+      }
+      
+      // Check if the conversation is blocked
+      const minUserId = Math.min(req.user.id, receiverId);
+      const maxUserId = Math.max(req.user.id, receiverId);
+      const conversation = await storage.getConversationBetweenUsers(minUserId, maxUserId);
+      
+      if (conversation?.isBlocked) {
+        return res.status(403).json({ 
+          error: "Conversation blocked", 
+          message: "This conversation has been blocked by a moderator for violating community guidelines." 
+        });
       }
       
       // Check message content for prohibited words

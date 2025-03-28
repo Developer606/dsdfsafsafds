@@ -96,6 +96,19 @@ class SocketIOManager {
       this.socket?.emit('pong');
     });
     
+    // Handle errors from the server
+    this.socket.on('error', (error) => {
+      console.error('Socket.IO server error:', error);
+      
+      // Show toast notification for specific errors
+      if (error.code === 'CONVERSATION_BLOCKED') {
+        // Use queryClient to refresh the messages - this will cause the UI to show the blocked state
+        queryClient.invalidateQueries({ queryKey: ['/api/user-messages'] });
+      }
+      
+      this.notifyListeners('server_error', error);
+    });
+    
     // Handle new messages
     this.socket.on('new_message', (data) => {
       console.log('Received new message:', data);
@@ -164,19 +177,9 @@ class SocketIOManager {
       }
     });
     
-    // Handle errors
+    // General socket error event - has different data format from the server 'error' event
     this.socket.on('error', (error: any) => {
-      console.error('Socket.IO error:', error);
-      
-      // Special handling for rate limit errors
-      if (error.code === 'RATE_LIMIT_EXCEEDED') {
-        console.warn('Rate limit exceeded:', error.message);
-        // Show a toast or notification to the user
-        if (typeof window !== 'undefined') {
-          this.showRateLimitToast(error.message);
-        }
-      }
-      
+      console.error('Socket.IO connection error:', error);
       this.notifyListeners('error', error);
     });
   }

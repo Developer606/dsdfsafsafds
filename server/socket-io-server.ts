@@ -176,6 +176,19 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
           return;
         }
         
+        // Check if the conversation is blocked
+        const minUserId = Math.min(userId, receiverId);
+        const maxUserId = Math.max(userId, receiverId);
+        const conversation = await storage.getConversationBetweenUsers(minUserId, maxUserId);
+        
+        if (conversation?.isBlocked) {
+          socket.emit('error', { 
+            message: 'This conversation has been blocked by a moderator for violating community guidelines.',
+            code: 'CONVERSATION_BLOCKED'
+          });
+          return;
+        }
+        
         // Update user's last activity timestamp
         updateUserActivity(userId);
         

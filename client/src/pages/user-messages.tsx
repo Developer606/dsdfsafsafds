@@ -4,9 +4,10 @@ import { useParams, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Send, MoreVertical } from "lucide-react";
+import { ArrowLeft, Send, MoreVertical, AlertTriangle, ShieldAlert } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
 import { TypingIndicator } from "@/components/typing-indicator";
@@ -30,6 +31,10 @@ interface UserProfile {
   username: string;
   fullName?: string;
   lastLoginAt?: string;
+}
+
+interface ConversationStatus {
+  isBlocked: boolean;
 }
 
 export default function UserMessages() {
@@ -103,8 +108,9 @@ export default function UserMessages() {
     refetchInterval: 5000, // Fallback polling in case WebSocket fails
   });
   
-  // Extract messages from the response
+  // Extract messages and conversation status from the response
   const messages = messagesData.messages || [];
+  const isConversationBlocked = messagesData.conversationStatus?.isBlocked || false;
   
   // Mutation to send message
   const sendMessageMutation = useMutation({
@@ -116,13 +122,27 @@ export default function UserMessages() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error sending message:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to send message",
-      });
+
+      // Handle blocked conversation error
+      if (error.response?.status === 403 && error.response?.data?.error === "Conversation blocked") {
+        toast({
+          variant: "destructive",
+          title: "Conversation Blocked",
+          description: error.response?.data?.message || "This conversation has been blocked by a moderator."
+        });
+        
+        // Refresh messages to show the blocked state
+        queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
+      } else {
+        // Generic error
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to send message",
+        });
+      }
     },
   });
 
@@ -134,6 +154,24 @@ export default function UserMessages() {
     
     // Connect to the Socket.IO server
     const socket = socketManager.connect();
+    
+    // Set up server error handler
+    const serverErrorHandler = (error: any) => {
+      console.error("Server error received:", error);
+      
+      // Handle conversation blocked error
+      if (error.code === 'CONVERSATION_BLOCKED') {
+        // Display error toast
+        toast({
+          variant: "destructive",
+          title: "Conversation Blocked",
+          description: error.message || "This conversation has been blocked by a moderator."
+        });
+        
+        // Refresh the conversation data to show the blocked state
+        queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
+      }
+    };
     
     // Set up message listeners
     const newMessageHandler = (data: any) => {
@@ -191,6 +229,7 @@ export default function UserMessages() {
     const removeMessageSentListener = socketManager.addEventListener('message_sent', messageSentHandler);
     const removeMessageStatusListener = socketManager.addEventListener('message_status', messageStatusHandler);
     const removeTypingListener = socketManager.addEventListener('typing_indicator', typingIndicatorHandler);
+    const removeServerErrorListener = socketManager.addEventListener('server_error', serverErrorHandler);
     
     // Cleanup function
     return () => {
@@ -199,6 +238,7 @@ export default function UserMessages() {
       removeMessageSentListener();
       removeMessageStatusListener();
       removeTypingListener();
+      removeServerErrorListener();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, currentUser?.id, queryClient, socketManager, trackStatusChange]);
@@ -245,6 +285,16 @@ export default function UserMessages() {
     e.preventDefault();
     
     if (!messageText.trim()) return;
+    
+    // Don't send if conversation is blocked
+    if (isConversationBlocked) {
+      toast({
+        variant: "destructive",
+        title: "Conversation Blocked",
+        description: "This conversation has been blocked by a moderator."
+      });
+      return;
+    }
     
     // Send via Socket.IO
     if (socketManager.isConnected()) {
@@ -324,6 +374,20 @@ export default function UserMessages() {
       
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm">
+        {/* Blocked Conversation Banner */}
+        {isConversationBlocked && (
+          <Alert variant="destructive" className="mb-4">
+            <div className="flex items-center space-x-2">
+              <ShieldAlert className="h-5 w-5" />
+              <AlertTitle>Conversation Blocked</AlertTitle>
+            </div>
+            <AlertDescription className="mt-2">
+              This conversation has been blocked by a moderator for violating our community guidelines. 
+              You cannot send new messages in this conversation.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {isLoadingMessages ? (
           <div className="flex justify-center items-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
@@ -355,7 +419,7 @@ export default function UserMessages() {
           </AnimatePresence>
         )}
         
-        {isTyping && (
+        {isTyping && !isConversationBlocked && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -373,23 +437,30 @@ export default function UserMessages() {
       
       {/* Message input */}
       <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <form onSubmit={sendMessage} className="flex items-center space-x-2">
-          <Input
-            type="text"
-            placeholder="Type a message..."
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            className="py-6 rounded-full dark:bg-gray-700"
-          />
-          <Button 
-            type="submit" 
-            size="icon" 
-            className="h-12 w-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
-            disabled={sendMessageMutation.isPending}
-          >
-            <Send className="h-5 w-5" />
-          </Button>
-        </form>
+        {isConversationBlocked ? (
+          <div className="flex items-center justify-center p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400">
+            <AlertTriangle className="h-5 w-5 mr-2 text-amber-500" />
+            <p>Messaging has been disabled by a moderator</p>
+          </div>
+        ) : (
+          <form onSubmit={sendMessage} className="flex items-center space-x-2">
+            <Input
+              type="text"
+              placeholder="Type a message..."
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              className="py-6 rounded-full dark:bg-gray-700"
+            />
+            <Button 
+              type="submit" 
+              size="icon" 
+              className="h-12 w-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+              disabled={sendMessageMutation.isPending}
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </form>
+        )}
       </div>
     </div>
   );
