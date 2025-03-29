@@ -412,7 +412,7 @@ export default function UserMessages() {
       // Only process messages that are from the other user and not already read
       const unreadMessages = messages.filter(
         (message: UserMessage) => 
-          message.senderId === Number(userId as string) && 
+          message.senderId === Number(String(userId)) && 
           message.receiverId === currentUser.id && 
           message.status !== "read"
       );

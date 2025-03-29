@@ -96,8 +96,16 @@ export function MessageBubble({
                   <img 
                     src={imageData} 
                     alt="Shared image" 
-                    className="max-w-full object-contain max-h-96"
-                    onClick={() => window.open(imageData, '_blank')}
+                    className="max-w-full object-contain max-h-96 cursor-pointer"
+                    onClick={() => {
+                      // Create a download link
+                      const link = document.createElement('a');
+                      link.href = imageData;
+                      link.download = `shared-image-${id}.jpg`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
                   />
                 </div>
               )}
@@ -173,8 +181,16 @@ export function MessageBubble({
                   <img 
                     src={imageData} 
                     alt="Shared image" 
-                    className="max-w-full object-contain max-h-72"
-                    onClick={() => window.open(imageData, '_blank')}
+                    className="max-w-full object-contain max-h-72 cursor-pointer"
+                    onClick={() => {
+                      // Create a download link
+                      const link = document.createElement('a');
+                      link.href = imageData;
+                      link.download = `shared-image-${id}.jpg`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
                   />
                 </div>
               )}
@@ -251,8 +267,16 @@ export function MessageBubble({
                   <img 
                     src={imageData} 
                     alt="Shared image" 
-                    className="max-w-full object-contain max-h-64"
-                    onClick={() => window.open(imageData, '_blank')}
+                    className="max-w-full object-contain max-h-64 cursor-pointer"
+                    onClick={() => {
+                      // Create a download link
+                      const link = document.createElement('a');
+                      link.href = imageData;
+                      link.download = `shared-image-${id}.jpg`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
                   />
                 </div>
               )}
@@ -331,8 +355,16 @@ export function MessageBubble({
               <img 
                 src={imageData} 
                 alt="Shared image" 
-                className="max-w-full object-contain max-h-80"
-                onClick={() => window.open(imageData, '_blank')}
+                className="max-w-full object-contain max-h-80 cursor-pointer"
+                onClick={() => {
+                  // Create a download link
+                  const link = document.createElement('a');
+                  link.href = imageData;
+                  link.download = `shared-image-${id}.jpg`;
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
               />
             </div>
           )}
