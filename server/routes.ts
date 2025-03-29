@@ -2729,7 +2729,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
-  // User status endpoint - check if a user is online
+  // User status endpoint (disabled - no longer showing online/offline status)
   app.get("/api/users/status/:userId", authenticateJWT, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
@@ -2740,15 +2740,13 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         return res.status(404).json({ error: "User not found" });
       }
       
-      // Check if user is online using the user status service
-      const online = isUserOnline(userId);
-      const lastActive = getLastActiveTime(userId);
-      
+      // Return user info without online status
+      // Per client request, online status indicators have been removed
       res.json({
         userId,
         username: user.username,
-        online,
-        lastActive
+        online: false, // Always return false for privacy
+        lastActive: null // No longer tracking last active time
       });
     } catch (error) {
       console.error("Error checking user status:", error);
@@ -2756,27 +2754,14 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
-  // Get all online users
+  // Get all online users (disabled - no longer showing online/offline status)
   app.get("/api/users/online", authenticateJWT, async (req, res) => {
     try {
-      // Get list of online users using the imported function
-      const onlineUserIds = getOnlineUsers();
-      
-      // Get user details for all online users
-      const onlineUsers = [];
-      for (const userId of onlineUserIds) {
-        const user = await storage.getUser(userId);
-        if (user) {
-          onlineUsers.push({
-            id: user.id,
-            username: user.username
-          });
-        }
-      }
-      
+      // Per client request, online status indicators have been removed
+      // Return empty array instead of actual online users
       res.json({
-        count: onlineUsers.length,
-        users: onlineUsers
+        count: 0,
+        users: []
       });
     } catch (error) {
       console.error("Error getting online users:", error);
@@ -2784,13 +2769,12 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
-  // Get count of online users
+  // Get count of online users (disabled - no longer showing online/offline status)
   app.get("/api/users/online/count", authenticateJWT, async (req, res) => {
     try {
-      // Get count of online users from the status service
-      const count = getOnlineUserCount();
-      
-      res.json({ count });
+      // Per client request, online status indicators have been removed
+      // Return 0 instead of actual count
+      res.json({ count: 0 });
     } catch (error) {
       console.error("Error getting online user count:", error);
       res.status(500).json({ error: "Failed to get online user count" });

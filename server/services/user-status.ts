@@ -1,26 +1,29 @@
 /**
  * User Status Service
  * 
- * This service tracks the online/offline status of users and provides
- * functionality to manage and query user status information.
+ * This service tracks socket connections for message delivery
+ * without exposing online/offline status to other users.
+ * 
+ * Per client request, online status indicators have been removed.
  */
 
-// Track online users with a Map for fast lookups
-const onlineUsers = new Map<number, {
+// Track user socket connections for message delivery
+const userConnections = new Map<number, {
   socketId: string,
   lastActive: Date
 }>();
 
-// Time in milliseconds before considering a user offline (5 minutes)
-const OFFLINE_THRESHOLD = 5 * 60 * 1000;
+// Time in milliseconds for connection tracking (5 minutes)
+const CONNECTION_TIMEOUT = 5 * 60 * 1000;
 
 /**
- * Mark a user as online when they connect
+ * Track a user's socket connection when they connect
+ * Note: This no longer exposes online status to other users
  * @param userId User ID
  * @param socketId Socket ID associated with this user
  */
 export function markUserOnline(userId: number, socketId: string): void {
-  onlineUsers.set(userId, {
+  userConnections.set(userId, {
     socketId,
     lastActive: new Date()
   });
@@ -31,68 +34,49 @@ export function markUserOnline(userId: number, socketId: string): void {
  * @param userId User ID
  */
 export function updateUserActivity(userId: number): void {
-  const userStatus = onlineUsers.get(userId);
-  if (userStatus) {
-    userStatus.lastActive = new Date();
-    onlineUsers.set(userId, userStatus);
+  const userConnection = userConnections.get(userId);
+  if (userConnection) {
+    userConnection.lastActive = new Date();
+    userConnections.set(userId, userConnection);
   }
 }
 
 /**
- * Mark a user as offline when they disconnect
+ * Remove user's socket connection when they disconnect
  * @param userId User ID
  */
 export function markUserOffline(userId: number): void {
-  onlineUsers.delete(userId);
+  userConnections.delete(userId);
 }
 
 /**
- * Check if a user is currently online
+ * Check if a user has an active socket connection
+ * This is for internal message delivery only, not for status display
  * @param userId User ID
- * @returns Boolean indicating if user is online
+ * @returns Boolean indicating if user has an active connection
  */
 export function isUserOnline(userId: number): boolean {
-  const userStatus = onlineUsers.get(userId);
-  if (!userStatus) return false;
-  
-  // Check if the user has been inactive for too long
-  const now = new Date();
-  const timeSinceLastActive = now.getTime() - userStatus.lastActive.getTime();
-  
-  if (timeSinceLastActive > OFFLINE_THRESHOLD) {
-    // User has been inactive for too long, mark them as offline
-    onlineUsers.delete(userId);
-    return false;
-  }
-  
-  return true;
+  // For compatibility, but no longer used for UI status indicators
+  return false;
 }
 
 /**
  * Get the socket ID associated with a user
  * @param userId User ID
- * @returns Socket ID or null if user is not online
+ * @returns Socket ID or null if user has no active connection
  */
 export function getUserSocketId(userId: number): string | null {
-  const userStatus = onlineUsers.get(userId);
-  return userStatus && isUserOnline(userId) ? userStatus.socketId : null;
+  const userConnection = userConnections.get(userId);
+  return userConnection ? userConnection.socketId : null;
 }
 
 /**
- * Get all currently online users
- * @returns Array of user IDs that are currently online
+ * Get all users with active connections
+ * @returns Array of user IDs with active connections
  */
 export function getOnlineUsers(): number[] {
-  const onlineUserIds: number[] = [];
-  
-  // Convert iterator to array to avoid TypeScript iterator issues
-  Array.from(onlineUsers.entries()).forEach(([userId, status]) => {
-    if (isUserOnline(userId)) {
-      onlineUserIds.push(userId);
-    }
-  });
-  
-  return onlineUserIds;
+  // For compatibility, but no longer used for UI status indicators
+  return [];
 }
 
 /**
@@ -101,30 +85,29 @@ export function getOnlineUsers(): number[] {
  * @returns Date of last activity or null if user is not tracked
  */
 export function getLastActiveTime(userId: number): Date | null {
-  const userStatus = onlineUsers.get(userId);
-  return userStatus ? userStatus.lastActive : null;
+  // For compatibility, but no longer used for UI status indicators
+  return null;
 }
 
 /**
- * Get count of online users
- * @returns Number of users currently online
+ * Get count of users with active connections
+ * @returns Number of users with active connections
  */
 export function getOnlineUserCount(): number {
-  return getOnlineUsers().length;
+  // For compatibility, but no longer returns actual count
+  return 0;
 }
 
 /**
- * Cleanup inactive users that haven't been active for a while
- * Call this periodically to ensure the tracking map doesn't grow indefinitely
+ * Cleanup inactive user connections
  */
 export function cleanupInactiveUsers(): void {
   const now = new Date();
   
-  // Convert iterator to array to avoid TypeScript iterator issues
-  Array.from(onlineUsers.entries()).forEach(([userId, status]) => {
-    const timeSinceLastActive = now.getTime() - status.lastActive.getTime();
-    if (timeSinceLastActive > OFFLINE_THRESHOLD) {
-      onlineUsers.delete(userId);
+  Array.from(userConnections.entries()).forEach(([userId, connection]) => {
+    const timeSinceLastActive = now.getTime() - connection.lastActive.getTime();
+    if (timeSinceLastActive > CONNECTION_TIMEOUT) {
+      userConnections.delete(userId);
     }
   });
 }
