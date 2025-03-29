@@ -730,6 +730,7 @@ export default function UserMessages() {
             <UserStatusIndicator 
               userId={otherUser.id} 
               size="sm" 
+              showText={true}
               className={cn(
                 chatStyle === "whatsapp" 
                 ? "ml-1 mt-0.5" 

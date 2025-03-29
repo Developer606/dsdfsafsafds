@@ -47,11 +47,14 @@ export function UserStatusIndicator({
                 : "bg-gray-400"
             )} />
             
-            {showText && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {isOnline ? 'Online' : `Last seen: ${lastActiveFormatted}`}
-              </span>
-            )}
+            <span className={cn(
+              "text-xs",
+              isOnline
+                ? "text-green-500 dark:text-green-400"
+                : "text-gray-500 dark:text-gray-400"
+            )}>
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
           </div>
         </TooltipTrigger>
         <TooltipContent>
