@@ -279,18 +279,9 @@ export default function UserMessages() {
     
     const typingIndicatorHandler = (data: any) => {
       console.log("Typing indicator received:", data);
-      console.log("Current user:", currentUser?.id, "Chat with:", userId);
-      
-      // Show typing indicator when the other user is typing to us
-      // The senderId should be the other user, and the receiverId should be us
-      if (data && data.senderId && data.receiverId) {
-        // The user we're chatting with is typing to us
-        if (data.senderId === Number(userId) && data.receiverId === currentUser?.id) {
-          console.log("✅ Setting typing indicator to:", data.isTyping);
-          setIsTyping(data.isTyping);
-        } else {
-          console.log("❌ Ignoring typing indicator from user", data.senderId, "to", data.receiverId);
-        }
+      // Show typing indicator when the other user is typing
+      if (data.senderId === userId) {
+        setIsTyping(data.isTyping);
       }
     };
     
@@ -710,23 +701,13 @@ export default function UserMessages() {
   
   // Handle typing indicator
   useEffect(() => {
-    if (!currentUser?.id || !userId) return;
-    
     const handleTyping = () => {
-      try {
-        // Send typing indicator from current user (sender) to the other user (receiver)
-        // First parameter is the receiverId, second is the isTyping status
-        socketManager.sendTypingIndicator(Number(userId), messageText.length > 0);
-        console.log(`Sending typing indicator to user ${userId}, isTyping: ${messageText.length > 0}`);
-      } catch (err) {
-        console.error("Error sending typing indicator:", err);
-      }
+      socketManager.sendTypingIndicator(userId, messageText.length > 0);
     };
     
-    // Add debounce to avoid sending too many events
-    const typingTimer = setTimeout(handleTyping, 300);
+    const typingTimer = setTimeout(handleTyping, 500);
     return () => clearTimeout(typingTimer);
-  }, [messageText, userId, socketManager, currentUser?.id]);
+  }, [messageText, userId, socketManager]);
   
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1174,7 +1155,7 @@ export default function UserMessages() {
                 ? "bg-gray-100 dark:bg-slate-800 rounded-full"
                 : "bg-white dark:bg-slate-800 rounded-lg"
             )}>
-              <TypingIndicator style={chatStyle as 'default' | 'whatsapp' | 'messenger' | 'kakao'} />
+              <TypingIndicator />
             </div>
           </motion.div>
         )}

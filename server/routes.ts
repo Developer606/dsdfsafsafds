@@ -27,7 +27,6 @@ import {
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import encryptionRoutes from "./encryption-routes";
-import { addTypingIndicatorRoutes } from "./typing-indicator-api";
 import { errorHandler } from "./middleware/error-handler";
 import {
   insertMessageSchema,
@@ -468,9 +467,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Set up authentication routes and middleware
   setupAuth(app);
   app.use(checkBlockedStatus);
-  
-  // Add typing indicator API (REST fallback for Socket.IO)
-  addTypingIndicatorRoutes(app, userConnections, rateLimiter);
 
   // Update authentication check middleware
   const authCheck = (
