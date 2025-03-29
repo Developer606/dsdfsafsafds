@@ -13,7 +13,6 @@ import {
   checkMessageContent, 
   flagMessage 
 } from './content-moderation';
-import { isEncrypted, decryptJsonContent } from '../shared/encryption';
 
 // Define tracking interface for messages
 interface MessageTracking {
@@ -193,48 +192,16 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         // Update user's last activity timestamp
         updateUserActivity(userId);
         
-        // Parse content for moderation checks
-        let contentForCheck = '';
-        let parsedContent;
-        let originalContent = content; // Store original content for saving
-
-        try {
-          // Check if content is encrypted
-          if (typeof content === 'string' && isEncrypted(content)) {
-            // Decrypt the content for moderation check
-            try {
-              // Decrypt using the conversation key derived from both user IDs
-              parsedContent = decryptJsonContent(content, userId, receiverId);
-              // Extract text for moderation check
-              contentForCheck = parsedContent.text || '';
-              log(`Successfully decrypted message for content moderation`);
-            } catch (decryptError) {
-              log(`Failed to decrypt message for moderation: ${decryptError}`);
-              // If decryption fails, we can't check content, default to empty string
-              contentForCheck = '';
-              // We'll still store the original encrypted content
-            }
-          } else {
-            // Not encrypted, try parsing as JSON directly
-            parsedContent = typeof content === 'object' ? content : JSON.parse(content);
-            // Extract text for moderation check
-            contentForCheck = parsedContent.text || '';
-          }
-        } catch (e) {
-          // If parsing fails, use the raw content for checking
-          contentForCheck = content;
-        }
-        
-        log(`Message from user ${userId} to ${receiverId}: ${contentForCheck.substring(0, 50)}${contentForCheck.length > 50 ? '...' : ''}`);
+        log(`Message from user ${userId} to ${receiverId}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`);
         
         // Check message content for prohibited words
-        const contentCheck = checkMessageContent(contentForCheck);
+        const contentCheck = checkMessageContent(content);
         
         // Create message in database
         const message = await storage.createUserMessage({
           senderId: userId,
           receiverId,
-          content, // Store original content (may be JSON or plain text)
+          content,
           status: 'sent'
         });
         
@@ -248,7 +215,7 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
               message.id,
               userId,
               receiverId,
-              contentForCheck, // Use the text content for moderation
+              content,
               contentCheck.reason || 'Prohibited content'
             );
             
@@ -330,7 +297,7 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         // Verify this user is the receiver of the message
         // Get user messages with a large limit to find the specific message
         // The second parameter is otherUserId, but we pass 0 as a placeholder since we're looking for a message by ID
-        const allMessagesResult = await storage.getUserMessages(userId, 0, { page: 1, limit: 1000 });
+        const allMessagesResult = await storage.getUserMessages(userId, 0, 1, 1000);
         // Now we need to find the message in the messages array
         const message = allMessagesResult.messages.find(m => m.id === messageId);
         

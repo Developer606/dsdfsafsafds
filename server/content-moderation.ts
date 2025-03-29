@@ -162,13 +162,6 @@ export async function flagMessage(
   content: string,
   reason: string
 ): Promise<schema.FlaggedMessage> {
-  // Normalize content for storage in flagged messages
-  // If it's already an object (for JSON content), stringify it
-  let contentToStore = content;
-  
-  // We'll store the plain text content, not the original encrypted or JSON form
-  // This makes it easier for admins to review
-  
   // Insert the flagged message into the database
   const [flaggedMessage] = await flaggedMessagesDb
     .insert(schema.flaggedMessages)
@@ -176,7 +169,7 @@ export async function flagMessage(
       messageId,
       senderId,
       receiverId,
-      content: contentToStore,
+      content,
       reason,
       reviewed: false,
       timestamp: new Date()

@@ -19,7 +19,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useSocket } from "@/lib/socket-io-client";
 import { MessageBubble } from "@/components/message-bubble";
 import { useMessageStatusTracker } from "@/lib/message-status-tracker";
-import { encryptJsonContent, decryptJsonContent, isEncrypted } from "@/lib/encryption";
 import {
   Dialog,
   DialogContent,
@@ -708,25 +707,15 @@ export default function UserMessages() {
     
     // Create message content including media data if present
     // Always use JSON structure for all messages (text, image, video)
-    let messageJson;
     let content;
     
     if (selectedImage) {
-      messageJson = { text: messageText, imageData: selectedImage };
+      content = JSON.stringify({ text: messageText, imageData: selectedImage });
     } else if (selectedVideo) {
-      messageJson = { text: messageText, videoData: selectedVideo };
+      content = JSON.stringify({ text: messageText, videoData: selectedVideo });
     } else {
       // Store text messages in JSON format as well
-      messageJson = { text: messageText };
-    }
-    
-    // Encrypt the message content for security
-    // Only the sender and recipient will be able to decrypt this content
-    if (currentUser?.id) {
-      content = encryptJsonContent(messageJson, currentUser.id, userId);
-    } else {
-      // Fallback if user data isn't loaded (shouldn't happen in normal operation)
-      content = JSON.stringify(messageJson);
+      content = JSON.stringify({ text: messageText });
     }
     
     // Send via Socket.IO
@@ -1031,30 +1020,14 @@ export default function UserMessages() {
               return (
                 <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} ${chatStyle === "chatgpt" ? "w-full" : ""}`}>
                   {(() => {
-                    // Messages may be encrypted or stored as JSON
+                    // All messages are now stored as JSON
                     let messageContent = "";
                     let imageData = null;
                     let videoData = null;
                     
                     try {
-                      let content = message.content;
-                      let parsedContent;
-                      
-                      // Check if message is likely encrypted
-                      if (isEncrypted(content) && currentUser) {
-                        // Decrypt the message content
-                        try {
-                          // The first user ID should be the current user, and the second should be the other user
-                          parsedContent = decryptJsonContent(content, currentUser.id, message.senderId === currentUser.id ? message.receiverId : message.senderId);
-                        } catch (decryptError) {
-                          console.error("Failed to decrypt message:", decryptError);
-                          messageContent = "🔒 Encrypted message (cannot decrypt)";
-                          throw new Error("Decryption failed");
-                        }
-                      } else {
-                        // Not encrypted, try parsing as JSON directly
-                        parsedContent = JSON.parse(content);
-                      }
+                      // Attempt to parse as JSON
+                      const parsedContent = JSON.parse(message.content);
                       
                       // Extract the text content
                       messageContent = parsedContent.text || '';
@@ -1066,10 +1039,8 @@ export default function UserMessages() {
                         videoData = parsedContent.videoData;
                       }
                     } catch (e) {
-                      // For backward compatibility with older messages that weren't stored as JSON or encrypted
-                      if (messageContent === "") { // Only set if not already set in the decryption error case
-                        messageContent = message.content;
-                      }
+                      // For backward compatibility with older messages that weren't stored as JSON
+                      messageContent = message.content;
                     }
                     
                     return (
