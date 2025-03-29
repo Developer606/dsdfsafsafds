@@ -9,73 +9,17 @@ import { initializeAdminDb } from "./admin-db";
 import { setupSocketIOServer } from "./socket-io-server";
 import { initializeFlaggedMessagesDb } from "./content-moderation";
 import path from "path";
-import compression from "compression";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-import { StatusCodes } from "http-status-codes";
-import { cache, cacheMiddleware } from "./services/cache-service";
 
 const app = express();
-
-// Security enhancements
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Required for client-side scripts
-      connectSrc: ["'self'", "ws:", "wss:"], // Allow WebSocket connections
-      imgSrc: ["'self'", "data:", "blob:"], // Allow data: URLs for images
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      fontSrc: ["'self'", "data:"],
-      mediaSrc: ["'self'", "data:", "blob:"]
-    }
-  }
-}));
-
-// Compression for all responses
-app.use(compression());
-
 // Increase JSON body size limit to handle larger image data
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 
 // Configure trust proxy to get real client IP when behind a proxy (like in Replit)
-// Configure more securely for use with rate limiting
-app.set("trust proxy", "loopback, linklocal, uniquelocal");
+app.set("trust proxy", true);
 
-// Rate limiting for API endpoints
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 500, // 500 requests per windowMs
-  message: {
-    error: "Too many requests, please try again later.",
-    status: StatusCodes.TOO_MANY_REQUESTS
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  // IP address extractor that works with Replit's proxy
-  keyGenerator: (request, response) => {
-    // Get forwarded IP from Replit's proxy if available
-    return request.ip || 
-           request.headers['x-forwarded-for'] as string || 
-           request.socket.remoteAddress || 
-           'unknown';
-  }
-});
-
-// Apply rate limiting to API routes
-app.use("/api/", apiLimiter);
-
-// Serve files from the uploads directory with caching
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads"), {
-  maxAge: 86400000, // 1 day
-  etag: true,
-  lastModified: true
-}));
-
-// Apply cache middleware to specific routes
-app.use("/api/users", cacheMiddleware(60)); // Cache user list for 1 minute
-app.use("/api/status", cacheMiddleware(30)); // Cache status for 30 seconds
+// Serve files from the uploads directory
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Enhanced logging middleware
 app.use((req, res, next) => {
@@ -152,29 +96,6 @@ app.use((req, res, next) => {
     
     // Register routes and setup Socket.IO
     await registerRoutes(app);
-    
-    // Setup WebSocket server with Socket.IO
-    const io = setupSocketIOServer(httpServer);
-    
-    // Configure Socket.IO for handling disconnects more gracefully (prevent ghost connections)
-    io.engine.on("connection_error", (err: any) => {
-      log(`Socket.IO connection error: ${err.message}`);
-    });
-
-    // Add monitoring endpoint for system health
-    app.get("/api/system-status", (req, res) => {
-      res.json({
-        status: "ok",
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-        connections: io.engine.clientsCount,
-        cache: {
-          size: cache.keys().length,
-          stats: cache.getStats()
-        },
-        timestamp: new Date().toISOString()
-      });
-    });
 
     // Global error handler with better logging
     app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
@@ -199,28 +120,9 @@ app.use((req, res, next) => {
       serveStatic(app);
     }
 
-    // Configure maximum HTTP and Socket.IO connections
-    httpServer.maxConnections = 10000; // Increase max connections
-
     const PORT = 5000;
     httpServer.listen(PORT, "0.0.0.0", () => {
       log(`Server started successfully on port ${PORT}`);
-      log(`Optimized for high traffic (up to 100k requests/minute)`);
-    });
-    
-    // Graceful shutdown handling
-    process.on('SIGTERM', () => {
-      log('SIGTERM signal received: closing HTTP server');
-      httpServer.close(() => {
-        log('HTTP server closed');
-      });
-    });
-    
-    process.on('SIGINT', () => {
-      log('SIGINT signal received: closing HTTP server');
-      httpServer.close(() => {
-        log('HTTP server closed');
-      });
     });
   } catch (error) {
     console.error("Failed to start server:", error);
