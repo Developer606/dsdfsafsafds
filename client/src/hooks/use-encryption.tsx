@@ -1,12 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { 
   generateKeyPair, exportPublicKey, exportPrivateKey,
   importPublicKey, importPrivateKey, generateAESKey,
   encryptMessage, decryptMessage, encryptAESKey, decryptAESKey,
   isMessageEncrypted
 } from '@/lib/encryption-client';
-import { apiRequest } from '@/lib/queryClient';
+
+// Aliases for compatibility with existing code that expects differently named functions
+const generateSymmetricKey = generateAESKey;
+const importSymmetricKey = importAESKey;
+const encryptSymmetricKey = encryptAESKey;
+const decryptSymmetricKey = decryptAESKey;
 
 interface EncryptionState {
   isEncryptionEnabled: boolean;

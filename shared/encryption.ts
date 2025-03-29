@@ -1,4 +1,22 @@
 import { z } from "zod";
+import { 
+  conversationKeys, 
+  encryptionKeys, 
+  EncryptionKey, 
+  InsertEncryptionKey, 
+  ConversationKey, 
+  InsertConversationKey 
+} from "./schema";
+
+// Re-export for other modules to use
+export { 
+  conversationKeys, 
+  encryptionKeys, 
+  EncryptionKey, 
+  InsertEncryptionKey, 
+  ConversationKey, 
+  InsertConversationKey 
+};
 
 /**
  * The prefix used to identify encrypted content in messages

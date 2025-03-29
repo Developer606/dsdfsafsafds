@@ -17,15 +17,13 @@ import {
   pendingVerifications,
   subscriptionPlans,
   type SubscriptionTier,
-} from "@shared/schema";
-import {
   type EncryptionKey,
   type InsertEncryptionKey,
   type ConversationKey,
   type InsertConversationKey,
   encryptionKeys,
   conversationKeys
-} from "@shared/encryption";
+} from "@shared/schema";
 import {
   messages,
   users,
@@ -1169,26 +1167,30 @@ export class DatabaseStorage implements IStorage {
     otherUserId: number, 
     encryptedKey: string
   ): Promise<ConversationKey> {
+    // Ensure user IDs are ordered (smaller ID is always user1Id)
+    const user1Id = Math.min(userId, otherUserId);
+    const user2Id = Math.max(userId, otherUserId);
+    
     // Check if a key already exists for this user pair
     const [existingKey] = await db
       .select()
       .from(conversationKeys)
       .where(
-        sql`${conversationKeys.userId} = ${userId} AND 
-            ${conversationKeys.otherUserId} = ${otherUserId}`
+        sql`${conversationKeys.user1Id} = ${user1Id} AND 
+            ${conversationKeys.user2Id} = ${user2Id}`
       );
     
     if (existingKey) {
-      // Update the existing key
+      // Update the existing key - use different encrypted key based on which user is updating
       const [updatedKey] = await db
         .update(conversationKeys)
         .set({ 
-          encryptedKey,
-          updatedAt: new Date()
+          encryptedKey1: userId === user1Id ? encryptedKey : conversationKeys.encryptedKey1,
+          encryptedKey2: userId === user2Id ? encryptedKey : conversationKeys.encryptedKey2
         })
         .where(
-          sql`${conversationKeys.userId} = ${userId} AND 
-              ${conversationKeys.otherUserId} = ${otherUserId}`
+          sql`${conversationKeys.user1Id} = ${user1Id} AND 
+              ${conversationKeys.user2Id} = ${user2Id}`
         )
         .returning();
       
@@ -1199,9 +1201,10 @@ export class DatabaseStorage implements IStorage {
     const [newKey] = await db
       .insert(conversationKeys)
       .values({
-        userId,
-        otherUserId,
-        encryptedKey,
+        user1Id,
+        user2Id,
+        encryptedKey1: userId === user1Id ? encryptedKey : "",
+        encryptedKey2: userId === user2Id ? encryptedKey : "",
       })
       .returning();
     
@@ -1218,15 +1221,24 @@ export class DatabaseStorage implements IStorage {
     userId: number, 
     otherUserId: number
   ): Promise<string | null> {
+    // Ensure user IDs are ordered (smaller ID is always user1Id)
+    const user1Id = Math.min(userId, otherUserId);
+    const user2Id = Math.max(userId, otherUserId);
+    
     const [key] = await db
       .select()
       .from(conversationKeys)
       .where(
-        sql`${conversationKeys.userId} = ${userId} AND 
-            ${conversationKeys.otherUserId} = ${otherUserId}`
+        sql`${conversationKeys.user1Id} = ${user1Id} AND 
+            ${conversationKeys.user2Id} = ${user2Id}`
       );
     
-    return key ? key.encryptedKey : null;
+    // Return the correct encrypted key based on which user is requesting
+    if (key) {
+      return userId === user1Id ? key.encryptedKey1 : key.encryptedKey2;
+    }
+    
+    return null;
   }
   
   /**
@@ -1239,12 +1251,16 @@ export class DatabaseStorage implements IStorage {
     userId: number, 
     otherUserId: number
   ): Promise<ConversationKey | null> {
+    // Ensure user IDs are ordered (smaller ID is always user1Id)
+    const user1Id = Math.min(userId, otherUserId);
+    const user2Id = Math.max(userId, otherUserId);
+    
     const [key] = await db
       .select()
       .from(conversationKeys)
       .where(
-        sql`${conversationKeys.userId} = ${userId} AND 
-            ${conversationKeys.otherUserId} = ${otherUserId}`
+        sql`${conversationKeys.user1Id} = ${user1Id} AND 
+            ${conversationKeys.user2Id} = ${user2Id}`
       );
     
     return key || null;

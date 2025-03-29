@@ -220,3 +220,9 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
   }
   return bytes.buffer;
 }
+
+// Alias names for compatibility with existing code
+export const generateSymmetricKey = generateAESKey;
+export const importSymmetricKey = importAESKey;
+export const encryptSymmetricKey = encryptAESKey;
+export const decryptSymmetricKey = decryptAESKey;
