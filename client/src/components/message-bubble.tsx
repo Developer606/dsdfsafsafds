@@ -32,6 +32,9 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   // State for image viewer modal
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  
+  // If we only have an image and no text content, handle it differently
+  const isImageOnlyMessage = imageData && !content;
   // Format time string
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -62,6 +65,8 @@ export function MessageBubble({
 
   // ChatGPT style
   if (chatStyle === "chatgpt") {
+    // For ChatGPT style, we keep the same UI for both image-only and text+image
+    // as the container style is important for maintaining the ChatGPT look
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -96,7 +101,10 @@ export function MessageBubble({
             </p>
             <div className="prose dark:prose-invert max-w-none">
               {imageData && (
-                <div className="mb-3 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                <div className={cn(
+                  "rounded-md overflow-hidden",
+                  content ? "mb-3" : ""  // Only add margin bottom if there's content after the image
+                )}>
                   <img 
                     src={imageData} 
                     alt="Shared image" 
@@ -141,6 +149,76 @@ export function MessageBubble({
 
   // Messenger style
   if (chatStyle === "messenger") {
+    // Special case: if it's an image-only message, show without bubble
+    if (isImageOnlyMessage) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 380, 
+            damping: 25 
+          }}
+          className={cn(
+            "px-2 sm:px-4 py-1 sm:py-2 mb-1",
+            isCurrentUser ? "ml-auto" : "mr-auto",
+            "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+          )}
+        >
+          <div className={cn(
+            "flex",
+            isCurrentUser ? "justify-end" : "justify-start",
+            "items-end gap-2"
+          )}>
+            {!isCurrentUser && avatar && (
+              <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 shadow-md ring-2 ring-blue-100 dark:ring-blue-900">
+                <img src={avatar} alt={userName || "User"} className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className={cn(
+              "flex flex-col",
+              isCurrentUser ? "items-end" : "items-start"
+            )}>
+              {!isCurrentUser && userName && (
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 ml-1">
+                  {userName}
+                </span>
+              )}
+              
+              {/* Image without bubble */}
+              <div className="rounded-lg overflow-hidden shadow-md">
+                <img 
+                  src={imageData} 
+                  alt="Shared image" 
+                  className="max-w-full object-contain max-h-72 cursor-pointer"
+                  onClick={() => setIsImageViewerOpen(true)}
+                />
+              </div>
+              
+              {/* Image viewer modal */}
+              <ImageViewerModal 
+                isOpen={isImageViewerOpen}
+                imageUrl={imageData!}
+                onClose={() => setIsImageViewerOpen(false)}
+                messageId={id}
+              />
+              
+              <div className="flex items-center mt-1 gap-1.5 px-1">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatTime(timestamp)}
+                </span>
+                {isCurrentUser && (
+                  <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+    
+    // Regular message with text (and possibly an image)
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -222,6 +300,87 @@ export function MessageBubble({
   
   // KakaoTalk style
   if (chatStyle === "kakaotalk") {
+    // Special case: if it's an image-only message, show without bubble
+    if (isImageOnlyMessage) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 400, 
+            damping: 25 
+          }}
+          className={cn(
+            "px-2 sm:px-4 py-1 sm:py-2 mb-1",
+            isCurrentUser ? "ml-auto" : "mr-auto",
+            "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+          )}
+        >
+          <div className={cn(
+            "flex",
+            isCurrentUser ? "justify-end" : "justify-start",
+            "items-end gap-2"
+          )}>
+            {!isCurrentUser && (
+              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 shadow-sm bg-pink-200">
+                {avatar ? (
+                  <img src={avatar} alt={userName || "User"} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-800">
+                    {userName ? userName.charAt(0).toUpperCase() : "U"}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className={cn(
+              "flex flex-col",
+              isCurrentUser ? "items-end" : "items-start"
+            )}>
+              {!isCurrentUser && userName && (
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 ml-1">
+                  {userName}
+                </span>
+              )}
+              
+              {/* Image without bubble */}
+              <div className="rounded-2xl overflow-hidden shadow-md">
+                <img 
+                  src={imageData} 
+                  alt="Shared image" 
+                  className="max-w-full object-contain max-h-64 cursor-pointer"
+                  onClick={() => setIsImageViewerOpen(true)}
+                />
+              </div>
+              
+              {/* Image viewer modal */}
+              <ImageViewerModal 
+                isOpen={isImageViewerOpen}
+                imageUrl={imageData!}
+                onClose={() => setIsImageViewerOpen(false)}
+                messageId={id}
+              />
+              
+              <div className="flex items-center mt-1 gap-1 px-1">
+                <span className="text-[10px] text-gray-500">
+                  오후 {formatTime(timestamp)}
+                </span>
+                {isCurrentUser && (
+                  <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
+                )}
+              </div>
+            </div>
+            {isCurrentUser && (
+              <div className="w-6 h-6">
+                {/* Placeholder for KakaoTalk character emoji that would appear on the right of user messages */}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      );
+    }
+    
+    // Regular message with text (and possibly an image)
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -313,6 +472,66 @@ export function MessageBubble({
   }
 
   // WhatsApp style (default)
+  
+  // Special case: if it's an image-only message, show without bubble
+  if (isImageOnlyMessage) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 420, 
+          damping: 28
+        }}
+        className={cn(
+          "px-2 sm:px-4 py-1 sm:py-2 mb-1",
+          isCurrentUser ? "ml-auto" : "mr-auto",
+          "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+        )}
+      >
+        <div className={cn(
+          "flex flex-col",
+          isCurrentUser ? "items-end" : "items-start"
+        )}>
+          {!isCurrentUser && userName && (
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1.5">
+              {userName}
+            </p>
+          )}
+          
+          {/* Image without bubble container */}
+          <div className="rounded-md overflow-hidden shadow-md">
+            <img 
+              src={imageData} 
+              alt="Shared image" 
+              className="max-w-full object-contain max-h-80 cursor-pointer"
+              onClick={() => setIsImageViewerOpen(true)}
+            />
+          </div>
+          
+          {/* Image viewer modal */}
+          <ImageViewerModal 
+            isOpen={isImageViewerOpen}
+            imageUrl={imageData!}
+            onClose={() => setIsImageViewerOpen(false)}
+            messageId={id}
+          />
+          
+          <div className="flex items-center gap-1.5 mt-1.5 px-1">
+            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+              {formatTime(timestamp)}
+            </span>
+            {isCurrentUser && (
+              <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+  
+  // Regular message with text (and possibly an image)
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -358,7 +577,7 @@ export function MessageBubble({
             </p>
           )}
           {imageData && (
-            <div className="mb-2 rounded-md overflow-hidden">
+            <div className="mb-2 rounded-md overflow-hidden border-0">
               <img 
                 src={imageData} 
                 alt="Shared image" 
