@@ -105,15 +105,6 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
     }
   });
 
-  // Initialize encrypted message handling
-  try {
-    const { initializeProhibitedWordHashes } = require('./encrypted-moderation');
-    initializeProhibitedWordHashes();
-    log('Initialized encrypted message moderation system');
-  } catch (error) {
-    log(`Error initializing encrypted message moderation: ${error}`);
-  }
-
   // Connection handler
   io.on('connection', async (socket: Socket) => {
     const userId = socket.data.userId;

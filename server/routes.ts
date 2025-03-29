@@ -1386,65 +1386,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     res.json(req.user);
   });
   
-  // Set user public key for end-to-end encryption
-  app.post("/api/user/public-key", async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-      
-      const { publicKey } = req.body;
-      
-      if (!publicKey) {
-        return res.status(400).json({ error: "Public key is required" });
-      }
-      
-      // Update the user's public key
-      const success = await storage.updateUser(req.user.id, { publicKey });
-      
-      if (!success) {
-        return res.status(500).json({ error: "Failed to update public key" });
-      }
-      
-      console.log(`User ${req.user.id} updated their public key for E2E encryption`);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error setting user public key:", error);
-      res.status(500).json({ error: "Failed to set public key" });
-    }
-  });
-  
-  // Get user public key for end-to-end encryption
-  app.get("/api/users/:userId/public-key", async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-      
-      const userId = parseInt(req.params.userId);
-      
-      if (isNaN(userId)) {
-        return res.status(400).json({ error: "Invalid user ID" });
-      }
-      
-      // Get user by ID
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      
-      // Return just the public key
-      res.json({ 
-        userId: user.id,
-        publicKey: user.publicKey || null
-      });
-    } catch (error) {
-      console.error("Error getting user public key:", error);
-      res.status(500).json({ error: "Failed to get public key" });
-    }
-  });
-  
   // Search users by username endpoint
   app.get("/api/users/search", async (req, res) => {
     if (!req.isAuthenticated()) {
@@ -2615,8 +2556,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         username: user.username,
         fullName: user.fullName || user.username,
         profileCompleted: user.profileCompleted || false,
-        lastLoginAt: user.lastLoginAt,
-        publicKey: user.publicKey || null
+        lastLoginAt: user.lastLoginAt
       };
       
       res.json(sanitizedUser);

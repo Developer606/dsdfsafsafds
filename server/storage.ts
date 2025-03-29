@@ -94,14 +94,6 @@ export interface IStorage {
     },
   ): Promise<User>;
 
-  /**
-   * Update general user information
-   * @param userId The user ID
-   * @param data The data to update
-   * @returns True if the update was successful
-   */
-  updateUser(userId: number, data: Partial<Omit<User, 'id' | 'password' | 'role'>>): Promise<boolean>;
-
   // Add new methods for pending verifications
   createPendingVerification(
     data: InsertPendingVerification,
@@ -871,28 +863,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedUser;
-  }
-  
-  /**
-   * Update any user information
-   * @param userId The user ID
-   * @param data Key-value pairs of user properties to update
-   * @returns True if the update was successful
-   */
-  async updateUser(userId: number, data: Partial<Omit<User, 'id' | 'password' | 'role'>>): Promise<boolean> {
-    // Prevent updating important secure properties
-    const { id, password, role, ...safeData } = data as any;
-    
-    // Update the user in the database
-    await db
-      .update(users)
-      .set({
-        ...safeData,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId));
-    
-    return true;
   }
 
   async createPendingVerification(

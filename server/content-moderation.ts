@@ -120,63 +120,36 @@ const multilingualProhibitedWords: Record<string, string[]> = {
  * @returns Object with flag status and reason if flagged
  */
 export function checkMessageContent(content: string): { flagged: boolean; reason?: string } {
-  try {
-    // Check if this is an encrypted message first
-    let isEncrypted = false;
-    try {
-      const parsed = JSON.parse(content);
-      isEncrypted = parsed?.version === 'e2ee-v1' && !!parsed.encrypted && !!parsed.nonce && !!parsed.moderationHash;
-    } catch (e) {
-      // Not JSON, so not an encrypted message
-      isEncrypted = false;
-    }
-    
-    // If this is an encrypted message, use the encrypted message checker
-    if (isEncrypted) {
-      try {
-        const { checkEncryptedMessageContent } = require('./encrypted-moderation');
-        return checkEncryptedMessageContent(content);
-      } catch (e) {
-        console.error('Error checking encrypted message:', e);
-        return { flagged: false }; // Default to not flagged if there's an error
+  // Convert to lowercase for case-insensitive matching
+  const normalizedContent = content.toLowerCase();
+  
+  // Check against all categories of prohibited words
+  for (const [category, wordList] of Object.entries(prohibitedWords)) {
+    for (const word of wordList) {
+      // Check if the word is a whole word or part of a word
+      const regex = new RegExp(`\\b${word}\\b|\\b${word}s\\b|\\b${word}ing\\b`, 'i');
+      if (regex.test(normalizedContent)) {
+        return { 
+          flagged: true, 
+          reason: `Prohibited content (${category}): "${word}"` 
+        };
       }
     }
-    
-    // If we reach here, this is a regular unencrypted message
-    // Convert to lowercase for case-insensitive matching
-    const normalizedContent = content.toLowerCase();
-    
-    // Check against all categories of prohibited words
-    for (const [category, wordList] of Object.entries(prohibitedWords)) {
-      for (const word of wordList) {
-        // Check if the word is a whole word or part of a word
-        const regex = new RegExp(`\\b${word}\\b|\\b${word}s\\b|\\b${word}ing\\b`, 'i');
-        if (regex.test(normalizedContent)) {
-          return { 
-            flagged: true, 
-            reason: `Prohibited content (${category}): "${word}"` 
-          };
-        }
-      }
-    }
-    
-    // Check for multilingual prohibited words
-    for (const [language, wordList] of Object.entries(multilingualProhibitedWords)) {
-      for (const word of wordList) {
-        if (normalizedContent.includes(word)) {
-          return { 
-            flagged: true, 
-            reason: `Prohibited content (${language}): "${word}"` 
-          };
-        }
-      }
-    }
-    
-    return { flagged: false };
-  } catch (error) {
-    console.error('Error in checkMessageContent:', error);
-    return { flagged: false }; // Default to not flagged if there's an error
   }
+  
+  // Check for multilingual prohibited words
+  for (const [language, wordList] of Object.entries(multilingualProhibitedWords)) {
+    for (const word of wordList) {
+      if (normalizedContent.includes(word)) {
+        return { 
+          flagged: true, 
+          reason: `Prohibited content (${language}): "${word}"` 
+        };
+      }
+    }
+  }
+  
+  return { flagged: false };
 }
 
 /**

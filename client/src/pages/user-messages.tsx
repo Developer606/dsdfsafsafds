@@ -18,12 +18,6 @@ import { TypingIndicator } from "@/components/typing-indicator";
 import { apiRequest } from "@/lib/queryClient";
 import { useSocket } from "@/lib/socket-io-client";
 import { MessageBubble } from "@/components/message-bubble";
-import { 
-  getUserKeys, 
-  createEncryptedMessage, 
-  isEncryptedMessage,
-  decryptMessage 
-} from "@/lib/encryption";
 import { useMessageStatusTracker } from "@/lib/message-status-tracker";
 import {
   Dialog,
@@ -87,7 +81,6 @@ export default function UserMessages() {
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger" | "kakaotalk">("whatsapp");
-  const [encryptionEnabled, setEncryptionEnabled] = useState(false);
   
   // Query to get current user
   const { data: currentUser } = useQuery({
@@ -111,14 +104,7 @@ export default function UserMessages() {
           }
           throw new Error("Failed to fetch user");
         }
-        const userData = await response.json();
-        
-        // If we have a public key, enable encryption by default
-        if (userData?.publicKey) {
-          setEncryptionEnabled(true);
-        }
-        
-        return userData;
+        return await response.json();
       } catch (error) {
         console.error("Error fetching user:", error);
         toast({
@@ -131,30 +117,6 @@ export default function UserMessages() {
     },
     enabled: !!userId,
   });
-  
-  // Upload current user's public key if necessary
-  useEffect(() => {
-    if (currentUser) {
-      const { publicKey } = getUserKeys();
-      
-      // Upload public key to server
-      fetch('/api/user/public-key', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ publicKey })
-      }).then(response => {
-        if (!response.ok) {
-          console.error('Failed to upload public key');
-        } else {
-          console.log('Public key uploaded successfully');
-        }
-      }).catch(err => {
-        console.error('Error uploading public key:', err);
-      });
-    }
-  }, [currentUser]);
   
   // Query to get messages
   const { data: messagesData = { messages: [], pagination: { total: 0, page: 1, pages: 1, limit: 20 } }, isLoading: isLoadingMessages, refetch: refetchMessages } = useQuery({
@@ -727,7 +689,7 @@ export default function UserMessages() {
     return () => clearTimeout(typingTimer);
   }, [messageText, userId, socketManager]);
   
-  const sendMessage = async (e: React.FormEvent) => {
+  const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Check if we have text, image, or video content to send
@@ -743,55 +705,25 @@ export default function UserMessages() {
       return;
     }
     
-    try {
-      // Create message content including media data if present
-      // Always use JSON structure for all messages (text, image, video)
-      let messageContent: any = {};
-      
-      if (selectedImage) {
-        messageContent = { text: messageText, imageData: selectedImage };
-      } else if (selectedVideo) {
-        messageContent = { text: messageText, videoData: selectedVideo };
-      } else {
-        // Store text messages in JSON format as well
-        messageContent = { text: messageText };
-      }
-      
-      let content;
-      
-      // If encryption is enabled, encrypt the message
-      if (encryptionEnabled && otherUser?.publicKey) {
-        // Get our keys
-        const { secretKey } = getUserKeys();
-        
-        // Encrypt the message
-        const encryptedContent = createEncryptedMessage(
-          messageContent,
-          otherUser.publicKey,
-          secretKey
-        );
-        
-        content = JSON.stringify(encryptedContent);
-        console.log("Sending encrypted message");
-      } else {
-        // Send unencrypted message
-        content = JSON.stringify(messageContent);
-      }
-      
-      // Send via Socket.IO
-      if (socketManager.isConnected()) {
-        socketManager.sendMessage(userId, content);
-      } else {
-        // Fallback to API
-        sendMessageMutation.mutate(content);
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to encrypt or send message"
-      });
+    // Create message content including media data if present
+    // Always use JSON structure for all messages (text, image, video)
+    let content;
+    
+    if (selectedImage) {
+      content = JSON.stringify({ text: messageText, imageData: selectedImage });
+    } else if (selectedVideo) {
+      content = JSON.stringify({ text: messageText, videoData: selectedVideo });
+    } else {
+      // Store text messages in JSON format as well
+      content = JSON.stringify({ text: messageText });
+    }
+    
+    // Send via Socket.IO
+    if (socketManager.isConnected()) {
+      socketManager.sendMessage(userId, content);
+    } else {
+      // Fallback to API
+      sendMessageMutation.mutate(content);
     }
     
     // Reset form
@@ -1097,49 +1029,14 @@ export default function UserMessages() {
                       // Attempt to parse as JSON
                       const parsedContent = JSON.parse(message.content);
                       
-                      // Check if this is an encrypted message
-                      if (isEncryptedMessage(parsedContent)) {
-                        try {
-                          // Get keys for decryption
-                          const { secretKey } = getUserKeys();
-                          
-                          // Determine which key to use based on sender
-                          const senderPublicKey = isCurrentUser 
-                            ? getUserKeys().publicKey  // We sent this message
-                            : otherUser?.publicKey;    // Other user sent this message
-                              
-                          const recipientSecretKey = secretKey; // Our secret key
-                          
-                          if (senderPublicKey) {
-                            // Decrypt the message
-                            const decryptedContent = decryptMessage(
-                              parsedContent,
-                              senderPublicKey,
-                              recipientSecretKey
-                            );
-                            
-                            // Extract content from decrypted message
-                            messageContent = decryptedContent.text || '';
-                            imageData = decryptedContent.imageData || null;
-                            videoData = decryptedContent.videoData || null;
-                          } else {
-                            // Can't decrypt without sender's public key
-                            messageContent = "🔒 Encrypted message (Can't decrypt)";
-                          }
-                        } catch (decryptError) {
-                          console.error("Failed to decrypt message:", decryptError);
-                          messageContent = "🔒 Encrypted message (Decryption failed)";
-                        }
-                      } else {
-                        // Regular unencrypted JSON message
-                        messageContent = parsedContent.text || '';
-                        
-                        // Extract media data if present
-                        if (parsedContent.imageData) {
-                          imageData = parsedContent.imageData;
-                        } else if (parsedContent.videoData) {
-                          videoData = parsedContent.videoData;
-                        }
+                      // Extract the text content
+                      messageContent = parsedContent.text || '';
+                      
+                      // Extract media data if present
+                      if (parsedContent.imageData) {
+                        imageData = parsedContent.imageData;
+                      } else if (parsedContent.videoData) {
+                        videoData = parsedContent.videoData;
                       }
                     } catch (e) {
                       // For backward compatibility with older messages that weren't stored as JSON
@@ -1310,51 +1207,6 @@ export default function UserMessages() {
                   <rect width="14" height="14" x="3" y="5" rx="2" ry="2"></rect>
                 </svg>
               </Button>
-              
-              {/* Encryption toggle button */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setEncryptionEnabled(!encryptionEnabled)}
-                      className={cn(
-                        "h-12 w-12",
-                        chatStyle === "whatsapp"
-                          ? "rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
-                          : chatStyle === "messenger"
-                          ? "rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
-                          : chatStyle === "kakaotalk"
-                          ? "rounded-full hover:bg-pink-100 dark:hover:bg-pink-900/40"
-                          : "rounded-md hover:bg-gray-100 dark:hover:bg-slate-700",
-                        encryptionEnabled ? "text-green-500 dark:text-green-400" : "text-gray-400 dark:text-gray-600"
-                      )}
-                    >
-                      {encryptionEnabled ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                          <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
-                          <path d="M22 2 2 22"></path>
-                        </svg>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {otherUser?.publicKey ? (
-                      encryptionEnabled ? "End-to-end encryption enabled" : "Click to enable end-to-end encryption"
-                    ) : (
-                      "End-to-end encryption unavailable (recipient doesn't have a public key)"
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
               
               {/* Text input */}
               <Input
