@@ -1400,8 +1400,13 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       }
       
       // Update the user's public key
-      await storage.updateUser(req.user.id, { publicKey });
+      const success = await storage.updateUser(req.user.id, { publicKey });
       
+      if (!success) {
+        return res.status(500).json({ error: "Failed to update public key" });
+      }
+      
+      console.log(`User ${req.user.id} updated their public key for E2E encryption`);
       res.json({ success: true });
     } catch (error) {
       console.error("Error setting user public key:", error);
