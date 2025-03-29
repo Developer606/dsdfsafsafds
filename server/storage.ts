@@ -144,6 +144,14 @@ export interface IStorage {
     pages: number 
   }>;
   updateMessageStatus(messageId: number, status: MessageStatus): Promise<void>;
+  
+  /**
+   * Update status for multiple messages at once (optimization for high throughput)
+   * @param messageIds Array of message IDs to update
+   * @param status New message status
+   */
+  updateMessageStatusBulk?(messageIds: number[], status: MessageStatus): Promise<void>;
+  
   getUserConversations(userId: number): Promise<UserConversation[]>;
   getUnreadMessageCount(userId: number): Promise<number>;
   createConversation(user1Id: number, user2Id: number): Promise<UserConversation>;
@@ -344,6 +352,74 @@ export class DatabaseStorage implements IStorage {
             sql`${userConversations.user1Id} = ${user1Id} AND ${userConversations.user2Id} = ${user2Id}`
           );
       }
+    }
+  }
+  
+  /**
+   * Update status for multiple messages at once - optimized for high throughput
+   * @param messageIds Array of message IDs to update
+   * @param status New message status
+   */
+  async updateMessageStatusBulk(messageIds: number[], status: MessageStatus): Promise<void> {
+    if (!messageIds.length) return;
+    
+    // Import the messages database to avoid circular imports
+    const { messagesDb } = await import("./messages-db");
+    
+    // Create a single SQL query to update all messages at once
+    // This is much more efficient than individual updates for high throughput
+    const placeholders = messageIds.map(() => '?').join(',');
+    const query = `UPDATE user_messages SET status = ? WHERE id IN (${placeholders})`;
+    
+    try {
+      // Use raw query for maximum performance with large batches
+      await messagesDb.run(
+        sql.raw(query), 
+        [status, ...messageIds]
+      );
+      
+      // Only handle read status updates for conversations if needed
+      if (status === "read") {
+        // Get all the messages we just updated
+        const messages = await messagesDb
+          .select()
+          .from(userMessages)
+          .where(sql`${userMessages.id} IN (${messageIds.join(',')})`);
+        
+        // Group by conversation to minimize conversation updates
+        const conversationUpdates = new Map<string, { 
+          user1Id: number, 
+          user2Id: number, 
+          readerId: number 
+        }>();
+        
+        for (const message of messages) {
+          const user1Id = Math.min(message.senderId, message.receiverId);
+          const user2Id = Math.max(message.senderId, message.receiverId);
+          const readerId = message.receiverId;
+          const key = `${user1Id}-${user2Id}`;
+          
+          if (!conversationUpdates.has(key)) {
+            conversationUpdates.set(key, { user1Id, user2Id, readerId });
+          }
+        }
+        
+        // Update each affected conversation once
+        for (const { user1Id, user2Id, readerId } of conversationUpdates.values()) {
+          await messagesDb
+            .update(userConversations)
+            .set({
+              unreadCountUser1: readerId === user1Id ? 0 : userConversations.unreadCountUser1,
+              unreadCountUser2: readerId === user2Id ? 0 : userConversations.unreadCountUser2,
+            })
+            .where(
+              sql`${userConversations.user1Id} = ${user1Id} AND ${userConversations.user2Id} = ${user2Id}`
+            );
+        }
+      }
+    } catch (error) {
+      console.error('Error updating message statuses in bulk:', error);
+      throw error;
     }
   }
   

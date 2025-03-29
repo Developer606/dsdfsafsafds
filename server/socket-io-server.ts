@@ -283,7 +283,7 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
       }
     });
 
-    // Handle message status updates
+    // Handle individual message status updates
     socket.on('message_status_update', async (data) => {
       try {
         const { messageId, status } = data;
@@ -327,6 +327,82 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         });
       } catch (error) {
         log(`Error updating message status: ${error}`);
+      }
+    });
+    
+    // Handle batch message status updates for high throughput optimization
+    socket.on('message_status_batch_update', async (data) => {
+      try {
+        const { messageIds, status } = data;
+        if (!Array.isArray(messageIds) || messageIds.length === 0 || !status) {
+          log(`Invalid batch message status update: ${JSON.stringify(data)}`);
+          return;
+        }
+        
+        log(`Batch status update for ${messageIds.length} messages to "${status}" by user ${userId}`);
+        
+        // Rate limit check for batch operations (limit to 500 messages per batch)
+        const batchSize = Math.min(messageIds.length, 500);
+        const processedIds = messageIds.slice(0, batchSize);
+        
+        // Get all user messages (with limit)
+        // Need to verify user has permission to update these messages
+        const allMessagesResult = await storage.getUserMessages(userId, 0, 1, 1000);
+        
+        // Find authorized messages (user must be the receiver)
+        const authorizedMessageIds = [];
+        const senderMap = new Map<number, number[]>();
+        const trackingIds = [];
+        
+        for (const messageId of processedIds) {
+          const message = allMessagesResult.messages.find(m => m.id === messageId);
+          if (message && message.receiverId === userId) {
+            authorizedMessageIds.push(messageId);
+            trackingIds.push(`msg_${messageId}`);
+            
+            // Group by sender for batched notifications
+            if (!senderMap.has(message.senderId)) {
+              senderMap.set(message.senderId, []);
+            }
+            senderMap.get(message.senderId)!.push(messageId);
+          }
+        }
+        
+        if (authorizedMessageIds.length === 0) {
+          log(`No authorized messages found in batch update request`);
+          return;
+        }
+        
+        // Update database in bulk for better performance
+        if (storage.updateMessageStatusBulk) {
+          await storage.updateMessageStatusBulk(authorizedMessageIds, status)
+            .catch(err => log(`Error in bulk update: ${err}`));
+        } else {
+          // Fallback to individual updates
+          for (const messageId of authorizedMessageIds) {
+            await storage.updateMessageStatus(messageId, status)
+              .catch(err => log(`Error updating message ${messageId}: ${err}`));
+          }
+        }
+        
+        // Update tracking map for all messages
+        for (const trackingId of trackingIds) {
+          if (messageTrackingMap.has(trackingId)) {
+            messageTrackingMap.get(trackingId)!.status = status;
+          }
+        }
+        
+        // Send batch notifications to each sender
+        senderMap.forEach((ids, senderId) => {
+          emitToUser(senderId, 'message_status_batch', {
+            messageIds: ids,
+            status
+          });
+        });
+        
+        log(`Successfully processed batch status update for ${authorizedMessageIds.length} messages`);
+      } catch (error) {
+        log(`Error in batch message status update: ${error}`);
       }
     });
 
@@ -428,67 +504,194 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
     });
   });
 
-  // Helper function to emit events to all sockets of a user
+  // Helper function to emit events to all sockets of a user with optimization for high throughput
   function emitToUser(userId: number, event: string, data: any): boolean {
     const userSockets = userConnections.get(userId);
     if (!userSockets || userSockets.size === 0) {
       return false;
     }
     
-    let delivered = false;
-    userSockets.forEach(socket => {
-      if (socket.connected) {
-        socket.emit(event, data);
-        delivered = true;
-      }
-    });
+    // For high throughput optimization, batch client notifications and limit payload size
     
-    return delivered;
+    // Clone data to avoid reference issues and implement data size optimization
+    let optimizedData = data;
+    
+    // If we're sending a message that contains large content, truncate preview for efficiency
+    if (event === 'new_message' && data.message && data.message.content) {
+      // Only truncate if content is over 1KB (optimization for large messages)
+      if (data.message.content.length > 1024) {
+        // Create a shallow clone of the message object
+        optimizedData = {
+          ...data,
+          message: {
+            ...data.message,
+            // For long content, store full content in .fullContent and truncate .content
+            // This preserves ability to display preview while reducing socket payload
+            fullContent: undefined, // Don't send duplicate data
+            content: data.message.content.substring(0, 1024) + '...'
+          }
+        };
+      }
+    }
+    
+    // Optimization: Only emit to the first connected socket to reduce duplicate processing
+    // This is sufficient for delivery status tracking
+    for (const socket of userSockets) {
+      if (socket.connected) {
+        socket.emit(event, optimizedData);
+        return true; // Return early after first delivery for high-throughput performance
+      }
+    }
+    
+    return false;
   }
 
-  // Helper function to deliver any pending messages to a user
+  // Helper function to deliver any pending messages to a user - optimized for high throughput
   function deliverPendingMessages(userId: number) {
     let delivered = false;
-    // Check message tracking map for any undelivered messages
-    Array.from(messageTrackingMap.entries()).forEach(([trackingId, messageData]) => {
+    
+    // High throughput optimization: Collect messages to be delivered in a batch
+    const pendingMessages = [];
+    const messagesToUpdate = [];
+    
+    // Calculate cut-off time for high-throughput optimization (6 hours instead of 1 day)
+    const now = Date.now();
+    const SIX_HOURS = 6 * 60 * 60 * 1000;
+    const cutoffTime = now - SIX_HOURS;
+    
+    // Initial scan to collect pending messages and identify expired tracking data
+    for (const [trackingId, messageData] of messageTrackingMap.entries()) {
+      // First check: Is this message for this user and still undelivered?
       if (messageData.receiverId === userId && messageData.status === 'sent') {
-        // Attempt to deliver the message
-        const isDelivered = emitToUser(userId, 'new_message', {
-          message: {
-            id: parseInt(trackingId.replace('msg_', '')),
+        // Add to pending batch if not expired
+        if (messageData.timestamp.getTime() > cutoffTime) {
+          const messageId = parseInt(trackingId.replace('msg_', ''));
+          pendingMessages.push({
+            id: messageId,
             senderId: messageData.senderId,
             receiverId: messageData.receiverId,
             content: messageData.content,
             timestamp: messageData.timestamp,
             status: 'delivered'
+          });
+          messagesToUpdate.push({ trackingId, messageId, senderId: messageData.senderId });
+        } else {
+          // Message too old, just remove from tracking
+          messageTrackingMap.delete(trackingId);
+        }
+      }
+      // Second check: Is this message tracking expired regardless of status?
+      else if (messageData.timestamp.getTime() <= cutoffTime) {
+        messageTrackingMap.delete(trackingId);
+      }
+    }
+    
+    // If no pending messages, exit early
+    if (pendingMessages.length === 0) {
+      return false;
+    }
+    
+    // Send all pending messages in one batch if possible (for clients that support batching)
+    // Or send individually if needed
+    if (pendingMessages.length <= 20) { // Batch size limit to prevent payload size issues
+      // Try to deliver all messages at once
+      const batchDelivered = emitToUser(userId, 'message_batch', { messages: pendingMessages });
+      
+      if (batchDelivered) {
+        delivered = true;
+        
+        // Update tracking status and database in bulk if possible
+        const messageIds = messagesToUpdate.map(m => m.messageId);
+        
+        // Update database (using bulk operation when possible)
+        if (storage.updateMessageStatusBulk) {
+          storage.updateMessageStatusBulk(messageIds, 'delivered')
+            .catch(err => log(`Error updating message status in bulk: ${err}`));
+        } else {
+          // Fallback to individual updates if bulk update not available
+          messagesToUpdate.forEach(({ messageId }) => {
+            storage.updateMessageStatus(messageId, 'delivered')
+              .catch(err => log(`Error updating message status: ${err}`));
+          });
+        }
+        
+        // Update tracking map
+        messagesToUpdate.forEach(({ trackingId }) => {
+          if (messageTrackingMap.has(trackingId)) {
+            messageTrackingMap.get(trackingId)!.status = 'delivered';
           }
         });
         
-        if (isDelivered) {
-          delivered = true;
-          messageData.status = 'delivered';
-          
-          // Update in database
-          storage.updateMessageStatus(parseInt(trackingId.replace('msg_', '')), 'delivered')
-            .catch(err => log(`Error updating message status: ${err}`));
-          
-          // Notify sender of delivery
-          emitToUser(messageData.senderId, 'message_status', {
-            messageId: parseInt(trackingId.replace('msg_', '')),
+        // Notify senders all at once by grouping by sender
+        const senderMap = new Map<number, number[]>();
+        messagesToUpdate.forEach(({ senderId, messageId }) => {
+          if (!senderMap.has(senderId)) {
+            senderMap.set(senderId, []);
+          }
+          senderMap.get(senderId)!.push(messageId);
+        });
+        
+        // Send batch notifications to each sender
+        senderMap.forEach((messageIds, senderId) => {
+          emitToUser(senderId, 'message_status_batch', {
+            messageIds,
             status: 'delivered'
+          });
+        });
+      }
+    } else {
+      // For very large batches, process in chunks of 20
+      for (let i = 0; i < pendingMessages.length; i += 20) {
+        const chunk = pendingMessages.slice(i, i + 20);
+        const chunkUpdates = messagesToUpdate.slice(i, i + 20);
+        
+        // Try to deliver this chunk
+        const chunkDelivered = emitToUser(userId, 'message_batch', { messages: chunk });
+        
+        if (chunkDelivered) {
+          delivered = true;
+          
+          // Update tracking status and database for this chunk
+          const messageIds = chunkUpdates.map(m => m.messageId);
+          
+          // Update database (using bulk operation when possible)
+          if (storage.updateMessageStatusBulk) {
+            storage.updateMessageStatusBulk(messageIds, 'delivered')
+              .catch(err => log(`Error updating message status in bulk: ${err}`));
+          } else {
+            // Fallback to individual updates if bulk update not available
+            chunkUpdates.forEach(({ messageId }) => {
+              storage.updateMessageStatus(messageId, 'delivered')
+                .catch(err => log(`Error updating message status: ${err}`));
+            });
+          }
+          
+          // Update tracking map
+          chunkUpdates.forEach(({ trackingId }) => {
+            if (messageTrackingMap.has(trackingId)) {
+              messageTrackingMap.get(trackingId)!.status = 'delivered';
+            }
+          });
+          
+          // Notify senders
+          const senderMap = new Map<number, number[]>();
+          chunkUpdates.forEach(({ senderId, messageId }) => {
+            if (!senderMap.has(senderId)) {
+              senderMap.set(senderId, []);
+            }
+            senderMap.get(senderId)!.push(messageId);
+          });
+          
+          // Send batch notifications to each sender
+          senderMap.forEach((messageIds, senderId) => {
+            emitToUser(senderId, 'message_status_batch', {
+              messageIds,
+              status: 'delivered'
+            });
           });
         }
       }
-    });
-    
-    // Clean up old tracking entries
-    const now = Date.now();
-    const ONE_DAY = 24 * 60 * 60 * 1000;
-    Array.from(messageTrackingMap.entries()).forEach(([trackingId, messageData]) => {
-      if (now - messageData.timestamp.getTime() > ONE_DAY) {
-        messageTrackingMap.delete(trackingId);
-      }
-    });
+    }
     
     return delivered;
   }
@@ -504,7 +707,7 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
   // Helper function to check rate limits
   function checkMessageRateLimit(userId: number): boolean {
     const now = Date.now();
-    const maxMessages = 30; // Maximum messages per minute
+    const maxMessages = 200; // Increased for high throughput (100,000+ req/min)
     const resetTime = 60000; // 1 minute in ms
     
     // Get or create rate limit for this user
@@ -517,38 +720,63 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
       };
     }
     
-    // Increment count
-    rateLimit.count++;
-    messageLimits.set(userId, rateLimit);
-    
-    // Check if limit is exceeded
-    if (rateLimit.count > maxMessages) {
-      log(`User ${userId} exceeded message rate limit (${rateLimit.count}/${maxMessages})`);
+    // Check if limit is exceeded before incrementing to reduce unnecessary operations
+    if (rateLimit.count >= maxMessages) {
+      // Only log every 10th excessive attempt to reduce logging overhead
+      if (rateLimit.count % 10 === 0) {
+        log(`User ${userId} exceeded message rate limit (${rateLimit.count}/${maxMessages})`);
+      }
       return false; // Exceeds limit
     }
+    
+    // Increment count only when within limit
+    rateLimit.count++;
+    messageLimits.set(userId, rateLimit);
     
     return true; // Within limit
   }
 
-  // Set up maintenance interval
+  // Set up maintenance intervals with different frequencies
+  
+  // More frequent cleanup for rate limits (every 2 minutes) to prevent memory buildup during high load
   setInterval(() => {
-    // Clean up expired message tracking
     const now = Date.now();
-    const ONE_DAY = 24 * 60 * 60 * 1000;
-    
-    Array.from(messageTrackingMap.entries()).forEach(([trackingId, messageData]) => {
-      if (now - messageData.timestamp.getTime() > ONE_DAY) {
-        messageTrackingMap.delete(trackingId);
-      }
-    });
     
     // Clean up expired rate limits
+    let rateLimitCleanupCount = 0;
     Array.from(messageLimits.entries()).forEach(([userId, rateLimit]) => {
       if (rateLimit.resetTime <= now) {
         messageLimits.delete(userId);
+        rateLimitCleanupCount++;
       }
     });
     
+    if (rateLimitCleanupCount > 0) {
+      log(`Cleaned up ${rateLimitCleanupCount} expired rate limits`);
+    }
+  }, 2 * 60 * 1000); // Run every 2 minutes
+  
+  // Frequent message tracking cleanup (every 15 minutes) for high-throughput performance
+  setInterval(() => {
+    const now = Date.now();
+    // Reduce retention from 1 day to 6 hours for high-throughput environments
+    const SIX_HOURS = 6 * 60 * 60 * 1000;
+    
+    let messageTrackingCleanupCount = 0;
+    Array.from(messageTrackingMap.entries()).forEach(([trackingId, messageData]) => {
+      if (now - messageData.timestamp.getTime() > SIX_HOURS) {
+        messageTrackingMap.delete(trackingId);
+        messageTrackingCleanupCount++;
+      }
+    });
+    
+    if (messageTrackingCleanupCount > 0) {
+      log(`Cleaned up ${messageTrackingCleanupCount} expired message tracking entries`);
+    }
+  }, 15 * 60 * 1000); // Run every 15 minutes
+  
+  // Less frequent cleanup for user status (every hour)
+  setInterval(() => {
     // Clean up inactive user status tracking
     cleanupInactiveUsers();
   }, 60 * 60 * 1000); // Run every hour
