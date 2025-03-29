@@ -281,13 +281,46 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         return;
       }
       
-      // Create message in database
+      // Import encryption utilities and config
+      const { encryptMessage } = await import("./crypto-utils");
+      const { config } = await import("./config");
+      
+      // Check message content for prohibited words - we check BEFORE encryption
+      const { checkMessageContent, flagMessage } = await import("./content-moderation");
+      const contentCheck = checkMessageContent(content);
+      
+      // Encrypt the content if encryption is enabled
+      let messageContent = content;
+      if (config.encryptMessages) {
+        messageContent = encryptMessage(content);
+      }
+      
+      // Create message in database with possibly encrypted content
       const newMessage = await storage.createUserMessage({
         senderId,
         receiverId,
-        content,
+        content: messageContent,
         status: "sent"
       });
+      
+      // If the message is flagged, handle moderation
+      if (contentCheck.flagged) {
+        console.log(`[WebSocket] FLAGGED MESSAGE from user ${senderId}: ${contentCheck.reason}`);
+        
+        // Flag the message in the moderation system
+        try {
+          await flagMessage(
+            newMessage.id,
+            senderId,
+            receiverId,
+            content, // Store original plaintext for admin review
+            contentCheck.reason || 'Prohibited content',
+            messageContent // Also store the encrypted version for reference
+          );
+        } catch (err) {
+          console.error(`Error flagging message: ${err}`);
+        }
+      }
       
       console.log("Created new message in database:", newMessage);
       
@@ -820,8 +853,38 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         });
       }
       
+      // Import decryption utility
+      const { decryptMessage, isEncryptedMessage } = await import("./crypto-utils");
+      
       // Get messages between users
       const result = await storage.getUserMessages(user1Id, user2Id, { page, limit });
+      
+      // Decrypt message content if needed for admin viewing
+      const decryptedMessages = result.messages.map(message => {
+        let decryptedContent = message.content;
+        let isEncrypted = false;
+        
+        // Check if this message appears to be encrypted
+        if (isEncryptedMessage(message.content)) {
+          isEncrypted = true;
+          try {
+            decryptedContent = decryptMessage(message.content);
+          } catch (err) {
+            console.error(`[Admin] Error decrypting message ${message.id}:`, err);
+            // If decryption fails, keep the original content
+          }
+        }
+        
+        return {
+          ...message,
+          content: decryptedContent,
+          originalContent: message.content,
+          isEncrypted
+        };
+      });
+      
+      // Replace the messages array with the decrypted version
+      result.messages = decryptedMessages;
       
       // Get user details for both participants
       const user1 = await storage.getUser(user1Id);
@@ -2587,8 +2650,34 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const conversation = await storage.getConversationBetweenUsers(minUserId, maxUserId);
       const isBlocked = conversation?.isBlocked || false;
       
+      // Import decryption utility
+      const { decryptMessage, isEncryptedMessage } = await import("./crypto-utils");
+      
       // Get paginated messages
       const result = await storage.getUserMessages(req.user.id, otherUserId, { page, limit });
+      
+      // Decrypt message content if needed
+      const decryptedMessages = result.messages.map(message => {
+        let decryptedContent = message.content;
+        
+        // Check if this message appears to be encrypted before attempting decryption
+        if (isEncryptedMessage(message.content)) {
+          try {
+            decryptedContent = decryptMessage(message.content);
+          } catch (err) {
+            console.error(`Error decrypting message ${message.id}:`, err);
+            // If decryption fails, keep the original content
+          }
+        }
+        
+        return {
+          ...message,
+          content: decryptedContent
+        };
+      });
+      
+      // Replace the messages array with the decrypted version
+      result.messages = decryptedMessages;
       
       // Mark messages as read when fetched
       for (const message of result.messages) {
@@ -2637,30 +2726,44 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         });
       }
       
-      // Check message content for prohibited words
-      const { checkMessageContent, flagMessage } = await import("./content-moderation");
-      const contentCheck = checkMessageContent(content);
+      // Import encryption utilities
+      const { encryptMessage } = await import("./crypto-utils");
+      const { config } = await import("./config");
       
-      // Create message in database
+      // Store the original content for moderation purposes
+      const originalContent = content;
+      
+      // Check message content for prohibited words - we check BEFORE encryption
+      const { checkMessageContent, flagMessage } = await import("./content-moderation");
+      const contentCheck = checkMessageContent(originalContent);
+      
+      // Encrypt the content if encryption is enabled
+      let messageContent = originalContent;
+      if (config.encryptMessages) {
+        messageContent = encryptMessage(originalContent);
+      }
+      
+      // Create message in database with encrypted content
       const message = await storage.createUserMessage({
         senderId: req.user.id,
         receiverId,
-        content,
+        content: messageContent,
         status: "sent"
       });
       
-      // If flagged, handle content moderation
+      // If flagged, handle content moderation - store the original unencrypted content for admin review
       if (contentCheck.flagged) {
         console.log(`[REST API] FLAGGED MESSAGE from user ${req.user.id}: ${contentCheck.reason}`);
         
-        // Flag the message in the moderation system
+        // Flag the message in the moderation system - passing in the plaintext content
         try {
           await flagMessage(
             message.id,
             req.user.id,
             receiverId,
-            content,
-            contentCheck.reason || 'Prohibited content'
+            originalContent, // Store original plaintext for easy admin review
+            contentCheck.reason || 'Prohibited content',
+            messageContent // Also store the encrypted version for reference
           );
           
           // Notify admins about flagged content via socket if available
