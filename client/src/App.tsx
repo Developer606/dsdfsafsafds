@@ -15,7 +15,6 @@ import UserMessages from "@/pages/user-messages";
 import Conversations from "@/pages/conversations";
 import { ComplaintsSection } from "@/components/complaints-section";
 import { FeedbackSection } from "@/components/feedback-section";
-import { TestTypingIndicator } from "@/components/test-typing-indicator";
 import { ProtectedRoute } from "./lib/protected-route";
 import { ThemeProvider } from "./lib/theme-context";
 
@@ -25,7 +24,6 @@ function Router() {
       {/* Public routes */}
       <Route path="/" component={LandingPage} />
       <Route path="/admin/login" component={AdminLogin} />
-      <Route path="/test-typing" component={TestTypingIndicator} />
 
       {/* Protected routes that require authentication */}
       <ProtectedRoute

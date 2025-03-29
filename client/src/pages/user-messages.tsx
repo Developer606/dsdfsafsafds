@@ -87,7 +87,7 @@ export default function UserMessages() {
   // State for the encryption setup dialog
   const [showEncryptionDialog, setShowEncryptionDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
-  const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger" | "kakao">("whatsapp");
+  const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger" | "kakaotalk">("whatsapp");
   
   // Query to get current user
   const { data: currentUser } = useQuery({
@@ -561,8 +561,8 @@ export default function UserMessages() {
         case "chatgpt":
           return "messenger";
         case "messenger":
-          return "kakao";
-        case "kakao":
+          return "kakaotalk";
+        case "kakaotalk":
           return "whatsapp";
         default:
           return "whatsapp";
@@ -819,7 +819,7 @@ export default function UserMessages() {
         ? "bg-[#efeae2] dark:bg-slate-900"
         : chatStyle === "messenger"
           ? "bg-white dark:bg-slate-900"
-          : chatStyle === "kakao"
+          : chatStyle === "kakaotalk"
             ? "bg-[#ffd9d9] dark:bg-[#ffc0c0]"
             : "bg-white dark:bg-slate-900"
     )}>
@@ -830,7 +830,7 @@ export default function UserMessages() {
           ? "bg-[#008069] dark:bg-slate-900 border-[#008069] dark:border-gray-800"
           : chatStyle === "messenger"
           ? "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
-          : chatStyle === "kakao"
+          : chatStyle === "kakaotalk"
           ? "bg-[#faa7a7] dark:bg-[#ff9a9a] border-[#faa7a7] dark:border-[#ff9a9a]"
           : "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
       )}>
@@ -907,7 +907,7 @@ export default function UserMessages() {
                       ? "text-white/90"
                       : chatStyle === "messenger"
                       ? "text-[#0084ff] dark:text-blue-400"
-                      : chatStyle === "kakao"
+                      : chatStyle === "kakaotalk"
                       ? "text-pink-800 dark:text-pink-200"
                       : "text-gray-600 dark:text-gray-400"
                   )}>
@@ -915,7 +915,7 @@ export default function UserMessages() {
                       ? "WhatsApp Style"
                       : chatStyle === "messenger"
                       ? "Messenger Style"
-                      : chatStyle === "kakao"
+                      : chatStyle === "kakaotalk"
                       ? "KakaoTalk Style"
                       : "ChatGPT Style"}
                   </span>
@@ -1013,7 +1013,7 @@ export default function UserMessages() {
           ? "bg-[#efeae2] dark:bg-slate-900"
           : chatStyle === "messenger"
           ? "bg-white dark:bg-slate-900"
-          : chatStyle === "kakao"
+          : chatStyle === "kakaotalk"
           ? "bg-[#ffd9d9] dark:bg-[#ffc0c0]"
           : "bg-white dark:bg-slate-900"
       )}>
@@ -1147,8 +1147,15 @@ export default function UserMessages() {
             exit={{ opacity: 0 }}
             className="flex justify-start"
           >
-            <div className="p-3 shadow-sm">
-              <TypingIndicator chatStyle={chatStyle} />
+            <div className={cn(
+              "p-3 shadow-sm",
+              chatStyle === "whatsapp"
+                ? "bg-white dark:bg-slate-800 rounded-tl-md rounded-tr-2xl rounded-br-2xl"
+                : chatStyle === "messenger"
+                ? "bg-gray-100 dark:bg-slate-800 rounded-full"
+                : "bg-white dark:bg-slate-800 rounded-lg"
+            )}>
+              <TypingIndicator />
             </div>
           </motion.div>
         )}
@@ -1163,7 +1170,7 @@ export default function UserMessages() {
           ? "bg-[#f0f2f5] dark:bg-slate-800 border-[#f0f2f5] dark:border-gray-700"
           : chatStyle === "messenger"
           ? "bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700"
-          : chatStyle === "kakao"
+          : chatStyle === "kakaotalk"
           ? "bg-[#fcc8c8] dark:bg-[#ffb5b5] border-[#ffb5b5] dark:border-[#ffaaaa]"
           : "bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700"
       )}>
@@ -1245,7 +1252,7 @@ export default function UserMessages() {
                     ? "rounded-full text-[#008069] hover:bg-gray-100 dark:text-green-500 dark:hover:bg-slate-700"
                     : chatStyle === "messenger"
                     ? "rounded-full text-[#0084ff] hover:bg-gray-100 dark:text-blue-500 dark:hover:bg-slate-700"
-                    : chatStyle === "kakao"
+                    : chatStyle === "kakaotalk"
                     ? "rounded-full text-pink-700 hover:bg-pink-100 dark:text-pink-400 dark:hover:bg-pink-900/40"
                     : "rounded-md text-purple-500 hover:bg-gray-100 dark:hover:bg-slate-700"
                 )}
@@ -1265,7 +1272,7 @@ export default function UserMessages() {
                     ? "rounded-full text-[#008069] hover:bg-gray-100 dark:text-green-500 dark:hover:bg-slate-700"
                     : chatStyle === "messenger"
                     ? "rounded-full text-[#0084ff] hover:bg-gray-100 dark:text-blue-500 dark:hover:bg-slate-700"
-                    : chatStyle === "kakao"
+                    : chatStyle === "kakaotalk"
                     ? "rounded-full text-pink-700 hover:bg-pink-100 dark:text-pink-400 dark:hover:bg-pink-900/40"
                     : "rounded-md text-purple-500 hover:bg-gray-100 dark:hover:bg-slate-700"
                 )}
@@ -1288,7 +1295,7 @@ export default function UserMessages() {
                     ? "rounded-full bg-white dark:bg-slate-700"
                     : chatStyle === "messenger"
                     ? "rounded-full bg-gray-100 dark:bg-slate-700"
-                    : chatStyle === "kakao"
+                    : chatStyle === "kakaotalk"
                     ? "rounded-md bg-white dark:bg-slate-700"
                     : "rounded-md bg-white dark:bg-slate-700"
                 )}
@@ -1304,7 +1311,7 @@ export default function UserMessages() {
                     ? "rounded-full bg-[#008069] hover:bg-[#00705c]"
                     : chatStyle === "messenger"
                     ? "rounded-full bg-[#0084ff] hover:bg-[#0070db]"
-                    : chatStyle === "kakao"
+                    : chatStyle === "kakaotalk"
                     ? "rounded-full bg-gradient-to-r from-pink-500 to-pink-700 hover:from-pink-600 hover:to-pink-800"
                     : "rounded-md bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
                 )}
