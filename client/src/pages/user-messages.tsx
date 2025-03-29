@@ -408,7 +408,7 @@ export default function UserMessages() {
     if (currentUser && messages.length > 0 && socketManager) {
       // Only process messages that are from the other user and not already read
       const unreadMessages = messages.filter(
-        message => 
+        (message: UserMessage) => 
           message.senderId === parseInt(userId as string) && 
           message.receiverId === currentUser.id && 
           message.status !== "read"
@@ -418,7 +418,7 @@ export default function UserMessages() {
         console.log(`Marking ${unreadMessages.length} messages as read`);
         
         // Mark each message as read
-        unreadMessages.forEach(message => {
+        unreadMessages.forEach((message: UserMessage) => {
           socketManager.updateMessageStatus(message.id, "read");
         });
       }
@@ -905,18 +905,26 @@ export default function UserMessages() {
               const isCurrentUser = currentUser && message.senderId === currentUser.id;
               const hasStatusAnimation = shouldAnimateStatus(message.id);
               
+              // For debugging purposes
+              if (!isCurrentUser) {
+                console.log("Other user data:", { 
+                  avatarUrl: otherUser?.avatarUrl, 
+                  userName: otherUser?.fullName || otherUser?.username 
+                });
+              }
+              
               return (
                 <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} ${chatStyle === "chatgpt" ? "w-full" : ""}`}>
                   <MessageBubble
-                    id={message.id}
+                    id={message.id.toString()}
                     content={message.content}
                     timestamp={message.timestamp}
                     status={message.status}
                     isCurrentUser={isCurrentUser}
                     hasDeliveryAnimation={hasStatusAnimation}
                     chatStyle={chatStyle}
-                    avatar={isCurrentUser ? undefined : otherUser.avatarUrl}
-                    userName={isCurrentUser ? undefined : (otherUser.fullName || otherUser.username)}
+                    avatar={isCurrentUser ? undefined : (otherUser?.avatarUrl || '')}
+                    userName={isCurrentUser ? undefined : (otherUser?.fullName || otherUser?.username)}
                   />
                 </div>
               );
