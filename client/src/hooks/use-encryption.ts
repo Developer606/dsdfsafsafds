@@ -1,185 +1,369 @@
 import { useState, useEffect, useCallback } from 'react';
-import * as encryptionClient from '@/lib/encryption-client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  generateKeyPair,
+  generateSymmetricKey,
+  importPublicKey,
+  importPrivateKey,
+  importSymmetricKey,
+  encryptSymmetricKey,
+  decryptSymmetricKey,
+  encryptMessage,
+  decryptMessage,
+  isMessageEncrypted
+} from '@/lib/encryption-client';
 import { useToast } from '@/hooks/use-toast';
 
-/**
- * Hook for managing message encryption in conversations
- * @param userId Current user ID
- * @param otherUserId ID of the conversation partner
- * @returns Encryption utilities and state
- */
-export function useEncryption(userId: number, otherUserId: number) {
+// Local storage keys
+const PRIVATE_KEY_STORAGE_KEY = 'encryption_private_key';
+const PUBLIC_KEY_STORAGE_KEY = 'encryption_public_key';
+
+interface UseEncryptionOptions {
+  userId: number;
+  otherUserId: number;
+}
+
+export function useEncryption({ userId, otherUserId }: UseEncryptionOptions) {
+  const [initialized, setInitialized] = useState(false);
+  const [hasKeys, setHasKeys] = useState(false);
   const [isEncryptionEnabled, setIsEncryptionEnabled] = useState(false);
-  const [isSettingUpEncryption, setIsSettingUpEncryption] = useState(false);
-  const [conversationKey, setConversationKey] = useState<CryptoKey | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [privateKey, setPrivateKey] = useState<string | null>(null);
+  const [publicKey, setPublicKey] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Check if encryption is enabled for this conversation
-  useEffect(() => {
-    async function checkEncryptionStatus() {
-      if (!userId || !otherUserId) return;
-      
-      try {
-        const response = await fetch(`/api/conversations/check-encryption?user1Id=${userId}&user2Id=${otherUserId}`);
-        const data = await response.json();
-        
-        if (data.encryptionEnabled) {
-          setIsEncryptionEnabled(true);
-          
-          // Try to get and import the conversation key
-          try {
-            // Get the private key from storage
-            const privateKeyString = localStorage.getItem(`privateKey_${userId}`);
-            if (!privateKeyString) {
-              console.error('Private key not found');
-              return;
-            }
-            
-            // Import the private key
-            const privateKey = await encryptionClient.importPrivateKey(privateKeyString);
-            
-            // Get the encrypted conversation key
-            const response = await fetch(`/api/conversations/key?userId=${userId}&otherUserId=${otherUserId}`);
-            const { encryptedKey } = await response.json();
-            
-            // Decrypt the conversation key
-            const decryptedKeyString = await encryptionClient.decryptWithPrivateKey(
-              encryptedKey,
-              privateKey
-            );
-            
-            // Import the symmetric key
-            const symmetricKey = await encryptionClient.importSymmetricKey(decryptedKeyString);
-            setConversationKey(symmetricKey);
-          } catch (error) {
-            console.error('Error importing conversation key:', error);
-          }
-        }
-      } catch (error) {
-        console.error('Error checking encryption status:', error);
+  // Check if the conversation has encryption enabled
+  const { data: encryptionStatus, isLoading: isCheckingEncryption } = useQuery({
+    queryKey: ['/api/encryption/check-encryption', otherUserId],
+    queryFn: async () => {
+      const response = await fetch(`/api/encryption/check-encryption?userId=${otherUserId}`);
+      if (!response.ok) {
+        throw new Error('Failed to check encryption status');
       }
-    }
-    
-    checkEncryptionStatus();
-  }, [userId, otherUserId]);
+      return response.json();
+    },
+    enabled: initialized && !!userId && !!otherUserId,
+  });
 
-  // Function to enable encryption for a conversation
-  const enableEncryption = useCallback(async () => {
-    if (!userId || !otherUserId || isEncryptionEnabled) return;
-    
-    setIsSettingUpEncryption(true);
-    
-    try {
-      // Generate a key pair for the user
-      const keyPair = await encryptionClient.generateKeyPair();
-      const publicKeyString = await encryptionClient.exportPublicKey(keyPair.publicKey);
-      const privateKeyString = await encryptionClient.exportPrivateKey(keyPair.privateKey);
-      
-      // Store private key securely
-      localStorage.setItem(`privateKey_${userId}`, privateKeyString);
-      
-      // Send public key to server
-      const response = await fetch('/api/conversations/initiate-encryption', {
+  // Get other user's public key if needed
+  const { data: otherUserPublicKey, isLoading: isLoadingOtherUserKey } = useQuery({
+    queryKey: ['/api/encryption/keys', otherUserId],
+    queryFn: async () => {
+      const response = await fetch(`/api/encryption/keys/${otherUserId}`);
+      if (!response.ok) {
+        // If 404, the other user doesn't have a key yet, which is fine
+        if (response.status === 404) {
+          return { publicKey: null };
+        }
+        throw new Error('Failed to get other user\'s public key');
+      }
+      return response.json();
+    },
+    enabled: initialized && !!userId && !!otherUserId && (isEncryptionEnabled || encryptionStatus?.canEnable),
+  });
+
+  // Get conversation key if encryption is enabled
+  const { data: conversationKey, isLoading: isLoadingConversationKey } = useQuery({
+    queryKey: ['/api/encryption/key', otherUserId],
+    queryFn: async () => {
+      const response = await fetch(`/api/encryption/key?userId=${otherUserId}`);
+      if (!response.ok) {
+        // If 404, there's no key yet, which means encryption needs to be initiated
+        if (response.status === 404) {
+          return { encryptedKey: null };
+        }
+        throw new Error('Failed to get conversation key');
+      }
+      return response.json();
+    },
+    enabled: initialized && !!userId && !!otherUserId && isEncryptionEnabled,
+  });
+
+  // Store public key
+  const storePublicKeyMutation = useMutation({
+    mutationFn: async (publicKey: string) => {
+      const response = await fetch('/api/encryption/keys', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ publicKey }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to store public key');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate queries that might depend on this
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/encryption/keys', userId] 
+      });
+    },
+  });
+
+  // Initiate encryption for a conversation
+  const initiateEncryptionMutation = useMutation({
+    mutationFn: async (params: { encryptedSymmetricKey: string }) => {
+      const response = await fetch('/api/encryption/initiate-encryption', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          userId,
-          otherUserId,
-          publicKey: publicKeyString,
+          userId: otherUserId,
+          publicKey: publicKey,
+          encryptedSymmetricKey: params.encryptedSymmetricKey,
         }),
       });
       
-      const data = await response.json();
-      
-      if (data.status === 'encryption_enabled') {
-        setIsEncryptionEnabled(true);
-        
-        // Get the conversation key
-        const keyResponse = await fetch(`/api/conversations/key?userId=${userId}&otherUserId=${otherUserId}`);
-        const { encryptedKey } = await keyResponse.json();
-        
-        // Decrypt the conversation key
-        const decryptedKeyString = await encryptionClient.decryptWithPrivateKey(
-          encryptedKey,
-          keyPair.privateKey
-        );
-        
-        // Import the symmetric key
-        const symmetricKey = await encryptionClient.importSymmetricKey(decryptedKeyString);
-        setConversationKey(symmetricKey);
-        
-        toast({
-          title: 'Encryption Enabled',
-          description: 'Your messages are now end-to-end encrypted',
-        });
-      } else if (data.status === 'waiting_for_recipient') {
-        toast({
-          title: 'Encryption Pending',
-          description: 'Waiting for the other user to enable encryption',
-        });
+      if (!response.ok) {
+        throw new Error('Failed to initiate encryption');
       }
-    } catch (error) {
-      console.error('Error enabling encryption:', error);
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate queries that might depend on this
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/encryption/check-encryption', otherUserId] 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/encryption/key', otherUserId] 
+      });
+      
+      // Update local state
+      setIsEncryptionEnabled(true);
       toast({
-        title: 'Encryption Failed',
-        description: 'Could not enable end-to-end encryption',
+        title: 'Encryption Enabled',
+        description: 'End-to-end encryption has been enabled for this conversation.',
+        variant: 'default',
+      });
+    },
+  });
+
+  // Load keys from local storage
+  useEffect(() => {
+    const storedPrivateKey = localStorage.getItem(PRIVATE_KEY_STORAGE_KEY);
+    const storedPublicKey = localStorage.getItem(PUBLIC_KEY_STORAGE_KEY);
+    
+    if (storedPrivateKey && storedPublicKey) {
+      setPrivateKey(storedPrivateKey);
+      setPublicKey(storedPublicKey);
+      setHasKeys(true);
+    }
+    
+    setInitialized(true);
+    setIsLoading(false);
+  }, []);
+
+  // Update encryption status when the data changes
+  useEffect(() => {
+    if (encryptionStatus) {
+      setIsEncryptionEnabled(encryptionStatus.isEncrypted);
+    }
+  }, [encryptionStatus]);
+
+  // Generate new keys for the user
+  const generateKeys = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const { publicKey, privateKey } = await generateKeyPair();
+      
+      // Store in local storage
+      localStorage.setItem(PRIVATE_KEY_STORAGE_KEY, privateKey);
+      localStorage.setItem(PUBLIC_KEY_STORAGE_KEY, publicKey);
+      
+      // Update state
+      setPrivateKey(privateKey);
+      setPublicKey(publicKey);
+      setHasKeys(true);
+      
+      // Store public key on server
+      await storePublicKeyMutation.mutateAsync(publicKey);
+      
+      toast({
+        title: 'Keys Generated',
+        description: 'Your encryption keys have been generated successfully.',
+        variant: 'default',
+      });
+    } catch (error) {
+      console.error('Error generating keys:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate encryption keys. Please try again.',
         variant: 'destructive',
       });
     } finally {
-      setIsSettingUpEncryption(false);
+      setIsLoading(false);
     }
-  }, [userId, otherUserId, isEncryptionEnabled, toast]);
+  }, [storePublicKeyMutation, toast]);
 
-  // Function to encrypt a message
-  const encryptMessage = useCallback(
-    async (message: string): Promise<string> => {
-      if (!isEncryptionEnabled || !conversationKey) {
-        return message;
-      }
+  // Enable encryption for a conversation
+  const enableEncryption = useCallback(async () => {
+    if (!hasKeys || !publicKey || !privateKey || !otherUserPublicKey?.publicKey) {
+      toast({
+        title: 'Cannot Enable Encryption',
+        description: 'Both you and the other user need to have generated keys first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
       
-      try {
-        return await encryptionClient.encryptMessage(message, conversationKey);
-      } catch (error) {
-        console.error('Error encrypting message:', error);
-        toast({
-          title: 'Encryption Error',
-          description: 'Failed to encrypt message',
-          variant: 'destructive',
-        });
-        return message;
-      }
-    },
-    [isEncryptionEnabled, conversationKey, toast]
-  );
+      // Generate a symmetric key for this conversation
+      const symmetricKey = await generateSymmetricKey();
+      
+      // Import the other user's public key
+      const importedPublicKey = await importPublicKey(otherUserPublicKey.publicKey);
+      
+      // Encrypt the symmetric key with the other user's public key
+      const encryptedSymmetricKey = await encryptSymmetricKey(symmetricKey, importedPublicKey);
+      
+      // Store the encrypted key on the server
+      await initiateEncryptionMutation.mutateAsync({ encryptedSymmetricKey });
+      
+      // Store the symmetric key locally (encrypted with our own public key)
+      const ownPublicKey = await importPublicKey(publicKey);
+      const encryptedForSelf = await encryptSymmetricKey(symmetricKey, ownPublicKey);
+      localStorage.setItem(`sym_key_${otherUserId}`, encryptedForSelf);
+      
+    } catch (error) {
+      console.error('Error enabling encryption:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to enable encryption. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    hasKeys, 
+    publicKey, 
+    privateKey, 
+    otherUserId, 
+    otherUserPublicKey?.publicKey, 
+    initiateEncryptionMutation,
+    toast
+  ]);
 
-  // Function to decrypt a message
-  const decryptMessage = useCallback(
-    async (message: string): Promise<string> => {
-      if (!isEncryptionEnabled || !conversationKey) {
-        return message;
-      }
+  // Encrypt a message
+  const encryptMessageText = useCallback(async (
+    messageText: string
+  ): Promise<string> => {
+    if (!isEncryptionEnabled || !privateKey) {
+      return messageText;
+    }
+    
+    try {
+      // Get the symmetric key for this conversation
+      let symmetricKeyString: string | null = null;
       
-      try {
-        // Check if the message is encrypted
-        if (encryptionClient.isEncryptedMessage(message)) {
-          return await encryptionClient.decryptMessage(message, conversationKey);
-        }
+      // First try to get from local storage (faster)
+      const cachedKey = localStorage.getItem(`sym_key_${otherUserId}`);
+      if (cachedKey) {
+        // Decrypt the cached key with our private key
+        const importedPrivateKey = await importPrivateKey(privateKey);
+        symmetricKeyString = await decryptSymmetricKey(cachedKey, importedPrivateKey);
+      } 
+      // If not in cache, get from server
+      else if (conversationKey?.encryptedKey) {
+        const importedPrivateKey = await importPrivateKey(privateKey);
+        symmetricKeyString = await decryptSymmetricKey(
+          conversationKey.encryptedKey,
+          importedPrivateKey
+        );
         
-        // Not encrypted, return as is
-        return message;
-      } catch (error) {
-        console.error('Error decrypting message:', error);
-        return '[Encrypted message]';
+        // Cache for future use
+        if (symmetricKeyString && publicKey) {
+          const ownPublicKey = await importPublicKey(publicKey);
+          const encryptedForSelf = await encryptSymmetricKey(symmetricKeyString, ownPublicKey);
+          localStorage.setItem(`sym_key_${otherUserId}`, encryptedForSelf);
+        }
       }
-    },
-    [isEncryptionEnabled, conversationKey]
-  );
+      
+      if (!symmetricKeyString) {
+        console.error('No symmetric key available for encryption');
+        return messageText;
+      }
+      
+      // Import the symmetric key
+      const symmetricKey = await importSymmetricKey(symmetricKeyString);
+      
+      // Encrypt the message
+      return await encryptMessage(messageText, symmetricKey);
+    } catch (error) {
+      console.error('Error encrypting message:', error);
+      return messageText;
+    }
+  }, [isEncryptionEnabled, privateKey, otherUserId, conversationKey, publicKey]);
+
+  // Decrypt a message
+  const decryptMessageText = useCallback(async (
+    encryptedText: string
+  ): Promise<string> => {
+    if (!isEncryptionEnabled || !privateKey || !isMessageEncrypted(encryptedText)) {
+      return encryptedText;
+    }
+    
+    try {
+      // Get the symmetric key for this conversation
+      let symmetricKeyString: string | null = null;
+      
+      // First try to get from local storage (faster)
+      const cachedKey = localStorage.getItem(`sym_key_${otherUserId}`);
+      if (cachedKey) {
+        // Decrypt the cached key with our private key
+        const importedPrivateKey = await importPrivateKey(privateKey);
+        symmetricKeyString = await decryptSymmetricKey(cachedKey, importedPrivateKey);
+      } 
+      // If not in cache, get from server
+      else if (conversationKey?.encryptedKey) {
+        const importedPrivateKey = await importPrivateKey(privateKey);
+        symmetricKeyString = await decryptSymmetricKey(
+          conversationKey.encryptedKey,
+          importedPrivateKey
+        );
+        
+        // Cache for future use
+        if (symmetricKeyString && publicKey) {
+          const ownPublicKey = await importPublicKey(publicKey);
+          const encryptedForSelf = await encryptSymmetricKey(symmetricKeyString, ownPublicKey);
+          localStorage.setItem(`sym_key_${otherUserId}`, encryptedForSelf);
+        }
+      }
+      
+      if (!symmetricKeyString) {
+        console.error('No symmetric key available for decryption');
+        return encryptedText;
+      }
+      
+      // Import the symmetric key
+      const symmetricKey = await importSymmetricKey(symmetricKeyString);
+      
+      // Decrypt the message
+      return await decryptMessage(encryptedText, symmetricKey);
+    } catch (error) {
+      console.error('Error decrypting message:', error);
+      return '[Encrypted message - cannot decrypt]';
+    }
+  }, [isEncryptionEnabled, privateKey, otherUserId, conversationKey, publicKey]);
 
   return {
+    isLoading: isLoading || isCheckingEncryption || isLoadingOtherUserKey || isLoadingConversationKey,
+    hasKeys,
     isEncryptionEnabled,
-    isSettingUpEncryption,
+    canEnableEncryption: encryptionStatus?.canEnable && hasKeys && !!otherUserPublicKey?.publicKey,
+    otherUserHasKeys: !!otherUserPublicKey?.publicKey,
+    generateKeys,
     enableEncryption,
-    encryptMessage,
-    decryptMessage,
+    encryptMessage: encryptMessageText,
+    decryptMessage: decryptMessageText,
   };
 }

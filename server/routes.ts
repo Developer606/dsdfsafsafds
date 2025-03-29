@@ -26,6 +26,7 @@ import {
 } from "./services/user-status";
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
+import encryptionRoutes from "./encryption-routes";
 import {
   insertMessageSchema,
   insertCustomCharacterSchema,
@@ -2780,6 +2781,9 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       res.status(500).json({ error: "Failed to get online user count" });
     }
   });
+
+  // Register encryption routes
+  app.use("/api/encryption", encryptionRoutes);
 
   return httpServer;
 }

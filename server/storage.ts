@@ -19,6 +19,14 @@ import {
   type SubscriptionTier,
 } from "@shared/schema";
 import {
+  type EncryptionKey,
+  type InsertEncryptionKey,
+  type ConversationKey,
+  type InsertConversationKey,
+  encryptionKeys,
+  conversationKeys
+} from "@shared/encryption";
+import {
   messages,
   users,
   customCharacters,
@@ -144,6 +152,13 @@ export interface IStorage {
   getConversationBetweenUsers(user1Id: number, user2Id: number): Promise<UserConversation | null>;
   updateConversationStatus(user1Id: number, user2Id: number, data: { isBlocked: boolean }): Promise<void>;
   deleteConversationMessages(user1Id: number, user2Id: number): Promise<void>;
+
+  // Encryption related methods
+  storeEncryptionKey(userId: number, publicKey: string): Promise<EncryptionKey>;
+  getEncryptionKey(userId: number): Promise<string | null>;
+  storeEncryptedConversationKey(userId: number, otherUserId: number, encryptedKey: string): Promise<ConversationKey>;
+  getEncryptedConversationKey(userId: number, otherUserId: number): Promise<string | null>;
+  getConversationEncryptionKey(userId: number, otherUserId: number): Promise<ConversationKey | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -163,6 +178,34 @@ export class DatabaseStorage implements IStorage {
     
     // Initialize the user messaging database
     this.initializeUserMessaging();
+    
+    // Initialize encryption tables
+    this.initializeEncryption();
+  }
+  
+  /**
+   * Initialize encryption tables and indexes
+   */
+  private async initializeEncryption() {
+    try {
+      console.log("Initializing encryption tables...");
+      
+      // Create or update schema
+      const { db } = await import("./db");
+      
+      // Ensure required indexes exist - run each statement separately
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_encryption_keys_user_id ON encryption_keys(user_id)`);
+      
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_conversation_keys_user_id ON conversation_keys(user_id)`);
+      
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_conversation_keys_other_user_id ON conversation_keys(other_user_id)`);
+      
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_conversation_keys_user_pair ON conversation_keys(user_id, other_user_id)`);
+      
+      console.log("Encryption tables initialized successfully");
+    } catch (error) {
+      console.error("Error initializing encryption tables:", error);
+    }
   }
   
   // User messaging methods implementation
@@ -1060,6 +1103,151 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Failed to initialize messages database:", error);
     }
+  }
+
+  // Encryption methods implementation
+  
+  /**
+   * Store a user's public encryption key
+   * @param userId User ID
+   * @param publicKey Public key as string
+   * @returns The stored encryption key
+   */
+  async storeEncryptionKey(userId: number, publicKey: string): Promise<EncryptionKey> {
+    // Check if a key already exists for this user
+    const [existingKey] = await db
+      .select()
+      .from(encryptionKeys)
+      .where(eq(encryptionKeys.userId, userId));
+    
+    if (existingKey) {
+      // Update the existing key
+      const [updatedKey] = await db
+        .update(encryptionKeys)
+        .set({ publicKey })
+        .where(eq(encryptionKeys.userId, userId))
+        .returning();
+      
+      return updatedKey;
+    }
+    
+    // Insert a new key
+    const [newKey] = await db
+      .insert(encryptionKeys)
+      .values({
+        userId,
+        publicKey,
+      })
+      .returning();
+    
+    return newKey;
+  }
+  
+  /**
+   * Get a user's public encryption key
+   * @param userId User ID
+   * @returns The user's public key or null if not found
+   */
+  async getEncryptionKey(userId: number): Promise<string | null> {
+    const [key] = await db
+      .select()
+      .from(encryptionKeys)
+      .where(eq(encryptionKeys.userId, userId));
+    
+    return key ? key.publicKey : null;
+  }
+  
+  /**
+   * Store an encrypted conversation key for a user pair
+   * @param userId User ID
+   * @param otherUserId Other user ID
+   * @param encryptedKey Encrypted key
+   * @returns The stored conversation key
+   */
+  async storeEncryptedConversationKey(
+    userId: number, 
+    otherUserId: number, 
+    encryptedKey: string
+  ): Promise<ConversationKey> {
+    // Check if a key already exists for this user pair
+    const [existingKey] = await db
+      .select()
+      .from(conversationKeys)
+      .where(
+        sql`${conversationKeys.userId} = ${userId} AND 
+            ${conversationKeys.otherUserId} = ${otherUserId}`
+      );
+    
+    if (existingKey) {
+      // Update the existing key
+      const [updatedKey] = await db
+        .update(conversationKeys)
+        .set({ 
+          encryptedKey,
+          updatedAt: new Date()
+        })
+        .where(
+          sql`${conversationKeys.userId} = ${userId} AND 
+              ${conversationKeys.otherUserId} = ${otherUserId}`
+        )
+        .returning();
+      
+      return updatedKey;
+    }
+    
+    // Insert a new key
+    const [newKey] = await db
+      .insert(conversationKeys)
+      .values({
+        userId,
+        otherUserId,
+        encryptedKey,
+      })
+      .returning();
+    
+    return newKey;
+  }
+  
+  /**
+   * Get the encrypted conversation key for a user pair
+   * @param userId User ID
+   * @param otherUserId Other user ID
+   * @returns The encrypted key or null if not found
+   */
+  async getEncryptedConversationKey(
+    userId: number, 
+    otherUserId: number
+  ): Promise<string | null> {
+    const [key] = await db
+      .select()
+      .from(conversationKeys)
+      .where(
+        sql`${conversationKeys.userId} = ${userId} AND 
+            ${conversationKeys.otherUserId} = ${otherUserId}`
+      );
+    
+    return key ? key.encryptedKey : null;
+  }
+  
+  /**
+   * Get the full conversation key record for a user pair
+   * @param userId User ID
+   * @param otherUserId Other user ID
+   * @returns The conversation key or null if not found
+   */
+  async getConversationEncryptionKey(
+    userId: number, 
+    otherUserId: number
+  ): Promise<ConversationKey | null> {
+    const [key] = await db
+      .select()
+      .from(conversationKeys)
+      .where(
+        sql`${conversationKeys.userId} = ${userId} AND 
+            ${conversationKeys.otherUserId} = ${otherUserId}`
+      );
+    
+    return key || null;
   }
 }
 
