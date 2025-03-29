@@ -1198,9 +1198,8 @@ export default function UserMessages() {
                 )}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m22 8-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
-                  <path d="M18 8h4"></path>
-                  <path d="m12 16 2.5-3.5L17 15l2-4"></path>
+                  <path d="m15 10 4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14"></path>
+                  <rect width="14" height="14" x="3" y="5" rx="2" ry="2"></rect>
                 </svg>
               </Button>
               

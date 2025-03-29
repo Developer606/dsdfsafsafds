@@ -74,6 +74,9 @@ export function VideoViewerModal({
       <DialogPortal>
         <DialogOverlay className="bg-black/80 backdrop-blur-sm" />
         <DialogContent className="max-w-4xl w-[90vw] p-1 bg-transparent border-0 shadow-xl">
+          <DialogTitle className="sr-only">
+            Video Viewer
+          </DialogTitle>
           <div className="relative flex flex-col items-center">
             <div className="relative w-full bg-black rounded-lg overflow-hidden">
               <video 
@@ -82,6 +85,7 @@ export function VideoViewerModal({
                 className="w-full max-h-[80vh] object-contain"
                 controls={false}
                 playsInline
+                onClick={togglePlay}
               />
               <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-between">
                 <Button 
