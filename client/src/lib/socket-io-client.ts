@@ -351,16 +351,44 @@ class SocketIOManager {
   
   /**
    * Send typing indicator
+   * With REST API fallback if Socket.IO is not connected
    */
   public sendTypingIndicator(receiverId: number, isTyping: boolean): void {
-    if (!this.socket || !this.socket.connected) {
-      this.connect();
+    if (this.socket && this.socket.connected) {
+      // Primary method: Socket.IO (real-time)
+      this.socket.emit('typing_indicator', {
+        receiverId,
+        isTyping
+      });
+      console.log(`Sent typing indicator via Socket.IO: ${isTyping}`);
+    } else {
+      // Fallback method: REST API
+      this.connect(); // Try to reconnect for next time
+      
+      // Use fetch API as fallback
+      const currentUserId = this.getCurrentUserId();
+      if (!currentUserId) return;
+      
+      fetch('/api/typing-indicator', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          senderId: currentUserId,
+          receiverId: receiverId,
+          isTyping: isTyping
+        })
+      }).then(response => {
+        if (response.ok) {
+          console.log(`Sent typing indicator via REST API fallback: ${isTyping}`);
+        } else {
+          console.error('Failed to send typing indicator via REST API');
+        }
+      }).catch(error => {
+        console.error('Error sending typing indicator via REST API:', error);
+      });
     }
-    
-    this.socket?.emit('typing_indicator', {
-      receiverId,
-      isTyping
-    });
   }
   
   /**
