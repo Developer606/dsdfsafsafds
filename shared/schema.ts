@@ -390,6 +390,8 @@ export const userMessages = sqliteTable("user_messages", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
+  imageData: text("image_data"),       // Base64 encoded image data
+  videoData: text("video_data"),       // Base64 encoded video data
   status: text("status").notNull().default("sent"),
   timestamp: integer("timestamp", { mode: "timestamp_ms" })
     .notNull()
@@ -420,6 +422,8 @@ export const insertUserMessageSchema = createInsertSchema(userMessages).pick({
   senderId: true,
   receiverId: true,
   content: true,
+  imageData: true,
+  videoData: true,
   status: true,
 });
 
