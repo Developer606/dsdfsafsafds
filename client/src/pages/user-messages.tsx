@@ -408,7 +408,7 @@ export default function UserMessages() {
     if (currentUser && messages.length > 0 && socketManager) {
       // Only process messages that are from the other user and not already read
       const unreadMessages = messages.filter(
-        (message: UserMessage) => 
+        message => 
           message.senderId === parseInt(userId as string) && 
           message.receiverId === currentUser.id && 
           message.status !== "read"
@@ -418,7 +418,7 @@ export default function UserMessages() {
         console.log(`Marking ${unreadMessages.length} messages as read`);
         
         // Mark each message as read
-        unreadMessages.forEach((message: UserMessage) => {
+        unreadMessages.forEach(message => {
           socketManager.updateMessageStatus(message.id, "read");
         });
       }
@@ -905,26 +905,18 @@ export default function UserMessages() {
               const isCurrentUser = currentUser && message.senderId === currentUser.id;
               const hasStatusAnimation = shouldAnimateStatus(message.id);
               
-              // For debugging purposes
-              if (!isCurrentUser) {
-                console.log("Other user data:", { 
-                  avatarUrl: otherUser?.avatarUrl, 
-                  userName: otherUser?.fullName || otherUser?.username 
-                });
-              }
-              
               return (
                 <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} ${chatStyle === "chatgpt" ? "w-full" : ""}`}>
                   <MessageBubble
-                    id={message.id.toString()}
+                    id={message.id}
                     content={message.content}
                     timestamp={message.timestamp}
                     status={message.status}
                     isCurrentUser={isCurrentUser}
                     hasDeliveryAnimation={hasStatusAnimation}
                     chatStyle={chatStyle}
-                    avatar={isCurrentUser ? undefined : (otherUser?.avatarUrl || '')}
-                    userName={isCurrentUser ? undefined : (otherUser?.fullName || otherUser?.username)}
+                    avatar={isCurrentUser ? undefined : otherUser.avatarUrl}
+                    userName={isCurrentUser ? undefined : (otherUser.fullName || otherUser.username)}
                   />
                 </div>
               );
@@ -942,12 +934,10 @@ export default function UserMessages() {
             <div className={cn(
               "p-3 shadow-sm",
               chatStyle === "whatsapp"
-                ? "bg-white dark:bg-slate-800 rounded-tl-md rounded-tr-2xl rounded-br-2xl border border-green-50 dark:border-green-900"
+                ? "bg-white dark:bg-slate-800 rounded-tl-md rounded-tr-2xl rounded-br-2xl"
                 : chatStyle === "messenger"
-                ? "bg-gray-100 dark:bg-slate-700 rounded-full"
-                : chatStyle === "kakaotalk"
-                ? "bg-white dark:bg-gray-100 rounded-3xl rounded-tl-sm border border-pink-100 dark:border-pink-200"
-                : "bg-white dark:bg-slate-800 rounded-lg border border-purple-50 dark:border-purple-900"
+                ? "bg-gray-100 dark:bg-slate-800 rounded-full"
+                : "bg-white dark:bg-slate-800 rounded-lg"
             )}>
               <TypingIndicator />
             </div>
@@ -981,35 +971,28 @@ export default function UserMessages() {
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               className={cn(
-                "py-6 focus-visible:ring-offset-0",
+                "py-6",
                 chatStyle === "whatsapp"
-                  ? "rounded-full bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500"
+                  ? "rounded-full bg-white dark:bg-slate-700"
                   : chatStyle === "messenger"
-                  ? "rounded-full bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-600 focus-visible:ring-blue-500/40 focus-visible:border-blue-500"
-                  : chatStyle === "kakaotalk"
-                  ? "rounded-full bg-white dark:bg-slate-700 border-pink-100 dark:border-pink-900 focus-visible:ring-pink-500/40 focus-visible:border-pink-400"
-                  : "rounded-lg bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 focus-visible:ring-purple-500/40 focus-visible:border-purple-500"
+                  ? "rounded-full bg-gray-100 dark:bg-slate-700"
+                  : "rounded-md bg-white dark:bg-slate-700"
               )}
             />
             <Button 
               type="submit" 
               size="icon" 
               className={cn(
-                "h-12 w-12 shadow-md transition-all duration-200",
+                "h-12 w-12",
                 chatStyle === "whatsapp"
-                  ? "rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:brightness-110 border border-emerald-700"
+                  ? "rounded-full bg-[#008069] hover:bg-[#00705c]"
                   : chatStyle === "messenger"
-                  ? "rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 border border-blue-700"
-                  : chatStyle === "kakaotalk" 
-                  ? "rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:brightness-110 border border-pink-600"
-                  : "rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:brightness-110 border border-indigo-700"
+                  ? "rounded-full bg-[#0084ff] hover:bg-[#0070db]"
+                  : "rounded-md bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
               )}
               disabled={sendMessageMutation.isPending}
             >
-              <Send className={cn(
-                "h-5 w-5 text-white",
-                sendMessageMutation.isPending && "animate-pulse"
-              )} />
+              <Send className="h-5 w-5 text-white" />
             </Button>
           </form>
         )}
