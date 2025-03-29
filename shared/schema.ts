@@ -76,6 +76,8 @@ export const users = sqliteTable("users", {
   countryCode: text("country_code"),
   countryName: text("country_name"),
   cityName: text("city_name"),
+  // End-to-end encryption fields
+  publicKey: text("public_key"),
 });
 
 
