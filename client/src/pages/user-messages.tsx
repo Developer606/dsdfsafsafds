@@ -75,7 +75,7 @@ export default function UserMessages() {
   // New state variables for theme and chat style functionality
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
-  const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger">("whatsapp");
+  const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger" | "kakaotalk">("whatsapp");
   
   // Query to get current user
   const { data: currentUser } = useQuery({
@@ -454,6 +454,8 @@ export default function UserMessages() {
         case "chatgpt":
           return "messenger";
         case "messenger":
+          return "kakaotalk";
+        case "kakaotalk":
           return "whatsapp";
         default:
           return "whatsapp";
@@ -669,7 +671,9 @@ export default function UserMessages() {
         ? "bg-[#efeae2] dark:bg-slate-900"
         : chatStyle === "messenger"
           ? "bg-white dark:bg-slate-900"
-          : "bg-white dark:bg-slate-900"
+          : chatStyle === "kakaotalk"
+            ? "bg-[#ffd9d9] dark:bg-[#ffc0c0]"
+            : "bg-white dark:bg-slate-900"
     )}>
       {/* Header */}
       <div className={cn(
@@ -678,6 +682,8 @@ export default function UserMessages() {
           ? "bg-[#008069] dark:bg-slate-900 border-[#008069] dark:border-gray-800"
           : chatStyle === "messenger"
           ? "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
+          : chatStyle === "kakaotalk"
+          ? "bg-[#faa7a7] dark:bg-[#ff9a9a] border-[#faa7a7] dark:border-[#ff9a9a]"
           : "bg-white dark:bg-slate-900 border-gray-200 dark:border-gray-800"
       )}>
         <Button 
@@ -753,12 +759,16 @@ export default function UserMessages() {
                       ? "text-white/90"
                       : chatStyle === "messenger"
                       ? "text-[#0084ff] dark:text-blue-400"
+                      : chatStyle === "kakaotalk"
+                      ? "text-pink-800 dark:text-pink-200"
                       : "text-gray-600 dark:text-gray-400"
                   )}>
                     {chatStyle === "whatsapp"
                       ? "WhatsApp Style"
                       : chatStyle === "messenger"
                       ? "Messenger Style"
+                      : chatStyle === "kakaotalk"
+                      ? "KakaoTalk Style"
                       : "ChatGPT Style"}
                   </span>
                 </div>
@@ -770,6 +780,8 @@ export default function UserMessages() {
                       ? "ChatGPT"
                       : chatStyle === "chatgpt"
                       ? "Messenger"
+                      : chatStyle === "messenger"
+                      ? "KakaoTalk"
                       : "WhatsApp"
                   } style</p>
                 ) : (
@@ -853,6 +865,8 @@ export default function UserMessages() {
           ? "bg-[#efeae2] dark:bg-slate-900"
           : chatStyle === "messenger"
           ? "bg-white dark:bg-slate-900"
+          : chatStyle === "kakaotalk"
+          ? "bg-[#ffd9d9] dark:bg-[#ffc0c0]"
           : "bg-white dark:bg-slate-900"
       )}>
         {/* Blocked Conversation Banner */}
@@ -940,6 +954,8 @@ export default function UserMessages() {
           ? "bg-[#f0f2f5] dark:bg-slate-800 border-[#f0f2f5] dark:border-gray-700"
           : chatStyle === "messenger"
           ? "bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700"
+          : chatStyle === "kakaotalk"
+          ? "bg-[#fcc8c8] dark:bg-[#ffb5b5] border-[#ffb5b5] dark:border-[#ffaaaa]"
           : "bg-white dark:bg-slate-800 border-gray-200 dark:border-gray-700"
       )}>
         {isConversationBlocked ? (

@@ -10,7 +10,7 @@ interface MessageBubbleProps {
   status: "sent" | "delivered" | "read";
   isCurrentUser: boolean;
   hasDeliveryAnimation?: boolean;
-  chatStyle?: "whatsapp" | "chatgpt" | "messenger";
+  chatStyle?: "whatsapp" | "chatgpt" | "messenger" | "kakaotalk";
   avatar?: string;
   userName?: string;
 }
@@ -167,6 +167,77 @@ export function MessageBubble({
               )}
             </div>
           </div>
+        </div>
+      </motion.div>
+    );
+  }
+  
+  // KakaoTalk style
+  if (chatStyle === "kakaotalk") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 400, 
+          damping: 25 
+        }}
+        className={cn(
+          "px-2 sm:px-4 py-1 sm:py-2 mb-1",
+          isCurrentUser ? "ml-auto" : "mr-auto",
+          "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+        )}
+      >
+        <div className={cn(
+          "flex",
+          isCurrentUser ? "justify-end" : "justify-start",
+          "items-end gap-2"
+        )}>
+          {!isCurrentUser && (
+            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 shadow-sm bg-pink-200">
+              {avatar ? (
+                <img src={avatar} alt={userName || "User"} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-800">
+                  {userName ? userName.charAt(0).toUpperCase() : "U"}
+                </div>
+              )}
+            </div>
+          )}
+          <div className={cn(
+            "flex flex-col",
+            isCurrentUser ? "items-end" : "items-start"
+          )}>
+            {!isCurrentUser && userName && (
+              <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 ml-1">
+                {userName}
+              </span>
+            )}
+            <div className={cn(
+              "py-2 px-3 rounded-3xl max-w-full border-[1.5px]",
+              isCurrentUser 
+                ? "bg-[#FF7A7A] text-white border-[#FF6B6B] rounded-tr-sm" 
+                : "bg-white text-gray-800 border-gray-200 dark:bg-gray-100 dark:text-gray-800 rounded-tl-sm"
+            )}>
+              <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
+                {content}
+              </p>
+            </div>
+            <div className="flex items-center mt-1 gap-1 px-1">
+              <span className="text-[10px] text-gray-500">
+                오후 {formatTime(timestamp)}
+              </span>
+              {isCurrentUser && (
+                <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
+              )}
+            </div>
+          </div>
+          {isCurrentUser && (
+            <div className="w-6 h-6">
+              {/* Placeholder for KakaoTalk character emoji that would appear on the right of user messages */}
+            </div>
+          )}
         </div>
       </motion.div>
     );
