@@ -706,6 +706,7 @@ export default function UserMessages() {
     }
     
     // Create message content including media data if present
+    // Always use JSON structure for all messages (text, image, video)
     let content;
     
     if (selectedImage) {
@@ -713,7 +714,8 @@ export default function UserMessages() {
     } else if (selectedVideo) {
       content = JSON.stringify({ text: messageText, videoData: selectedVideo });
     } else {
-      content = messageText;
+      // Store text messages in JSON format as well
+      content = JSON.stringify({ text: messageText });
     }
     
     // Send via Socket.IO
@@ -1018,8 +1020,8 @@ export default function UserMessages() {
               return (
                 <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} ${chatStyle === "chatgpt" ? "w-full" : ""}`}>
                   {(() => {
-                    // Check if message content is JSON with media data
-                    let messageContent = message.content;
+                    // All messages are now stored as JSON
+                    let messageContent = "";
                     let imageData = null;
                     let videoData = null;
                     
@@ -1027,15 +1029,18 @@ export default function UserMessages() {
                       // Attempt to parse as JSON
                       const parsedContent = JSON.parse(message.content);
                       
-                      if (parsedContent && parsedContent.imageData) {
-                        messageContent = parsedContent.text || '';
+                      // Extract the text content
+                      messageContent = parsedContent.text || '';
+                      
+                      // Extract media data if present
+                      if (parsedContent.imageData) {
                         imageData = parsedContent.imageData;
-                      } else if (parsedContent && parsedContent.videoData) {
-                        messageContent = parsedContent.text || '';
+                      } else if (parsedContent.videoData) {
                         videoData = parsedContent.videoData;
                       }
                     } catch (e) {
-                      // Not JSON, use content as is
+                      // For backward compatibility with older messages that weren't stored as JSON
+                      messageContent = message.content;
                     }
                     
                     return (
