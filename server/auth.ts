@@ -248,16 +248,32 @@ export function setupAuth(app: Express) {
         if (err) {
           return res.status(500).json({ error: "Login failed" });
         }
+        
+        // Mark user as online when they successfully log in
+        // Import and use the user status service
+        const { markUserOnline } = require('./services/user-status');
+        markUserOnline(user.id, 'temp-socket-id');
+        
         res.json(user);
       });
     })(req, res, next);
   });
 
   app.post("/api/logout", (req, res) => {
+    // If the user is authenticated, get their ID before logging out
+    const userId = req.isAuthenticated() ? (req.user as Express.User).id : null;
+    
     req.logout((err) => {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
       }
+
+      // If we have a user ID, mark them as offline
+      if (userId) {
+        const { markUserOffline } = require('./services/user-status');
+        markUserOffline(userId);
+      }
+      
       res.sendStatus(200);
     });
   });

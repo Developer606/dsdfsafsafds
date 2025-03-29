@@ -52,19 +52,13 @@ export function markUserOffline(userId: number): void {
  * @returns Boolean indicating if user is online
  */
 export function isUserOnline(userId: number): boolean {
+  // First check if the user exists in our tracking map
   const userStatus = onlineUsers.get(userId);
+  
+  // If user is not in the tracking map at all, they're not logged in
   if (!userStatus) return false;
   
-  // Check if the user has been inactive for too long
-  const now = new Date();
-  const timeSinceLastActive = now.getTime() - userStatus.lastActive.getTime();
-  
-  if (timeSinceLastActive > OFFLINE_THRESHOLD) {
-    // User has been inactive for too long, mark them as offline
-    onlineUsers.delete(userId);
-    return false;
-  }
-  
+  // User is in the tracking map (logged in), consider them online
   return true;
 }
 
@@ -114,17 +108,11 @@ export function getOnlineUserCount(): number {
 }
 
 /**
- * Cleanup inactive users that haven't been active for a while
- * Call this periodically to ensure the tracking map doesn't grow indefinitely
+ * Cleanup function is now a no-op since we want users to stay "online"
+ * as long as they're logged in, regardless of inactivity period
  */
 export function cleanupInactiveUsers(): void {
-  const now = new Date();
-  
-  // Convert iterator to array to avoid TypeScript iterator issues
-  Array.from(onlineUsers.entries()).forEach(([userId, status]) => {
-    const timeSinceLastActive = now.getTime() - status.lastActive.getTime();
-    if (timeSinceLastActive > OFFLINE_THRESHOLD) {
-      onlineUsers.delete(userId);
-    }
-  });
+  // No longer remove users due to inactivity
+  // They'll only be removed when they explicitly log out
+  return;
 }
