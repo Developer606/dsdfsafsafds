@@ -2729,8 +2729,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
-  // User status endpoint - check if a user is online (public endpoint)
-  app.get("/api/users/status/:userId", async (req, res) => {
+  // User status endpoint - check if a user is online
+  app.get("/api/users/status/:userId", authenticateJWT, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       

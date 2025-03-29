@@ -12,7 +12,6 @@ import { type Character } from "@shared/characters";
 import { type User } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
-import { UserStatusIndicator } from "@/components/user-status-indicator";
 import { ArrowLeft } from "lucide-react";
 import {
   Dialog,
@@ -343,14 +342,6 @@ export default function Chat() {
               )}>
                 {character?.name}
               </h2>
-              
-              <UserStatusIndicator 
-                userId={parseInt(characterId || "0")} 
-                size="sm" 
-                showText={true}
-                isAI={true}
-                className="ml-1 mt-0.5" 
-              />
             </div>
           </div>
 
