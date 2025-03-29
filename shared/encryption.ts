@@ -1,60 +1,88 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { sql } from "drizzle-orm";
 
 /**
- * Table for storing user encryption keys
+ * The prefix used to identify encrypted content in messages
  */
-export const encryptionKeys = sqliteTable("encryption_keys", {
-  id: integer("id").primaryKey(),
-  userId: integer("user_id").notNull().unique(),
-  publicKey: text("public_key").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-});
-
-export const insertEncryptionKeySchema = createInsertSchema(encryptionKeys).pick({
-  userId: true,
-  publicKey: true,
-});
-
-export type EncryptionKey = typeof encryptionKeys.$inferSelect;
-export type InsertEncryptionKey = z.infer<typeof insertEncryptionKeySchema>;
+export const ENCRYPTION_PREFIX = "ENC::";
 
 /**
- * Table for storing encrypted conversation keys
- * Each conversation between two users has two entries (one for each user)
- * with their own encrypted version of the symmetric key
+ * Check if a message is encrypted
+ * @param message The message content to check
+ * @returns True if the message is encrypted, false otherwise
  */
-export const conversationKeys = sqliteTable("conversation_keys", {
-  id: integer("id").primaryKey(),
-  userId: integer("user_id").notNull(), 
-  otherUserId: integer("other_user_id").notNull(),
-  encryptedKey: text("encrypted_key").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+export function isMessageEncrypted(message: string): boolean {
+  return message.startsWith(ENCRYPTION_PREFIX);
+}
+
+/**
+ * Extract the encrypted content from a message
+ * @param message The message with encryption prefix
+ * @returns The encrypted content without the prefix
+ */
+export function extractEncryptedContent(message: string): string {
+  if (!isMessageEncrypted(message)) {
+    return message;
+  }
+  return message.slice(ENCRYPTION_PREFIX.length);
+}
+
+/**
+ * Interface for API response when checking encryption status for a conversation
+ */
+export interface EncryptionStatusResponse {
+  isEncrypted: boolean;
+  canEnable: boolean;
+}
+
+/**
+ * Interface for API request when initiating encryption for a conversation
+ */
+export interface InitiateEncryptionRequest {
+  userId: number;
+  publicKey: string;
+  encryptedSymmetricKey: string;
+}
+
+/**
+ * Schema for validating encryption initiation request
+ */
+export const initiateEncryptionSchema = z.object({
+  userId: z.number(),
+  publicKey: z.string(),
+  encryptedSymmetricKey: z.string(),
 });
 
-// Add unique constraint to prevent duplicate entries for the same conversation
-// from the perspective of a single user
-export const conversationKeysConstraints = {
-  uniqueConversation: {
-    name: "unique_conversation_key",
-    columns: ["userId", "otherUserId"],
-  },
-};
+/**
+ * Interface for storing encryption keys
+ */
+export interface StoreEncryptionKeyRequest {
+  publicKey: string;
+}
 
-export const insertConversationKeySchema = createInsertSchema(conversationKeys).pick({
-  userId: true,
-  otherUserId: true,
-  encryptedKey: true,
+/**
+ * Schema for validating store encryption key request
+ */
+export const storeEncryptionKeySchema = z.object({
+  publicKey: z.string(),
 });
 
-export type ConversationKey = typeof conversationKeys.$inferSelect;
-export type InsertConversationKey = z.infer<typeof insertConversationKeySchema>;
+/**
+ * Interface for API response when getting public key
+ */
+export interface PublicKeyResponse {
+  publicKey: string;
+}
+
+/**
+ * Interface for API response when getting encrypted conversation key
+ */
+export interface EncryptedKeyResponse {
+  encryptedKey: string;
+}
+
+/**
+ * Interface for success response
+ */
+export interface SuccessResponse {
+  success: boolean;
+}

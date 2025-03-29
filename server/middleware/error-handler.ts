@@ -1,32 +1,21 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
+import { StatusError } from '../encryption-routes';
 
 /**
- * Custom error class for HTTP status errors
- */
-export class StatusError extends Error {
-  status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-    this.name = "StatusError";
-  }
-}
-
-/**
- * Global error handling middleware
+ * Global error handler middleware for encryption-related API routes
+ * Ensures consistent error responses and proper error logging
  */
 export function errorHandler(err: Error, req: Request, res: Response, next: NextFunction) {
-  console.error("Error:", err);
-
+  console.error('API Error:', err);
+  
   if (err instanceof StatusError) {
     return res.status(err.status).json({
       error: err.message
     });
   }
-
-  // Default to 500 internal server error for unhandled exceptions
-  res.status(500).json({
-    error: "Internal server error"
+  
+  // For other types of errors, return a generic 500 response
+  return res.status(500).json({
+    error: 'An unexpected error occurred'
   });
 }

@@ -1,6 +1,16 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
-import { StatusError } from "./middleware/error-handler";
+
+// Custom error class for API status errors
+export class StatusError extends Error {
+  status: number;
+  
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+    this.name = 'StatusError';
+  }
+}
 
 const router = express.Router();
 

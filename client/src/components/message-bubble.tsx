@@ -1,4 +1,4 @@
-import { useState } from "react"; 
+import React, { useState } from "react"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageStatusIndicator } from "./message-status-indicator";
 import { ImageViewerModal } from "./image-viewer-modal";
@@ -8,7 +8,7 @@ import { Check } from "lucide-react";
 
 interface MessageBubbleProps {
   id: number;
-  content: string;
+  content: string | React.ReactNode;
   timestamp: string;
   status: "sent" | "delivered" | "read";
   isCurrentUser: boolean;

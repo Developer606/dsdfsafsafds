@@ -27,6 +27,7 @@ import {
 import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import encryptionRoutes from "./encryption-routes";
+import { errorHandler } from "./middleware/error-handler";
 import {
   insertMessageSchema,
   insertCustomCharacterSchema,
@@ -2782,8 +2783,9 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
 
-  // Register encryption routes
+  // Register encryption routes with error handler middleware
   app.use("/api/encryption", encryptionRoutes);
+  app.use("/api/encryption", errorHandler);
 
   return httpServer;
 }

@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Send, MoreVertical, AlertTriangle, ShieldAlert,
   LogOut, Trash2, MessageCircle, Sun, Moon, MessageSquare,
-  Image as ImageIcon, X
+  Image as ImageIcon, X, Lock, KeyRound, LockOpen
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +19,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { useSocket } from "@/lib/socket-io-client";
 import { MessageBubble } from "@/components/message-bubble";
 import { useMessageStatusTracker } from "@/lib/message-status-tracker";
+import { useEncryption } from "@/hooks/use-encryption";
+import { isMessageEncrypted } from "@/lib/encryption-client";
+import DecryptedMessage from "@/components/decrypted-message";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +29,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogClose,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -79,6 +83,9 @@ export default function UserMessages() {
   
   // New state variables for theme and chat style functionality
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  
+  // State for the encryption setup dialog
+  const [showEncryptionDialog, setShowEncryptionDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger" | "kakaotalk">("whatsapp");
   
@@ -147,6 +154,12 @@ export default function UserMessages() {
   
   // Extract messages and conversation status from the response
   const messages = messagesData.messages || [];
+  
+  // Initialize encryption hook once we have user IDs
+  const encryption = useEncryption({
+    userId: currentUser?.id || 0,
+    otherUserId: userId
+  });
   
   // Create local state for conversation blocked status that can be updated by socket events
   const [isConversationBlocked, setIsConversationBlocked] = useState<boolean>(false);
@@ -689,7 +702,7 @@ export default function UserMessages() {
     return () => clearTimeout(typingTimer);
   }, [messageText, userId, socketManager]);
   
-  const sendMessage = (e: React.FormEvent) => {
+  const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Check if we have text, image, or video content to send
@@ -707,23 +720,39 @@ export default function UserMessages() {
     
     // Create message content including media data if present
     // Always use JSON structure for all messages (text, image, video)
-    let content;
+    let messageContent;
     
     if (selectedImage) {
-      content = JSON.stringify({ text: messageText, imageData: selectedImage });
+      messageContent = JSON.stringify({ text: messageText, imageData: selectedImage });
     } else if (selectedVideo) {
-      content = JSON.stringify({ text: messageText, videoData: selectedVideo });
+      messageContent = JSON.stringify({ text: messageText, videoData: selectedVideo });
     } else {
       // Store text messages in JSON format as well
-      content = JSON.stringify({ text: messageText });
+      messageContent = JSON.stringify({ text: messageText });
     }
     
-    // Send via Socket.IO
-    if (socketManager.isConnected()) {
-      socketManager.sendMessage(userId, content);
-    } else {
-      // Fallback to API
-      sendMessageMutation.mutate(content);
+    try {
+      // Encrypt the message if encryption is enabled
+      let content = messageContent;
+      if (encryption.isEncryptionEnabled) {
+        console.log("Encrypting message before sending...");
+        content = await encryption.encryptMessage(messageContent);
+      }
+      
+      // Send via Socket.IO
+      if (socketManager.isConnected()) {
+        socketManager.sendMessage(userId, content);
+      } else {
+        // Fallback to API
+        sendMessageMutation.mutate(content);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to send message. Please try again."
+      });
     }
     
     // Reset form
@@ -1024,9 +1053,48 @@ export default function UserMessages() {
                     let messageContent = "";
                     let imageData = null;
                     let videoData = null;
+                    let isEncrypted = false;
+                    
+                    // Check if the message is encrypted
+                    if (isMessageEncrypted(message.content)) {
+                      isEncrypted = true;
+                      
+                      return (
+                        <MessageBubble
+                          id={message.id}
+                          content={
+                            <div className="flex flex-col">
+                              <div className="flex items-center mb-1 text-xs">
+                                <Lock className="h-3 w-3 mr-1 text-green-500" /> 
+                                <span className="text-green-500">Encrypted message</span>
+                              </div>
+                              <div>
+                                {encryption.isEncryptionEnabled ? (
+                                  <DecryptedMessage 
+                                    encryptedText={message.content}
+                                    decryptFn={encryption.decryptMessage}
+                                  />
+                                ) : (
+                                  <span className="italic text-gray-500">
+                                    [Enable encryption to view this message]
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          }
+                          timestamp={message.timestamp}
+                          status={message.status}
+                          isCurrentUser={isCurrentUser}
+                          hasDeliveryAnimation={hasStatusAnimation}
+                          chatStyle={chatStyle}
+                          avatar={isCurrentUser ? undefined : otherUser.avatarUrl}
+                          userName={isCurrentUser ? undefined : (otherUser.fullName || otherUser.username)}
+                        />
+                      );
+                    }
                     
                     try {
-                      // Attempt to parse as JSON
+                      // Attempt to parse as JSON for non-encrypted messages
                       const parsedContent = JSON.parse(message.content);
                       
                       // Extract the text content
