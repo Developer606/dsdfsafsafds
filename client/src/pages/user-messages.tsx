@@ -731,6 +731,7 @@ export default function UserMessages() {
               userId={otherUser.id} 
               size="sm" 
               showText={true}
+              isAI={false}
               className={cn(
                 chatStyle === "whatsapp" 
                 ? "ml-1 mt-0.5" 

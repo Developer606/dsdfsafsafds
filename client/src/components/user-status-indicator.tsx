@@ -13,13 +13,15 @@ interface UserStatusIndicatorProps {
   size?: 'sm' | 'md' | 'lg';
   showText?: boolean;
   className?: string;
+  isAI?: boolean;
 }
 
 export function UserStatusIndicator({ 
   userId, 
   size = 'md', 
   showText = false, 
-  className 
+  className,
+  isAI = false 
 }: UserStatusIndicatorProps) {
   const { isOnline, lastActiveFormatted, isLoading } = useUserStatus(userId);
   
@@ -30,9 +32,12 @@ export function UserStatusIndicator({
     lg: 'h-4 w-4'
   };
   
-  if (isLoading) {
-    return null; // Don't show anything while loading
+  if (isLoading && !isAI) {
+    return null; // Don't show anything while loading for real users
   }
+  
+  // AI characters are always considered online
+  const showAsOnline = isAI || isOnline;
   
   return (
     <TooltipProvider>
@@ -42,25 +47,27 @@ export function UserStatusIndicator({
             <div className={cn(
               "rounded-full", 
               sizeClasses[size],
-              isOnline 
+              showAsOnline
                 ? "bg-green-500 animate-pulse" 
                 : "bg-gray-400"
             )} />
             
             <span className={cn(
               "text-xs",
-              isOnline
+              showAsOnline
                 ? "text-green-500 dark:text-green-400"
                 : "text-gray-500 dark:text-gray-400"
             )}>
-              {isOnline ? 'Online' : 'Offline'}
+              {showAsOnline ? 'Online' : 'Offline'}
             </span>
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          {isOnline 
-            ? 'User is currently online' 
-            : `Last active: ${lastActiveFormatted}`}
+          {isAI 
+            ? 'AI character is always online'
+            : isOnline 
+              ? 'User is currently online' 
+              : `Last active: ${lastActiveFormatted}`}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
