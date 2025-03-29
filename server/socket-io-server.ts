@@ -13,6 +13,7 @@ import {
   checkMessageContent, 
   flagMessage 
 } from './content-moderation';
+import { isEncrypted, decryptJsonContent } from '../shared/encryption';
 
 // Define tracking interface for messages
 interface MessageTracking {
@@ -195,12 +196,30 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         // Parse content for moderation checks
         let contentForCheck = '';
         let parsedContent;
-        
+        let originalContent = content; // Store original content for saving
+
         try {
-          // Try to parse content as JSON
-          parsedContent = typeof content === 'object' ? content : JSON.parse(content);
-          // Extract text for moderation check
-          contentForCheck = parsedContent.text || '';
+          // Check if content is encrypted
+          if (typeof content === 'string' && isEncrypted(content)) {
+            // Decrypt the content for moderation check
+            try {
+              // Decrypt using the conversation key derived from both user IDs
+              parsedContent = decryptJsonContent(content, userId, receiverId);
+              // Extract text for moderation check
+              contentForCheck = parsedContent.text || '';
+              log(`Successfully decrypted message for content moderation`);
+            } catch (decryptError) {
+              log(`Failed to decrypt message for moderation: ${decryptError}`);
+              // If decryption fails, we can't check content, default to empty string
+              contentForCheck = '';
+              // We'll still store the original encrypted content
+            }
+          } else {
+            // Not encrypted, try parsing as JSON directly
+            parsedContent = typeof content === 'object' ? content : JSON.parse(content);
+            // Extract text for moderation check
+            contentForCheck = parsedContent.text || '';
+          }
         } catch (e) {
           // If parsing fails, use the raw content for checking
           contentForCheck = content;
