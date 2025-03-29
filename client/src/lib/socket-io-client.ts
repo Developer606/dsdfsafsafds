@@ -271,18 +271,10 @@ class SocketIOManager {
   
   /**
    * Send a message to another user
-   * @returns {boolean} Whether the message was sent via socket (true) or not (false)
    */
-  public sendMessage(receiverId: number, content: string): boolean {
+  public sendMessage(receiverId: number, content: string): void {
     if (!this.socket || !this.socket.connected) {
-      console.warn("Socket is not connected, attempting to reconnect");
       this.connect();
-      
-      // If still not connected after connection attempt, return false
-      if (!this.socket || !this.socket.connected) {
-        console.error("Failed to connect socket for message sending");
-        return false;
-      }
     }
     
     // First check if we have conversation data cached in the query client
@@ -300,38 +292,13 @@ class SocketIOManager {
         message: 'This conversation has been blocked by a moderator for violating community guidelines.',
         code: 'CONVERSATION_BLOCKED'
       });
-      return false;
+      return;
     }
     
-    try {
-      this.socket?.emit('user_message', {
-        receiverId,
-        content
-      });
-      
-      // Check if socket.io library actually has the socket object
-      if (!this.socket) {
-        console.error("Socket object is null after connection attempt");
-        return false;
-      }
-      
-      // Check for connection state again to be extra sure
-      if (!this.socket.connected) {
-        console.error("Socket is still disconnected after connection attempt");
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error sending message via socket:", error);
-      // Notify listeners about the error
-      this.notifyListeners('server_error', {
-        message: 'Failed to send message via real-time connection. Please try again or refresh the page.',
-        code: 'SOCKET_SEND_ERROR',
-        originalError: error
-      });
-      return false;
-    }
+    this.socket?.emit('user_message', {
+      receiverId,
+      content
+    });
   }
   
   /**

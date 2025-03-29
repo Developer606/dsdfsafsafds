@@ -120,23 +120,8 @@ const multilingualProhibitedWords: Record<string, string[]> = {
  * @returns Object with flag status and reason if flagged
  */
 export function checkMessageContent(content: string): { flagged: boolean; reason?: string } {
-  // Attempt to detect if content might be in JSON format (for media messages)
-  let textToCheck = content;
-  try {
-    // Try to parse as JSON to handle messages with media
-    const parsed = JSON.parse(content);
-    if (parsed && typeof parsed === 'object') {
-      // If it contains text field, use that for checking
-      if (parsed.text && typeof parsed.text === 'string') {
-        textToCheck = parsed.text;
-      }
-    }
-  } catch (e) {
-    // Not JSON or invalid JSON, continue with original content
-  }
-  
   // Convert to lowercase for case-insensitive matching
-  const normalizedContent = textToCheck.toLowerCase();
+  const normalizedContent = content.toLowerCase();
   
   // Check against all categories of prohibited words
   for (const [category, wordList] of Object.entries(prohibitedWords)) {
@@ -169,28 +154,14 @@ export function checkMessageContent(content: string): { flagged: boolean; reason
 
 /**
  * Flag a message as inappropriate
- * @param messageId The ID of the message to flag
- * @param senderId The user ID of the sender
- * @param receiverId The user ID of the receiver
- * @param content The message content (this should be the decrypted content for moderation purposes)
- * @param reason The reason for flagging
- * @param originalContent Optional original encrypted content
- * @returns The flagged message record
  */
 export async function flagMessage(
   messageId: number,
   senderId: number,
   receiverId: number,
   content: string,
-  reason: string,
-  originalContent?: string
+  reason: string
 ): Promise<schema.FlaggedMessage> {
-  // Log the flagging action
-  console.log(`Flagging message ${messageId} from user ${senderId}: ${reason}`);
-  
-  // Content to store in the database - we want to store the decrypted version for admin review
-  const contentToStore = content;
-  
   // Insert the flagged message into the database
   const [flaggedMessage] = await flaggedMessagesDb
     .insert(schema.flaggedMessages)
@@ -198,7 +169,7 @@ export async function flagMessage(
       messageId,
       senderId,
       receiverId,
-      content: contentToStore,
+      content,
       reason,
       reviewed: false,
       timestamp: new Date()
@@ -206,7 +177,6 @@ export async function flagMessage(
     .returning();
   
   console.log(`Message ${messageId} flagged: ${reason}`);
-  
   return flaggedMessage;
 }
 
@@ -214,9 +184,6 @@ export async function flagMessage(
  * Get all flagged messages with user details for admin review
  */
 export async function getFlaggedMessages(limit = 100, offset = 0, includeReviewed = false): Promise<any[]> {
-  // Import decryption utility
-  const { decryptMessage, isEncryptedMessage } = await import("./crypto-utils");
-  
   // Create the select query
   const query = includeReviewed
     ? flaggedMessagesDb
@@ -233,33 +200,16 @@ export async function getFlaggedMessages(limit = 100, offset = 0, includeReviewe
     .limit(limit)
     .offset(offset);
   
-  // Enhance with user information and handle encryption
+  // Enhance with user information
   const enhancedMessages = await Promise.all(
     flaggedMessages.map(async (message: schema.FlaggedMessage) => {
       const sender = await storage.getUser(message.senderId);
       const receiver = await storage.getUser(message.receiverId);
       
-      // Check if the content is encrypted and attempt to decrypt it
-      let displayContent = message.content;
-      let isEncrypted = false;
-      
-      if (isEncryptedMessage(message.content)) {
-        isEncrypted = true;
-        try {
-          displayContent = decryptMessage(message.content);
-        } catch (err) {
-          console.error(`[Admin] Error decrypting flagged message ${message.id}:`, err);
-          // Keep original content if decryption fails
-        }
-      }
-      
       return {
         ...message,
         senderUsername: sender?.username || "Unknown",
-        receiverUsername: receiver?.username || "Unknown",
-        originalContent: message.content,
-        content: displayContent,
-        isEncrypted
+        receiverUsername: receiver?.username || "Unknown"
       };
     })
   );

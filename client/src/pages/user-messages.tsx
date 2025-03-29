@@ -15,7 +15,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
 import { TypingIndicator } from "@/components/typing-indicator";
-import { apiRequest, ApiError } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { useSocket } from "@/lib/socket-io-client";
 import { MessageBubble } from "@/components/message-bubble";
 import { useMessageStatusTracker } from "@/lib/message-status-tracker";
@@ -169,66 +169,28 @@ export default function UserMessages() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
-      // Also refresh conversation list
-      queryClient.invalidateQueries({ queryKey: ["/api/user/conversations"] });
     },
     onError: (error: any) => {
       console.error("Error sending message:", error);
-      
-      // Check if it's our enhanced ApiError type
-      if (error instanceof ApiError) {
-        // Handle specific error types
+
+      // Handle blocked conversation error
+      if (error.response?.status === 403 && error.response?.data?.error === "Conversation blocked") {
+        toast({
+          variant: "destructive",
+          title: "Conversation Blocked",
+          description: error.response?.data?.message || "This conversation has been blocked by a moderator."
+        });
         
-        // Conversation blocked (Forbidden)
-        if (error.status === 403) {
-          toast({
-            variant: "destructive",
-            title: "Conversation Blocked",
-            description: "This conversation has been blocked by a moderator."
-          });
-          
-          // Refresh messages to show the blocked state
-          queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
-          return;
-        }
-        
-        // Rate limiting
-        if (error.isRateLimitError) {
-          toast({
-            variant: "destructive",
-            title: "Too Many Messages",
-            description: "You're sending messages too quickly. Please wait a moment and try again."
-          });
-          return;
-        }
-        
-        // Authentication errors
-        if (error.isAuthError) {
-          toast({
-            variant: "destructive",
-            title: "Authentication Error",
-            description: "Please log in again to continue messaging."
-          });
-          return;
-        }
-        
-        // Network or server errors
-        if (error.isNetworkError) {
-          toast({
-            variant: "destructive",
-            title: "Connection Error",
-            description: "Unable to reach the server. Please check your internet connection and try again."
-          });
-          return;
-        }
+        // Refresh messages to show the blocked state
+        queryClient.invalidateQueries({ queryKey: ["/api/user-messages", userId] });
+      } else {
+        // Generic error
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to send message",
+        });
       }
-      
-      // Generic error fallback
-      toast({
-        variant: "destructive",
-        title: "Failed to Send Message",
-        description: error.message || "Please try again or refresh the page."
-      });
     },
   });
 
@@ -747,97 +709,21 @@ export default function UserMessages() {
     // Always use JSON structure for all messages (text, image, video)
     let content;
     
-    try {
-      if (selectedImage) {
-        content = JSON.stringify({ text: messageText, imageData: selectedImage });
-      } else if (selectedVideo) {
-        content = JSON.stringify({ text: messageText, videoData: selectedVideo });
-      } else {
-        // Store text messages in JSON format as well
-        content = JSON.stringify({ text: messageText });
-      }
-    } catch (error) {
-      console.error("Error formatting message content:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to format message. Please try again."
-      });
-      return;
+    if (selectedImage) {
+      content = JSON.stringify({ text: messageText, imageData: selectedImage });
+    } else if (selectedVideo) {
+      content = JSON.stringify({ text: messageText, videoData: selectedVideo });
+    } else {
+      // Store text messages in JSON format as well
+      content = JSON.stringify({ text: messageText });
     }
-    
-    // Track message sending state
-    const messageSending = {
-      text: messageText,
-      hasImage: !!selectedImage,
-      hasVideo: !!selectedVideo,
-      timestamp: new Date().toISOString()
-    };
     
     // Send via Socket.IO
     if (socketManager.isConnected()) {
-      try {
-        console.log("Sending message via Socket.IO to user:", userId);
-        // The enhanced sendMessage now returns a boolean indicating success
-        const socketSuccess = socketManager.sendMessage(userId, content);
-        
-        if (!socketSuccess) {
-          console.warn("Socket send failed immediately, falling back to API");
-          // Fallback to API if Socket.IO fails immediately
-          sendMessageMutation.mutate(content);
-          return;
-        }
-        
-        // Add error handling for delayed Socket.IO failures
-        const socketErrorHandler = (error: any) => {
-          console.error("Socket message error:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: error.message || "Failed to send message"
-          });
-          
-          // Remove this one-time handler
-          socketManager.removeEventListener('server_error', socketErrorHandler);
-          
-          // If it's a connection issue, try fallback to API
-          if (error.code === 'SOCKET_SEND_ERROR' || error.code === 'TRANSPORT_ERROR') {
-            console.log("Socket error occurred, attempting API fallback");
-            sendMessageMutation.mutate(content);
-          }
-        };
-        
-        // Add a one-time error listener
-        const removeErrorListener = socketManager.addEventListener('server_error', socketErrorHandler);
-        
-        // Remove the listener after 5 seconds (message should be sent by then)
-        setTimeout(() => {
-          removeErrorListener();
-        }, 5000);
-      } catch (error) {
-        console.error("Error sending message via Socket.IO:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to send message via real-time connection. Trying API fallback..."
-        });
-        
-        // Fallback to API if Socket.IO throws
-        sendMessageMutation.mutate(content);
-      }
+      socketManager.sendMessage(userId, content);
     } else {
-      // Fallback to API with improved error handling
-      console.log("Socket.IO not connected, using API fallback to send message");
-      try {
-        sendMessageMutation.mutate(content);
-      } catch (error) {
-        console.error("Error in message mutation:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to send message"
-        });
-      }
+      // Fallback to API
+      sendMessageMutation.mutate(content);
     }
     
     // Reset form
