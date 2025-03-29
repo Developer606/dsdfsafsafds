@@ -124,6 +124,13 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
     // Mark user as online in the status tracking service
     markUserOnline(userId, socket.id);
     
+    // Broadcast user online status to all connected users
+    io.emit('user_status_update', {
+      userId,
+      online: true,
+      lastActive: new Date()
+    });
+    
     // Mark messages as delivered if any pending
     deliverPendingMessages(userId);
 
@@ -138,6 +145,13 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
           
           // Mark user as offline in the status tracking service
           markUserOffline(userId);
+          
+          // Broadcast user offline status to all connected users
+          io.emit('user_status_update', {
+            userId,
+            online: false,
+            lastActive: new Date()
+          });
           
           // Clear typing indicators when user disconnects
           typingUsers.delete(userId);
@@ -297,7 +311,7 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         // Verify this user is the receiver of the message
         // Get user messages with a large limit to find the specific message
         // The second parameter is otherUserId, but we pass 0 as a placeholder since we're looking for a message by ID
-        const allMessagesResult = await storage.getUserMessages(userId, 0, 1, 1000);
+        const allMessagesResult = await storage.getUserMessages(userId, 0, { page: 1, limit: 1000 });
         // Now we need to find the message in the messages array
         const message = allMessagesResult.messages.find(m => m.id === messageId);
         
