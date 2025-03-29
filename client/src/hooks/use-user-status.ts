@@ -23,7 +23,7 @@ export function useUserStatus(userId: number | null) {
     // Initial status fetch
     const fetchStatus = async () => {
       try {
-        // Debug: Always connect socket when checking status
+        // Ensure socket is connected for real-time updates
         if (!socketManager.isConnected()) {
           socketManager.connect();
         }
@@ -33,16 +33,9 @@ export function useUserStatus(userId: number | null) {
           const data = await response.json();
           console.log(`[Status] User ${userId} online status:`, data);
           
-          // Force online status for testing
-          setIsOnline(true);
-          setLastActive(data.lastActive ? new Date(data.lastActive) : new Date());
-          
-          // Show debug toast
-          toast({
-            title: "Debug: User Status",
-            description: `User ${userId} is now shown as online for testing purposes.`,
-            duration: 2000
-          });
+          // Properly set the online status based on the server response
+          setIsOnline(data.online);
+          setLastActive(data.lastActive ? new Date(data.lastActive) : null);
         }
       } catch (error) {
         console.error("Error fetching user status:", error);
