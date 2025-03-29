@@ -279,12 +279,18 @@ export default function UserMessages() {
     
     const typingIndicatorHandler = (data: any) => {
       console.log("Typing indicator received:", data);
-      // Show typing indicator when the other user is typing
-      // We need to check if the sender is the user we're chatting with (userId) 
-      // and the intended receiver is the current user
-      if (data.senderId === Number(userId) && data.receiverId === currentUser?.id) {
-        console.log("Setting typing indicator to:", data.isTyping);
-        setIsTyping(data.isTyping);
+      console.log("Current user:", currentUser?.id, "Chat with:", userId);
+      
+      // Show typing indicator when the other user is typing to us
+      // The senderId should be the other user, and the receiverId should be us
+      if (data && data.senderId && data.receiverId) {
+        // The user we're chatting with is typing to us
+        if (data.senderId === Number(userId) && data.receiverId === currentUser?.id) {
+          console.log("✅ Setting typing indicator to:", data.isTyping);
+          setIsTyping(data.isTyping);
+        } else {
+          console.log("❌ Ignoring typing indicator from user", data.senderId, "to", data.receiverId);
+        }
       }
     };
     
@@ -707,13 +713,18 @@ export default function UserMessages() {
     if (!currentUser?.id || !userId) return;
     
     const handleTyping = () => {
-      // Send typing indicator from current user (sender) to the other user (receiver)
-      // First parameter is the receiverId, second is the isTyping status
-      socketManager.sendTypingIndicator(Number(userId), messageText.length > 0);
-      console.log(`Sending typing indicator to user ${userId}, isTyping: ${messageText.length > 0}`);
+      try {
+        // Send typing indicator from current user (sender) to the other user (receiver)
+        // First parameter is the receiverId, second is the isTyping status
+        socketManager.sendTypingIndicator(Number(userId), messageText.length > 0);
+        console.log(`Sending typing indicator to user ${userId}, isTyping: ${messageText.length > 0}`);
+      } catch (err) {
+        console.error("Error sending typing indicator:", err);
+      }
     };
     
-    const typingTimer = setTimeout(handleTyping, 500);
+    // Add debounce to avoid sending too many events
+    const typingTimer = setTimeout(handleTyping, 300);
     return () => clearTimeout(typingTimer);
   }, [messageText, userId, socketManager, currentUser?.id]);
   

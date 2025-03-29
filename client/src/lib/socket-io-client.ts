@@ -37,10 +37,11 @@ class SocketIOManager {
     const token = localStorage.getItem('jwt_token');
     
     // Connect to the server with authentication
+    // Using both websocket and polling for better fallback capability
     this.socket = io({
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
@@ -48,6 +49,8 @@ class SocketIOManager {
         token
       }
     });
+    
+    console.log("Attempting Socket.IO connection with transports:", ['websocket', 'polling']);
     
     this.setupEventHandlers();
     
