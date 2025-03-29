@@ -1155,7 +1155,7 @@ export default function UserMessages() {
                 ? "bg-gray-100 dark:bg-slate-800 rounded-full"
                 : "bg-white dark:bg-slate-800 rounded-lg"
             )}>
-              <TypingIndicator />
+              <TypingIndicator style={chatStyle as 'default' | 'whatsapp' | 'messenger' | 'kakao'} />
             </div>
           </motion.div>
         )}
