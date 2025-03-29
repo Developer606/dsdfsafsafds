@@ -1,0 +1,5 @@
+Replace line 1070 in client/src/pages/user-messages.tsx:
+<Image className="h-5 w-5" />
+
+With:
+<Image className="h-5 w-5" />

@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ArrowLeft, Send, MoreVertical, AlertTriangle, ShieldAlert,
-  LogOut, Trash2, MessageCircle, Sun, Moon, MessageSquare
+  LogOut, Trash2, MessageCircle, Sun, Moon, MessageSquare,
+  Image as ImageIcon, X
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { motion, AnimatePresence } from "framer-motion";
@@ -66,8 +67,10 @@ export default function UserMessages() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [messageText, setMessageText] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const socketManager = useSocket();
   const { trackStatusChange, shouldAnimateStatus } = useMessageStatusTracker();
@@ -408,8 +411,8 @@ export default function UserMessages() {
     if (currentUser && messages.length > 0 && socketManager) {
       // Only process messages that are from the other user and not already read
       const unreadMessages = messages.filter(
-        message => 
-          message.senderId === parseInt(userId as string) && 
+        (message: UserMessage) => 
+          message.senderId === Number(userId as string) && 
           message.receiverId === currentUser.id && 
           message.status !== "read"
       );
@@ -418,7 +421,7 @@ export default function UserMessages() {
         console.log(`Marking ${unreadMessages.length} messages as read`);
         
         // Mark each message as read
-        unreadMessages.forEach(message => {
+        unreadMessages.forEach((message: UserMessage) => {
           socketManager.updateMessageStatus(message.id, "read");
         });
       }
@@ -439,6 +442,47 @@ export default function UserMessages() {
     }
   };
   
+  // Handle image selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid File Type",
+        description: "Please select an image file (JPEG, PNG, GIF, etc.)"
+      });
+      return;
+    }
+    
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: "Image must be less than 5MB"
+      });
+      return;
+    }
+    
+    // Read the file as base64
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setSelectedImage(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  // Handle image removal
+  const handleClearImage = () => {
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   // Add chat style toggle function with premium check
   const toggleChatStyle = () => {
     // Check if user is free or on basic plan
@@ -605,7 +649,8 @@ export default function UserMessages() {
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!messageText.trim()) return;
+    // Check if we have text or image content to send
+    if (!messageText.trim() && !selectedImage) return;
     
     // Don't send if conversation is blocked
     if (isConversationBlocked) {
@@ -617,15 +662,25 @@ export default function UserMessages() {
       return;
     }
     
+    // Create message content including image data if present
+    const content = selectedImage 
+      ? JSON.stringify({ text: messageText, imageData: selectedImage })
+      : messageText;
+    
     // Send via Socket.IO
     if (socketManager.isConnected()) {
-      socketManager.sendMessage(userId, messageText);
+      socketManager.sendMessage(userId, content);
     } else {
       // Fallback to API
-      sendMessageMutation.mutate(messageText);
+      sendMessageMutation.mutate(content);
     }
     
+    // Reset form
     setMessageText("");
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
   
   const goBack = () => {
@@ -907,17 +962,37 @@ export default function UserMessages() {
               
               return (
                 <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} ${chatStyle === "chatgpt" ? "w-full" : ""}`}>
-                  <MessageBubble
-                    id={message.id}
-                    content={message.content}
-                    timestamp={message.timestamp}
-                    status={message.status}
-                    isCurrentUser={isCurrentUser}
-                    hasDeliveryAnimation={hasStatusAnimation}
-                    chatStyle={chatStyle}
-                    avatar={isCurrentUser ? undefined : otherUser.avatarUrl}
-                    userName={isCurrentUser ? undefined : (otherUser.fullName || otherUser.username)}
-                  />
+                  {(() => {
+                    // Check if message content is JSON with image data
+                    let messageContent = message.content;
+                    let imageData = null;
+                    
+                    try {
+                      // Attempt to parse as JSON
+                      const parsedContent = JSON.parse(message.content);
+                      if (parsedContent && parsedContent.imageData) {
+                        messageContent = parsedContent.text || '';
+                        imageData = parsedContent.imageData;
+                      }
+                    } catch (e) {
+                      // Not JSON, use content as is
+                    }
+                    
+                    return (
+                      <MessageBubble
+                        id={message.id}
+                        content={messageContent}
+                        timestamp={message.timestamp}
+                        status={message.status}
+                        isCurrentUser={isCurrentUser}
+                        hasDeliveryAnimation={hasStatusAnimation}
+                        chatStyle={chatStyle}
+                        avatar={isCurrentUser ? undefined : otherUser.avatarUrl}
+                        userName={isCurrentUser ? undefined : (otherUser.fullName || otherUser.username)}
+                        imageData={imageData}
+                      />
+                    );
+                  })()}
                 </div>
               );
             })}
@@ -964,36 +1039,94 @@ export default function UserMessages() {
             <p>Messaging has been disabled by a moderator</p>
           </div>
         ) : (
-          <form onSubmit={sendMessage} className="flex items-center space-x-2">
-            <Input
-              type="text"
-              placeholder="Type a message..."
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              className={cn(
-                "py-6",
-                chatStyle === "whatsapp"
-                  ? "rounded-full bg-white dark:bg-slate-700"
-                  : chatStyle === "messenger"
-                  ? "rounded-full bg-gray-100 dark:bg-slate-700"
-                  : "rounded-md bg-white dark:bg-slate-700"
-              )}
-            />
-            <Button 
-              type="submit" 
-              size="icon" 
-              className={cn(
-                "h-12 w-12",
-                chatStyle === "whatsapp"
-                  ? "rounded-full bg-[#008069] hover:bg-[#00705c]"
-                  : chatStyle === "messenger"
-                  ? "rounded-full bg-[#0084ff] hover:bg-[#0070db]"
-                  : "rounded-md bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
-              )}
-              disabled={sendMessageMutation.isPending}
-            >
-              <Send className="h-5 w-5 text-white" />
-            </Button>
+          <form onSubmit={sendMessage} className="flex flex-col space-y-2">
+            {/* Image preview if selected */}
+            {selectedImage && (
+              <div className="relative w-full max-w-xs mx-auto mb-2">
+                <img 
+                  src={selectedImage} 
+                  alt="Selected image" 
+                  className="w-full object-contain rounded-lg max-h-[200px]" 
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  onClick={handleClearImage}
+                  className="absolute -top-2 -right-2 h-7 w-7 rounded-full"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
+            <div className="flex items-center space-x-2">
+              {/* Hidden file input */}
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageSelect}
+                className="hidden"
+                ref={fileInputRef}
+              />
+              
+              {/* Image upload button */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "h-12 w-12",
+                  chatStyle === "whatsapp"
+                    ? "rounded-full text-[#008069] hover:bg-gray-100 dark:text-green-500 dark:hover:bg-slate-700"
+                    : chatStyle === "messenger"
+                    ? "rounded-full text-[#0084ff] hover:bg-gray-100 dark:text-blue-500 dark:hover:bg-slate-700"
+                    : chatStyle === "kakaotalk"
+                    ? "rounded-full text-pink-700 hover:bg-pink-100 dark:text-pink-400 dark:hover:bg-pink-900/40"
+                    : "rounded-md text-purple-500 hover:bg-gray-100 dark:hover:bg-slate-700"
+                )}
+              >
+                <ImageIcon className="h-5 w-5" />
+              </Button>
+              
+              {/* Text input */}
+              <Input
+                type="text"
+                placeholder="Type a message..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                className={cn(
+                  "py-6",
+                  chatStyle === "whatsapp"
+                    ? "rounded-full bg-white dark:bg-slate-700"
+                    : chatStyle === "messenger"
+                    ? "rounded-full bg-gray-100 dark:bg-slate-700"
+                    : chatStyle === "kakaotalk"
+                    ? "rounded-md bg-white dark:bg-slate-700"
+                    : "rounded-md bg-white dark:bg-slate-700"
+                )}
+              />
+              
+              {/* Send button */}
+              <Button 
+                type="submit" 
+                size="icon" 
+                className={cn(
+                  "h-12 w-12",
+                  chatStyle === "whatsapp"
+                    ? "rounded-full bg-[#008069] hover:bg-[#00705c]"
+                    : chatStyle === "messenger"
+                    ? "rounded-full bg-[#0084ff] hover:bg-[#0070db]"
+                    : chatStyle === "kakaotalk"
+                    ? "rounded-full bg-gradient-to-r from-pink-500 to-pink-700 hover:from-pink-600 hover:to-pink-800"
+                    : "rounded-md bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+                )}
+                disabled={sendMessageMutation.isPending || (!messageText.trim() && !selectedImage)}
+              >
+                <Send className="h-5 w-5 text-white" />
+              </Button>
+            </div>
           </form>
         )}
       </div>

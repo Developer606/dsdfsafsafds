@@ -11,8 +11,9 @@ import { initializeFlaggedMessagesDb } from "./content-moderation";
 import path from "path";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Increase JSON body size limit to handle larger image data
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 
 // Configure trust proxy to get real client IP when behind a proxy (like in Replit)
 app.set("trust proxy", true);

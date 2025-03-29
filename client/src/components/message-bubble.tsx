@@ -13,6 +13,7 @@ interface MessageBubbleProps {
   chatStyle?: "whatsapp" | "chatgpt" | "messenger" | "kakaotalk";
   avatar?: string;
   userName?: string;
+  imageData?: string; // Base64 encoded image data
 }
 
 export function MessageBubble({
@@ -24,7 +25,8 @@ export function MessageBubble({
   hasDeliveryAnimation = false,
   chatStyle = "whatsapp",
   avatar,
-  userName
+  userName,
+  imageData
 }: MessageBubbleProps) {
   // Format time string
   const formatTime = (timestamp: string) => {
@@ -89,9 +91,21 @@ export function MessageBubble({
               )}
             </p>
             <div className="prose dark:prose-invert max-w-none">
-              <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
-                {content}
-              </p>
+              {imageData && (
+                <div className="mb-3 rounded-md overflow-hidden border border-gray-200 dark:border-gray-700">
+                  <img 
+                    src={imageData} 
+                    alt="Shared image" 
+                    className="max-w-full object-contain max-h-96"
+                    onClick={() => window.open(imageData, '_blank')}
+                  />
+                </div>
+              )}
+              {content && (
+                <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
+                  {content}
+                </p>
+              )}
               {isCurrentUser && (
                 <div className="flex justify-end mt-2">
                   <span className="text-xs text-gray-500 dark:text-gray-400 mr-1.5">
@@ -154,9 +168,21 @@ export function MessageBubble({
                 ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white" 
                 : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 text-black dark:text-white"
             )}>
-              <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
-                {content}
-              </p>
+              {imageData && (
+                <div className="mb-2 rounded-lg overflow-hidden">
+                  <img 
+                    src={imageData} 
+                    alt="Shared image" 
+                    className="max-w-full object-contain max-h-72"
+                    onClick={() => window.open(imageData, '_blank')}
+                  />
+                </div>
+              )}
+              {content && (
+                <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
+                  {content}
+                </p>
+              )}
             </div>
             <div className="flex items-center mt-1 gap-1.5 px-1">
               <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -220,9 +246,21 @@ export function MessageBubble({
                 ? "bg-[#FF7A7A] text-white border-[#FF6B6B] rounded-tr-sm" 
                 : "bg-white text-gray-800 border-gray-200 dark:bg-gray-100 dark:text-gray-800 rounded-tl-sm"
             )}>
-              <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
-                {content}
-              </p>
+              {imageData && (
+                <div className="mb-2 rounded-2xl overflow-hidden">
+                  <img 
+                    src={imageData} 
+                    alt="Shared image" 
+                    className="max-w-full object-contain max-h-64"
+                    onClick={() => window.open(imageData, '_blank')}
+                  />
+                </div>
+              )}
+              {content && (
+                <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
+                  {content}
+                </p>
+              )}
             </div>
             <div className="flex items-center mt-1 gap-1 px-1">
               <span className="text-[10px] text-gray-500">
@@ -288,9 +326,21 @@ export function MessageBubble({
               {userName}
             </p>
           )}
-          <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
-            {content}
-          </p>
+          {imageData && (
+            <div className="mb-2 rounded-md overflow-hidden">
+              <img 
+                src={imageData} 
+                alt="Shared image" 
+                className="max-w-full object-contain max-h-80"
+                onClick={() => window.open(imageData, '_blank')}
+              />
+            </div>
+          )}
+          {content && (
+            <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
+              {content}
+            </p>
+          )}
           <div className="flex items-center justify-end gap-1.5 mt-1.5">
             <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
               {formatTime(timestamp)}
