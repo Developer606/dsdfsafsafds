@@ -33,7 +33,12 @@ export function UserStatusIndicator({
   };
   
   if (isLoading && !isAI) {
-    return null; // Don't show anything while loading for real users
+    return (
+      <div className={cn("flex items-center gap-2", className)}>
+        <div className="rounded-full bg-gray-300 dark:bg-gray-700 h-2 w-2" />
+        <span className="text-xs text-gray-400 dark:text-gray-500">Loading...</span>
+      </div>
+    );
   }
   
   // AI characters are always considered online
@@ -53,16 +58,16 @@ export function UserStatusIndicator({
             )} />
             
             <span className={cn(
-              "text-xs",
+              "text-xs font-medium",
               showAsOnline
-                ? "text-green-500 dark:text-green-400"
+                ? "text-green-600 dark:text-green-500"
                 : "text-gray-500 dark:text-gray-400"
             )}>
               {showAsOnline ? 'Online' : 'Offline'}
             </span>
           </div>
         </TooltipTrigger>
-        <TooltipContent>
+        <TooltipContent side="bottom">
           {isAI 
             ? 'AI character is always online'
             : isOnline 
