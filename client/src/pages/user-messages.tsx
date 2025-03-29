@@ -934,10 +934,12 @@ export default function UserMessages() {
             <div className={cn(
               "p-3 shadow-sm",
               chatStyle === "whatsapp"
-                ? "bg-white dark:bg-slate-800 rounded-tl-md rounded-tr-2xl rounded-br-2xl"
+                ? "bg-white dark:bg-slate-800 rounded-tl-md rounded-tr-2xl rounded-br-2xl border border-green-50 dark:border-green-900"
                 : chatStyle === "messenger"
-                ? "bg-gray-100 dark:bg-slate-800 rounded-full"
-                : "bg-white dark:bg-slate-800 rounded-lg"
+                ? "bg-gray-100 dark:bg-slate-700 rounded-full"
+                : chatStyle === "kakaotalk"
+                ? "bg-white dark:bg-gray-100 rounded-3xl rounded-tl-sm border border-pink-100 dark:border-pink-200"
+                : "bg-white dark:bg-slate-800 rounded-lg border border-purple-50 dark:border-purple-900"
             )}>
               <TypingIndicator />
             </div>
@@ -971,28 +973,35 @@ export default function UserMessages() {
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
               className={cn(
-                "py-6",
+                "py-6 focus-visible:ring-offset-0",
                 chatStyle === "whatsapp"
-                  ? "rounded-full bg-white dark:bg-slate-700"
+                  ? "rounded-full bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500"
                   : chatStyle === "messenger"
-                  ? "rounded-full bg-gray-100 dark:bg-slate-700"
-                  : "rounded-md bg-white dark:bg-slate-700"
+                  ? "rounded-full bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-600 focus-visible:ring-blue-500/40 focus-visible:border-blue-500"
+                  : chatStyle === "kakaotalk"
+                  ? "rounded-full bg-white dark:bg-slate-700 border-pink-100 dark:border-pink-900 focus-visible:ring-pink-500/40 focus-visible:border-pink-400"
+                  : "rounded-lg bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 focus-visible:ring-purple-500/40 focus-visible:border-purple-500"
               )}
             />
             <Button 
               type="submit" 
               size="icon" 
               className={cn(
-                "h-12 w-12",
+                "h-12 w-12 shadow-md transition-all duration-200",
                 chatStyle === "whatsapp"
-                  ? "rounded-full bg-[#008069] hover:bg-[#00705c]"
+                  ? "rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:brightness-110 border border-emerald-700"
                   : chatStyle === "messenger"
-                  ? "rounded-full bg-[#0084ff] hover:bg-[#0070db]"
-                  : "rounded-md bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+                  ? "rounded-full bg-gradient-to-r from-blue-600 to-blue-500 hover:brightness-110 border border-blue-700"
+                  : chatStyle === "kakaotalk" 
+                  ? "rounded-full bg-gradient-to-r from-rose-500 to-pink-500 hover:brightness-110 border border-pink-600"
+                  : "rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:brightness-110 border border-indigo-700"
               )}
               disabled={sendMessageMutation.isPending}
             >
-              <Send className="h-5 w-5 text-white" />
+              <Send className={cn(
+                "h-5 w-5 text-white",
+                sendMessageMutation.isPending && "animate-pulse"
+              )} />
             </Button>
           </form>
         )}
