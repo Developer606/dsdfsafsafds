@@ -459,3 +459,50 @@ export const insertFlaggedMessageSchema = createInsertSchema(flaggedMessages).pi
 // Flagged message types
 export type FlaggedMessage = typeof flaggedMessages.$inferSelect;
 export type InsertFlaggedMessage = z.infer<typeof insertFlaggedMessageSchema>;
+
+// Encryption keys table to store user public keys
+export const encryptionKeys = sqliteTable("encryption_keys", {
+  id: integer("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  publicKey: text("public_key").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Conversation keys table to store encrypted keys for each conversation
+export const conversationKeys = sqliteTable("conversation_keys", {
+  id: integer("id").primaryKey(),
+  user1Id: integer("user1_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  user2Id: integer("user2_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  encryptedKey1: text("encrypted_key1").notNull(), // Key encrypted with user1's public key
+  encryptedKey2: text("encrypted_key2").notNull(), // Key encrypted with user2's public key
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Schemas for encryption tables
+export const insertEncryptionKeySchema = createInsertSchema(encryptionKeys).pick({
+  userId: true,
+  publicKey: true,
+});
+
+export const insertConversationKeySchema = createInsertSchema(conversationKeys).pick({
+  user1Id: true,
+  user2Id: true,
+  encryptedKey1: true,
+  encryptedKey2: true,
+});
+
+// Types for encryption tables
+export type EncryptionKey = typeof encryptionKeys.$inferSelect;
+export type InsertEncryptionKey = z.infer<typeof insertEncryptionKeySchema>;
+export type ConversationKey = typeof conversationKeys.$inferSelect;
+export type InsertConversationKey = z.infer<typeof insertConversationKeySchema>;
