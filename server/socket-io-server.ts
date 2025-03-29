@@ -192,16 +192,30 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         // Update user's last activity timestamp
         updateUserActivity(userId);
         
-        log(`Message from user ${userId} to ${receiverId}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`);
+        // Parse content for moderation checks
+        let contentForCheck = '';
+        let parsedContent;
+        
+        try {
+          // Try to parse content as JSON
+          parsedContent = typeof content === 'object' ? content : JSON.parse(content);
+          // Extract text for moderation check
+          contentForCheck = parsedContent.text || '';
+        } catch (e) {
+          // If parsing fails, use the raw content for checking
+          contentForCheck = content;
+        }
+        
+        log(`Message from user ${userId} to ${receiverId}: ${contentForCheck.substring(0, 50)}${contentForCheck.length > 50 ? '...' : ''}`);
         
         // Check message content for prohibited words
-        const contentCheck = checkMessageContent(content);
+        const contentCheck = checkMessageContent(contentForCheck);
         
         // Create message in database
         const message = await storage.createUserMessage({
           senderId: userId,
           receiverId,
-          content,
+          content, // Store original content (may be JSON or plain text)
           status: 'sent'
         });
         
@@ -215,7 +229,7 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
               message.id,
               userId,
               receiverId,
-              content,
+              contentForCheck, // Use the text content for moderation
               contentCheck.reason || 'Prohibited content'
             );
             
@@ -297,7 +311,7 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
         // Verify this user is the receiver of the message
         // Get user messages with a large limit to find the specific message
         // The second parameter is otherUserId, but we pass 0 as a placeholder since we're looking for a message by ID
-        const allMessagesResult = await storage.getUserMessages(userId, 0, 1, 1000);
+        const allMessagesResult = await storage.getUserMessages(userId, 0, { page: 1, limit: 1000 });
         // Now we need to find the message in the messages array
         const message = allMessagesResult.messages.find(m => m.id === messageId);
         
