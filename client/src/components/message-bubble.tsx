@@ -1,5 +1,7 @@
+import { useState } from "react"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageStatusIndicator } from "./message-status-indicator";
+import { ImageViewerModal } from "./image-viewer-modal";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 
@@ -28,6 +30,8 @@ export function MessageBubble({
   userName,
   imageData
 }: MessageBubbleProps) {
+  // State for image viewer modal
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   // Format time string
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -97,17 +101,18 @@ export function MessageBubble({
                     src={imageData} 
                     alt="Shared image" 
                     className="max-w-full object-contain max-h-96 cursor-pointer"
-                    onClick={() => {
-                      // Create a download link
-                      const link = document.createElement('a');
-                      link.href = imageData;
-                      link.download = `shared-image-${id}.jpg`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
+                    onClick={() => setIsImageViewerOpen(true)}
                   />
                 </div>
+              )}
+              {/* Image viewer modal */}
+              {imageData && (
+                <ImageViewerModal 
+                  isOpen={isImageViewerOpen}
+                  imageUrl={imageData}
+                  onClose={() => setIsImageViewerOpen(false)}
+                  messageId={id}
+                />
               )}
               {content && (
                 <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
@@ -182,17 +187,18 @@ export function MessageBubble({
                     src={imageData} 
                     alt="Shared image" 
                     className="max-w-full object-contain max-h-72 cursor-pointer"
-                    onClick={() => {
-                      // Create a download link
-                      const link = document.createElement('a');
-                      link.href = imageData;
-                      link.download = `shared-image-${id}.jpg`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
+                    onClick={() => setIsImageViewerOpen(true)}
                   />
                 </div>
+              )}
+              {/* Image viewer modal */}
+              {imageData && (
+                <ImageViewerModal 
+                  isOpen={isImageViewerOpen}
+                  imageUrl={imageData}
+                  onClose={() => setIsImageViewerOpen(false)}
+                  messageId={id}
+                />
               )}
               {content && (
                 <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
@@ -268,17 +274,18 @@ export function MessageBubble({
                     src={imageData} 
                     alt="Shared image" 
                     className="max-w-full object-contain max-h-64 cursor-pointer"
-                    onClick={() => {
-                      // Create a download link
-                      const link = document.createElement('a');
-                      link.href = imageData;
-                      link.download = `shared-image-${id}.jpg`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
+                    onClick={() => setIsImageViewerOpen(true)}
                   />
                 </div>
+              )}
+              {/* Image viewer modal */}
+              {imageData && (
+                <ImageViewerModal 
+                  isOpen={isImageViewerOpen}
+                  imageUrl={imageData}
+                  onClose={() => setIsImageViewerOpen(false)}
+                  messageId={id}
+                />
               )}
               {content && (
                 <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
@@ -356,17 +363,18 @@ export function MessageBubble({
                 src={imageData} 
                 alt="Shared image" 
                 className="max-w-full object-contain max-h-80 cursor-pointer"
-                onClick={() => {
-                  // Create a download link
-                  const link = document.createElement('a');
-                  link.href = imageData;
-                  link.download = `shared-image-${id}.jpg`;
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}
+                onClick={() => setIsImageViewerOpen(true)}
               />
             </div>
+          )}
+          {/* Image viewer modal */}
+          {imageData && (
+            <ImageViewerModal 
+              isOpen={isImageViewerOpen}
+              imageUrl={imageData}
+              onClose={() => setIsImageViewerOpen(false)}
+              messageId={id}
+            />
           )}
           {content && (
             <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
