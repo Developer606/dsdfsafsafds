@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageStatusIndicator } from "./message-status-indicator";
 import { ImageViewerModal } from "./image-viewer-modal";
+import { VideoViewerModal } from "./video-viewer-modal";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 
@@ -16,6 +17,7 @@ interface MessageBubbleProps {
   avatar?: string;
   userName?: string;
   imageData?: string; // Base64 encoded image data
+  videoData?: string; // Base64 encoded video data
 }
 
 export function MessageBubble({
@@ -28,13 +30,17 @@ export function MessageBubble({
   chatStyle = "whatsapp",
   avatar,
   userName,
-  imageData
+  imageData,
+  videoData
 }: MessageBubbleProps) {
-  // State for image viewer modal
+  // State for media viewer modals
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [isVideoViewerOpen, setIsVideoViewerOpen] = useState(false);
   
-  // If we only have an image and no text content, handle it differently
+  // If we only have an image/video and no text content, handle it differently
   const isImageOnlyMessage = imageData && !content;
+  const isVideoOnlyMessage = videoData && !content;
+  const isMediaOnlyMessage = (imageData || videoData) && !content;
   // Format time string
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -103,7 +109,7 @@ export function MessageBubble({
               {imageData && (
                 <div className={cn(
                   "rounded-md overflow-hidden",
-                  content ? "mb-3" : ""  // Only add margin bottom if there's content after the image
+                  (content || videoData) ? "mb-3" : ""  // Only add margin bottom if there's content or video after the image
                 )}>
                   <img 
                     src={imageData} 
@@ -122,6 +128,30 @@ export function MessageBubble({
                   messageId={id}
                 />
               )}
+              
+              {videoData && (
+                <div className={cn(
+                  "rounded-md overflow-hidden",
+                  content ? "mb-3" : ""  // Only add margin bottom if there's content after the video
+                )}>
+                  <video 
+                    src={videoData} 
+                    className="max-w-full object-contain max-h-96 cursor-pointer"
+                    controls
+                    onClick={() => setIsVideoViewerOpen(true)}
+                  />
+                </div>
+              )}
+              {/* Video viewer modal */}
+              {videoData && (
+                <VideoViewerModal 
+                  isOpen={isVideoViewerOpen}
+                  videoUrl={videoData}
+                  onClose={() => setIsVideoViewerOpen(false)}
+                  messageId={id}
+                />
+              )}
+              
               {content && (
                 <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
                   {content}
@@ -218,6 +248,75 @@ export function MessageBubble({
       );
     }
     
+    // Special case: if it's a video-only message, show without bubble
+    if (isVideoOnlyMessage) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 380, 
+            damping: 25 
+          }}
+          className={cn(
+            "px-2 sm:px-4 py-1 sm:py-2 mb-1",
+            isCurrentUser ? "ml-auto" : "mr-auto",
+            "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+          )}
+        >
+          <div className={cn(
+            "flex",
+            isCurrentUser ? "justify-end" : "justify-start",
+            "items-end gap-2"
+          )}>
+            {!isCurrentUser && avatar && (
+              <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 shadow-md ring-2 ring-blue-100 dark:ring-blue-900">
+                <img src={avatar} alt={userName || "User"} className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className={cn(
+              "flex flex-col",
+              isCurrentUser ? "items-end" : "items-start"
+            )}>
+              {!isCurrentUser && userName && (
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 ml-1">
+                  {userName}
+                </span>
+              )}
+              
+              {/* Video without bubble */}
+              <div className="rounded-lg overflow-hidden shadow-md">
+                <video 
+                  src={videoData} 
+                  className="max-w-full object-contain max-h-72 cursor-pointer"
+                  controls
+                  onClick={() => setIsVideoViewerOpen(true)}
+                />
+              </div>
+              
+              {/* Video viewer modal */}
+              <VideoViewerModal 
+                isOpen={isVideoViewerOpen}
+                videoUrl={videoData!}
+                onClose={() => setIsVideoViewerOpen(false)}
+                messageId={id}
+              />
+              
+              <div className="flex items-center mt-1 gap-1.5 px-1">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatTime(timestamp)}
+                </span>
+                {isCurrentUser && (
+                  <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      );
+    }
+    
     // Regular message with text (and possibly an image)
     return (
       <motion.div
@@ -278,6 +377,27 @@ export function MessageBubble({
                   messageId={id}
                 />
               )}
+              
+              {videoData && (
+                <div className="mb-2 rounded-lg overflow-hidden">
+                  <video 
+                    src={videoData} 
+                    className="max-w-full object-contain max-h-72"
+                    controls
+                    onClick={() => setIsVideoViewerOpen(true)}
+                  />
+                </div>
+              )}
+              {/* Video viewer modal */}
+              {videoData && (
+                <VideoViewerModal 
+                  isOpen={isVideoViewerOpen}
+                  videoUrl={videoData}
+                  onClose={() => setIsVideoViewerOpen(false)}
+                  messageId={id}
+                />
+              )}
+              
               {content && (
                 <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
                   {content}
@@ -380,6 +500,86 @@ export function MessageBubble({
       );
     }
     
+    // Special case: if it's a video-only message, show without bubble
+    if (isVideoOnlyMessage) {
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 400, 
+            damping: 25 
+          }}
+          className={cn(
+            "px-2 sm:px-4 py-1 sm:py-2 mb-1",
+            isCurrentUser ? "ml-auto" : "mr-auto",
+            "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+          )}
+        >
+          <div className={cn(
+            "flex",
+            isCurrentUser ? "justify-end" : "justify-start",
+            "items-end gap-2"
+          )}>
+            {!isCurrentUser && (
+              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 shadow-sm bg-pink-200">
+                {avatar ? (
+                  <img src={avatar} alt={userName || "User"} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-pink-200 text-pink-800">
+                    {userName ? userName.charAt(0).toUpperCase() : "U"}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className={cn(
+              "flex flex-col",
+              isCurrentUser ? "items-end" : "items-start"
+            )}>
+              {!isCurrentUser && userName && (
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 ml-1">
+                  {userName}
+                </span>
+              )}
+              
+              {/* Video without bubble */}
+              <div className="rounded-2xl overflow-hidden shadow-md">
+                <video 
+                  src={videoData} 
+                  className="max-w-full object-contain max-h-64"
+                  controls
+                  onClick={() => setIsVideoViewerOpen(true)}
+                />
+              </div>
+              
+              {/* Video viewer modal */}
+              <VideoViewerModal 
+                isOpen={isVideoViewerOpen}
+                videoUrl={videoData!}
+                onClose={() => setIsVideoViewerOpen(false)}
+                messageId={id}
+              />
+              
+              <div className="flex items-center mt-1 gap-1 px-1">
+                <span className="text-[10px] text-gray-500">
+                  오후 {formatTime(timestamp)}
+                </span>
+                {isCurrentUser && (
+                  <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
+                )}
+              </div>
+            </div>
+            {isCurrentUser && (
+              <div className="w-6 h-6">
+                {/* Placeholder for KakaoTalk character emoji that would appear on the right of user messages */}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      );
+    }
+    
     // Regular message with text (and possibly an image)
     return (
       <motion.div
@@ -446,6 +646,27 @@ export function MessageBubble({
                   messageId={id}
                 />
               )}
+              
+              {videoData && (
+                <div className="mb-2 rounded-2xl overflow-hidden">
+                  <video 
+                    src={videoData} 
+                    className="max-w-full object-contain max-h-64"
+                    controls
+                    onClick={() => setIsVideoViewerOpen(true)}
+                  />
+                </div>
+              )}
+              {/* Video viewer modal */}
+              {videoData && (
+                <VideoViewerModal 
+                  isOpen={isVideoViewerOpen}
+                  videoUrl={videoData}
+                  onClose={() => setIsVideoViewerOpen(false)}
+                  messageId={id}
+                />
+              )}
+              
               {content && (
                 <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
                   {content}
@@ -531,6 +752,64 @@ export function MessageBubble({
     );
   }
   
+  // Special case: if it's a video-only message, show without bubble
+  if (isVideoOnlyMessage) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 420, 
+          damping: 28
+        }}
+        className={cn(
+          "px-2 sm:px-4 py-1 sm:py-2 mb-1",
+          isCurrentUser ? "ml-auto" : "mr-auto",
+          "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
+        )}
+      >
+        <div className={cn(
+          "flex flex-col",
+          isCurrentUser ? "items-end" : "items-start"
+        )}>
+          {!isCurrentUser && userName && (
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1.5">
+              {userName}
+            </p>
+          )}
+          
+          {/* Video without bubble container */}
+          <div className="rounded-md overflow-hidden shadow-md">
+            <video 
+              src={videoData} 
+              className="max-w-full object-contain max-h-80 cursor-pointer"
+              controls
+              onClick={() => setIsVideoViewerOpen(true)}
+            />
+          </div>
+          
+          {/* Video viewer modal */}
+          <VideoViewerModal 
+            isOpen={isVideoViewerOpen}
+            videoUrl={videoData!}
+            onClose={() => setIsVideoViewerOpen(false)}
+            messageId={id}
+          />
+          
+          <div className="flex items-center gap-1.5 mt-1.5 px-1">
+            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+              {formatTime(timestamp)}
+            </span>
+            {isCurrentUser && (
+              <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+  
   // Regular message with text (and possibly an image)
   return (
     <motion.div
@@ -595,6 +874,27 @@ export function MessageBubble({
               messageId={id}
             />
           )}
+          
+          {videoData && (
+            <div className="mb-2 rounded-md overflow-hidden border-0">
+              <video 
+                src={videoData} 
+                className="max-w-full object-contain max-h-80"
+                controls
+                onClick={() => setIsVideoViewerOpen(true)}
+              />
+            </div>
+          )}
+          {/* Video viewer modal */}
+          {videoData && (
+            <VideoViewerModal 
+              isOpen={isVideoViewerOpen}
+              videoUrl={videoData}
+              onClose={() => setIsVideoViewerOpen(false)}
+              messageId={id}
+            />
+          )}
+          
           {content && (
             <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
               {content}
