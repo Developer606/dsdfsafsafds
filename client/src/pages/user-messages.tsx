@@ -68,9 +68,11 @@ export default function UserMessages() {
   const isMobile = useIsMobile();
   const [messageText, setMessageText] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const socketManager = useSocket();
   const { trackStatusChange, shouldAnimateStatus } = useMessageStatusTracker();
@@ -483,6 +485,47 @@ export default function UserMessages() {
     }
   };
 
+  // Handle video selection
+  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Check file type
+    if (!file.type.startsWith('video/')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid File Type",
+        description: "Please select a video file (MP4, WebM, etc.)"
+      });
+      return;
+    }
+    
+    // Check file size (max 15MB)
+    if (file.size > 15 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: "Video must be less than 15MB"
+      });
+      return;
+    }
+    
+    // Read the file as base64
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setSelectedVideo(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  // Handle video removal
+  const handleClearVideo = () => {
+    setSelectedVideo(null);
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
+    }
+  };
+
   // Add chat style toggle function with premium check
   const toggleChatStyle = () => {
     // Check if user is free or on basic plan
@@ -649,8 +692,8 @@ export default function UserMessages() {
   const sendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if we have text or image content to send
-    if (!messageText.trim() && !selectedImage) return;
+    // Check if we have text, image, or video content to send
+    if (!messageText.trim() && !selectedImage && !selectedVideo) return;
     
     // Don't send if conversation is blocked
     if (isConversationBlocked) {
@@ -662,10 +705,16 @@ export default function UserMessages() {
       return;
     }
     
-    // Create message content including image data if present
-    const content = selectedImage 
-      ? JSON.stringify({ text: messageText, imageData: selectedImage })
-      : messageText;
+    // Create message content including media data if present
+    let content;
+    
+    if (selectedImage) {
+      content = JSON.stringify({ text: messageText, imageData: selectedImage });
+    } else if (selectedVideo) {
+      content = JSON.stringify({ text: messageText, videoData: selectedVideo });
+    } else {
+      content = messageText;
+    }
     
     // Send via Socket.IO
     if (socketManager.isConnected()) {
@@ -678,8 +727,14 @@ export default function UserMessages() {
     // Reset form
     setMessageText("");
     setSelectedImage(null);
+    setSelectedVideo(null);
+    
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
     }
   };
   
@@ -963,16 +1018,21 @@ export default function UserMessages() {
               return (
                 <div key={message.id} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} ${chatStyle === "chatgpt" ? "w-full" : ""}`}>
                   {(() => {
-                    // Check if message content is JSON with image data
+                    // Check if message content is JSON with media data
                     let messageContent = message.content;
                     let imageData = null;
+                    let videoData = null;
                     
                     try {
                       // Attempt to parse as JSON
                       const parsedContent = JSON.parse(message.content);
+                      
                       if (parsedContent && parsedContent.imageData) {
                         messageContent = parsedContent.text || '';
                         imageData = parsedContent.imageData;
+                      } else if (parsedContent && parsedContent.videoData) {
+                        messageContent = parsedContent.text || '';
+                        videoData = parsedContent.videoData;
                       }
                     } catch (e) {
                       // Not JSON, use content as is
@@ -990,6 +1050,7 @@ export default function UserMessages() {
                         avatar={isCurrentUser ? undefined : otherUser.avatarUrl}
                         userName={isCurrentUser ? undefined : (otherUser.fullName || otherUser.username)}
                         imageData={imageData}
+                        videoData={videoData}
                       />
                     );
                   })()}
@@ -1060,14 +1121,43 @@ export default function UserMessages() {
               </div>
             )}
             
+            {/* Video preview if selected */}
+            {selectedVideo && (
+              <div className="relative w-full max-w-xs mx-auto mb-2">
+                <video 
+                  src={selectedVideo}
+                  className="w-full object-contain rounded-lg max-h-[200px]" 
+                  controls
+                />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  onClick={handleClearVideo}
+                  className="absolute -top-2 -right-2 h-7 w-7 rounded-full"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
             <div className="flex items-center space-x-2">
-              {/* Hidden file input */}
+              {/* Hidden image file input */}
               <input 
                 type="file" 
                 accept="image/*" 
                 onChange={handleImageSelect}
                 className="hidden"
                 ref={fileInputRef}
+              />
+              
+              {/* Hidden video file input */}
+              <input 
+                type="file" 
+                accept="video/*" 
+                onChange={handleVideoSelect}
+                className="hidden"
+                ref={videoInputRef}
               />
               
               {/* Image upload button */}
@@ -1088,6 +1178,30 @@ export default function UserMessages() {
                 )}
               >
                 <ImageIcon className="h-5 w-5" />
+              </Button>
+              
+              {/* Video upload button */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => videoInputRef.current?.click()}
+                className={cn(
+                  "h-12 w-12",
+                  chatStyle === "whatsapp"
+                    ? "rounded-full text-[#008069] hover:bg-gray-100 dark:text-green-500 dark:hover:bg-slate-700"
+                    : chatStyle === "messenger"
+                    ? "rounded-full text-[#0084ff] hover:bg-gray-100 dark:text-blue-500 dark:hover:bg-slate-700"
+                    : chatStyle === "kakaotalk"
+                    ? "rounded-full text-pink-700 hover:bg-pink-100 dark:text-pink-400 dark:hover:bg-pink-900/40"
+                    : "rounded-md text-purple-500 hover:bg-gray-100 dark:hover:bg-slate-700"
+                )}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m22 8-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
+                  <path d="M18 8h4"></path>
+                  <path d="m12 16 2.5-3.5L17 15l2-4"></path>
+                </svg>
               </Button>
               
               {/* Text input */}
@@ -1122,7 +1236,7 @@ export default function UserMessages() {
                     ? "rounded-full bg-gradient-to-r from-pink-500 to-pink-700 hover:from-pink-600 hover:to-pink-800"
                     : "rounded-md bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
                 )}
-                disabled={sendMessageMutation.isPending || (!messageText.trim() && !selectedImage)}
+                disabled={sendMessageMutation.isPending || (!messageText.trim() && !selectedImage && !selectedVideo)}
               >
                 <Send className="h-5 w-5 text-white" />
               </Button>
