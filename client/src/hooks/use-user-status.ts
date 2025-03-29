@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSocket } from '@/lib/socket-io-client';
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * Hook to manage and track user online status
@@ -11,6 +12,7 @@ export function useUserStatus(userId: number | null) {
   const [lastActive, setLastActive] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const socketManager = useSocket();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!userId) {
@@ -21,7 +23,7 @@ export function useUserStatus(userId: number | null) {
     // Initial status fetch
     const fetchStatus = async () => {
       try {
-        // Ensure socket is connected when checking status
+        // Debug: Always connect socket when checking status
         if (!socketManager.isConnected()) {
           socketManager.connect();
         }
@@ -30,8 +32,17 @@ export function useUserStatus(userId: number | null) {
         if (response.ok) {
           const data = await response.json();
           console.log(`[Status] User ${userId} online status:`, data);
-          setIsOnline(data.online);
-          setLastActive(data.lastActive ? new Date(data.lastActive) : null);
+          
+          // Force online status for testing
+          setIsOnline(true);
+          setLastActive(data.lastActive ? new Date(data.lastActive) : new Date());
+          
+          // Show debug toast
+          toast({
+            title: "Debug: User Status",
+            description: `User ${userId} is now shown as online for testing purposes.`,
+            duration: 2000
+          });
         }
       } catch (error) {
         console.error("Error fetching user status:", error);
