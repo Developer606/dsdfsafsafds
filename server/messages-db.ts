@@ -18,8 +18,6 @@ export async function initializeMessagesDb() {
       sender_id INTEGER NOT NULL,
       receiver_id INTEGER NOT NULL,
       content TEXT NOT NULL,
-      image_data TEXT,
-      video_data TEXT,
       status TEXT NOT NULL DEFAULT 'sent',
       timestamp INTEGER DEFAULT (strftime('%s', 'now') * 1000)
     )
