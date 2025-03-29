@@ -280,7 +280,10 @@ export default function UserMessages() {
     const typingIndicatorHandler = (data: any) => {
       console.log("Typing indicator received:", data);
       // Show typing indicator when the other user is typing
-      if (data.senderId === userId) {
+      // We need to check if the sender is the user we're chatting with (userId) 
+      // and the intended receiver is the current user
+      if (data.senderId === Number(userId) && data.receiverId === currentUser?.id) {
+        console.log("Setting typing indicator to:", data.isTyping);
         setIsTyping(data.isTyping);
       }
     };
@@ -701,13 +704,18 @@ export default function UserMessages() {
   
   // Handle typing indicator
   useEffect(() => {
+    if (!currentUser?.id || !userId) return;
+    
     const handleTyping = () => {
-      socketManager.sendTypingIndicator(userId, messageText.length > 0);
+      // Send typing indicator from current user (sender) to the other user (receiver)
+      // First parameter is the receiverId, second is the isTyping status
+      socketManager.sendTypingIndicator(Number(userId), messageText.length > 0);
+      console.log(`Sending typing indicator to user ${userId}, isTyping: ${messageText.length > 0}`);
     };
     
     const typingTimer = setTimeout(handleTyping, 500);
     return () => clearTimeout(typingTimer);
-  }, [messageText, userId, socketManager]);
+  }, [messageText, userId, socketManager, currentUser?.id]);
   
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
