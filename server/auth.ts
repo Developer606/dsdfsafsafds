@@ -13,7 +13,6 @@ import {
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import cryptoRandomString from "crypto-random-string";
-import { markUserOffline } from "./services/user-status";
 
 declare global {
   namespace Express {
@@ -255,22 +254,10 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/logout", (req, res) => {
-    // Store user ID before logout since it will be removed from the session
-    const userId = req.user?.id;
-    
     req.logout((err) => {
       if (err) {
         return res.status(500).json({ error: "Logout failed" });
       }
-
-      if (userId) {
-        // Mark user as offline
-        markUserOffline(userId);
-        
-        // We don't have direct access to io here, so just mark the user as offline
-        // The Socket.IO server will handle the broadcast when it detects the user is disconnected
-      }
-      
       res.sendStatus(200);
     });
   });

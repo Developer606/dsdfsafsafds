@@ -36,7 +36,6 @@ import {
 import { cn } from "@/lib/utils";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { queryClient } from "@/lib/queryClient";
-import { UserStatusIndicator } from "@/components/user-status-indicator";
 
 // Types for message and conversation
 interface UserMessage {
@@ -409,8 +408,8 @@ export default function UserMessages() {
     if (currentUser && messages.length > 0 && socketManager) {
       // Only process messages that are from the other user and not already read
       const unreadMessages = messages.filter(
-        (message: UserMessage) => 
-          message.senderId === Number(userId) && 
+        message => 
+          message.senderId === parseInt(userId as string) && 
           message.receiverId === currentUser.id && 
           message.status !== "read"
       );
@@ -419,7 +418,7 @@ export default function UserMessages() {
         console.log(`Marking ${unreadMessages.length} messages as read`);
         
         // Mark each message as read
-        unreadMessages.forEach((message: UserMessage) => {
+        unreadMessages.forEach(message => {
           socketManager.updateMessageStatus(message.id, "read");
         });
       }
@@ -718,27 +717,14 @@ export default function UserMessages() {
               ? "text-[#0084ff] dark:text-blue-400"
               : "text-gray-800 dark:text-gray-200"
           )}>{otherUser.fullName || otherUser.username}</h1>
-          <div className="flex items-center gap-1">
-            <p className={cn(
-              "text-xs",
-              chatStyle === "whatsapp"
-                ? "text-white/70"
-                : chatStyle === "messenger"
-                ? "text-[#0084ff]/70 dark:text-blue-400/70"
-                : "text-gray-500 dark:text-gray-400"
-            )}>@{otherUser.username}</p>
-            <UserStatusIndicator 
-              userId={otherUser.id} 
-              size="sm" 
-              showText={true}
-              isAI={false}
-              className={cn(
-                chatStyle === "whatsapp" 
-                ? "ml-1 mt-0.5" 
-                : "ml-1 mt-0.5"
-              )} 
-            />
-          </div>
+          <p className={cn(
+            "text-xs",
+            chatStyle === "whatsapp"
+              ? "text-white/70"
+              : chatStyle === "messenger"
+              ? "text-[#0084ff]/70 dark:text-blue-400/70"
+              : "text-gray-500 dark:text-gray-400"
+          )}>@{otherUser.username}</p>
         </div>
         
         <div className="flex items-center gap-1 sm:gap-2">

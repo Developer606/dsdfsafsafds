@@ -53,7 +53,6 @@ import {
 } from "./notification-db";
 import { getPayPalConfig } from "./config/index";
 import { setupSocketIOServer } from "./socket-io-server";
-import { markUserOnline, isUserOnline, getLastActiveTime } from "./services/user-status";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -1990,17 +1989,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           req.logIn(authenticatedUser, async (err) => {
             if (err) return next(err);
             await storage.updateLastLogin(authenticatedUser.id);
-            
-            // Mark user as online when they log in
-            markUserOnline(authenticatedUser.id, req.sessionID);
-            
-            // Send online status update to all connected clients
-            io.emit('user_status_update', {
-              userId: authenticatedUser.id,
-              online: true,
-              lastActive: new Date()
-            });
-            
             res.json(authenticatedUser);
           });
         },
@@ -2741,8 +2729,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
-  // User status endpoint - check if a user is online (public endpoint)
-  app.get("/api/users/status/:userId", async (req, res) => {
+  // User status endpoint - check if a user is online
+  app.get("/api/users/status/:userId", authenticateJWT, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId);
       
