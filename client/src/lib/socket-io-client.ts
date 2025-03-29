@@ -160,15 +160,6 @@ class SocketIOManager {
       queryClient.invalidateQueries({ queryKey: ['/api/user-messages'] });
     });
     
-    // Handle batch message status updates (for high throughput optimization)
-    this.socket.on('message_status_batch', (data) => {
-      console.log('Batch message status update:', data);
-      this.notifyListeners('message_status_batch', data);
-      
-      // Invalidate queries to refresh UI
-      queryClient.invalidateQueries({ queryKey: ['/api/user-messages'] });
-    });
-    
     // Handle typing indicators
     this.socket.on('typing_indicator', (data) => {
       console.log('Typing indicator:', data);
@@ -322,28 +313,6 @@ class SocketIOManager {
       messageId,
       status
     });
-  }
-  
-  /**
-   * Update multiple message statuses at once (for high throughput optimization)
-   * @param messageIds Array of message IDs to update
-   * @param status Status to set for all messages
-   */
-  public updateMessageStatusBatch(messageIds: number[], status: 'sent' | 'delivered' | 'read'): void {
-    if (!messageIds.length) return;
-    
-    if (!this.socket || !this.socket.connected) {
-      this.connect();
-    }
-    
-    // For high throughput, use batch updates which reduce server load
-    // by processing multiple messages in a single database operation
-    this.socket?.emit('message_status_batch_update', {
-      messageIds,
-      status
-    });
-    
-    console.log(`Batch updating ${messageIds.length} messages to status: ${status}`);
   }
   
   /**

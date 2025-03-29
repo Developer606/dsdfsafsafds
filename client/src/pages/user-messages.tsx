@@ -435,17 +435,10 @@ export default function UserMessages() {
       if (unreadMessages.length > 0) {
         console.log(`Marking ${unreadMessages.length} messages as read`);
         
-        // High throughput optimization: Use batch update for better performance
-        if (unreadMessages.length > 1) {
-          // Extract message IDs
-          const messageIds = unreadMessages.map(message => message.id);
-          
-          // Use batch update to reduce network traffic and database operations
-          socketManager.updateMessageStatusBatch(messageIds, "read");
-        } else {
-          // For a single message, use the standard update to maintain compatibility
-          socketManager.updateMessageStatus(unreadMessages[0].id, "read");
-        }
+        // Mark each message as read
+        unreadMessages.forEach((message: UserMessage) => {
+          socketManager.updateMessageStatus(message.id, "read");
+        });
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
