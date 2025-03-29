@@ -60,29 +60,41 @@ export function MessageBubble({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 400, 
+          damping: 30, 
+          duration: 0.4 
+        }}
         className={cn(
-          "py-8 px-4 md:px-6 w-full",
-          isCurrentUser ? "bg-white dark:bg-slate-800" : "bg-gray-50 dark:bg-slate-900"
+          "py-6 px-4 md:px-8 w-full border-b",
+          isCurrentUser 
+            ? "bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700" 
+            : "bg-gray-50 dark:bg-slate-900 border-gray-100 dark:border-slate-700"
         )}
       >
         <div className="flex gap-4 items-start max-w-3xl mx-auto">
           {!isCurrentUser && avatar && (
-            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+            <div className="w-9 h-9 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-gray-200 dark:ring-gray-700 shadow-sm">
               <img src={avatar} alt={userName || "User"} className="w-full h-full object-cover" />
             </div>
           )}
           <div className="flex-1">
-            <p className="text-sm font-medium mb-1 text-gray-500 dark:text-gray-400">
+            <p className="text-sm font-semibold mb-1.5 text-gray-600 dark:text-gray-300 flex items-center">
               {isCurrentUser ? "You" : userName}
+              {!isCurrentUser && (
+                <span className="ml-2 text-xs px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 rounded-md">
+                  AI Assistant
+                </span>
+              )}
             </p>
             <div className="prose dark:prose-invert max-w-none">
-              <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">
+              <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">
                 {content}
               </p>
               {isCurrentUser && (
-                <div className="flex justify-end mt-1">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
+                <div className="flex justify-end mt-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mr-1.5">
                     {formatTime(timestamp)}
                   </span>
                   <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
@@ -91,8 +103,8 @@ export function MessageBubble({
             </div>
           </div>
           {isCurrentUser && (
-            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-300">Y</span>
+            <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0 shadow-sm ring-2 ring-blue-200 dark:ring-blue-800">
+              <span className="text-sm font-medium text-blue-600 dark:text-blue-300">You</span>
             </div>
           )}
         </div>
@@ -106,9 +118,13 @@ export function MessageBubble({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 380, 
+          damping: 25 
+        }}
         className={cn(
-          "px-2 sm:px-4 py-1 sm:py-2",
+          "px-2 sm:px-4 py-1 sm:py-2 mb-1",
           isCurrentUser ? "ml-auto" : "mr-auto",
           "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
         )}
@@ -119,7 +135,7 @@ export function MessageBubble({
           "items-end gap-2"
         )}>
           {!isCurrentUser && avatar && (
-            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 shadow-md ring-2 ring-blue-100 dark:ring-blue-900">
               <img src={avatar} alt={userName || "User"} className="w-full h-full object-cover" />
             </div>
           )}
@@ -127,17 +143,22 @@ export function MessageBubble({
             "flex flex-col",
             isCurrentUser ? "items-end" : "items-start"
           )}>
+            {!isCurrentUser && userName && (
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 ml-1">
+                {userName}
+              </span>
+            )}
             <div className={cn(
-              "px-3 py-2 rounded-2xl max-w-full",
+              "px-3 py-2 rounded-2xl max-w-full shadow-sm",
               isCurrentUser 
-                ? "bg-[#0084ff] text-white" 
-                : "bg-[#f0f0f0] dark:bg-slate-700 text-black dark:text-white"
+                ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white" 
+                : "bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 text-black dark:text-white"
             )}>
-              <p className="text-sm sm:text-base whitespace-pre-wrap break-words">
+              <p className="text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed">
                 {content}
               </p>
             </div>
-            <div className="flex items-center mt-1 gap-1">
+            <div className="flex items-center mt-1 gap-1.5 px-1">
               <span className="text-xs text-gray-500 dark:text-gray-400">
                 {formatTime(timestamp)}
               </span>
@@ -156,9 +177,13 @@ export function MessageBubble({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ 
+        type: "spring", 
+        stiffness: 420, 
+        damping: 28
+      }}
       className={cn(
-        "px-2 sm:px-4 py-1 sm:py-2",
+        "px-2 sm:px-4 py-1 sm:py-2 mb-1",
         isCurrentUser ? "ml-auto" : "mr-auto",
         "max-w-[85%] sm:max-w-[75%] md:max-w-[65%]"
       )}
@@ -168,22 +193,35 @@ export function MessageBubble({
         isCurrentUser ? "items-end" : "items-start"
       )}>
         <div className={cn(
-          "px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg",
+          "px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg shadow-sm relative",
           isCurrentUser 
-            ? "bg-[#e7ffdb] dark:bg-emerald-800 rounded-tr-none" 
-            : "bg-white dark:bg-slate-800 rounded-tl-none",
+            ? "bg-[#e7ffdb] dark:bg-emerald-800/90 rounded-tr-none border border-green-100 dark:border-emerald-700" 
+            : "bg-white dark:bg-slate-800/95 rounded-tl-none border border-gray-100 dark:border-slate-700",
           "max-w-full"
         )}>
+          {/* WhatsApp-style bubble tail */}
+          <div className={cn(
+            "absolute top-0 w-3 h-3 overflow-hidden",
+            isCurrentUser ? "-right-3" : "-left-3"
+          )}>
+            <div className={cn(
+              "absolute transform rotate-45 w-4 h-4 border",
+              isCurrentUser 
+                ? "bg-[#e7ffdb] dark:bg-emerald-800/90 -top-2 -left-2 border-green-100 dark:border-emerald-700" 
+                : "bg-white dark:bg-slate-800/95 -top-2 -right-2 border-gray-100 dark:border-slate-700"
+            )}></div>
+          </div>
+          
           {!isCurrentUser && userName && (
-            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1">
+            <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1.5">
               {userName}
             </p>
           )}
-          <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
+          <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
             {content}
           </p>
-          <div className="flex items-center justify-end gap-1 mt-1">
-            <span className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex items-center justify-end gap-1.5 mt-1.5">
+            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
               {formatTime(timestamp)}
             </span>
             {isCurrentUser && (
