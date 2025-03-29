@@ -403,6 +403,29 @@ export default function UserMessages() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, currentUser]);
   
+  // Mark received messages as read when the user views them
+  useEffect(() => {
+    if (currentUser && messages.length > 0 && socketManager) {
+      // Only process messages that are from the other user and not already read
+      const unreadMessages = messages.filter(
+        message => 
+          message.senderId === parseInt(userId as string) && 
+          message.receiverId === currentUser.id && 
+          message.status !== "read"
+      );
+      
+      if (unreadMessages.length > 0) {
+        console.log(`Marking ${unreadMessages.length} messages as read`);
+        
+        // Mark each message as read
+        unreadMessages.forEach(message => {
+          socketManager.updateMessageStatus(message.id, "read");
+        });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, currentUser, userId]);
+  
   // Add theme toggle function
   const toggleTheme = () => {
     const doc = document.documentElement;

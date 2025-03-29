@@ -80,6 +80,14 @@ export function MessageBubble({
               <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">
                 {content}
               </p>
+              {isCurrentUser && (
+                <div className="flex justify-end mt-1">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
+                    {formatTime(timestamp)}
+                  </span>
+                  <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
+                </div>
+              )}
             </div>
           </div>
           {isCurrentUser && (
@@ -129,9 +137,14 @@ export function MessageBubble({
                 {content}
               </p>
             </div>
-            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {formatTime(timestamp)}
-            </span>
+            <div className="flex items-center mt-1 gap-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {formatTime(timestamp)}
+              </span>
+              {isCurrentUser && (
+                <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
@@ -174,10 +187,7 @@ export function MessageBubble({
               {formatTime(timestamp)}
             </span>
             {isCurrentUser && (
-              <div className="flex">
-                <Check className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-                <Check className="h-3 w-3 -ml-1 text-gray-500 dark:text-gray-400" />
-              </div>
+              <MessageStatusIndicator status={status} animate={hasDeliveryAnimation} />
             )}
           </div>
         </div>
