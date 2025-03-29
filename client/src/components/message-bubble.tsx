@@ -13,7 +13,7 @@ interface MessageBubbleProps {
   status: "sent" | "delivered" | "read";
   isCurrentUser: boolean;
   hasDeliveryAnimation?: boolean;
-  chatStyle?: "whatsapp" | "chatgpt" | "messenger" | "kakaotalk";
+  chatStyle?: "whatsapp" | "chatgpt" | "messenger" | "kakao";
   avatar?: string;
   userName?: string;
   imageData?: string; // Base64 encoded image data
@@ -419,7 +419,7 @@ export function MessageBubble({
   }
   
   // KakaoTalk style
-  if (chatStyle === "kakaotalk") {
+  if (chatStyle === "kakao") {
     // Special case: if it's an image-only message, show without bubble
     if (isImageOnlyMessage) {
       return (
