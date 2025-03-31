@@ -389,65 +389,22 @@ export default function AdminCharacters() {
   // JSX for local image selection with file upload (extracted for reuse)
   const renderLocalImageSelector = (field: any) => (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <p className="text-sm font-medium mb-2">Choose existing image</p>
-          <Select 
-            onValueChange={(value) => {
-              // Update form value with validation
-              form.setValue('avatar', value, {
-                shouldValidate: true,
-                shouldDirty: true,
-                shouldTouch: true
-              }); 
-              field.onChange(value);
-              setSelectedLocalImage(value);
-            }}
-            value={selectedLocalImage}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a character image" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {localImagesLoading ? (
-                <SelectItem value="loading" disabled>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Loading images...
-                </SelectItem>
-              ) : localImages.length === 0 ? (
-                <SelectItem value="none" disabled>
-                  No local images available
-                </SelectItem>
-              ) : (
-                localImages.map((image) => (
-                  <SelectItem key={image.path} value={image.path}>
-                    {image.filename}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <p className="text-sm font-medium mb-2">Or upload new image</p>
-          <div className="relative">
-            <Input 
-              type="file" 
-              accept="image/jpeg,image/png,image/gif,image/webp" 
-              onChange={handleFileUpload}
-              className="cursor-pointer"
-              disabled={isUploading}
-            />
-            {isUploading && (
-              <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                <span>Uploading...</span>
-              </div>
-            )}
-          </div>
+      <div>
+        <p className="text-sm font-medium mb-2">Upload character image</p>
+        <div className="relative">
+          <Input 
+            type="file" 
+            accept="image/jpeg,image/png,image/gif,image/webp" 
+            onChange={handleFileUpload}
+            className="cursor-pointer"
+            disabled={isUploading}
+          />
+          {isUploading && (
+            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              <span>Uploading...</span>
+            </div>
+          )}
         </div>
       </div>
       
@@ -461,16 +418,22 @@ export default function AdminCharacters() {
       )}
       
       {selectedLocalImage && (
-        <div className="mt-2 relative w-32 h-32 rounded-md overflow-hidden border border-muted">
-          <img 
-            src={selectedLocalImage}
-            alt="Selected character image"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "https://via.placeholder.com/100";
-            }}
-          />
-        </div>
+        <>
+          <div className="flex items-center">
+            <div className="h-2 w-2 bg-green-500 rounded-full mr-2"></div>
+            <p className="text-sm text-green-500">Image uploaded successfully</p>
+          </div>
+          <div className="mt-2 relative w-32 h-32 rounded-md overflow-hidden border border-muted">
+            <img 
+              src={selectedLocalImage}
+              alt="Selected character image"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = "https://via.placeholder.com/100";
+              }}
+            />
+          </div>
+        </>
       )}
     </div>
   );
