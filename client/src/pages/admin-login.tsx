@@ -26,12 +26,7 @@ export default function AdminLoginPage() {
 
   const login = useMutation({
     mutationFn: async (data: { username: string; password: string }) => {
-      const res = await apiRequest("POST", "/api/admin/login", data);
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Admin login failed");
-      }
-      return res.json();
+      return apiRequest("POST", "/api/admin/login", data);
     },
     onSuccess: (user) => {
       queryClient.setQueryData(["/api/user"], user);
