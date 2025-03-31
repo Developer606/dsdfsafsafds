@@ -1529,7 +1529,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getActiveAdvertisements(): Promise<Advertisement[]> {
-    const now = new Date();
+    // Convert the date to an ISO string that SQLite can handle
+    const now = new Date().toISOString();
     
     const ads = await db
       .select()
