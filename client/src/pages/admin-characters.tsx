@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -44,7 +44,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -83,7 +82,6 @@ interface PredefinedCharacter {
   avatar: string;
   description: string;
   persona: string;
-  time?: string | null;
   createdAt?: Date;
 }
 
@@ -101,7 +99,6 @@ const characterSchema = z.object({
   avatar: z.string().min(1, "Avatar image source is required"),
   description: z.string().min(1, "Description is required"),
   persona: z.string().min(1, "Persona is required"),
-  time: z.string().optional(),
 });
 
 type CharacterFormValues = z.infer<typeof characterSchema>;
@@ -136,16 +133,14 @@ export default function AdminCharacters() {
   const [uploadProgress, setUploadProgress] = useState(0);
   
   // Fetch local images
-  const { isLoading: localImagesLoading, data: imagesData } = useQuery<{localImages: {filename: string; path: string}[]}>({
+  const { isLoading: localImagesLoading } = useQuery({
     queryKey: ["/api/admin/character-images"],
+    onSuccess: (data: any) => {
+      if (data?.localImages) {
+        setLocalImages(data.localImages);
+      }
+    },
   });
-  
-  // Process image data when it changes
-  useEffect(() => {
-    if (imagesData?.localImages) {
-      setLocalImages(imagesData.localImages);
-    }
-  }, [imagesData]);
   
   // Form setup
   const form = useForm<CharacterFormValues>({
@@ -156,7 +151,6 @@ export default function AdminCharacters() {
       avatar: "",
       description: "",
       persona: "",
-      time: "",
     },
   });
 
@@ -372,7 +366,6 @@ export default function AdminCharacters() {
       avatar: character.avatar,
       description: character.description,
       persona: character.persona,
-      time: character.time || "",
     });
     
     // Set image type based on avatar URL
@@ -395,7 +388,6 @@ export default function AdminCharacters() {
       avatar: "",
       description: "",
       persona: "",
-      time: "",
     });
     setSelectedImageType('url');
     setSelectedLocalImage('');
@@ -790,26 +782,6 @@ export default function AdminCharacters() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Time</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="When was this character added? (YYYY-MM-DD HH:MM)" 
-                        {...field} 
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Optional: Add a timestamp for when this character was created
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
                   Cancel
@@ -935,26 +907,6 @@ export default function AdminCharacters() {
                         {...field} 
                       />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Time</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="When was this character added? (YYYY-MM-DD HH:MM)" 
-                        {...field} 
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Optional: Add a timestamp for when this character was created
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
