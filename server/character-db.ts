@@ -38,6 +38,7 @@ export async function initializeCharacterDb() {
         avatar TEXT NOT NULL,
         description TEXT NOT NULL,
         persona TEXT NOT NULL,
+        time TEXT,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -61,7 +62,7 @@ export async function initializeCharacterDb() {
 export async function getAllPredefinedCharactersFromDb(): Promise<schema.PredefinedCharacter[]> {
   try {
     const characters = characterSqlite
-      .prepare('SELECT id, name, avatar, description, persona, created_at FROM predefined_characters')
+      .prepare('SELECT id, name, avatar, description, persona, time, created_at FROM predefined_characters')
       .all();
     
     // Convert created_at timestamps to Date objects
@@ -71,6 +72,7 @@ export async function getAllPredefinedCharactersFromDb(): Promise<schema.Predefi
       avatar: char.avatar,
       description: char.description,
       persona: char.persona,
+      time: char.time || null,
       createdAt: new Date(char.created_at)
     })) as schema.PredefinedCharacter[];
   } catch (error) {
@@ -85,7 +87,7 @@ export async function getAllPredefinedCharactersFromDb(): Promise<schema.Predefi
 export async function getPredefinedCharacterByIdFromDb(id: string): Promise<schema.PredefinedCharacter | undefined> {
   try {
     const character = characterSqlite
-      .prepare('SELECT id, name, avatar, description, persona, created_at FROM predefined_characters WHERE id = ?')
+      .prepare('SELECT id, name, avatar, description, persona, time, created_at FROM predefined_characters WHERE id = ?')
       .get(id) as any;
     
     if (!character) {
@@ -99,6 +101,7 @@ export async function getPredefinedCharacterByIdFromDb(id: string): Promise<sche
       avatar: character.avatar,
       description: character.description,
       persona: character.persona,
+      time: character.time || null,
       createdAt: new Date(character.created_at)
     } as schema.PredefinedCharacter;
   } catch (error) {
@@ -115,10 +118,24 @@ export async function createPredefinedCharacterInDb(
 ): Promise<schema.PredefinedCharacter> {
   try {
     const now = Date.now();
+    
+    // Current date/time as a string in the format YYYY-MM-DD HH:MM
+    const currentDateTime = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    
+    // Use the provided time or the current time if not provided
+    const timeValue = character.time || currentDateTime;
+    
     characterSqlite
       .prepare(`
-        INSERT INTO predefined_characters (id, name, avatar, description, persona, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO predefined_characters (id, name, avatar, description, persona, time, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         character.id,
@@ -126,11 +143,13 @@ export async function createPredefinedCharacterInDb(
         character.avatar,
         character.description,
         character.persona,
+        timeValue,
         now
       );
 
     return {
       ...character,
+      time: timeValue,
       createdAt: new Date(now),
     };
   } catch (error) {
@@ -175,6 +194,11 @@ export async function updatePredefinedCharacterInDb(
     if (character.persona !== undefined) {
       updateFields.push('persona = ?');
       params.push(character.persona);
+    }
+    
+    if (character.time !== undefined) {
+      updateFields.push('time = ?');
+      params.push(character.time);
     }
 
     // If no fields to update, return the current character
