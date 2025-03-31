@@ -259,19 +259,7 @@ export default function Chat() {
 
       return res.json();
     },
-    onSuccess: (data: Message[] | { messages: Message[], error?: string }) => {
-      // Handle both array response and object with messages property
-      const newMessages = Array.isArray(data) ? data : (data.messages || []);
-      
-      // Check if there was a partial error
-      if (!Array.isArray(data) && data.error) {
-        toast({
-          variant: "destructive",
-          title: "Partial Error",
-          description: data.error || "AI response failed, but your message was sent"
-        });
-      }
-      
+    onSuccess: (newMessages: Message[]) => {
       queryClient.setQueryData<Message[]>(
         [`/api/messages/${characterId}`],
         (old = []) => {
