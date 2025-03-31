@@ -24,7 +24,6 @@ import {
   getOnlineUserCount,
   getOnlineUsers
 } from "./services/user-status";
-import { characters } from "@shared/characters";
 import { generateCharacterResponse } from "./openai";
 import encryptionRoutes from "./encryption-routes";
 import { errorHandler } from "./middleware/error-handler";
