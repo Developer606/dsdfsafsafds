@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { BackgroundSlideshow } from "@/components/background-slideshow";
-import Advertisement from "@/components/advertisement";
 import {
   Dialog,
   DialogContent,
@@ -845,14 +844,6 @@ export default function Home() {
                       </Link>
                     ))}
                   </div>
-                </div>
-
-                {/* Advertisement Section */}
-                <div className="px-4 pt-5 pb-2">
-                  <Advertisement 
-                    maxWidth="100%" 
-                    className="rounded-xl shadow-md"
-                  />
                 </div>
               </div>
             )}
