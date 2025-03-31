@@ -96,7 +96,7 @@ interface CharacterStats {
 const characterSchema = z.object({
   id: z.string().min(1, "ID is required"),
   name: z.string().min(1, "Name is required"),
-  avatar: z.string().min(1, "Avatar is required"), // Generic message for both URL and local files
+  avatar: z.string().min(1, "Avatar image source is required"),
   description: z.string().min(1, "Description is required"),
   persona: z.string().min(1, "Persona is required"),
 });
@@ -190,6 +190,7 @@ export default function AdminCharacters() {
       // Update the form with the uploaded image path
       form.setValue('avatar', data.path);
       setSelectedLocalImage(data.path);
+      setSelectedImageType('local'); // Auto-switch to local image type when upload succeeds
       
       // Refresh the list of available images
       queryClient.invalidateQueries({ queryKey: ["/api/admin/character-images"] });
@@ -240,6 +241,9 @@ export default function AdminCharacters() {
       });
       return;
     }
+    
+    // Automatically switch to local image mode when user selects a file
+    setSelectedImageType('local');
     
     setUploadedFile(file);
     setIsUploading(true);
