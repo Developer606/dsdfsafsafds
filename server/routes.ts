@@ -102,11 +102,10 @@ const checkBlockedStatus = async (req: any, res: any, next: any) => {
 
 // Helper function to get background images
 async function getBackgroundImages(): Promise<string[]> {
-  const fs = require("fs");
-  const path = require("path");
-
   try {
-    const backgroundDir = path.join(__dirname, "../client/public/background");
+    // In ESM, __dirname is not available, so use process.cwd()
+    const currentDir = process.cwd();
+    const backgroundDir = path.join(currentDir, "client/public/background");
     const files = await fs.promises.readdir(backgroundDir);
 
     // Filter for image files and sort them
@@ -1370,9 +1369,9 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Get list of available character images from the local directory
   app.get("/api/admin/character-images", isAdmin, async (req, res) => {
     try {
-      const fs = require('fs');
-      const path = require('path');
-      const imagesDir = path.join(__dirname, '../client/public/character_images');
+      // In ESM, __dirname is not available, so we need to get the current directory in a different way
+      const currentDir = process.cwd();
+      const imagesDir = path.join(currentDir, 'client/public/character_images');
       
       // Check if directory exists
       if (!fs.existsSync(imagesDir)) {
