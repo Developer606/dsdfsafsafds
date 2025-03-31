@@ -624,7 +624,16 @@ export class DatabaseStorage implements IStorage {
    * @returns Array of predefined characters
    */
   async getAllPredefinedCharacters(): Promise<PredefinedCharacter[]> {
-    return await db.select().from(predefinedCharacters);
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { getAllPredefinedCharactersFromDb } = await import('./character-db');
+      return await getAllPredefinedCharactersFromDb();
+    } catch (error) {
+      console.error("Error fetching predefined characters from character.db:", error);
+      // Fallback to the main database if there's an error with character.db
+      console.log("Falling back to main database for predefined characters");
+      return await db.select().from(predefinedCharacters);
+    }
   }
   
   /**
@@ -633,12 +642,35 @@ export class DatabaseStorage implements IStorage {
    * @returns The character or undefined if not found
    */
   async getPredefinedCharacterById(id: string): Promise<PredefinedCharacter | undefined> {
-    const [character] = await db
-      .select()
-      .from(predefinedCharacters)
-      .where(eq(predefinedCharacters.id, id));
-    
-    return character;
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { getPredefinedCharacterByIdFromDb } = await import('./character-db');
+      const character = await getPredefinedCharacterByIdFromDb(id);
+      
+      // If found in character.db, return it
+      if (character) {
+        return character;
+      }
+      
+      // If not found in character.db, try the main database
+      console.log(`Character ${id} not found in character.db, trying main database`);
+      const [mainDbCharacter] = await db
+        .select()
+        .from(predefinedCharacters)
+        .where(eq(predefinedCharacters.id, id));
+      
+      return mainDbCharacter;
+    } catch (error) {
+      console.error(`Error fetching character ${id} from character.db:`, error);
+      // Fallback to the main database if there's an error with character.db
+      console.log(`Falling back to main database for character ${id}`);
+      const [character] = await db
+        .select()
+        .from(predefinedCharacters)
+        .where(eq(predefinedCharacters.id, id));
+      
+      return character;
+    }
   }
   
   /**
@@ -647,15 +679,24 @@ export class DatabaseStorage implements IStorage {
    * @returns The created character
    */
   async createPredefinedCharacter(character: InsertPredefinedCharacter): Promise<PredefinedCharacter> {
-    const [newCharacter] = await db
-      .insert(predefinedCharacters)
-      .values({
-        ...character,
-        createdAt: new Date()
-      })
-      .returning();
-    
-    return newCharacter;
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { createPredefinedCharacterInDb } = await import('./character-db');
+      return await createPredefinedCharacterInDb(character);
+    } catch (error) {
+      console.error("Error creating predefined character in character.db:", error);
+      // Fallback to the main database if there's an error with character.db
+      console.log("Falling back to main database for creating predefined character");
+      const [newCharacter] = await db
+        .insert(predefinedCharacters)
+        .values({
+          ...character,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      return newCharacter;
+    }
   }
   
   /**
@@ -668,15 +709,24 @@ export class DatabaseStorage implements IStorage {
     id: string, 
     character: Partial<InsertPredefinedCharacter>
   ): Promise<PredefinedCharacter> {
-    const [updatedCharacter] = await db
-      .update(predefinedCharacters)
-      .set({
-        ...character,
-      })
-      .where(eq(predefinedCharacters.id, id))
-      .returning();
-    
-    return updatedCharacter;
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { updatePredefinedCharacterInDb } = await import('./character-db');
+      return await updatePredefinedCharacterInDb(id, character);
+    } catch (error) {
+      console.error(`Error updating predefined character ${id} in character.db:`, error);
+      // Fallback to the main database if there's an error with character.db
+      console.log(`Falling back to main database for updating predefined character ${id}`);
+      const [updatedCharacter] = await db
+        .update(predefinedCharacters)
+        .set({
+          ...character,
+        })
+        .where(eq(predefinedCharacters.id, id))
+        .returning();
+      
+      return updatedCharacter;
+    }
   }
   
   /**
@@ -684,16 +734,37 @@ export class DatabaseStorage implements IStorage {
    * @param id Character ID
    */
   async deletePredefinedCharacter(id: string): Promise<void> {
-    await db
-      .delete(predefinedCharacters)
-      .where(eq(predefinedCharacters.id, id));
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { deletePredefinedCharacterFromDb } = await import('./character-db');
+      await deletePredefinedCharacterFromDb(id);
+    } catch (error) {
+      console.error(`Error deleting predefined character ${id} from character.db:`, error);
+      // Fallback to the main database if there's an error with character.db
+      console.log(`Falling back to main database for deleting predefined character ${id}`);
+      await db
+        .delete(predefinedCharacters)
+        .where(eq(predefinedCharacters.id, id));
+    }
   }
 
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
-    return await db
+    const rawMessages = await db
       .select()
       .from(messages)
       .where(eq(messages.characterId, characterId));
+    
+    // Convert raw messages to Message type
+    return rawMessages.map(msg => ({
+      id: msg.id,
+      userId: msg.userId,
+      characterId: msg.characterId,
+      content: msg.content,
+      isUser: Boolean(msg.isUser),
+      language: msg.language || undefined,
+      script: msg.script,
+      timestamp: new Date(msg.timestamp)
+    }));
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {

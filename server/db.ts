@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "@shared/schema";
 import { initializePlans } from "./plan-db";
+import { initializeCharacterDb } from "./character-db";
 
 // Configure SQLite with WAL mode for better concurrency
 const sqlite = new Database("sqlite.db", {
@@ -130,10 +131,13 @@ export async function runMigrations() {
 
     // Initialize plans database
     await initializePlans();
+    
+    // Initialize character database
+    await initializeCharacterDb();
 
     // Create indexes for better performance
     createIndexes();
-    console.log("Database and plans initialization completed");
+    console.log("Database, plans, and character database initialization completed");
   } catch (error: any) {
     console.error("Database migration failed:", error);
     throw error;
