@@ -573,12 +573,18 @@ export const advertisementMetrics = sqliteTable("advertisement_metrics", {
 });
 
 // Schemas for advertisement tables
-export const insertAdvertisementSchema = createInsertSchema(advertisements).omit({
+export const baseInsertAdvertisementSchema = createInsertSchema(advertisements).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
   impressions: true,
   clicks: true,
+});
+
+// Enhanced schema that accepts date strings too
+export const insertAdvertisementSchema = baseInsertAdvertisementSchema.extend({
+  startDate: z.union([z.date(), z.string().transform(str => new Date(str))]),
+  endDate: z.union([z.date(), z.string().transform(str => new Date(str))]),
 });
 
 export const insertAdvertisementMetricSchema = createInsertSchema(advertisementMetrics).omit({

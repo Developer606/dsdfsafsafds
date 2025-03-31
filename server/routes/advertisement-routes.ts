@@ -62,7 +62,20 @@ router.post("/", isAdmin, async (req, res) => {
   try {
     console.log("Received advertisement data:", JSON.stringify(req.body, null, 2));
     
-    const validation = insertAdvertisementSchema.safeParse(req.body);
+    // Pre-process the data to convert date strings to Date objects
+    const processedData = {
+      ...req.body,
+      startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+      endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+    };
+    
+    console.log("Processed data for validation:", JSON.stringify({
+      ...processedData,
+      startDate: processedData.startDate?.toISOString(),
+      endDate: processedData.endDate?.toISOString(),
+    }, null, 2));
+    
+    const validation = insertAdvertisementSchema.safeParse(processedData);
     if (!validation.success) {
       console.error("Validation error:", JSON.stringify(validation.error.format(), null, 2));
       return res.status(400).json({ 
@@ -96,7 +109,20 @@ router.put("/:id", isAdmin, async (req, res) => {
     
     console.log("Received update data:", JSON.stringify(req.body, null, 2));
     
-    const validation = insertAdvertisementSchema.partial().safeParse(req.body);
+    // Pre-process the data to convert date strings to Date objects
+    const processedData = {
+      ...req.body,
+      startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+      endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+    };
+    
+    console.log("Processed update data for validation:", JSON.stringify({
+      ...processedData,
+      startDate: processedData.startDate?.toISOString(),
+      endDate: processedData.endDate?.toISOString(),
+    }, null, 2));
+    
+    const validation = insertAdvertisementSchema.partial().safeParse(processedData);
     if (!validation.success) {
       console.error("Validation error:", JSON.stringify(validation.error.format(), null, 2));
       return res.status(400).json({ 
