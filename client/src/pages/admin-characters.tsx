@@ -63,7 +63,8 @@ import {
   AlertCircle,
   MessageCircle,
   LogOut,
-  Palette
+  Palette,
+  Upload
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -123,10 +124,13 @@ export default function AdminCharacters() {
       });
   };
   
-  // State for local images
+  // State for local images and upload
   const [localImages, setLocalImages] = useState<{filename: string; path: string}[]>([]);
   const [selectedImageType, setSelectedImageType] = useState<'url' | 'local'>('url');
   const [selectedLocalImage, setSelectedLocalImage] = useState<string>('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   // Fetch local images
   const { isLoading: localImagesLoading } = useQuery({
@@ -163,6 +167,87 @@ export default function AdminCharacters() {
   }, isLoading: statsLoading } = useQuery<CharacterStats>({
     queryKey: ["/api/admin/characters/stats"],
   });
+
+  // File upload mutation
+  const uploadImage = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const res = await fetch('/api/admin/upload-character-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to upload image");
+      }
+      
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Update the form with the uploaded image path
+      form.setValue('avatar', data.path);
+      setSelectedLocalImage(data.path);
+      
+      // Refresh the list of available images
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/character-images"] });
+      
+      // Reset upload states
+      setUploadedFile(null);
+      setUploadProgress(0);
+      setIsUploading(false);
+      
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully",
+      });
+    },
+    onError: (error: Error) => {
+      setIsUploading(false);
+      setUploadProgress(0);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a JPEG, PNG, GIF, or WebP image",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "The image must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setUploadedFile(file);
+    setIsUploading(true);
+    setUploadProgress(10); // Start progress indication
+    
+    // Upload the file
+    uploadImage.mutate(file);
+  };
 
   // Mutations
   const createCharacter = useMutation({
@@ -292,6 +377,89 @@ export default function AdminCharacters() {
     setSelectedLocalImage('');
     setCreateDialogOpen(true);
   };
+
+  // JSX for local image selection with file upload (extracted for reuse)
+  const renderLocalImageSelector = (field: any) => (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-sm font-medium mb-2">Choose existing image</p>
+          <Select 
+            onValueChange={(value) => {
+              field.onChange(value);
+              setSelectedLocalImage(value);
+            }}
+            value={selectedLocalImage}
+          >
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a character image" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {localImagesLoading ? (
+                <SelectItem value="loading" disabled>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading images...
+                </SelectItem>
+              ) : localImages.length === 0 ? (
+                <SelectItem value="none" disabled>
+                  No local images available
+                </SelectItem>
+              ) : (
+                localImages.map((image) => (
+                  <SelectItem key={image.path} value={image.path}>
+                    {image.filename}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div>
+          <p className="text-sm font-medium mb-2">Or upload new image</p>
+          <div className="relative">
+            <Input 
+              type="file" 
+              accept="image/jpeg,image/png,image/gif,image/webp" 
+              onChange={handleFileUpload}
+              className="cursor-pointer"
+              disabled={isUploading}
+            />
+            {isUploading && (
+              <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                <span>Uploading...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      {uploadProgress > 0 && uploadProgress < 100 && (
+        <div className="w-full bg-muted rounded-full h-2.5 mt-2">
+          <div 
+            className="bg-primary h-2.5 rounded-full" 
+            style={{ width: `${uploadProgress}%` }} 
+          />
+        </div>
+      )}
+      
+      {selectedLocalImage && (
+        <div className="mt-2 relative w-32 h-32 rounded-md overflow-hidden border border-muted">
+          <img 
+            src={selectedLocalImage}
+            alt="Selected character image"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "https://via.placeholder.com/100";
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="p-6">
@@ -588,49 +756,7 @@ export default function AdminCharacters() {
                           />
                         </FormControl>
                       ) : (
-                        <div className="space-y-2">
-                          <Select 
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              setSelectedLocalImage(value);
-                            }}
-                            value={selectedLocalImage}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a character image" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {localImagesLoading ? (
-                                <SelectItem value="loading" disabled>
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  Loading images...
-                                </SelectItem>
-                              ) : localImages.length === 0 ? (
-                                <SelectItem value="none" disabled>
-                                  No local images available
-                                </SelectItem>
-                              ) : (
-                                localImages.map((image) => (
-                                  <SelectItem key={image.path} value={image.path}>
-                                    {image.filename}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                          
-                          {selectedLocalImage && (
-                            <div className="relative h-20 w-20 mx-auto rounded overflow-hidden border">
-                              <img 
-                                src={selectedLocalImage} 
-                                alt="Selected character" 
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
+                        renderLocalImageSelector(field)
                       )}
                     </div>
                     <FormMessage />
@@ -645,9 +771,9 @@ export default function AdminCharacters() {
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="A brief description of the character" 
+                        placeholder="Short description of the character" 
+                        className="min-h-[80px]" 
                         {...field} 
-                        className="min-h-[100px]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -662,9 +788,9 @@ export default function AdminCharacters() {
                     <FormLabel>Persona</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Detailed character persona and speaking style" 
+                        placeholder="Detailed persona instructions for the character" 
+                        className="min-h-[120px]" 
                         {...field} 
-                        className="min-h-[200px]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -672,11 +798,7 @@ export default function AdminCharacters() {
                 )}
               />
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCreateDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createCharacter.isPending}>
@@ -763,49 +885,7 @@ export default function AdminCharacters() {
                           />
                         </FormControl>
                       ) : (
-                        <div className="space-y-2">
-                          <Select 
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              setSelectedLocalImage(value);
-                            }}
-                            value={selectedLocalImage}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a character image" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {localImagesLoading ? (
-                                <SelectItem value="loading" disabled>
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                  Loading images...
-                                </SelectItem>
-                              ) : localImages.length === 0 ? (
-                                <SelectItem value="none" disabled>
-                                  No local images available
-                                </SelectItem>
-                              ) : (
-                                localImages.map((image) => (
-                                  <SelectItem key={image.path} value={image.path}>
-                                    {image.filename}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                          
-                          {selectedLocalImage && (
-                            <div className="relative h-20 w-20 mx-auto rounded overflow-hidden border">
-                              <img 
-                                src={selectedLocalImage} 
-                                alt="Selected character" 
-                                className="h-full w-full object-cover"
-                              />
-                            </div>
-                          )}
-                        </div>
+                        renderLocalImageSelector(field)
                       )}
                     </div>
                     <FormMessage />
@@ -820,9 +900,9 @@ export default function AdminCharacters() {
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="A brief description of the character" 
+                        placeholder="Short description of the character" 
+                        className="min-h-[80px]" 
                         {...field} 
-                        className="min-h-[100px]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -837,9 +917,9 @@ export default function AdminCharacters() {
                     <FormLabel>Persona</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Detailed character persona and speaking style" 
+                        placeholder="Detailed persona instructions for the character" 
+                        className="min-h-[120px]" 
                         {...field} 
-                        className="min-h-[200px]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -847,11 +927,7 @@ export default function AdminCharacters() {
                 )}
               />
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setEditDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={updateCharacter.isPending}>

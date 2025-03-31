@@ -1366,6 +1366,40 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
+  // Configure multer storage for file uploads
+  const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+      const currentDir = process.cwd();
+      const uploadDir = path.join(currentDir, 'client/public/character_images');
+      
+      // Create directory if it doesn't exist
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      cb(null, uploadDir);
+    },
+    filename: function(req, file, cb) {
+      // Generate unique filename with original extension
+      const fileExt = path.extname(file.originalname);
+      const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
+      cb(null, uniqueName);
+    }
+  });
+  
+  // Set up file upload middleware with file type filter
+  const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+    fileFilter: function(req, file, cb) {
+      // Accept only image files
+      if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+        return cb(new Error('Only image files are allowed!'), false);
+      }
+      cb(null, true);
+    }
+  });
+  
   // Get list of available character images from the local directory
   app.get("/api/admin/character-images", isAdmin, async (req, res) => {
     try {
@@ -1398,6 +1432,27 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     } catch (error) {
       console.error("Error fetching character images:", error);
       res.status(500).json({ error: "Failed to fetch character images" });
+    }
+  });
+  
+  // Upload character image endpoint
+  app.post("/api/admin/upload-character-image", isAdmin, upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      // Return the file path that can be used in the avatar field
+      const filePath = `/character_images/${req.file.filename}`;
+      
+      res.json({ 
+        success: true, 
+        filename: req.file.filename,
+        path: filePath
+      });
+    } catch (error) {
+      console.error("Error uploading character image:", error);
+      res.status(500).json({ error: "Failed to upload image" });
     }
   });
 
