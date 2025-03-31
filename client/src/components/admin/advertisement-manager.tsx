@@ -87,7 +87,13 @@ export const AdvertisementManager: React.FC = () => {
         endDate: new Date(data.endDate),
       };
       
-      return apiRequest('POST', '/api/advertisements', payload);
+      return apiRequest('/api/advertisements', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements'] });
@@ -108,7 +114,13 @@ export const AdvertisementManager: React.FC = () => {
         endDate: new Date(rest.endDate),
       };
       
-      return apiRequest('PUT', `/api/advertisements/${id}`, payload);
+      return apiRequest(`/api/advertisements/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements'] });
@@ -118,7 +130,12 @@ export const AdvertisementManager: React.FC = () => {
   // Mutation to delete an advertisement
   const deleteMutation = useMutation({
     mutationFn: (id: number) => {
-      return apiRequest('DELETE', `/api/advertisements/${id}`);
+      return apiRequest(`/api/advertisements/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements'] });
