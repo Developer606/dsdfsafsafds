@@ -839,6 +839,12 @@ export default function AdminDashboard() {
             <LogOut className="h-4 w-4" />
             Logout
           </Button>
+          <Link href="/admin/characters">
+            <Button variant="outline" className="gap-2">
+              <Palette className="h-4 w-4" />
+              Manage Characters
+            </Button>
+          </Link>
           <Link href="/admin/content-moderation">
             <Button variant="outline" className="gap-2 relative">
               <Shield className="h-4 w-4" />

@@ -1176,11 +1176,14 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           storage.getCustomCharactersByUser(user.id),
         ),
       );
+      
+      // Get all predefined characters from the database
+      const predefinedChars = await storage.getAllPredefinedCharacters();
 
       const stats = {
-        totalCharacters: characters.length + customCharacters.flat().length,
+        totalCharacters: predefinedChars.length + customCharacters.flat().length,
         customCharactersCount: customCharacters.flat().length,
-        predefinedCharactersCount: characters.length,
+        predefinedCharactersCount: predefinedChars.length,
         averageCustomCharactersPerUser:
           customCharacters.flat().length /
           Math.max(1, (await storage.getAllUsers()).length),
@@ -1350,6 +1353,103 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     } catch (error: any) {
       console.error("Error deleting plan:", error);
       res.status(500).json({ error: "Failed to delete plan" });
+    }
+  });
+
+  // Predefined characters management for admin dashboard
+  app.get("/api/admin/predefined-characters", isAdmin, async (req, res) => {
+    try {
+      const characters = await storage.getAllPredefinedCharacters();
+      res.json(characters);
+    } catch (error: any) {
+      console.error("Error fetching predefined characters:", error);
+      res.status(500).json({ error: "Failed to fetch predefined characters" });
+    }
+  });
+
+  app.get("/api/admin/predefined-characters/:id", isAdmin, async (req, res) => {
+    try {
+      const character = await storage.getPredefinedCharacterById(req.params.id);
+      if (!character) {
+        return res.status(404).json({ error: "Character not found" });
+      }
+      res.json(character);
+    } catch (error: any) {
+      console.error(`Error fetching predefined character ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch predefined character" });
+    }
+  });
+
+  app.post("/api/admin/predefined-characters", isAdmin, async (req, res) => {
+    try {
+      const { id, name, avatar, description, persona } = req.body;
+      
+      if (!id || !name || !avatar || !description || !persona) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      // Check if character with this ID already exists
+      const existingCharacter = await storage.getPredefinedCharacterById(id);
+      if (existingCharacter) {
+        return res.status(409).json({ error: "Character with this ID already exists" });
+      }
+
+      const newCharacter = await storage.createPredefinedCharacter({
+        id,
+        name,
+        avatar,
+        description,
+        persona
+      });
+
+      res.status(201).json(newCharacter);
+    } catch (error: any) {
+      console.error("Error creating predefined character:", error);
+      res.status(500).json({ error: "Error creating predefined character" });
+    }
+  });
+
+  app.put("/api/admin/predefined-characters/:id", isAdmin, async (req, res) => {
+    try {
+      const { name, avatar, description, persona } = req.body;
+      const characterId = req.params.id;
+      
+      // Check if character exists
+      const existingCharacter = await storage.getPredefinedCharacterById(characterId);
+      if (!existingCharacter) {
+        return res.status(404).json({ error: "Character not found" });
+      }
+
+      // Update character
+      const updatedCharacter = await storage.updatePredefinedCharacter(
+        characterId,
+        { name, avatar, description, persona }
+      );
+
+      res.json(updatedCharacter);
+    } catch (error: any) {
+      console.error(`Error updating predefined character ${req.params.id}:`, error);
+      res.status(500).json({ error: "Error updating predefined character" });
+    }
+  });
+
+  app.delete("/api/admin/predefined-characters/:id", isAdmin, async (req, res) => {
+    try {
+      const characterId = req.params.id;
+      
+      // Check if character exists
+      const existingCharacter = await storage.getPredefinedCharacterById(characterId);
+      if (!existingCharacter) {
+        return res.status(404).json({ error: "Character not found" });
+      }
+
+      // Delete character
+      await storage.deletePredefinedCharacter(characterId);
+
+      res.json({ success: true, message: "Character deleted successfully" });
+    } catch (error: any) {
+      console.error(`Error deleting predefined character ${req.params.id}:`, error);
+      res.status(500).json({ error: "Error deleting predefined character" });
     }
   });
 
