@@ -1610,6 +1610,19 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       // Get custom characters created by the user
       const customChars = await storage.getCustomCharactersByUser(req.user.id);
       
+      // Define the threshold for new characters (7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      // Format predefined characters and mark recent ones as "new"
+      const formattedPredefinedChars = predefinedChars.map(char => {
+        const isNew = char.createdAt && char.createdAt > sevenDaysAgo;
+        return {
+          ...char,
+          isNew // Add isNew flag
+        };
+      });
+      
       // Format custom characters
       const formattedCustomChars = customChars.map((char) => ({
         id: `custom_${char.id}`,
@@ -1617,12 +1630,13 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         avatar: char.avatar,
         description: char.description,
         persona: char.persona,
+        isNew: false // Custom characters don't get the "new" badge
       }));
 
       // Use the predefined characters from database, falling back to hardcoded if none exist
-      const allCharacters = predefinedChars.length > 0 
-        ? [...predefinedChars, ...formattedCustomChars]
-        : [...characters, ...formattedCustomChars];
+      const allCharacters = formattedPredefinedChars.length > 0 
+        ? [...formattedPredefinedChars, ...formattedCustomChars]
+        : [...characters.map(c => ({...c, isNew: false})), ...formattedCustomChars];
         
       res.json(allCharacters);
     } catch (error: any) {

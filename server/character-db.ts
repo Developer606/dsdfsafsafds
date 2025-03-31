@@ -61,7 +61,7 @@ export async function initializeCharacterDb() {
 export async function getAllPredefinedCharactersFromDb(): Promise<schema.PredefinedCharacter[]> {
   try {
     const characters = characterSqlite
-      .prepare('SELECT id, name, avatar, description, persona, created_at FROM predefined_characters')
+      .prepare('SELECT id, name, avatar, description, persona, created_at FROM predefined_characters ORDER BY created_at DESC')
       .all();
     
     // Convert created_at timestamps to Date objects

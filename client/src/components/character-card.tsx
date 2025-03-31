@@ -14,6 +14,11 @@ export function CharacterCard({ character }: CharacterCardProps) {
           alt={character.name}
           className="absolute inset-0 w-full h-full object-cover"
         />
+        {character.isNew && (
+          <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-2 py-1 rounded-md text-xs font-bold">
+            New
+          </div>
+        )}
       </div>
       <CardContent className="p-4">
         <h3 className="font-semibold text-lg">{character.name}</h3>

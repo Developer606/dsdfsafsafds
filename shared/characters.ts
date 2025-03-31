@@ -4,6 +4,7 @@ export interface Character {
   avatar: string;
   description: string;
   persona: string;
+  isNew?: boolean; // Flag to indicate if this is a new character
 }
 
 export const characters: Character[] = [

@@ -106,6 +106,15 @@ export default function Home() {
   const { data: characters = [], isLoading } = useQuery<Character[]>({
     queryKey: ["/api/characters"],
   });
+  
+  // Characters should already be sorted by the server, but we'll sort them here just in case
+  const sortedCharacters = [...characters].sort((a, b) => {
+    // If one has isNew and the other doesn't, the one with isNew comes first
+    if (a.isNew && !b.isNew) return -1;
+    if (!a.isNew && b.isNew) return 1;
+    // Otherwise, maintain the original order
+    return 0;
+  });
 
   // Query notifications from the API
   const { data: notifications = [] } = useQuery<Notification[]>({
@@ -544,7 +553,7 @@ export default function Home() {
                     </div>
 
                     {/* Character avatars */}
-                    {characters?.slice(0, 8).map((character) => (
+                    {sortedCharacters?.slice(0, 8).map((character) => (
                       <Link key={character.id} href={`/chat/${character.id}`}>
                         <div className="flex flex-col items-center w-16 flex-shrink-0">
                           <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700">
@@ -665,12 +674,12 @@ export default function Home() {
                     </motion.button>
                   </div>
                   <div className="relative rounded-xl overflow-hidden shadow-lg">
-                    {characters && characters.length > 0 && (
+                    {sortedCharacters && sortedCharacters.length > 0 && (
                       <div className="relative">
                         <div className="aspect-[3/4] rounded-xl overflow-hidden relative">
                           <img
-                            src={characters[0].avatar}
-                            alt={characters[0].name}
+                            src={sortedCharacters[0].avatar}
+                            alt={sortedCharacters[0].name}
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
@@ -680,12 +689,18 @@ export default function Home() {
                             Featured
                           </div>
                           <h2 className="text-2xl font-bold text-white leading-tight">
-                            {characters[0].name}
+                            {sortedCharacters[0].name}
                           </h2>
                           <div className="flex items-center mt-2">
-                            <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
-                              New
-                            </span>
+                            {sortedCharacters[0].isNew ? (
+                              <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
+                                New
+                              </span>
+                            ) : (
+                              <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
+                                Popular
+                              </span>
+                            )}
                             <span className="mx-2 text-[#888888]">•</span>
                             <div className="flex">
                               {[1, 2, 3, 4, 5].map((star, i) => (
@@ -702,7 +717,7 @@ export default function Home() {
                             whileTap={{ scale: 0.95 }}
                             className="mt-3 px-4 py-2 bg-[#BB86FC] text-black font-medium text-sm rounded-full shadow-lg flex items-center"
                             onClick={() =>
-                              setLocation(`/chat/${characters[0].id}`)
+                              setLocation(`/chat/${sortedCharacters[0].id}`)
                             }
                           >
                             <MessageSquare className="h-4 w-4 mr-2" />
@@ -726,7 +741,7 @@ export default function Home() {
                     </motion.button>
                   </div>
                   <div className="flex overflow-x-auto pb-4 space-x-4 hide-scrollbar -mx-1 px-1">
-                    {characters?.slice(0, 5).map((character) => (
+                    {sortedCharacters?.slice(0, 5).map((character) => (
                       <Link key={character.id} href={`/chat/${character.id}`}>
                         <motion.div
                           whileTap={{ scale: 0.95 }}
@@ -791,7 +806,7 @@ export default function Home() {
                     </motion.button>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    {characters?.slice(5, 9).map((character) => (
+                    {sortedCharacters?.slice(5, 9).map((character) => (
                       <Link key={character.id} href={`/chat/${character.id}`}>
                         <motion.div
                           whileTap={{ scale: 0.95 }}
@@ -865,7 +880,7 @@ export default function Home() {
                     </p>
                     <span className="text-xs px-2 py-1 rounded-full bg-[#333333] text-[#BBBBBB]">
                       {
-                        characters?.filter(
+                        sortedCharacters?.filter(
                           (char) =>
                             char.name
                               .toLowerCase()
@@ -881,7 +896,7 @@ export default function Home() {
                 )}
 
                 <div className="grid grid-cols-2 gap-4 mt-4">
-                  {characters
+                  {sortedCharacters
                     ?.filter(
                       (char) =>
                         searchQuery === "" ||
@@ -921,7 +936,7 @@ export default function Home() {
                 </div>
 
                 {searchQuery !== "" &&
-                  characters?.filter(
+                  sortedCharacters?.filter(
                     (char) =>
                       char.name
                         .toLowerCase()
@@ -1040,10 +1055,10 @@ export default function Home() {
                   </div>
                 </div>
 
-                {characters && characters.length > 0 ? (
+                {sortedCharacters && sortedCharacters.length > 0 ? (
                   <div className="space-y-3">
                     <AnimatePresence>
-                      {characters.map((character, index) => (
+                      {sortedCharacters.map((character, index) => (
                         <motion.div
                           key={character.id}
                           initial={{ opacity: 0, y: 20 }}
@@ -1451,7 +1466,7 @@ export default function Home() {
             </div>
 
             <AnimatePresence>
-              {characters?.map((character) => (
+              {sortedCharacters?.map((character) => (
                 <motion.div
                   key={character.id}
                   variants={item}
