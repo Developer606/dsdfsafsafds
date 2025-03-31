@@ -38,6 +38,7 @@ export async function initializeCharacterDb() {
         avatar TEXT NOT NULL,
         description TEXT NOT NULL,
         persona TEXT NOT NULL,
+        is_featured INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -61,7 +62,7 @@ export async function initializeCharacterDb() {
 export async function getAllPredefinedCharactersFromDb(): Promise<schema.PredefinedCharacter[]> {
   try {
     const characters = characterSqlite
-      .prepare('SELECT id, name, avatar, description, persona, created_at FROM predefined_characters ORDER BY created_at DESC')
+      .prepare('SELECT id, name, avatar, description, persona, is_featured, created_at FROM predefined_characters ORDER BY created_at DESC')
       .all();
     
     // Convert created_at timestamps to Date objects
@@ -71,6 +72,7 @@ export async function getAllPredefinedCharactersFromDb(): Promise<schema.Predefi
       avatar: char.avatar,
       description: char.description,
       persona: char.persona,
+      isFeatured: !!char.is_featured,
       createdAt: new Date(char.created_at)
     })) as schema.PredefinedCharacter[];
   } catch (error) {
