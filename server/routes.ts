@@ -1367,7 +1367,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   });
   
   // Configure multer storage for file uploads
-  const storage = multer.diskStorage({
+  const multerStorage = multer.diskStorage({
     destination: function(req, file, cb) {
       const currentDir = process.cwd();
       const uploadDir = path.join(currentDir, 'client/public/character_images');
@@ -1389,7 +1389,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   
   // Set up file upload middleware with file type filter
   const upload = multer({
-    storage: storage,
+    storage: multerStorage,
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
     fileFilter: function(req, file, cb) {
       // Accept only image files
