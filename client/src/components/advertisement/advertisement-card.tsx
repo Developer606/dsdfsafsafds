@@ -88,7 +88,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       animate="visible"
       variants={getAnimationVariant()}
       className={`relative rounded-xl overflow-hidden shadow-lg ${className}`}
-      style={{ backgroundColor }}
+      style={{ backgroundColor: backgroundColor || undefined }}
     >
       <div className="relative">
         <div className="aspect-[3/2] rounded-t-xl overflow-hidden">
@@ -107,7 +107,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
         </div>
       </div>
       
-      <div className="p-4" style={{ color: textColor }}>
+      <div className="p-4" style={{ color: textColor || undefined }}>
         <h3 className="text-lg font-bold mb-1">{title}</h3>
         <p className="text-sm mb-4 opacity-90">{description}</p>
         
@@ -128,7 +128,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
           </a>
         ) : (
           <Link href={buttonLink}>
-            <a
+            <button
               onClick={handleClick}
               className={`inline-block px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                 buttonStyle === 'primary' ? 'bg-pink-500 text-white hover:bg-pink-600' :
@@ -138,7 +138,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
               }`}
             >
               {buttonText}
-            </a>
+            </button>
           </Link>
         )}
       </div>
