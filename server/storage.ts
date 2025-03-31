@@ -190,6 +190,22 @@ export class DatabaseStorage implements IStorage {
     
     // Initialize encryption tables
     this.initializeEncryption();
+    
+    // Initialize PostgreSQL character database
+    this.initializePostgresCharacterDb();
+  }
+  
+  /**
+   * Initialize PostgreSQL character database
+   */
+  private async initializePostgresCharacterDb() {
+    try {
+      const { initializePostgresCharacterDb } = await import('./postgres-character-db');
+      await initializePostgresCharacterDb();
+      console.log("PostgreSQL character database initialized successfully");
+    } catch (error) {
+      console.error("Error initializing PostgreSQL character database:", error);
+    }
   }
   
   /**
@@ -626,13 +642,32 @@ export class DatabaseStorage implements IStorage {
    */
   async getAllPredefinedCharacters(): Promise<PredefinedCharacter[]> {
     try {
-      // Import dynamically to avoid circular dependencies
+      // Try to fetch from PostgreSQL first
+      const { getAllPredefinedCharactersFromPg } = await import('./postgres-character-db');
+      const pgCharacters = await getAllPredefinedCharactersFromPg();
+      
+      if (pgCharacters && pgCharacters.length > 0) {
+        console.log(`Retrieved ${pgCharacters.length} characters from PostgreSQL`);
+        return pgCharacters;
+      }
+      
+      // If no characters in PostgreSQL, try SQLite character.db
+      console.log("No characters found in PostgreSQL, trying character.db...");
       const { getAllPredefinedCharactersFromDb } = await import('./character-db');
-      return await getAllPredefinedCharactersFromDb();
+      const sqliteCharacters = await getAllPredefinedCharactersFromDb();
+      
+      if (sqliteCharacters && sqliteCharacters.length > 0) {
+        console.log(`Retrieved ${sqliteCharacters.length} characters from SQLite character.db`);
+        return sqliteCharacters;
+      }
+      
+      // If still no characters, fallback to main database
+      console.log("No characters found in character.db, falling back to main database");
+      return await db.select().from(predefinedCharacters);
     } catch (error) {
-      console.error("Error fetching predefined characters from character.db:", error);
-      // Fallback to the main database if there's an error with character.db
-      console.log("Falling back to main database for predefined characters");
+      console.error("Error fetching predefined characters:", error);
+      // Final fallback to the main database if there's an error
+      console.log("Error occurred, falling back to main database for predefined characters");
       return await db.select().from(predefinedCharacters);
     }
   }
@@ -644,13 +679,25 @@ export class DatabaseStorage implements IStorage {
    */
   async getPredefinedCharacterById(id: string): Promise<PredefinedCharacter | undefined> {
     try {
-      // Import dynamically to avoid circular dependencies
+      // Try to fetch from PostgreSQL first
+      const { getPredefinedCharacterByIdFromPg } = await import('./postgres-character-db');
+      const pgCharacter = await getPredefinedCharacterByIdFromPg(id);
+      
+      // If found in PostgreSQL, return it
+      if (pgCharacter) {
+        console.log(`Character ${id} found in PostgreSQL`);
+        return pgCharacter;
+      }
+      
+      // If not found in PostgreSQL, try SQLite character.db
+      console.log(`Character ${id} not found in PostgreSQL, trying character.db...`);
       const { getPredefinedCharacterByIdFromDb } = await import('./character-db');
-      const character = await getPredefinedCharacterByIdFromDb(id);
+      const sqliteCharacter = await getPredefinedCharacterByIdFromDb(id);
       
       // If found in character.db, return it
-      if (character) {
-        return character;
+      if (sqliteCharacter) {
+        console.log(`Character ${id} found in SQLite character.db`);
+        return sqliteCharacter;
       }
       
       // If not found in character.db, try the main database
@@ -662,8 +709,8 @@ export class DatabaseStorage implements IStorage {
       
       return mainDbCharacter;
     } catch (error) {
-      console.error(`Error fetching character ${id} from character.db:`, error);
-      // Fallback to the main database if there's an error with character.db
+      console.error(`Error fetching character ${id}:`, error);
+      // Fallback to the main database if there's an error
       console.log(`Falling back to main database for character ${id}`);
       const [character] = await db
         .select()
@@ -681,12 +728,32 @@ export class DatabaseStorage implements IStorage {
    */
   async createPredefinedCharacter(character: InsertPredefinedCharacter): Promise<PredefinedCharacter> {
     try {
-      // Import dynamically to avoid circular dependencies
+      // Try to create in PostgreSQL first
+      const { createPredefinedCharacterInPg } = await import('./postgres-character-db');
+      const pgCharacter = await createPredefinedCharacterInPg(character);
+      
+      if (pgCharacter) {
+        console.log(`Character ${character.id} created in PostgreSQL`);
+        
+        // Also create in SQLite for backwards compatibility
+        try {
+          const { createPredefinedCharacterInDb } = await import('./character-db');
+          await createPredefinedCharacterInDb(character);
+          console.log(`Character ${character.id} also created in SQLite character.db`);
+        } catch (sqliteError) {
+          console.error(`Error creating character in SQLite (non-critical):`, sqliteError);
+        }
+        
+        return pgCharacter;
+      }
+      
+      // If PostgreSQL fails, try SQLite character.db
+      console.log("PostgreSQL creation failed, trying character.db...");
       const { createPredefinedCharacterInDb } = await import('./character-db');
       return await createPredefinedCharacterInDb(character);
     } catch (error) {
-      console.error("Error creating predefined character in character.db:", error);
-      // Fallback to the main database if there's an error with character.db
+      console.error("Error creating predefined character:", error);
+      // Fallback to the main database if all other attempts fail
       console.log("Falling back to main database for creating predefined character");
       const [newCharacter] = await db
         .insert(predefinedCharacters)
@@ -711,12 +778,32 @@ export class DatabaseStorage implements IStorage {
     character: Partial<InsertPredefinedCharacter>
   ): Promise<PredefinedCharacter> {
     try {
-      // Import dynamically to avoid circular dependencies
+      // Try to update in PostgreSQL first
+      const { updatePredefinedCharacterInPg } = await import('./postgres-character-db');
+      const pgCharacter = await updatePredefinedCharacterInPg(id, character);
+      
+      if (pgCharacter) {
+        console.log(`Character ${id} updated in PostgreSQL`);
+        
+        // Also update in SQLite for backwards compatibility
+        try {
+          const { updatePredefinedCharacterInDb } = await import('./character-db');
+          await updatePredefinedCharacterInDb(id, character);
+          console.log(`Character ${id} also updated in SQLite character.db`);
+        } catch (sqliteError) {
+          console.error(`Error updating character in SQLite (non-critical):`, sqliteError);
+        }
+        
+        return pgCharacter;
+      }
+      
+      // If PostgreSQL fails, try SQLite character.db
+      console.log("PostgreSQL update failed, trying character.db...");
       const { updatePredefinedCharacterInDb } = await import('./character-db');
       return await updatePredefinedCharacterInDb(id, character);
     } catch (error) {
-      console.error(`Error updating predefined character ${id} in character.db:`, error);
-      // Fallback to the main database if there's an error with character.db
+      console.error(`Error updating predefined character ${id}:`, error);
+      // Fallback to the main database if all other attempts fail
       console.log(`Falling back to main database for updating predefined character ${id}`);
       const [updatedCharacter] = await db
         .update(predefinedCharacters)
@@ -736,16 +823,37 @@ export class DatabaseStorage implements IStorage {
    */
   async deletePredefinedCharacter(id: string): Promise<void> {
     try {
-      // Import dynamically to avoid circular dependencies
-      const { deletePredefinedCharacterFromDb } = await import('./character-db');
-      await deletePredefinedCharacterFromDb(id);
-    } catch (error) {
-      console.error(`Error deleting predefined character ${id} from character.db:`, error);
-      // Fallback to the main database if there's an error with character.db
-      console.log(`Falling back to main database for deleting predefined character ${id}`);
-      await db
-        .delete(predefinedCharacters)
-        .where(eq(predefinedCharacters.id, id));
+      // Try to delete from PostgreSQL first
+      const { deletePredefinedCharacterFromPg } = await import('./postgres-character-db');
+      await deletePredefinedCharacterFromPg(id);
+      console.log(`Character ${id} deleted from PostgreSQL`);
+      
+      // Also delete from SQLite for consistency
+      try {
+        const { deletePredefinedCharacterFromDb } = await import('./character-db');
+        await deletePredefinedCharacterFromDb(id);
+        console.log(`Character ${id} also deleted from SQLite character.db`);
+      } catch (sqliteError) {
+        console.error(`Error deleting character from SQLite (non-critical):`, sqliteError);
+      }
+    } catch (pgError) {
+      console.error(`Error deleting character ${id} from PostgreSQL:`, pgError);
+      
+      // If PostgreSQL fails, try SQLite character.db
+      try {
+        console.log("PostgreSQL deletion failed, trying character.db...");
+        const { deletePredefinedCharacterFromDb } = await import('./character-db');
+        await deletePredefinedCharacterFromDb(id);
+        console.log(`Character ${id} deleted from SQLite character.db`);
+      } catch (sqliteError) {
+        console.error(`Error deleting character from SQLite:`, sqliteError);
+        
+        // If both fail, use the main database as a last resort
+        console.log(`Falling back to main database for deleting predefined character ${id}`);
+        await db
+          .delete(predefinedCharacters)
+          .where(eq(predefinedCharacters.id, id));
+      }
     }
   }
 
