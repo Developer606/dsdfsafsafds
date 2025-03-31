@@ -496,6 +496,56 @@ export const encryptionKeys = sqliteTable("encryption_keys", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Advertisements table for featured section
+export const advertisements = sqliteTable("advertisements", {
+  id: integer("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  imageUrl: text("image_url").notNull(),
+  backgroundColor: text("background_color").default("#ffffff"),
+  backgroundGradient: text("background_gradient"),
+  backgroundImageUrl: text("background_image_url"),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+  displayDuration: integer("display_duration").notNull().default(10),
+  animation: text("animation").default("fade"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  textColor: text("text_color").default("#000000"),
+  textAlignment: text("text_alignment").default("left"),
+  fontSize: text("font_size").default("medium"),
+  views: integer("views").notNull().default(0),
+  clicks: integer("clicks").notNull().default(0),
+});
+
+// Advertisement buttons table
+export const adButtons = sqliteTable("ad_buttons", {
+  id: integer("id").primaryKey(),
+  adId: integer("ad_id")
+    .notNull()
+    .references(() => advertisements.id, { onDelete: "cascade" }),
+  text: text("text").notNull(),
+  url: text("url").notNull(),
+  buttonColor: text("button_color").default("#3b82f6"),
+  textColor: text("text_color").default("#ffffff"),
+  size: text("size").default("medium"),
+  placement: text("placement").default("bottom"),
+  isNewTab: integer("is_new_tab", { mode: "boolean" }).notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+  clicks: integer("clicks").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Conversation keys table to store encrypted keys for each conversation
 export const conversationKeys = sqliteTable("conversation_keys", {
   id: integer("id").primaryKey(),
@@ -530,3 +580,39 @@ export type EncryptionKey = typeof encryptionKeys.$inferSelect;
 export type InsertEncryptionKey = z.infer<typeof insertEncryptionKeySchema>;
 export type ConversationKey = typeof conversationKeys.$inferSelect;
 export type InsertConversationKey = z.infer<typeof insertConversationKeySchema>;
+
+// Advertisement schemas
+export const insertAdvertisementSchema = createInsertSchema(advertisements).pick({
+  title: true,
+  description: true,
+  imageUrl: true,
+  backgroundColor: true,
+  backgroundGradient: true,
+  backgroundImageUrl: true,
+  isActive: true,
+  displayDuration: true,
+  animation: true,
+  sortOrder: true,
+  expiresAt: true,
+  textColor: true,
+  textAlignment: true,
+  fontSize: true,
+});
+
+export const insertAdButtonSchema = createInsertSchema(adButtons).pick({
+  adId: true,
+  text: true,
+  url: true,
+  buttonColor: true,
+  textColor: true,
+  size: true,
+  placement: true,
+  isNewTab: true,
+  sortOrder: true,
+});
+
+// Advertisement types
+export type Advertisement = typeof advertisements.$inferSelect;
+export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
+export type AdButton = typeof adButtons.$inferSelect;
+export type InsertAdButton = z.infer<typeof insertAdButtonSchema>;

@@ -36,6 +36,10 @@ import {
   FREE_USER_MESSAGE_LIMIT,
   insertNotificationSchema,
   notifications,
+  insertAdvertisementSchema,
+  insertAdButtonSchema,
+  type Advertisement,
+  type AdButton,
 } from "@shared/schema";
 import { setupAuth, isAdmin } from "./auth";
 import { generateOTP, hashPassword } from "./auth";
@@ -3175,6 +3179,258 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Register encryption routes with error handler middleware
   app.use("/api/encryption", encryptionRoutes);
   app.use("/api/encryption", errorHandler);
+  
+  // Advertisement routes
+  // Get all advertisements (public)
+  app.get("/api/advertisements", async (req, res) => {
+    try {
+      const ads = await storage.getActiveAdvertisements();
+      
+      // Only return ads that are active and not expired
+      res.json(ads);
+    } catch (error) {
+      console.error("Error getting advertisements:", error);
+      res.status(500).json({ error: "Failed to get advertisements" });
+    }
+  });
+  
+  // Track advertisement view
+  app.post("/api/advertisements/:id/view", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid advertisement ID" });
+      }
+      
+      await storage.incrementAdViews(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking advertisement view:", error);
+      res.status(500).json({ error: "Failed to track advertisement view" });
+    }
+  });
+  
+  // Track advertisement click
+  app.post("/api/advertisements/:id/click", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid advertisement ID" });
+      }
+      
+      await storage.incrementAdClicks(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking advertisement click:", error);
+      res.status(500).json({ error: "Failed to track advertisement click" });
+    }
+  });
+  
+  // Track advertisement button click
+  app.post("/api/ad-buttons/:id/click", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid button ID" });
+      }
+      
+      await storage.incrementButtonClicks(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking button click:", error);
+      res.status(500).json({ error: "Failed to track button click" });
+    }
+  });
+  
+  // Admin advertisement routes (protected by admin middleware)
+  // Get all advertisements (for admin dashboard)
+  app.get("/api/admin/advertisements", isAdmin, async (req, res) => {
+    try {
+      const ads = await storage.getAllAdvertisements();
+      res.json(ads);
+    } catch (error) {
+      console.error("Error getting all advertisements:", error);
+      res.status(500).json({ error: "Failed to get advertisements" });
+    }
+  });
+  
+  // Get an advertisement by ID
+  app.get("/api/admin/advertisements/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid advertisement ID" });
+      }
+      
+      const ad = await storage.getAdvertisementById(id);
+      if (!ad) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+      
+      // Get associated buttons
+      const buttons = await storage.getAdButtons(id);
+      
+      res.json({ ...ad, buttons });
+    } catch (error) {
+      console.error("Error getting advertisement:", error);
+      res.status(500).json({ error: "Failed to get advertisement" });
+    }
+  });
+  
+  // Create a new advertisement
+  app.post("/api/admin/advertisements", isAdmin, async (req, res) => {
+    try {
+      // Validate the request body
+      const validated = insertAdvertisementSchema.parse(req.body);
+      
+      const newAd = await storage.createAdvertisement(validated);
+      
+      // Broadcast update to admin clients
+      broadcastUpdate("advertisement_update", true);
+      
+      res.status(201).json(newAd);
+    } catch (error) {
+      console.error("Error creating advertisement:", error);
+      res.status(400).json({ 
+        error: "Failed to create advertisement", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+  
+  // Update an advertisement
+  app.put("/api/admin/advertisements/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid advertisement ID" });
+      }
+      
+      // Validate the request body (partial update allowed)
+      const validated = insertAdvertisementSchema.partial().parse(req.body);
+      
+      const updatedAd = await storage.updateAdvertisement(id, validated);
+      if (!updatedAd) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+      
+      // Broadcast update to admin clients
+      broadcastUpdate("advertisement_update", true);
+      
+      res.json(updatedAd);
+    } catch (error) {
+      console.error("Error updating advertisement:", error);
+      res.status(400).json({ 
+        error: "Failed to update advertisement", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+  
+  // Delete an advertisement
+  app.delete("/api/admin/advertisements/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid advertisement ID" });
+      }
+      
+      await storage.deleteAdvertisement(id);
+      
+      // Broadcast update to admin clients
+      broadcastUpdate("advertisement_update", true);
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting advertisement:", error);
+      res.status(500).json({ error: "Failed to delete advertisement" });
+    }
+  });
+  
+  // Ad button routes
+  // Create a new ad button
+  app.post("/api/admin/advertisements/:adId/buttons", isAdmin, async (req, res) => {
+    try {
+      const adId = parseInt(req.params.adId, 10);
+      if (isNaN(adId)) {
+        return res.status(400).json({ error: "Invalid advertisement ID" });
+      }
+      
+      // Check if advertisement exists
+      const ad = await storage.getAdvertisementById(adId);
+      if (!ad) {
+        return res.status(404).json({ error: "Advertisement not found" });
+      }
+      
+      // Validate button data
+      const validated = insertAdButtonSchema.parse({
+        ...req.body,
+        adId
+      });
+      
+      const newButton = await storage.createAdButton(validated);
+      
+      // Broadcast update to admin clients
+      broadcastUpdate("advertisement_update", true);
+      
+      res.status(201).json(newButton);
+    } catch (error) {
+      console.error("Error creating ad button:", error);
+      res.status(400).json({ 
+        error: "Failed to create ad button", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+  
+  // Update an ad button
+  app.put("/api/admin/ad-buttons/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid button ID" });
+      }
+      
+      // Validate button data (partial update allowed)
+      const validated = insertAdButtonSchema.omit({ adId: true }).partial().parse(req.body);
+      
+      const updatedButton = await storage.updateAdButton(id, validated);
+      if (!updatedButton) {
+        return res.status(404).json({ error: "Button not found" });
+      }
+      
+      // Broadcast update to admin clients
+      broadcastUpdate("advertisement_update", true);
+      
+      res.json(updatedButton);
+    } catch (error) {
+      console.error("Error updating ad button:", error);
+      res.status(400).json({ 
+        error: "Failed to update ad button", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
+    }
+  });
+  
+  // Delete an ad button
+  app.delete("/api/admin/ad-buttons/:id", isAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid button ID" });
+      }
+      
+      await storage.deleteAdButton(id);
+      
+      // Broadcast update to admin clients
+      broadcastUpdate("advertisement_update", true);
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting ad button:", error);
+      res.status(500).json({ error: "Failed to delete ad button" });
+    }
+  });
 
   return httpServer;
 }
