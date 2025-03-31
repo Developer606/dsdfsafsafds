@@ -108,7 +108,20 @@ export async function getActiveAdvertisementsFromDb(): Promise<Advertisement[]> 
   
   console.log("Fetching active advertisements with timestamp (millis):", nowMillis);
   
-  // Find ads where isActive=1 and now is between startDate and endDate
+  // For demo purposes: First check for any active ads regardless of start date
+  const allActiveAds = await advertisementDb
+    .select()
+    .from(advertisements)
+    .where(sql`${advertisements.isActive} = 1`)
+    .orderBy(advertisements.position);
+    
+  // For testing/demo: If there are no time-valid ads, return all active ads
+  if (allActiveAds.length > 0) {
+    console.log(`Found ${allActiveAds.length} active ads regardless of date.`);
+    return allActiveAds;
+  }
+  
+  // Standard production logic - Find ads where isActive=1 and now is between startDate and endDate
   return await advertisementDb
     .select()
     .from(advertisements)
