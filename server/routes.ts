@@ -1661,6 +1661,12 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       } else {
         // It's a predefined character
         character = await storage.getPredefinedCharacterById(characterId);
+        
+        // Special case for "kishor" without space at the end
+        if (!character && characterId === "kishor") {
+          // Try with a space at the end "kishor "
+          character = await storage.getPredefinedCharacterById("kishor ");
+        }
       }
       
       if (!character) {
@@ -1695,9 +1701,15 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
 
   app.get("/api/messages/:characterId", async (req, res) => {
     try {
-      const messages = await storage.getMessagesByCharacter(
-        req.params.characterId,
-      );
+      let characterId = req.params.characterId;
+      
+      // Special case for "kishor" without space at the end
+      if (characterId === "kishor") {
+        // Use with a space at the end "kishor " for messages too
+        characterId = "kishor ";
+      }
+      
+      const messages = await storage.getMessagesByCharacter(characterId);
       // Only return messages belonging to the authenticated user
       const userMessages = messages.filter((msg) => msg.userId === req.user.id);
       res.json(userMessages);
@@ -1893,6 +1905,12 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             // Get character from the database
             character = await storage.getPredefinedCharacterById(data.characterId);
             
+            // Special case for "kishor" without space at the end
+            if (!character && data.characterId === "kishor") {
+              // Try with a space at the end "kishor "
+              character = await storage.getPredefinedCharacterById("kishor ");
+            }
+            
             if (!character) throw new Error("Predefined character not found");
           }
 
@@ -1959,7 +1977,15 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   });
 
   app.delete("/api/messages/:characterId", async (req, res) => {
-    await storage.clearChat(req.params.characterId);
+    let characterId = req.params.characterId;
+    
+    // Special case for "kishor" without space at the end
+    if (characterId === "kishor") {
+      // Use with a space at the end "kishor " for messages too
+      characterId = "kishor ";
+    }
+    
+    await storage.clearChat(characterId);
     res.json({ success: true });
   });
 
