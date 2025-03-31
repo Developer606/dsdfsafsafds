@@ -93,8 +93,15 @@ export default function Chat() {
   const { data: characters } = useQuery<Character[]>({
     queryKey: ["/api/characters"]
   });
+  
+  // Add a separate query to fetch this specific character
+  const { data: specificCharacter, isLoading: characterLoading } = useQuery<Character>({
+    queryKey: ["/api/character", characterId],
+    enabled: !!characterId, // Only run query if characterId exists
+  });
 
-  const character = characters?.find((c: Character) => c.id === characterId);
+  // Try to find the character in the loaded characters array first, fall back to specifically fetched character
+  const character = characters?.find((c: Character) => c.id === characterId) || specificCharacter;
 
   const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: [`/api/messages/${characterId}`],

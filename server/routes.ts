@@ -487,6 +487,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     [
       "/api/messages",
       "/api/characters",
+      "/api/character",
       "/api/custom-characters",
       "/api/notifications",
       "/api/subscribe",
@@ -1642,6 +1643,51 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     } catch (error: any) {
       console.error("Error fetching characters:", error);
       res.status(500).json({ error: "Failed to fetch characters" });
+    }
+  });
+
+  // Add endpoint to fetch any character (predefined or custom) by ID
+  app.get("/api/character/:id", async (req, res) => {
+    try {
+      const characterId = req.params.id;
+      let character;
+      
+      // Check if it's a custom character (ID starts with "custom_")
+      if (characterId.startsWith("custom_")) {
+        const customId = parseInt(characterId.replace("custom_", ""), 10);
+        character = await storage.getCustomCharacterById(customId);
+      } else {
+        // It's a predefined character
+        character = await storage.getPredefinedCharacterById(characterId);
+      }
+      
+      if (!character) {
+        return res.status(404).json({ error: "Character not found" });
+      }
+      
+      // Add the same formatting as in the /api/characters endpoint
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      // Format based on character type
+      const formattedCharacter = characterId.startsWith("custom_") 
+        ? {
+            id: characterId, // Keep the custom_ prefix
+            name: character.name,
+            avatar: character.avatar,
+            description: character.description,
+            persona: character.persona,
+            isNew: false // Custom characters don't get the "new" badge
+          }
+        : {
+            ...character,
+            isNew: character.createdAt && character.createdAt > sevenDaysAgo
+          };
+      
+      res.json(formattedCharacter);
+    } catch (error: any) {
+      console.error(`Error fetching character ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch character" });
     }
   });
 
