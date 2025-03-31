@@ -8,6 +8,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -115,6 +122,21 @@ export default function AdminCharacters() {
         });
       });
   };
+  
+  // State for local images
+  const [localImages, setLocalImages] = useState<{filename: string; path: string}[]>([]);
+  const [selectedImageType, setSelectedImageType] = useState<'url' | 'local'>('url');
+  const [selectedLocalImage, setSelectedLocalImage] = useState<string>('');
+  
+  // Fetch local images
+  const { isLoading: localImagesLoading } = useQuery({
+    queryKey: ["/api/admin/character-images"],
+    onSuccess: (data: any) => {
+      if (data?.localImages) {
+        setLocalImages(data.localImages);
+      }
+    },
+  });
   
   // Form setup
   const form = useForm<CharacterFormValues>({
@@ -244,6 +266,16 @@ export default function AdminCharacters() {
       description: character.description,
       persona: character.persona,
     });
+    
+    // Set image type based on avatar URL
+    if (character.avatar.startsWith('/character_images/')) {
+      setSelectedImageType('local');
+      setSelectedLocalImage(character.avatar);
+    } else {
+      setSelectedImageType('url');
+      setSelectedLocalImage('');
+    }
+    
     setEditDialogOpen(true);
   };
 
@@ -256,6 +288,8 @@ export default function AdminCharacters() {
       description: "",
       persona: "",
     });
+    setSelectedImageType('url');
+    setSelectedLocalImage('');
     setCreateDialogOpen(true);
   };
 
@@ -521,10 +555,84 @@ export default function AdminCharacters() {
                 name="avatar"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Avatar URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/avatar.jpg" {...field} />
-                    </FormControl>
+                    <FormLabel>Avatar</FormLabel>
+                    <div className="space-y-2">
+                      <div className="flex space-x-4">
+                        <Button 
+                          type="button" 
+                          variant={selectedImageType === 'url' ? 'default' : 'outline'}
+                          onClick={() => setSelectedImageType('url')}
+                          className="flex-1"
+                        >
+                          URL
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant={selectedImageType === 'local' ? 'default' : 'outline'}
+                          onClick={() => setSelectedImageType('local')}
+                          className="flex-1"
+                        >
+                          Local Image
+                        </Button>
+                      </div>
+                      
+                      {selectedImageType === 'url' ? (
+                        <FormControl>
+                          <Input 
+                            placeholder="https://example.com/avatar.jpg" 
+                            {...field} 
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                              setSelectedLocalImage('');
+                            }}
+                          />
+                        </FormControl>
+                      ) : (
+                        <div className="space-y-2">
+                          <Select 
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              setSelectedLocalImage(value);
+                            }}
+                            value={selectedLocalImage}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a character image" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {localImagesLoading ? (
+                                <SelectItem value="loading" disabled>
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  Loading images...
+                                </SelectItem>
+                              ) : localImages.length === 0 ? (
+                                <SelectItem value="none" disabled>
+                                  No local images available
+                                </SelectItem>
+                              ) : (
+                                localImages.map((image) => (
+                                  <SelectItem key={image.path} value={image.path}>
+                                    {image.filename}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                          
+                          {selectedLocalImage && (
+                            <div className="relative h-20 w-20 mx-auto rounded overflow-hidden border">
+                              <img 
+                                src={selectedLocalImage} 
+                                alt="Selected character" 
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -554,9 +662,9 @@ export default function AdminCharacters() {
                     <FormLabel>Persona</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Character's personality traits and mannerisms" 
+                        placeholder="Detailed character persona and speaking style" 
                         {...field} 
-                        className="min-h-[150px]"
+                        className="min-h-[200px]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -572,9 +680,9 @@ export default function AdminCharacters() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createCharacter.isPending}>
-                  {createCharacter.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                  {createCharacter.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
                   Create Character
                 </Button>
               </DialogFooter>
@@ -587,7 +695,7 @@ export default function AdminCharacters() {
       <Dialog open={isEditDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
-            <DialogTitle>Edit Predefined Character</DialogTitle>
+            <DialogTitle>Edit Character: {editingCharacter?.name}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-4">
@@ -598,7 +706,7 @@ export default function AdminCharacters() {
                   <FormItem>
                     <FormLabel>ID</FormLabel>
                     <FormControl>
-                      <Input {...field} disabled />
+                      <Input placeholder="character_id" {...field} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -622,10 +730,84 @@ export default function AdminCharacters() {
                 name="avatar"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Avatar URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://example.com/avatar.jpg" {...field} />
-                    </FormControl>
+                    <FormLabel>Avatar</FormLabel>
+                    <div className="space-y-2">
+                      <div className="flex space-x-4">
+                        <Button 
+                          type="button" 
+                          variant={selectedImageType === 'url' ? 'default' : 'outline'}
+                          onClick={() => setSelectedImageType('url')}
+                          className="flex-1"
+                        >
+                          URL
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant={selectedImageType === 'local' ? 'default' : 'outline'}
+                          onClick={() => setSelectedImageType('local')}
+                          className="flex-1"
+                        >
+                          Local Image
+                        </Button>
+                      </div>
+                      
+                      {selectedImageType === 'url' ? (
+                        <FormControl>
+                          <Input 
+                            placeholder="https://example.com/avatar.jpg" 
+                            {...field} 
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                              setSelectedLocalImage('');
+                            }}
+                          />
+                        </FormControl>
+                      ) : (
+                        <div className="space-y-2">
+                          <Select 
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              setSelectedLocalImage(value);
+                            }}
+                            value={selectedLocalImage}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a character image" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {localImagesLoading ? (
+                                <SelectItem value="loading" disabled>
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  Loading images...
+                                </SelectItem>
+                              ) : localImages.length === 0 ? (
+                                <SelectItem value="none" disabled>
+                                  No local images available
+                                </SelectItem>
+                              ) : (
+                                localImages.map((image) => (
+                                  <SelectItem key={image.path} value={image.path}>
+                                    {image.filename}
+                                  </SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                          
+                          {selectedLocalImage && (
+                            <div className="relative h-20 w-20 mx-auto rounded overflow-hidden border">
+                              <img 
+                                src={selectedLocalImage} 
+                                alt="Selected character" 
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -655,9 +837,9 @@ export default function AdminCharacters() {
                     <FormLabel>Persona</FormLabel>
                     <FormControl>
                       <Textarea 
-                        placeholder="Character's personality traits and mannerisms" 
-                        {...field}
-                        className="min-h-[150px]"
+                        placeholder="Detailed character persona and speaking style" 
+                        {...field} 
+                        className="min-h-[200px]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -673,9 +855,9 @@ export default function AdminCharacters() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={updateCharacter.isPending}>
-                  {updateCharacter.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
+                  {updateCharacter.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : null}
                   Update Character
                 </Button>
               </DialogFooter>

@@ -1366,6 +1366,41 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       res.status(500).json({ error: "Failed to fetch predefined characters" });
     }
   });
+  
+  // Get list of available character images from the local directory
+  app.get("/api/admin/character-images", isAdmin, async (req, res) => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const imagesDir = path.join(__dirname, '../client/public/character_images');
+      
+      // Check if directory exists
+      if (!fs.existsSync(imagesDir)) {
+        return res.json({ localImages: [] });
+      }
+      
+      // Read the directory
+      const files = fs.readdirSync(imagesDir);
+      
+      // Filter for image files only
+      const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      const imageFiles = files.filter(file => {
+        const ext = path.extname(file).toLowerCase();
+        return imageExtensions.includes(ext);
+      });
+      
+      // Format the response with path for frontend
+      const localImages = imageFiles.map(file => ({
+        filename: file,
+        path: `/character_images/${file}`
+      }));
+      
+      res.json({ localImages });
+    } catch (error) {
+      console.error("Error fetching character images:", error);
+      res.status(500).json({ error: "Failed to fetch character images" });
+    }
+  });
 
   app.get("/api/admin/predefined-characters/:id", isAdmin, async (req, res) => {
     try {
