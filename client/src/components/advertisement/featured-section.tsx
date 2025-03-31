@@ -14,7 +14,7 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
   // Fetch active advertisements
   const { data: advertisements, isLoading, error } = useQuery({
     queryKey: ['/api/advertisements/active'],
-    refetchInterval: 300000, // Refetch every 5 minutes
+    refetchInterval: 10000, // Refetch more frequently (every 10 seconds) to ensure real-time updates
   });
 
   // Auto-rotate through advertisements if there are multiple

@@ -71,14 +71,21 @@ export const AdvertisementManager: React.FC = () => {
         ...data,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
+        // Ensure isActive is set correctly (required by the schema)
+        isActive: true,
       };
       
       return apiRequest('POST', '/api/advertisements', payload);
     },
     onSuccess: () => {
+      // Invalidate both regular and active advertisement queries
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
       reset(defaultValues);
       setSelectedAd(null);
+    },
+    onError: (error: any) => {
+      console.error("Advertisement creation error:", error);
     },
   });
   
@@ -92,12 +99,19 @@ export const AdvertisementManager: React.FC = () => {
         ...rest,
         startDate: new Date(rest.startDate),
         endDate: new Date(rest.endDate),
+        // Ensure isActive is set correctly (required by the schema)
+        isActive: true
       };
       
       return apiRequest('PUT', `/api/advertisements/${id}`, payload);
     },
     onSuccess: () => {
+      // Invalidate both regular and active advertisement queries
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
+    },
+    onError: (error: any) => {
+      console.error("Advertisement update error:", error);
     },
   });
   
@@ -107,9 +121,14 @@ export const AdvertisementManager: React.FC = () => {
       return apiRequest('DELETE', `/api/advertisements/${id}`);
     },
     onSuccess: () => {
+      // Invalidate both regular and active advertisement queries
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
       setSelectedAd(null);
       reset(defaultValues);
+    },
+    onError: (error: any) => {
+      console.error("Advertisement deletion error:", error);
     },
   });
   
