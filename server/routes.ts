@@ -1355,7 +1355,13 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
 
   app.get("/api/characters", async (req, res) => {
     try {
+      // Get predefined characters from database
+      const predefinedChars = await storage.getAllPredefinedCharacters();
+      
+      // Get custom characters created by the user
       const customChars = await storage.getCustomCharactersByUser(req.user.id);
+      
+      // Format custom characters
       const formattedCustomChars = customChars.map((char) => ({
         id: `custom_${char.id}`,
         name: char.name,
@@ -1364,9 +1370,14 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         persona: char.persona,
       }));
 
-      const allCharacters = [...characters, ...formattedCustomChars];
+      // Use the predefined characters from database, falling back to hardcoded if none exist
+      const allCharacters = predefinedChars.length > 0 
+        ? [...predefinedChars, ...formattedCustomChars]
+        : [...characters, ...formattedCustomChars];
+        
       res.json(allCharacters);
     } catch (error: any) {
+      console.error("Error fetching characters:", error);
       res.status(500).json({ error: "Failed to fetch characters" });
     }
   });
@@ -1568,7 +1579,16 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
               persona: customChar.persona,
             };
           } else {
-            character = characters.find((c) => c.id === data.characterId);
+            // Try to find the character in the database first
+            const dbCharacter = await storage.getPredefinedCharacterById(data.characterId);
+            
+            if (dbCharacter) {
+              character = dbCharacter;
+            } else {
+              // Fall back to hardcoded characters if not found in database
+              character = characters.find((c) => c.id === data.characterId);
+            }
+            
             if (!character) throw new Error("Predefined character not found");
           }
 

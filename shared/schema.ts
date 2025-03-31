@@ -110,6 +110,18 @@ export const customCharacters = sqliteTable("custom_characters", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Predefined characters table
+export const predefinedCharacters = sqliteTable("predefined_characters", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  avatar: text("avatar").notNull(),
+  description: text("description").notNull(),
+  persona: text("persona").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Message schemas
 export const insertMessageSchema = createInsertSchema(messages)
   .pick({
@@ -173,6 +185,18 @@ export type Role = "user" | "admin";
 
 export type CustomCharacter = typeof customCharacters.$inferSelect;
 export type InsertCustomCharacter = z.infer<typeof insertCustomCharacterSchema>;
+
+// Predefined character schemas
+export const insertPredefinedCharacterSchema = createInsertSchema(predefinedCharacters).pick({
+  id: true,
+  name: true,
+  avatar: true,
+  description: true,
+  persona: true,
+});
+
+export type PredefinedCharacter = typeof predefinedCharacters.$inferSelect;
+export type InsertPredefinedCharacter = z.infer<typeof insertPredefinedCharacterSchema>;
 
 // Subscription Types
 export const subscriptionPlans = {

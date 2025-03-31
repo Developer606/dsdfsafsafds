@@ -5,6 +5,8 @@ import {
   type InsertUser,
   type CustomCharacter,
   type InsertCustomCharacter,
+  type PredefinedCharacter,
+  type InsertPredefinedCharacter,
   type SubscriptionStatus,
   type PendingVerification,
   type InsertPendingVerification,
@@ -28,6 +30,7 @@ import {
   messages,
   users,
   customCharacters,
+  predefinedCharacters,
   subscriptionPlansTable,
   userMessages,
   userConversations,
@@ -151,6 +154,13 @@ export interface IStorage {
   updateConversationStatus(user1Id: number, user2Id: number, data: { isBlocked: boolean }): Promise<void>;
   deleteConversationMessages(user1Id: number, user2Id: number): Promise<void>;
 
+  // Predefined character methods
+  getAllPredefinedCharacters(): Promise<PredefinedCharacter[]>;
+  getPredefinedCharacterById(id: string): Promise<PredefinedCharacter | undefined>;
+  createPredefinedCharacter(character: InsertPredefinedCharacter): Promise<PredefinedCharacter>;
+  updatePredefinedCharacter(id: string, character: Partial<InsertPredefinedCharacter>): Promise<PredefinedCharacter>;
+  deletePredefinedCharacter(id: string): Promise<void>;
+  
   // Encryption related methods
   storeEncryptionKey(userId: number, publicKey: string): Promise<EncryptionKey>;
   getEncryptionKey(userId: number): Promise<string | null>;
@@ -608,6 +618,76 @@ export class DatabaseStorage implements IStorage {
         );
     }
   }
+  
+  /**
+   * Get all predefined characters
+   * @returns Array of predefined characters
+   */
+  async getAllPredefinedCharacters(): Promise<PredefinedCharacter[]> {
+    return await db.select().from(predefinedCharacters);
+  }
+  
+  /**
+   * Get a predefined character by ID
+   * @param id Character ID
+   * @returns The character or undefined if not found
+   */
+  async getPredefinedCharacterById(id: string): Promise<PredefinedCharacter | undefined> {
+    const [character] = await db
+      .select()
+      .from(predefinedCharacters)
+      .where(eq(predefinedCharacters.id, id));
+    
+    return character;
+  }
+  
+  /**
+   * Create a new predefined character
+   * @param character Character data
+   * @returns The created character
+   */
+  async createPredefinedCharacter(character: InsertPredefinedCharacter): Promise<PredefinedCharacter> {
+    const [newCharacter] = await db
+      .insert(predefinedCharacters)
+      .values({
+        ...character,
+        createdAt: new Date()
+      })
+      .returning();
+    
+    return newCharacter;
+  }
+  
+  /**
+   * Update a predefined character
+   * @param id Character ID
+   * @param character Updated character data
+   * @returns The updated character
+   */
+  async updatePredefinedCharacter(
+    id: string, 
+    character: Partial<InsertPredefinedCharacter>
+  ): Promise<PredefinedCharacter> {
+    const [updatedCharacter] = await db
+      .update(predefinedCharacters)
+      .set({
+        ...character,
+      })
+      .where(eq(predefinedCharacters.id, id))
+      .returning();
+    
+    return updatedCharacter;
+  }
+  
+  /**
+   * Delete a predefined character
+   * @param id Character ID
+   */
+  async deletePredefinedCharacter(id: string): Promise<void> {
+    await db
+      .delete(predefinedCharacters)
+      .where(eq(predefinedCharacters.id, id));
+  }
 
   async getMessagesByCharacter(characterId: string): Promise<Message[]> {
     return await db
@@ -716,7 +796,7 @@ export class DatabaseStorage implements IStorage {
   async incrementTrialCharacterCount(userId: number): Promise<void> {
     await db
       .update(users)
-      .set({ trialCharactersCreated: users.trialCharactersCreated + 1 })
+      .set({ trialCharactersCreated: sql`${users.trialCharactersCreated} + 1` })
       .where(eq(users.id, userId));
   }
 
@@ -1037,15 +1117,17 @@ export class DatabaseStorage implements IStorage {
     const characters = await this.getCustomCharactersByUser(userId);
     const characterCount = characters.length;
 
-    switch (user.subscriptionTier as SubscriptionTier) {
-      case "basic":
-        return characterCount < subscriptionPlans.BASIC.characterLimit;
-      case "premium":
-        return characterCount < subscriptionPlans.PREMIUM.characterLimit;
-      case "pro":
-        return true; // Pro users have unlimited characters
-      default:
-        return false;
+    // Need to convert lowercase tier names to uppercase for indexing subscriptionPlans
+    const tier = user.subscriptionTier?.toUpperCase() as keyof typeof subscriptionPlans;
+    
+    if (tier === "BASIC") {
+      return characterCount < subscriptionPlans.BASIC.characterLimit;
+    } else if (tier === "PREMIUM") {
+      return characterCount < subscriptionPlans.PREMIUM.characterLimit;
+    } else if (tier === "PRO") {
+      return true; // Pro users have unlimited characters
+    } else {
+      return false;
     }
   }
 
@@ -1055,15 +1137,17 @@ export class DatabaseStorage implements IStorage {
 
     if (!user.isPremium) return 3; // Trial limit
 
-    switch (user.subscriptionTier as SubscriptionTier) {
-      case "basic":
-        return subscriptionPlans.BASIC.characterLimit;
-      case "premium":
-        return subscriptionPlans.PREMIUM.characterLimit;
-      case "pro":
-        return Infinity;
-      default:
-        return 0;
+    // Need to convert lowercase tier names to uppercase for indexing subscriptionPlans
+    const tier = user.subscriptionTier?.toUpperCase() as keyof typeof subscriptionPlans;
+    
+    if (tier === "BASIC") {
+      return subscriptionPlans.BASIC.characterLimit;
+    } else if (tier === "PREMIUM") {
+      return subscriptionPlans.PREMIUM.characterLimit;
+    } else if (tier === "PRO") {
+      return Infinity;
+    } else {
+      return 0;
     }
   }
 
