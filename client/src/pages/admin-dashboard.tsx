@@ -1432,7 +1432,7 @@ interface CountryDistributionData {
 }
 
 export default function AdminDashboard() {
-  const [setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -1551,31 +1551,39 @@ export default function AdminDashboard() {
         </div>
 
         <div className="hidden md:flex items-center gap-4">
-          <Link href="/admin/characters">
-            <Button variant="outline" className="gap-2">
-              <Palette className="h-4 w-4" />
-              Manage Characters
-            </Button>
-          </Link>
-          <Link href="/admin/content-moderation">
-            <Button variant="outline" className="gap-2 relative">
-              <Shield className="h-4 w-4" />
-              Content Moderation
-              <FlaggedMessagesCounter />
-            </Button>
-          </Link>
-          <Link href="/admin/user-management">
-            <Button variant="outline" className="gap-2">
-              <Users className="h-4 w-4" />
-              User Management
-            </Button>
-          </Link>
-          <Link href="/admin/subscription-plans">
-            <Button variant="outline" className="gap-2">
-              <Crown className="h-4 w-4" />
-              Subscription Plans
-            </Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => setLocation("/admin/characters")}
+          >
+            <Palette className="h-4 w-4" />
+            Manage Characters
+          </Button>
+          <Button 
+            variant="outline" 
+            className="gap-2 relative"
+            onClick={() => setLocation("/admin/content-moderation")}
+          >
+            <Shield className="h-4 w-4" />
+            Content Moderation
+            <FlaggedMessagesCounter />
+          </Button>
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => setLocation("/admin/user-management")}
+          >
+            <Users className="h-4 w-4" />
+            User Management
+          </Button>
+          <Button 
+            variant="outline" 
+            className="gap-2"
+            onClick={() => setLocation("/admin/subscription-plans")}
+          >
+            <Crown className="h-4 w-4" />
+            Subscription Plans
+          </Button>
           <Button
             variant="destructive"
             className="gap-2"
@@ -1598,66 +1606,76 @@ export default function AdminDashboard() {
                 <SheetTitle>Admin Menu</SheetTitle>
               </SheetHeader>
               <div className="py-4 flex flex-col gap-3">
-                <Link href="/admin/characters">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2"
-                  >
-                    <Palette className="h-4 w-4" />
-                    Manage Characters
-                  </Button>
-                </Link>
-                <Link href="/admin/content-moderation">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2 relative"
-                  >
-                    <Shield className="h-4 w-4" />
-                    Content Moderation
-                    {flaggedMessages && flaggedMessages.length > 0 ? (
-                      <span className="ml-1 px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">
-                        {flaggedMessages.length}
-                      </span>
-                    ) : null}
-                  </Button>
-                </Link>
-                <Link href="/admin/user-management">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2"
-                  >
-                    <Users className="h-4 w-4" />
-                    User Management
-                  </Button>
-                </Link>
-                <Link href="/admin/subscription-plans">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2"
-                  >
-                    <Crown className="h-4 w-4" />
-                    Subscription Plans
-                    {plans?.length > 0 ? (
-                      <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
-                        {plans.length}
-                      </span>
-                    ) : null}
-                  </Button>
-                </Link>
-                <Link href="/admin/feedback">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    User Feedback
-                    {feedback?.length > 0 ? (
-                      <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
-                        {feedback.length}
-                      </span>
-                    ) : null}
-                  </Button>
-                </Link>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setLocation("/admin/characters");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Palette className="h-4 w-4" />
+                  Manage Characters
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2 relative"
+                  onClick={() => {
+                    setLocation("/admin/content-moderation");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Shield className="h-4 w-4" />
+                  Content Moderation
+                  {flaggedMessages && flaggedMessages.length > 0 ? (
+                    <span className="ml-1 px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">
+                      {flaggedMessages.length}
+                    </span>
+                  ) : null}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setLocation("/admin/user-management");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Users className="h-4 w-4" />
+                  User Management
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setLocation("/admin/subscription-plans");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Crown className="h-4 w-4" />
+                  Subscription Plans
+                  {plans?.length > 0 ? (
+                    <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                      {plans.length}
+                    </span>
+                  ) : null}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    setLocation("/admin/feedback");
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  User Feedback
+                  {feedback?.length > 0 ? (
+                    <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                      {feedback.length}
+                    </span>
+                  ) : null}
+                </Button>
                 <Button 
                   variant="destructive" 
                   className="w-full gap-2 justify-start mt-8" 
