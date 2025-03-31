@@ -108,9 +108,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, X, Menu } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 // Define the type for flagged message stats
 interface FlaggedMessageStats {
@@ -835,47 +842,71 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-4">
           <NotificationPopover />
-          <Button variant="outline" className="gap-2" onClick={handleLogout}>
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
-          <Link href="/admin/characters">
-            <Button variant="outline" className="gap-2">
-              <Palette className="h-4 w-4" />
-              Manage Characters
-            </Button>
-          </Link>
-          <Link href="/admin/content-moderation">
-            <Button variant="outline" className="gap-2 relative">
-              <Shield className="h-4 w-4" />
-              Content Moderation
-              
-              {/* Query flagged message count and display it as a badge */}
-              <FlaggedMessagesCounter />
-            </Button>
-          </Link>
-          <Link href="/admin/dashboard/complaints">
-            <Button variant="outline" className="gap-2">
-              <AlertCircle className="h-4 w-4" />
-              View Complaints
-              {complaints?.length ? (
-                <span className="ml-1 px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">
-                  {complaints.length}
-                </span>
-              ) : null}
-            </Button>
-          </Link>
-          <Link href="/admin/dashboard/feedback">
-            <Button variant="outline" className="gap-2">
-              <MessageCircle className="h-4 w-4" />
-              View Feedback
-              {feedback?.length ? (
-                <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
-                  {feedback.length}
-                </span>
-              ) : null}
-            </Button>
-          </Link>
+          
+          {/* Hamburger Menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Admin Menu</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 space-y-4">
+                <Link href="/admin/dashboard" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <Crown className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Link href="/admin/characters" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <Palette className="h-4 w-4" />
+                    Manage Characters
+                  </Button>
+                </Link>
+                <Link href="/admin/content-moderation" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start relative">
+                    <Shield className="h-4 w-4" />
+                    Content Moderation
+                    <FlaggedMessagesCounter />
+                  </Button>
+                </Link>
+                <Link href="/admin/dashboard/complaints" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <AlertCircle className="h-4 w-4" />
+                    View Complaints
+                    {complaints?.length ? (
+                      <span className="ml-1 px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">
+                        {complaints.length}
+                      </span>
+                    ) : null}
+                  </Button>
+                </Link>
+                <Link href="/admin/dashboard/feedback" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <MessageCircle className="h-4 w-4" />
+                    View Feedback
+                    {feedback?.length ? (
+                      <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
+                        {feedback.length}
+                      </span>
+                    ) : null}
+                  </Button>
+                </Link>
+                <Button 
+                  variant="destructive" 
+                  className="w-full gap-2 justify-start mt-8" 
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 

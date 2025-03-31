@@ -50,8 +50,21 @@ import {
   Plus,
   ArrowLeft,
   Loader2,
+  Menu,
+  Crown,
+  Shield,
+  AlertCircle,
+  MessageCircle,
+  LogOut
 } from "lucide-react";
 import { Link } from "wouter";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 // Define interfaces
 interface PredefinedCharacter {
@@ -86,6 +99,21 @@ export default function AdminCharacters() {
   const [isCreateDialogOpen, setCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setEditDialogOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<PredefinedCharacter | null>(null);
+  
+  // Add a logout handler
+  const handleLogout = () => {
+    fetch("/api/logout", { method: "POST" })
+      .then(() => {
+        window.location.href = "/admin/login";
+      })
+      .catch((error) => {
+        toast({
+          title: "Error",
+          description: "Failed to logout. Please try again.",
+          variant: "destructive",
+        });
+      });
+  };
   
   // Form setup
   const form = useForm<CharacterFormValues>({
@@ -239,13 +267,69 @@ export default function AdminCharacters() {
           </Button>
         </Link>
         <h1 className="text-2xl font-bold">Predefined Characters</h1>
-        <Button 
-          className="ml-auto" 
-          onClick={handleCreateCharacter}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Character
-        </Button>
+        
+        <div className="flex items-center ml-auto gap-2">
+          <Button 
+            onClick={handleCreateCharacter}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Character
+          </Button>
+          
+          {/* Hamburger Menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Admin Menu</SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 space-y-4">
+                <Link href="/admin/dashboard" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <Crown className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Link href="/admin/characters" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <Palette className="h-4 w-4" />
+                    Manage Characters
+                  </Button>
+                </Link>
+                <Link href="/admin/content-moderation" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start relative">
+                    <Shield className="h-4 w-4" />
+                    Content Moderation
+                  </Button>
+                </Link>
+                <Link href="/admin/dashboard/complaints" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <AlertCircle className="h-4 w-4" />
+                    View Complaints
+                  </Button>
+                </Link>
+                <Link href="/admin/dashboard/feedback" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <MessageCircle className="h-4 w-4" />
+                    View Feedback
+                  </Button>
+                </Link>
+                <Button 
+                  variant="destructive" 
+                  className="w-full gap-2 justify-start mt-8" 
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
       {/* Stats cards */}
