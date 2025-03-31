@@ -96,7 +96,7 @@ interface CharacterStats {
 const characterSchema = z.object({
   id: z.string().min(1, "ID is required"),
   name: z.string().min(1, "Name is required"),
-  avatar: z.string().min(1, "Avatar URL is required"),
+  avatar: z.string().min(1, "Avatar is required"), // Generic message for both URL and local files
   description: z.string().min(1, "Description is required"),
   persona: z.string().min(1, "Persona is required"),
 });
