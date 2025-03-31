@@ -55,7 +55,8 @@ import {
   Shield,
   AlertCircle,
   MessageCircle,
-  LogOut
+  LogOut,
+  Palette
 } from "lucide-react";
 import { Link } from "wouter";
 import {
