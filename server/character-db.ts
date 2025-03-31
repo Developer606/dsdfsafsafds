@@ -87,7 +87,7 @@ export async function getAllPredefinedCharactersFromDb(): Promise<schema.Predefi
 export async function getPredefinedCharacterByIdFromDb(id: string): Promise<schema.PredefinedCharacter | undefined> {
   try {
     const character = characterSqlite
-      .prepare('SELECT id, name, avatar, description, persona, created_at FROM predefined_characters WHERE id = ?')
+      .prepare('SELECT id, name, avatar, description, persona, is_featured, created_at FROM predefined_characters WHERE id = ?')
       .get(id) as any;
     
     if (!character) {
@@ -101,6 +101,7 @@ export async function getPredefinedCharacterByIdFromDb(id: string): Promise<sche
       avatar: character.avatar,
       description: character.description,
       persona: character.persona,
+      isFeatured: Boolean(character.is_featured),
       createdAt: new Date(character.created_at)
     } as schema.PredefinedCharacter;
   } catch (error) {
@@ -119,8 +120,8 @@ export async function createPredefinedCharacterInDb(
     const now = Date.now();
     characterSqlite
       .prepare(`
-        INSERT INTO predefined_characters (id, name, avatar, description, persona, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO predefined_characters (id, name, avatar, description, persona, is_featured, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `)
       .run(
         character.id,
@@ -128,11 +129,14 @@ export async function createPredefinedCharacterInDb(
         character.avatar,
         character.description,
         character.persona,
+        character.isFeatured ? 1 : 0,
         now
       );
 
+    const isFeatured = character.isFeatured === true;
     return {
       ...character,
+      isFeatured,
       createdAt: new Date(now),
     };
   } catch (error) {
@@ -177,6 +181,11 @@ export async function updatePredefinedCharacterInDb(
     if (character.persona !== undefined) {
       updateFields.push('persona = ?');
       params.push(character.persona);
+    }
+    
+    if (character.isFeatured !== undefined) {
+      updateFields.push('is_featured = ?');
+      params.push(character.isFeatured ? 1 : 0);
     }
 
     // If no fields to update, return the current character

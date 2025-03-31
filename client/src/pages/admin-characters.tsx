@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -48,6 +49,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -82,6 +84,7 @@ interface PredefinedCharacter {
   avatar: string;
   description: string;
   persona: string;
+  isFeatured?: boolean;
   createdAt?: Date;
 }
 
@@ -99,6 +102,7 @@ const characterSchema = z.object({
   avatar: z.string().min(1, "Avatar image source is required"),
   description: z.string().min(1, "Description is required"),
   persona: z.string().min(1, "Persona is required"),
+  isFeatured: z.boolean().optional(),
 });
 
 type CharacterFormValues = z.infer<typeof characterSchema>;
@@ -139,8 +143,8 @@ export default function AdminCharacters() {
       if (data?.localImages) {
         setLocalImages(data.localImages);
       }
-    },
-  });
+    }
+  } as any);
   
   // Form setup
   const form = useForm<CharacterFormValues>({
@@ -151,6 +155,7 @@ export default function AdminCharacters() {
       avatar: "",
       description: "",
       persona: "",
+      isFeatured: false,
     },
   });
 
@@ -366,6 +371,7 @@ export default function AdminCharacters() {
       avatar: character.avatar,
       description: character.description,
       persona: character.persona,
+      isFeatured: character.isFeatured || false,
     });
     
     // Set image type based on avatar URL
@@ -388,6 +394,7 @@ export default function AdminCharacters() {
       avatar: "",
       description: "",
       persona: "",
+      isFeatured: false,
     });
     setSelectedImageType('url');
     setSelectedLocalImage('');
@@ -577,19 +584,20 @@ export default function AdminCharacters() {
               <TableHead>Name</TableHead>
               <TableHead>Avatar</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead>Featured</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {charactersLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
+                <TableCell colSpan={6} className="text-center py-10">
                   <Loader2 className="h-8 w-8 animate-spin mx-auto" />
                 </TableCell>
               </TableRow>
             ) : characters.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10">
+                <TableCell colSpan={6} className="text-center py-10">
                   No predefined characters found.
                 </TableCell>
               </TableRow>
@@ -622,6 +630,18 @@ export default function AdminCharacters() {
                         ? character.description.substring(0, 100) + "..."
                         : character.description}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={character.isFeatured || false}
+                      onCheckedChange={(checked) => {
+                        const updatedCharacter = {
+                          ...character,
+                          isFeatured: checked
+                        };
+                        updateCharacter.mutate(updatedCharacter as CharacterFormValues);
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
@@ -782,6 +802,26 @@ export default function AdminCharacters() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="isFeatured"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Featured</FormLabel>
+                      <FormDescription>
+                        Make this character appear in the featured section
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
                   Cancel
@@ -908,6 +948,26 @@ export default function AdminCharacters() {
                       />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isFeatured"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Featured</FormLabel>
+                      <FormDescription>
+                        Make this character appear in the featured section
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
