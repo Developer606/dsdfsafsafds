@@ -52,13 +52,27 @@ export const AdvertisementManager: React.FC = () => {
   const formValues = watch();
   
   // Query to fetch all advertisements
-  const { data: advertisements, isLoading: isLoadingAds } = useQuery({
+  const { data: advertisements = [], isLoading: isLoadingAds } = useQuery<Advertisement[]>({
     queryKey: ['/api/advertisements'],
     refetchInterval: 30000, // Refetch every 30 seconds
   });
   
+  // Define metrics type
+  interface AdvertisementMetrics {
+    performance: {
+      impressions: number;
+      clicks: number;
+      ctr: number;
+    };
+    metrics: {
+      date: string;
+      impressions: number;
+      clicks: number;
+    }[];
+  }
+  
   // Query to fetch metrics for selected advertisement
-  const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
+  const { data: metrics, isLoading: isLoadingMetrics } = useQuery<AdvertisementMetrics>({
     queryKey: ['/api/advertisements', selectedAd?.id, 'metrics'],
     enabled: !!selectedAd,
   });
@@ -75,7 +89,10 @@ export const AdvertisementManager: React.FC = () => {
       
       return apiRequest('/api/advertisements', {
         method: 'POST',
-        data: payload,
+        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
     },
     onSuccess: () => {
@@ -99,7 +116,10 @@ export const AdvertisementManager: React.FC = () => {
       
       return apiRequest(`/api/advertisements/${id}`, {
         method: 'PUT',
-        data: payload,
+        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
     },
     onSuccess: () => {
@@ -112,6 +132,9 @@ export const AdvertisementManager: React.FC = () => {
     mutationFn: (id: number) => {
       return apiRequest(`/api/advertisements/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
     },
     onSuccess: () => {
@@ -183,7 +206,7 @@ export const AdvertisementManager: React.FC = () => {
       <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
         <h3 className="text-lg font-bold mb-4">Preview</h3>
         
-        <div className="relative rounded-xl overflow-hidden shadow-lg mb-4" style={{ backgroundColor: previewAd.backgroundColor }}>
+        <div className="relative rounded-xl overflow-hidden shadow-lg mb-4" style={{ backgroundColor: previewAd.backgroundColor || undefined }}>
           <div className="relative">
             <div className="aspect-[3/2] rounded-t-xl overflow-hidden">
               {previewAd.imageUrl ? (
@@ -207,7 +230,7 @@ export const AdvertisementManager: React.FC = () => {
             </div>
           </div>
           
-          <div className="p-4" style={{ color: previewAd.textColor }}>
+          <div className="p-4" style={{ color: previewAd.textColor || undefined }}>
             <h3 className="text-lg font-bold mb-1">{previewAd.title || 'No Title'}</h3>
             <p className="text-sm mb-4 opacity-90">{previewAd.description || 'No Description'}</p>
             
