@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdvertisementCard } from './advertisement-card';
 import type { Advertisement } from '@shared/schema';
@@ -10,12 +10,20 @@ interface FeaturedSectionProps {
 
 export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = '' }) => {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const queryClient = useQueryClient();
 
-  // Fetch active advertisements
+  // Fetch active advertisements with increased polling frequency
   const { data: advertisements = [], isLoading, error } = useQuery<Advertisement[]>({
     queryKey: ['/api/advertisements/active'],
-    refetchInterval: 5000, // Refetch more frequently (every 5 seconds) to ensure real-time updates
+    refetchInterval: 3000, // Refetch more frequently (every 3 seconds) to ensure real-time updates
+    staleTime: 2000, // Data becomes stale after 2 seconds
   });
+
+  // Force refresh advertisements
+  const refreshAdvertisements = useCallback(() => {
+    console.log("Manually refreshing advertisements");
+    queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
+  }, [queryClient]);
 
   // Auto-rotate through advertisements if there are multiple
   useEffect(() => {
@@ -29,6 +37,15 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
       return () => clearInterval(intervalId);
     }
   }, [advertisements]);
+  
+  // Set up an interval to periodically force-refresh advertisements
+  useEffect(() => {
+    const refreshIntervalId = setInterval(() => {
+      refreshAdvertisements();
+    }, 10000); // Force refresh every 10 seconds
+    
+    return () => clearInterval(refreshIntervalId);
+  }, [refreshAdvertisements]);
 
   // Handle manual navigation
   const goToAd = (index: number) => {
