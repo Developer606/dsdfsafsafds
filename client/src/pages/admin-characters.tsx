@@ -188,7 +188,11 @@ export default function AdminCharacters() {
     },
     onSuccess: (data) => {
       // Update the form with the uploaded image path
-      form.setValue('avatar', data.path);
+      form.setValue('avatar', data.path, { 
+        shouldValidate: true,  // This triggers validation to clear any errors
+        shouldDirty: true,     // Mark the field as dirty (changed)
+        shouldTouch: true      // Mark the field as touched (interacted with)
+      });
       setSelectedLocalImage(data.path);
       setSelectedImageType('local'); // Auto-switch to local image type when upload succeeds
       
@@ -390,6 +394,12 @@ export default function AdminCharacters() {
           <p className="text-sm font-medium mb-2">Choose existing image</p>
           <Select 
             onValueChange={(value) => {
+              // Update form value with validation
+              form.setValue('avatar', value, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true
+              }); 
               field.onChange(value);
               setSelectedLocalImage(value);
             }}
