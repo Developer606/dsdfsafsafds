@@ -1453,15 +1453,9 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log("Initializing advertisement tables...");
       
-      // Create indexes for faster queries
-      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisements_is_active ON advertisements(is_active)`);
-      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisements_start_date ON advertisements(start_date)`);
-      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisements_end_date ON advertisements(end_date)`);
-      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisements_position ON advertisements(position)`);
-      
-      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisement_metrics_advertisement_id ON advertisement_metrics(advertisement_id)`);
-      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisement_metrics_user_id ON advertisement_metrics(user_id)`);
-      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisement_metrics_action ON advertisement_metrics(action)`);
+      // Import and initialize the advertisement database
+      const { initializeAdvertisementDb } = await import('./advertisement-db');
+      await initializeAdvertisementDb();
       
       console.log("Advertisement tables initialized successfully");
     } catch (error) {
@@ -1471,99 +1465,51 @@ export class DatabaseStorage implements IStorage {
   
   // Advertisement management methods implementation
   async createAdvertisement(data: InsertAdvertisement): Promise<Advertisement> {
-    // Ensure dates are provided as Date objects
-    const startDate = data.startDate instanceof Date ? data.startDate : new Date(data.startDate);
-    const endDate = data.endDate instanceof Date ? data.endDate : new Date(data.endDate);
-    
-    const [advertisement] = await db
-      .insert(advertisements)
-      .values({
-        ...data,
-        startDate,
-        endDate,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-    
-    return advertisement;
+    // Use the advertisement database implementation
+    const { createAdvertisementInDb } = await import('./advertisement-db');
+    return await createAdvertisementInDb(data);
   }
   
   async getAllAdvertisements(): Promise<Advertisement[]> {
-    return await db
-      .select()
-      .from(advertisements)
-      .orderBy(advertisements.position, advertisements.createdAt);
+    // Use the advertisement database implementation
+    const { getAllAdvertisementsFromDb } = await import('./advertisement-db');
+    return await getAllAdvertisementsFromDb();
   }
   
   async getActiveAdvertisements(): Promise<Advertisement[]> {
-    const now = new Date();
-    
-    return await db
-      .select()
-      .from(advertisements)
-      .where(
-        sql`${advertisements.isActive} = 1 AND 
-            ${advertisements.startDate} <= ${now} AND 
-            ${advertisements.endDate} >= ${now}`
-      )
-      .orderBy(advertisements.position);
+    // Use the advertisement database implementation
+    const { getActiveAdvertisementsFromDb } = await import('./advertisement-db');
+    return await getActiveAdvertisementsFromDb();
   }
   
   async getAdvertisementById(id: number): Promise<Advertisement | undefined> {
-    const [advertisement] = await db
-      .select()
-      .from(advertisements)
-      .where(eq(advertisements.id, id));
-    
-    return advertisement;
+    // Use the advertisement database implementation
+    const { getAdvertisementByIdFromDb } = await import('./advertisement-db');
+    return await getAdvertisementByIdFromDb(id);
   }
   
   async updateAdvertisement(id: number, data: Partial<InsertAdvertisement>): Promise<Advertisement> {
-    // Process dates if provided
-    let updatedData: any = { ...data, updatedAt: new Date() };
-    
-    if (data.startDate) {
-      updatedData.startDate = data.startDate instanceof Date ? data.startDate : new Date(data.startDate);
-    }
-    
-    if (data.endDate) {
-      updatedData.endDate = data.endDate instanceof Date ? data.endDate : new Date(data.endDate);
-    }
-    
-    const [updatedAd] = await db
-      .update(advertisements)
-      .set(updatedData)
-      .where(eq(advertisements.id, id))
-      .returning();
-    
-    return updatedAd;
+    // Use the advertisement database implementation
+    const { updateAdvertisementInDb } = await import('./advertisement-db');
+    return await updateAdvertisementInDb(id, data);
   }
   
   async deleteAdvertisement(id: number): Promise<void> {
-    await db
-      .delete(advertisements)
-      .where(eq(advertisements.id, id));
+    // Use the advertisement database implementation
+    const { deleteAdvertisementFromDb } = await import('./advertisement-db');
+    await deleteAdvertisementFromDb(id);
   }
   
   async recordAdvertisementMetric(data: InsertAdvertisementMetric): Promise<AdvertisementMetric> {
-    const [metric] = await db
-      .insert(advertisementMetrics)
-      .values({
-        ...data,
-        timestamp: new Date(),
-      })
-      .returning();
-    
-    return metric;
+    // Use the advertisement database implementation
+    const { recordAdvertisementMetricInDb } = await import('./advertisement-db');
+    return await recordAdvertisementMetricInDb(data);
   }
   
   async getAdvertisementMetrics(advertisementId: number): Promise<AdvertisementMetric[]> {
-    return await db
-      .select()
-      .from(advertisementMetrics)
-      .where(eq(advertisementMetrics.advertisementId, advertisementId))
-      .orderBy(advertisementMetrics.timestamp);
+    // Use the advertisement database implementation
+    const { getAdvertisementMetricsFromDb } = await import('./advertisement-db');
+    return await getAdvertisementMetricsFromDb(advertisementId);
   }
   
   async getAdvertisementPerformance(advertisementId?: number): Promise<{
@@ -1572,65 +1518,15 @@ export class DatabaseStorage implements IStorage {
     ctr: number;
     advertisementId?: number;
   }> {
-    // If advertisementId is provided, get metrics for that specific ad
-    if (advertisementId) {
-      const ad = await this.getAdvertisementById(advertisementId);
-      if (!ad) {
-        return { impressions: 0, clicks: 0, ctr: 0, advertisementId };
-      }
-      
-      // Calculate CTR (Click-Through Rate)
-      const impressions = ad.impressions || 0;
-      const clicks = ad.clicks || 0;
-      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
-      
-      return {
-        impressions,
-        clicks,
-        ctr,
-        advertisementId
-      };
-    }
-    
-    // Otherwise, get aggregate performance across all ads
-    const ads = await this.getAllAdvertisements();
-    
-    let totalImpressions = 0;
-    let totalClicks = 0;
-    
-    for (const ad of ads) {
-      totalImpressions += ad.impressions || 0;
-      totalClicks += ad.clicks || 0;
-    }
-    
-    // Calculate overall CTR
-    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
-    
-    return {
-      impressions: totalImpressions,
-      clicks: totalClicks,
-      ctr
-    };
+    // Use the advertisement database implementation
+    const { getAdvertisementPerformanceFromDb } = await import('./advertisement-db');
+    return await getAdvertisementPerformanceFromDb(advertisementId);
   }
   
   async incrementAdvertisementStat(advertisementId: number, stat: 'impressions' | 'clicks'): Promise<void> {
-    if (stat === 'impressions') {
-      await db
-        .update(advertisements)
-        .set({
-          impressions: sql`${advertisements.impressions} + 1`,
-          updatedAt: new Date()
-        })
-        .where(eq(advertisements.id, advertisementId));
-    } else if (stat === 'clicks') {
-      await db
-        .update(advertisements)
-        .set({
-          clicks: sql`${advertisements.clicks} + 1`,
-          updatedAt: new Date()
-        })
-        .where(eq(advertisements.id, advertisementId));
-    }
+    // Use the advertisement database implementation
+    const { incrementAdvertisementStatInDb } = await import('./advertisement-db');
+    await incrementAdvertisementStatInDb(advertisementId, stat);
   }
 }
 
