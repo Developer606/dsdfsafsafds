@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { BackgroundSlideshow } from "@/components/background-slideshow";
+import { FeaturedSection } from "@/components/advertisement/featured-section";
 import {
   Dialog,
   DialogContent,
@@ -662,6 +663,11 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Featured advertisement section */}
+                <div className="px-4 pt-1">
+                  <FeaturedSection className="mt-2" />
+                </div>
+                
                 {/* Featured character section */}
                 <div className="px-4 pt-1">
                   <div className="flex justify-between items-center mb-3">
@@ -1525,10 +1531,13 @@ export default function Home() {
               <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
                 Immerse in Anime & Manga
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-400">
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
                 Chat with your favorite characters and bring your anime world to
                 life
               </p>
+              
+              {/* Featured advertisements */}
+              <FeaturedSection className="max-w-xl mx-auto mt-10" />
             </motion.div>
           </div>
         </div>

@@ -87,8 +87,11 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       initial="hidden"
       animate="visible"
       variants={getAnimationVariant()}
-      className={`relative rounded-xl overflow-hidden shadow-lg ${className}`}
-      style={{ backgroundColor }}
+      className={`relative rounded-xl overflow-hidden shadow-xl border border-pink-300/30 dark:border-pink-500/30 ${className}`}
+      style={{ 
+        backgroundColor: backgroundColor ? backgroundColor : 'rgba(255, 192, 203, 0.1)', 
+        boxShadow: '0 10px 25px -5px rgba(233, 30, 99, 0.1), 0 8px 10px -6px rgba(233, 30, 99, 0.1)'
+      }}
     >
       <div className="relative">
         <div className="aspect-[3/2] rounded-t-xl overflow-hidden">
@@ -97,19 +100,19 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
             alt={title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent"></div>
         </div>
         
-        <div className="absolute top-2 left-2">
-          <div className="inline-block px-2 py-1 bg-pink-500/80 rounded-full text-xs text-white font-medium">
+        <div className="absolute top-3 left-3">
+          <div className="inline-block px-3 py-1 bg-pink-500 rounded-full text-xs text-white font-semibold shadow-lg">
             Featured
           </div>
         </div>
       </div>
       
-      <div className="p-4" style={{ color: textColor }}>
-        <h3 className="text-lg font-bold mb-1">{title}</h3>
-        <p className="text-sm mb-4 opacity-90">{description}</p>
+      <div className="p-5" style={{ color: textColor ? textColor : '#1f2937' }}>
+        <h3 className="text-xl font-bold mb-2">{title}</h3>
+        <p className="text-sm mb-5 opacity-90">{description}</p>
         
         {isExternalLink ? (
           <a
@@ -117,11 +120,11 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleClick}
-            className={`inline-block px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              buttonStyle === 'primary' ? 'bg-pink-500 text-white hover:bg-pink-600' :
-              buttonStyle === 'secondary' ? 'bg-purple-500 text-white hover:bg-purple-600' :
-              buttonStyle === 'outline' ? 'border border-current hover:bg-white/10' :
-              'bg-white text-gray-900 hover:bg-gray-100'
+            className={`inline-block px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg ${
+              buttonStyle === 'primary' ? 'bg-pink-500 text-white hover:bg-pink-600 hover:scale-105' :
+              buttonStyle === 'secondary' ? 'bg-purple-500 text-white hover:bg-purple-600 hover:scale-105' :
+              buttonStyle === 'outline' ? 'border-2 border-current hover:bg-white/10 hover:scale-105' :
+              'bg-white text-gray-900 hover:bg-gray-100 hover:scale-105'
             }`}
           >
             {buttonText}
@@ -130,11 +133,11 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
           <Link href={buttonLink}>
             <a
               onClick={handleClick}
-              className={`inline-block px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                buttonStyle === 'primary' ? 'bg-pink-500 text-white hover:bg-pink-600' :
-                buttonStyle === 'secondary' ? 'bg-purple-500 text-white hover:bg-purple-600' :
-                buttonStyle === 'outline' ? 'border border-current hover:bg-white/10' :
-                'bg-white text-gray-900 hover:bg-gray-100'
+              className={`inline-block px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg ${
+                buttonStyle === 'primary' ? 'bg-pink-500 text-white hover:bg-pink-600 hover:scale-105' :
+                buttonStyle === 'secondary' ? 'bg-purple-500 text-white hover:bg-purple-600 hover:scale-105' :
+                buttonStyle === 'outline' ? 'border-2 border-current hover:bg-white/10 hover:scale-105' :
+                'bg-white text-gray-900 hover:bg-gray-100 hover:scale-105'
               }`}
             >
               {buttonText}

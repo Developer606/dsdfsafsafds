@@ -52,13 +52,13 @@ export const AdvertisementManager: React.FC = () => {
   const formValues = watch();
   
   // Query to fetch all advertisements
-  const { data: advertisements, isLoading: isLoadingAds } = useQuery({
+  const { data: advertisements = [], isLoading: isLoadingAds } = useQuery<Advertisement[]>({
     queryKey: ['/api/advertisements'],
     refetchInterval: 30000, // Refetch every 30 seconds
   });
   
   // Query to fetch metrics for selected advertisement
-  const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
+  const { data: metrics, isLoading: isLoadingMetrics } = useQuery<any>({
     queryKey: ['/api/advertisements', selectedAd?.id, 'metrics'],
     enabled: !!selectedAd,
   });
@@ -171,23 +171,21 @@ export const AdvertisementManager: React.FC = () => {
     // Create a preview object from form values
     const previewAd = {
       id: selectedAd?.id || 0,
-      title: formValues.title,
-      description: formValues.description,
-      imageUrl: formValues.imageUrl,
-      buttonText: formValues.buttonText,
-      buttonLink: formValues.buttonLink,
-      buttonStyle: formValues.buttonStyle,
-      backgroundColor: formValues.backgroundColor,
-      textColor: formValues.textColor,
-      animationType: formValues.animationType,
-      position: formValues.position || 0,
-      startDate: new Date(formValues.startDate),
-      endDate: new Date(formValues.endDate),
+      title: formValues.title || 'Example Advertisement',
+      description: formValues.description || 'Example description for this advertisement.',
+      imageUrl: formValues.imageUrl || '',
+      buttonText: formValues.buttonText || 'Learn More',
+      buttonLink: formValues.buttonLink || '',
+      buttonStyle: formValues.buttonStyle || 'primary',
+      backgroundColor: formValues.backgroundColor || '#8B5CF6',
+      textColor: formValues.textColor || '#FFFFFF',
+      animationType: formValues.animationType || 'fade',
+      position: Number(formValues.position || 0),
+      startDate: formValues.startDate ? new Date(formValues.startDate) : new Date(),
+      endDate: formValues.endDate ? new Date(formValues.endDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
       impressions: selectedAd?.impressions || 0,
-      clicks: selectedAd?.clicks || 0,
+      clicks: selectedAd?.clicks || 0
     };
     
     return (
@@ -219,8 +217,8 @@ export const AdvertisementManager: React.FC = () => {
           </div>
           
           <div className="p-4" style={{ color: previewAd.textColor }}>
-            <h3 className="text-lg font-bold mb-1">{previewAd.title || 'No Title'}</h3>
-            <p className="text-sm mb-4 opacity-90">{previewAd.description || 'No Description'}</p>
+            <h3 className="text-lg font-bold mb-1">{previewAd.title}</h3>
+            <p className="text-sm mb-4 opacity-90">{previewAd.description}</p>
             
             <button
               className={`inline-block px-4 py-2 rounded-full text-sm font-medium transition-colors ${
@@ -236,7 +234,7 @@ export const AdvertisementManager: React.FC = () => {
         </div>
         
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          <p>Duration: {format(new Date(previewAd.startDate), 'MMM d, yyyy')} - {format(new Date(previewAd.endDate), 'MMM d, yyyy')}</p>
+          <p>Duration: {format(previewAd.startDate, 'MMM d, yyyy')} - {format(previewAd.endDate, 'MMM d, yyyy')}</p>
           <p>Animation: {previewAd.animationType}</p>
           <p>Position: {previewAd.position}</p>
         </div>
@@ -530,21 +528,25 @@ export const AdvertisementManager: React.FC = () => {
               <div className="grid grid-cols-3 gap-4 mb-4">
                 <div className="border rounded-lg p-4 bg-blue-50 dark:bg-blue-900/20">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Impressions</p>
-                  <p className="text-2xl font-bold">{metrics.performance.impressions}</p>
+                  <p className="text-2xl font-bold">{selectedAd && selectedAd.impressions ? selectedAd.impressions : 0}</p>
                 </div>
                 
                 <div className="border rounded-lg p-4 bg-green-50 dark:bg-green-900/20">
                   <p className="text-sm text-gray-500 dark:text-gray-400">Clicks</p>
-                  <p className="text-2xl font-bold">{metrics.performance.clicks}</p>
+                  <p className="text-2xl font-bold">{selectedAd && selectedAd.clicks ? selectedAd.clicks : 0}</p>
                 </div>
                 
                 <div className="border rounded-lg p-4 bg-purple-50 dark:bg-purple-900/20">
                   <p className="text-sm text-gray-500 dark:text-gray-400">CTR</p>
-                  <p className="text-2xl font-bold">{metrics.performance.ctr.toFixed(2)}%</p>
+                  <p className="text-2xl font-bold">
+                    {selectedAd && selectedAd.impressions && selectedAd.impressions > 0 
+                      ? (((selectedAd.clicks || 0) / selectedAd.impressions) * 100).toFixed(2) 
+                      : "0.00"}%
+                  </p>
                 </div>
               </div>
               
-              {metrics.metrics.length > 0 && (
+              {metrics && metrics.metrics && Array.isArray(metrics.metrics) && metrics.metrics.length > 0 && (
                 <div>
                   <h4 className="text-lg font-medium mb-2">Recent Activity</h4>
                   <div className="max-h-40 overflow-y-auto border rounded-lg">
