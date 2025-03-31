@@ -1642,6 +1642,12 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
 
+  // Handle the /api/character endpoint without an ID parameter
+  app.get("/api/character", async (req, res) => {
+    // Return a default response when no ID is provided
+    return res.status(200).json({ message: "Please specify a character ID" });
+  });
+
   // Add endpoint to fetch any character (predefined or custom) by ID
   app.get("/api/character/:id", async (req, res) => {
     try {

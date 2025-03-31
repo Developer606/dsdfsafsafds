@@ -96,7 +96,7 @@ export default function Chat() {
   
   // Add a separate query to fetch this specific character
   const { data: specificCharacter, isLoading: characterLoading } = useQuery<Character>({
-    queryKey: ["/api/character", characterId],
+    queryKey: [`/api/character/${characterId}`],
     enabled: !!characterId, // Only run query if characterId exists
   });
 
