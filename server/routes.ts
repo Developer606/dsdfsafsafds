@@ -1691,6 +1691,18 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
 
+  // Add a generic endpoint for the character without ID (for chat.tsx blank character query)
+  app.get("/api/character", async (req, res) => {
+    try {
+      // This endpoint is a fallback for when the chat.tsx page makes a query without an ID
+      // Just return a successful response - the actual character will be found through other means
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error in generic character endpoint:", error);
+      res.status(500).json({ error: "Failed to process character request" });
+    }
+  });
+
   app.get("/api/messages/:characterId", async (req, res) => {
     try {
       const messages = await storage.getMessagesByCharacter(
