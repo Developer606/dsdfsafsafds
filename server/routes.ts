@@ -1148,9 +1148,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             );
             if (customChar) characterName = customChar.name;
           } else {
-            const predefinedChar = characters.find(
-              (c) => c.id === msg.characterId,
-            );
+            // Get character from database instead of hardcoded array
+            const predefinedChar = await storage.getPredefinedCharacterById(msg.characterId);
             if (predefinedChar) characterName = predefinedChar.name;
           }
 
@@ -1634,10 +1633,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         isNew: false // Custom characters don't get the "new" badge
       }));
 
-      // Use the predefined characters from database, falling back to hardcoded if none exist
-      const allCharacters = formattedPredefinedChars.length > 0 
-        ? [...formattedPredefinedChars, ...formattedCustomChars]
-        : [...characters.map(c => ({...c, isNew: false})), ...formattedCustomChars];
+      // Always use characters from the database without fallback
+      const allCharacters = [...formattedPredefinedChars, ...formattedCustomChars];
         
       res.json(allCharacters);
     } catch (error: any) {
@@ -1888,15 +1885,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
               persona: customChar.persona,
             };
           } else {
-            // Try to find the character in the database first
-            const dbCharacter = await storage.getPredefinedCharacterById(data.characterId);
-            
-            if (dbCharacter) {
-              character = dbCharacter;
-            } else {
-              // Fall back to hardcoded characters if not found in database
-              character = characters.find((c) => c.id === data.characterId);
-            }
+            // Get character from the database
+            character = await storage.getPredefinedCharacterById(data.characterId);
             
             if (!character) throw new Error("Predefined character not found");
           }
@@ -2599,7 +2589,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             );
             if (customChar) name = customChar.name;
           } else {
-            const predefinedChar = characters.find((c) => c.id === charId);
+            // Get character from database instead of hardcoded array
+            const predefinedChar = await storage.getPredefinedCharacterById(charId);
             if (predefinedChar) name = predefinedChar.name;
           }
 
