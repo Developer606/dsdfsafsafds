@@ -39,7 +39,8 @@ characterDb.exec(`
     avatar TEXT NOT NULL,
     description TEXT NOT NULL,
     persona TEXT NOT NULL,
-    created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    time TEXT
   )
 `);
 
@@ -65,21 +66,24 @@ async function migrateToCharacterDb() {
     // Insert statement for the character database
     const insertStmt = characterDb.prepare(`
       INSERT OR REPLACE INTO predefined_characters 
-      (id, name, avatar, description, persona, created_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      (id, name, avatar, description, persona, created_at, time)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
 
     // Begin transaction for better performance
     const transaction = characterDb.transaction((chars) => {
       for (const char of chars) {
         console.log(`Migrating character: ${char.name} (${char.id})`);
+        const timestamp = char.created_at || Date.now();
+        const readableTime = new Date(timestamp).toLocaleString();
         insertStmt.run(
           char.id,
           char.name,
           char.avatar,
           char.description,
           char.persona,
-          char.created_at || Date.now()
+          timestamp,
+          readableTime
         );
       }
     });
