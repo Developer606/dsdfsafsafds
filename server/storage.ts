@@ -16,6 +16,10 @@ import {
   type MessageStatus,
   type SubscriptionPlan,
   type InsertSubscriptionPlan,
+  type Advertisement,
+  type InsertAdvertisement,
+  type AdvertisementMetric,
+  type InsertAdvertisementMetric,
   pendingVerifications,
   subscriptionPlans,
   type SubscriptionTier,
@@ -34,6 +38,8 @@ import {
   subscriptionPlansTable,
   userMessages,
   userConversations,
+  advertisements,
+  advertisementMetrics
 } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db";
@@ -168,6 +174,23 @@ export interface IStorage {
   storeEncryptedConversationKey(userId: number, otherUserId: number, encryptedKey: string): Promise<ConversationKey>;
   getEncryptedConversationKey(userId: number, otherUserId: number): Promise<string | null>;
   getConversationEncryptionKey(userId: number, otherUserId: number): Promise<ConversationKey | null>;
+  
+  // Advertisement management methods
+  createAdvertisement(data: InsertAdvertisement): Promise<Advertisement>;
+  getAllAdvertisements(): Promise<Advertisement[]>;
+  getActiveAdvertisements(): Promise<Advertisement[]>;
+  getAdvertisementById(id: number): Promise<Advertisement | undefined>;
+  updateAdvertisement(id: number, data: Partial<InsertAdvertisement>): Promise<Advertisement>;
+  deleteAdvertisement(id: number): Promise<void>;
+  recordAdvertisementMetric(data: InsertAdvertisementMetric): Promise<AdvertisementMetric>;
+  getAdvertisementMetrics(advertisementId: number): Promise<AdvertisementMetric[]>;
+  getAdvertisementPerformance(advertisementId?: number): Promise<{
+    impressions: number;
+    clicks: number;
+    ctr: number;
+    advertisementId?: number;
+  }>;
+  incrementAdvertisementStat(advertisementId: number, stat: 'impressions' | 'clicks'): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -190,6 +213,9 @@ export class DatabaseStorage implements IStorage {
     
     // Initialize encryption tables
     this.initializeEncryption();
+    
+    // Initialize advertisement tables
+    this.initializeAdvertisementTables();
   }
   
   /**
@@ -1420,6 +1446,191 @@ export class DatabaseStorage implements IStorage {
       );
     
     return key || null;
+  }
+  
+  // Initialize advertisement database tables and necessary indexes
+  private async initializeAdvertisementTables() {
+    try {
+      console.log("Initializing advertisement tables...");
+      
+      // Create indexes for faster queries
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisements_is_active ON advertisements(is_active)`);
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisements_start_date ON advertisements(start_date)`);
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisements_end_date ON advertisements(end_date)`);
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisements_position ON advertisements(position)`);
+      
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisement_metrics_advertisement_id ON advertisement_metrics(advertisement_id)`);
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisement_metrics_user_id ON advertisement_metrics(user_id)`);
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_advertisement_metrics_action ON advertisement_metrics(action)`);
+      
+      console.log("Advertisement tables initialized successfully");
+    } catch (error) {
+      console.error("Error initializing advertisement tables:", error);
+    }
+  }
+  
+  // Advertisement management methods implementation
+  async createAdvertisement(data: InsertAdvertisement): Promise<Advertisement> {
+    // Ensure dates are provided as Date objects
+    const startDate = data.startDate instanceof Date ? data.startDate : new Date(data.startDate);
+    const endDate = data.endDate instanceof Date ? data.endDate : new Date(data.endDate);
+    
+    const [advertisement] = await db
+      .insert(advertisements)
+      .values({
+        ...data,
+        startDate,
+        endDate,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    
+    return advertisement;
+  }
+  
+  async getAllAdvertisements(): Promise<Advertisement[]> {
+    return await db
+      .select()
+      .from(advertisements)
+      .orderBy(advertisements.position, advertisements.createdAt);
+  }
+  
+  async getActiveAdvertisements(): Promise<Advertisement[]> {
+    const now = new Date();
+    
+    return await db
+      .select()
+      .from(advertisements)
+      .where(
+        sql`${advertisements.isActive} = 1 AND 
+            ${advertisements.startDate} <= ${now} AND 
+            ${advertisements.endDate} >= ${now}`
+      )
+      .orderBy(advertisements.position);
+  }
+  
+  async getAdvertisementById(id: number): Promise<Advertisement | undefined> {
+    const [advertisement] = await db
+      .select()
+      .from(advertisements)
+      .where(eq(advertisements.id, id));
+    
+    return advertisement;
+  }
+  
+  async updateAdvertisement(id: number, data: Partial<InsertAdvertisement>): Promise<Advertisement> {
+    // Process dates if provided
+    let updatedData: any = { ...data, updatedAt: new Date() };
+    
+    if (data.startDate) {
+      updatedData.startDate = data.startDate instanceof Date ? data.startDate : new Date(data.startDate);
+    }
+    
+    if (data.endDate) {
+      updatedData.endDate = data.endDate instanceof Date ? data.endDate : new Date(data.endDate);
+    }
+    
+    const [updatedAd] = await db
+      .update(advertisements)
+      .set(updatedData)
+      .where(eq(advertisements.id, id))
+      .returning();
+    
+    return updatedAd;
+  }
+  
+  async deleteAdvertisement(id: number): Promise<void> {
+    await db
+      .delete(advertisements)
+      .where(eq(advertisements.id, id));
+  }
+  
+  async recordAdvertisementMetric(data: InsertAdvertisementMetric): Promise<AdvertisementMetric> {
+    const [metric] = await db
+      .insert(advertisementMetrics)
+      .values({
+        ...data,
+        timestamp: new Date(),
+      })
+      .returning();
+    
+    return metric;
+  }
+  
+  async getAdvertisementMetrics(advertisementId: number): Promise<AdvertisementMetric[]> {
+    return await db
+      .select()
+      .from(advertisementMetrics)
+      .where(eq(advertisementMetrics.advertisementId, advertisementId))
+      .orderBy(advertisementMetrics.timestamp);
+  }
+  
+  async getAdvertisementPerformance(advertisementId?: number): Promise<{
+    impressions: number;
+    clicks: number;
+    ctr: number;
+    advertisementId?: number;
+  }> {
+    // If advertisementId is provided, get metrics for that specific ad
+    if (advertisementId) {
+      const ad = await this.getAdvertisementById(advertisementId);
+      if (!ad) {
+        return { impressions: 0, clicks: 0, ctr: 0, advertisementId };
+      }
+      
+      // Calculate CTR (Click-Through Rate)
+      const impressions = ad.impressions || 0;
+      const clicks = ad.clicks || 0;
+      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+      
+      return {
+        impressions,
+        clicks,
+        ctr,
+        advertisementId
+      };
+    }
+    
+    // Otherwise, get aggregate performance across all ads
+    const ads = await this.getAllAdvertisements();
+    
+    let totalImpressions = 0;
+    let totalClicks = 0;
+    
+    for (const ad of ads) {
+      totalImpressions += ad.impressions || 0;
+      totalClicks += ad.clicks || 0;
+    }
+    
+    // Calculate overall CTR
+    const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
+    
+    return {
+      impressions: totalImpressions,
+      clicks: totalClicks,
+      ctr
+    };
+  }
+  
+  async incrementAdvertisementStat(advertisementId: number, stat: 'impressions' | 'clicks'): Promise<void> {
+    if (stat === 'impressions') {
+      await db
+        .update(advertisements)
+        .set({
+          impressions: sql`${advertisements.impressions} + 1`,
+          updatedAt: new Date()
+        })
+        .where(eq(advertisements.id, advertisementId));
+    } else if (stat === 'clicks') {
+      await db
+        .update(advertisements)
+        .set({
+          clicks: sql`${advertisements.clicks} + 1`,
+          updatedAt: new Date()
+        })
+        .where(eq(advertisements.id, advertisementId));
+    }
   }
 }
 

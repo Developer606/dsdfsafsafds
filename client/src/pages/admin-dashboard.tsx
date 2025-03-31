@@ -64,6 +64,9 @@ import {
   Bell,
   ArrowLeft,
   Shield,
+  Newspaper,
+  ShoppingBag,
+  Megaphone,
 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -894,6 +897,12 @@ export default function AdminDashboard() {
                         {feedback.length}
                       </span>
                     ) : null}
+                  </Button>
+                </Link>
+                <Link href="/admin/advertisements" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <Newspaper className="h-4 w-4" />
+                    Advertisements
                   </Button>
                 </Link>
                 <Button 

@@ -530,3 +530,64 @@ export type EncryptionKey = typeof encryptionKeys.$inferSelect;
 export type InsertEncryptionKey = z.infer<typeof insertEncryptionKeySchema>;
 export type ConversationKey = typeof conversationKeys.$inferSelect;
 export type InsertConversationKey = z.infer<typeof insertConversationKeySchema>;
+
+// Advertisement schema for the Featured section
+export const advertisements = sqliteTable("advertisements", {
+  id: integer("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  imageUrl: text("image_url").notNull(),
+  buttonText: text("button_text").default("Learn More"),
+  buttonLink: text("button_link").notNull(),
+  buttonStyle: text("button_style").default("primary"),
+  backgroundColor: text("background_color").default("#8B5CF6"),
+  textColor: text("text_color").default("#FFFFFF"),
+  position: integer("position").default(0),
+  animationType: text("animation_type").default("fade"),
+  startDate: integer("start_date", { mode: "timestamp_ms" }).notNull(),
+  endDate: integer("end_date", { mode: "timestamp_ms" }).notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  impressions: integer("impressions").default(0),
+  clicks: integer("clicks").default(0),
+});
+
+// Advertisement metrics for tracking performance
+export const advertisementMetrics = sqliteTable("advertisement_metrics", {
+  id: integer("id").primaryKey(),
+  advertisementId: integer("advertisement_id")
+    .notNull()
+    .references(() => advertisements.id, { onDelete: "cascade" }),
+  userId: integer("user_id").references(() => users.id),
+  action: text("action").notNull(), // 'view', 'click', etc.
+  timestamp: integer("timestamp", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  deviceType: text("device_type"),
+  browserInfo: text("browser_info"),
+});
+
+// Schemas for advertisement tables
+export const insertAdvertisementSchema = createInsertSchema(advertisements).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  impressions: true,
+  clicks: true,
+});
+
+export const insertAdvertisementMetricSchema = createInsertSchema(advertisementMetrics).omit({
+  id: true,
+  timestamp: true,
+});
+
+// Types for advertisement tables
+export type Advertisement = typeof advertisements.$inferSelect;
+export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
+export type AdvertisementMetric = typeof advertisementMetrics.$inferSelect;
+export type InsertAdvertisementMetric = z.infer<typeof insertAdvertisementMetricSchema>;

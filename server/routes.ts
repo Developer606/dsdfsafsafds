@@ -26,6 +26,7 @@ import {
 } from "./services/user-status";
 import { generateCharacterResponse } from "./openai";
 import encryptionRoutes from "./encryption-routes";
+import advertisementRoutes from "./routes/advertisement-routes";
 import { errorHandler } from "./middleware/error-handler";
 import {
   insertMessageSchema,
@@ -3175,6 +3176,10 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Register encryption routes with error handler middleware
   app.use("/api/encryption", encryptionRoutes);
   app.use("/api/encryption", errorHandler);
+  
+  // Register advertisement routes
+  app.use("/api/advertisements", advertisementRoutes);
+  app.use("/api/advertisements", errorHandler);
 
   return httpServer;
 }
