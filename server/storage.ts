@@ -41,6 +41,7 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { hashPassword } from "./auth"; // Import hashPassword from auth.ts
 import { planDb } from "./plan-db";
+// Note: character-db is imported dynamically to avoid circular dependencies
 
 // Create a memory store with a 24-hour TTL for sessions
 const MemoryStoreSession = MemoryStore(session);
