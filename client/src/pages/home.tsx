@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useRef, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { CharacterCard } from "@/components/character-card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { BackgroundSlideshow } from "@/components/background-slideshow";
+import { io } from "socket.io-client";
 import {
   Dialog,
   DialogContent,
@@ -103,16 +104,84 @@ export default function Home() {
     queryKey: ["/api/user"],
   });
 
+  const queryClient = useQueryClient();
   const { data: characters = [], isLoading } = useQuery<Character[]>({
     queryKey: ["/api/characters"],
   });
   
-  // Characters should already be sorted by the server, but we'll sort them here just in case
-  const sortedCharacters = [...characters].sort((a, b) => {
+  // State to hold locally updated characters for real-time sorting
+  const [localCharacters, setLocalCharacters] = useState<Character[]>([]);
+  
+  // Effect to set the local characters when we fetch from API
+  useEffect(() => {
+    if (characters.length > 0) {
+      setLocalCharacters(characters);
+    }
+  }, [characters]);
+  
+  // Setup WebSocket connection for real-time character updates
+  useEffect(() => {
+    const socket = io();
+    
+    // Listen for new character events
+    socket.on('character:created', (character: Character) => {
+      setLocalCharacters(prev => {
+        // Add the new character to the array with isNew flag
+        const newCharacter = { ...character, isNew: true };
+        return [newCharacter, ...prev];
+      });
+      
+      // Also update the React Query cache to keep it in sync
+      queryClient.setQueryData(['/api/characters'], (oldData: Character[] | undefined) => {
+        if (!oldData) return [character];
+        return [{ ...character, isNew: true }, ...oldData];
+      });
+      
+      toast({
+        title: "New Character Added",
+        description: `${character.name} has been added to the library.`,
+      });
+    });
+    
+    // Listen for character deleted events
+    socket.on('character:deleted', (characterId: string) => {
+      setLocalCharacters(prev => prev.filter(char => char.id !== characterId));
+      
+      // Update the React Query cache
+      queryClient.setQueryData(['/api/characters'], (oldData: Character[] | undefined) => {
+        if (!oldData) return [];
+        return oldData.filter(char => char.id !== characterId);
+      });
+    });
+    
+    // Listen for character updated events
+    socket.on('character:updated', (updatedCharacter: Character) => {
+      setLocalCharacters(prev => 
+        prev.map(char => char.id === updatedCharacter.id ? { ...updatedCharacter, isNew: char.isNew } : char)
+      );
+      
+      // Update the React Query cache
+      queryClient.setQueryData(['/api/characters'], (oldData: Character[] | undefined) => {
+        if (!oldData) return [updatedCharacter];
+        return oldData.map(char => char.id === updatedCharacter.id ? { ...updatedCharacter, isNew: char.isNew } : char);
+      });
+    });
+    
+    return () => {
+      socket.disconnect();
+    };
+  }, [queryClient, toast]);
+  
+  // Sort characters in real-time with newest (isNew flag) first
+  const sortedCharacters = [...(localCharacters.length > 0 ? localCharacters : characters)].sort((a, b) => {
     // If one has isNew and the other doesn't, the one with isNew comes first
     if (a.isNew && !b.isNew) return -1;
     if (!a.isNew && b.isNew) return 1;
-    // Otherwise, maintain the original order
+    // Otherwise sort by creation date if available
+    if (a.createdAt && b.createdAt) {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    // Fallback to existing order
     return 0;
   });
 

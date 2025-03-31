@@ -5,6 +5,7 @@ export interface Character {
   description: string;
   persona: string;
   isNew?: boolean; // Flag to indicate if this is a new character
+  createdAt?: string; // Date when the character was created
 }
 
 export const characters: Character[] = [
