@@ -1566,10 +1566,19 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
 
   app.delete("/api/admin/predefined-characters/:id", isAdmin, async (req, res) => {
     try {
-      const characterId = req.params.id;
+      let characterId = req.params.id;
+      let existingCharacter;
       
       // Check if character exists
-      const existingCharacter = await storage.getPredefinedCharacterById(characterId);
+      existingCharacter = await storage.getPredefinedCharacterById(characterId);
+      
+      // Special case for "kishor" without space at the end
+      if (!existingCharacter && characterId === "kishor") {
+        // Try with a space at the end "kishor " for deletion too
+        characterId = "kishor ";
+        existingCharacter = await storage.getPredefinedCharacterById(characterId);
+      }
+      
       if (!existingCharacter) {
         return res.status(404).json({ error: "Character not found" });
       }
