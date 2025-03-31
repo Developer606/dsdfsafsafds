@@ -120,7 +120,6 @@ export const predefinedCharacters = sqliteTable("predefined_characters", {
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
-  time: text("time"),
 });
 
 // Message schemas
