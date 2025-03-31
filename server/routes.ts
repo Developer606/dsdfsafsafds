@@ -1493,16 +1493,45 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
 
   app.post("/api/admin/predefined-characters", isAdmin, async (req, res) => {
     try {
-      const { id, name, avatar, description, persona } = req.body;
+      let { id, name, avatar, description, persona } = req.body;
       
       if (!id || !name || !avatar || !description || !persona) {
         return res.status(400).json({ error: "All fields are required" });
       }
-
-      // Check if character with this ID already exists
+      
+      // Trim ID to prevent trailing spaces issues
+      id = id.trim();
+      
+      // Check for case sensitivity issues and whitespace in ID
+      if (id.includes(" ")) {
+        return res.status(400).json({ 
+          error: "Character ID should not contain spaces. Please use hyphens or underscores instead.",
+          suggestion: id.replace(/\s+/g, "_") // Suggest a valid ID with underscores
+        });
+      }
+      
+      // Normalize ID to lowercase for consistency
+      const normalizedId = id.toLowerCase();
+      
+      // Check if ID contains uppercase letters and warn if it does
+      if (id !== normalizedId) {
+        console.warn(`Character ID contains uppercase letters: ${id}. Consider using lowercase for consistency.`);
+      }
+      
+      // Check if character with this ID already exists (exact match)
       const existingCharacter = await storage.getPredefinedCharacterById(id);
       if (existingCharacter) {
         return res.status(409).json({ error: "Character with this ID already exists" });
+      }
+      
+      // Also check if character with normalized ID already exists
+      if (id !== normalizedId) {
+        const existingWithNormalizedId = await storage.getPredefinedCharacterById(normalizedId);
+        if (existingWithNormalizedId) {
+          return res.status(409).json({ 
+            error: `A character with ID "${normalizedId}" already exists. IDs are case-sensitive but using different cases may cause confusion.` 
+          });
+        }
       }
 
       const newCharacter = await storage.createPredefinedCharacter({
