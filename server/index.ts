@@ -94,13 +94,7 @@ app.use((req, res, next) => {
     // Create HTTP server first
     const httpServer = createServer(app);
     
-    // Setup Socket.IO with the HTTP server
-    const io = setupSocketIOServer(httpServer);
-    
-    // Make io available to routes
-    app.locals.io = io;
-    
-    // Register routes
+    // Register routes and setup Socket.IO
     await registerRoutes(app);
 
     // Global error handler with better logging

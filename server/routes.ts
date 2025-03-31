@@ -1766,24 +1766,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       if (!user.isPremium) {
         await storage.incrementTrialCharacterCount(user.id);
       }
-      
-      // Create a character object with the right structure for the frontend
-      const characterForClient = {
-        id: `custom_${character.id}`,
-        name: character.name,
-        avatar: character.avatar,
-        description: character.description,
-        persona: character.persona,
-        isNew: true,
-        createdAt: character.createdAt instanceof Date 
-          ? character.createdAt.toISOString() 
-          : new Date().toISOString()
-      };
-      
-      // Emit socket event for real-time updates
-      if (req.app.locals.io) {
-        req.app.locals.io.emit('character:created', characterForClient);
-      }
 
       res.json(character);
     } catch (error: any) {
@@ -1797,15 +1779,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       if (!user) {
         throw new Error("User not found");
       }
-      
-      const characterId = Number(req.params.id);
-      await storage.deleteCustomCharacter(characterId, user.id);
-      
-      // Emit socket event for real-time updates
-      if (req.app.locals.io) {
-        req.app.locals.io.emit('character:deleted', `custom_${characterId}`);
-      }
-      
+
+      await storage.deleteCustomCharacter(Number(req.params.id), user.id);
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
