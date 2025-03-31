@@ -102,15 +102,19 @@ export async function getAllAdvertisementsFromDb(): Promise<Advertisement[]> {
 }
 
 export async function getActiveAdvertisementsFromDb(): Promise<Advertisement[]> {
+  // Convert the current date to a timestamp string to avoid binding Date objects
   const now = new Date();
+  const nowTimestamp = now.toISOString();
+  
+  console.log("Fetching active advertisements with timestamp:", nowTimestamp);
   
   return await advertisementDb
     .select()
     .from(advertisements)
     .where(
       sql`${advertisements.isActive} = 1 AND 
-          ${advertisements.startDate} <= ${now} AND 
-          ${advertisements.endDate} >= ${now}`
+          ${advertisements.startDate} <= ${nowTimestamp} AND 
+          ${advertisements.endDate} >= ${nowTimestamp}`
     )
     .orderBy(advertisements.position);
 }
