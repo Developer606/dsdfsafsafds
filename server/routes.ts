@@ -1445,6 +1445,29 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       // Return the file path that can be used in the avatar field
       const filePath = `/character_images/${req.file.filename}`;
       
+      // If characterId is provided, check if we need to clean up old images
+      const characterId = req.body.characterId;
+      if (characterId) {
+        try {
+          const existingCharacter = await storage.getPredefinedCharacterById(characterId);
+          if (existingCharacter && existingCharacter.avatar && existingCharacter.avatar.startsWith('/character_images/')) {
+            // Extract the old filename from the path
+            const oldFilename = existingCharacter.avatar.split('/').pop();
+            if (oldFilename && oldFilename !== req.file.filename) { // Don't delete if it's the same name (unlikely)
+              const oldFilePath = `client/public/character_images/${oldFilename}`;
+              // Check if file exists before attempting to delete
+              if (fs.existsSync(oldFilePath)) {
+                fs.unlinkSync(oldFilePath);
+                console.log(`Deleted old character image: ${oldFilePath}`);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error cleaning up old character image:", err);
+          // Continue even if deletion fails - don't block the upload
+        }
+      }
+      
       res.json({ 
         success: true, 
         filename: req.file.filename,
@@ -1508,6 +1531,26 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       if (!existingCharacter) {
         return res.status(404).json({ error: "Character not found" });
       }
+      
+      // Clean up old local image if switching to URL
+      if (existingCharacter.avatar && existingCharacter.avatar.startsWith('/character_images/') && 
+          avatar && !avatar.startsWith('/character_images/')) {
+        try {
+          // Extract the old filename from the path
+          const oldFilename = existingCharacter.avatar.split('/').pop();
+          if (oldFilename) {
+            const oldFilePath = `client/public/character_images/${oldFilename}`;
+            // Check if file exists before attempting to delete
+            if (fs.existsSync(oldFilePath)) {
+              fs.unlinkSync(oldFilePath);
+              console.log(`Deleted old character image when switching to URL: ${oldFilePath}`);
+            }
+          }
+        } catch (err) {
+          console.error("Error deleting old character image:", err);
+          // Continue even if deletion fails
+        }
+      }
 
       // Update character
       const updatedCharacter = await storage.updatePredefinedCharacter(
@@ -1530,6 +1573,23 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const existingCharacter = await storage.getPredefinedCharacterById(characterId);
       if (!existingCharacter) {
         return res.status(404).json({ error: "Character not found" });
+      }
+      
+      // Clean up local image file if it's a local image
+      if (existingCharacter.avatar && existingCharacter.avatar.startsWith('/character_images/')) {
+        try {
+          const oldFilename = existingCharacter.avatar.split('/').pop();
+          if (oldFilename) {
+            const oldFilePath = `client/public/character_images/${oldFilename}`;
+            if (fs.existsSync(oldFilePath)) {
+              fs.unlinkSync(oldFilePath);
+              console.log(`Deleted character image file when deleting character: ${oldFilePath}`);
+            }
+          }
+        } catch (err) {
+          console.error("Error deleting character image file:", err);
+          // Continue with deletion even if image cleanup fails
+        }
       }
 
       // Delete character

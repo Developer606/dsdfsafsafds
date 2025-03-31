@@ -170,9 +170,14 @@ export default function AdminCharacters() {
 
   // File upload mutation
   const uploadImage = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, characterId }: { file: File; characterId?: string }) => {
       const formData = new FormData();
       formData.append('image', file);
+      
+      // Add character ID if provided (for replacing existing images)
+      if (characterId) {
+        formData.append('characterId', characterId);
+      }
       
       const res = await fetch('/api/admin/upload-character-image', {
         method: 'POST',
@@ -253,8 +258,11 @@ export default function AdminCharacters() {
     setIsUploading(true);
     setUploadProgress(10); // Start progress indication
     
-    // Upload the file
-    uploadImage.mutate(file);
+    // Upload the file with character ID if editing
+    uploadImage.mutate({
+      file,
+      characterId: editingCharacter?.id // Only pass characterId when editing
+    });
   };
 
   // Mutations
