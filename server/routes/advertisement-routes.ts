@@ -60,15 +60,25 @@ router.get("/:id", isAdmin, async (req, res) => {
 // Create advertisement (admin only)
 router.post("/", isAdmin, async (req, res) => {
   try {
+    console.log("Received advertisement data:", JSON.stringify(req.body, null, 2));
+    
     const validation = insertAdvertisementSchema.safeParse(req.body);
     if (!validation.success) {
+      console.error("Validation error:", JSON.stringify(validation.error.format(), null, 2));
       return res.status(400).json({ 
         error: "Invalid advertisement data", 
         details: validation.error.format() 
       });
     }
     
-    const advertisement = await storage.createAdvertisement(validation.data);
+    // Process data to ensure isActive is properly set
+    const data = validation.data;
+    if (data.isActive === undefined) {
+      data.isActive = true;
+    }
+    
+    const advertisement = await storage.createAdvertisement(data);
+    console.log("Created advertisement:", JSON.stringify(advertisement, null, 2));
     res.status(201).json(advertisement);
   } catch (error) {
     console.error("Error creating advertisement:", error);
@@ -84,15 +94,22 @@ router.put("/:id", isAdmin, async (req, res) => {
       return res.status(400).json({ error: "Invalid advertisement ID" });
     }
     
+    console.log("Received update data:", JSON.stringify(req.body, null, 2));
+    
     const validation = insertAdvertisementSchema.partial().safeParse(req.body);
     if (!validation.success) {
+      console.error("Validation error:", JSON.stringify(validation.error.format(), null, 2));
       return res.status(400).json({ 
         error: "Invalid advertisement data", 
         details: validation.error.format() 
       });
     }
     
-    const advertisement = await storage.updateAdvertisement(id, validation.data);
+    // Process data to ensure isActive is properly set if included
+    const data = validation.data;
+    
+    const advertisement = await storage.updateAdvertisement(id, data);
+    console.log("Updated advertisement:", JSON.stringify(advertisement, null, 2));
     res.json(advertisement);
   } catch (error) {
     console.error("Error updating advertisement:", error);

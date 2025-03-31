@@ -73,11 +73,24 @@ export const AdvertisementManager: React.FC = () => {
         endDate: new Date(data.endDate),
         // Ensure isActive is set correctly (required by the schema)
         isActive: true,
+        // Make sure position is a number
+        position: Number(data.position || 0)
       };
       
+      // Convert colors to strings if they're not already
+      if (typeof payload.backgroundColor !== 'string') {
+        payload.backgroundColor = String(payload.backgroundColor || '#8B5CF6');
+      }
+      
+      if (typeof payload.textColor !== 'string') {
+        payload.textColor = String(payload.textColor || '#FFFFFF');
+      }
+      
+      console.log("Sending advertisement payload:", payload);
       return apiRequest('POST', '/api/advertisements', payload);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Advertisement created successfully:", data);
       // Invalidate both regular and active advertisement queries
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements'] });
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
@@ -100,12 +113,25 @@ export const AdvertisementManager: React.FC = () => {
         startDate: new Date(rest.startDate),
         endDate: new Date(rest.endDate),
         // Ensure isActive is set correctly (required by the schema)
-        isActive: true
+        isActive: true,
+        // Make sure position is a number
+        position: Number(rest.position || 0)
       };
       
+      // Convert colors to strings if they're not already
+      if (typeof payload.backgroundColor !== 'string') {
+        payload.backgroundColor = String(payload.backgroundColor || '#8B5CF6');
+      }
+      
+      if (typeof payload.textColor !== 'string') {
+        payload.textColor = String(payload.textColor || '#FFFFFF');
+      }
+      
+      console.log("Sending update payload:", payload);
       return apiRequest('PUT', `/api/advertisements/${id}`, payload);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Advertisement updated successfully:", data);
       // Invalidate both regular and active advertisement queries
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements'] });
       queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
@@ -168,6 +194,15 @@ export const AdvertisementManager: React.FC = () => {
   
   // Preview component
   const PreviewComponent = () => {
+    // Ensure colors are properly formatted as strings
+    const backgroundColor = typeof formValues.backgroundColor === 'string' 
+      ? formValues.backgroundColor 
+      : '#8B5CF6';
+      
+    const textColor = typeof formValues.textColor === 'string'
+      ? formValues.textColor
+      : '#FFFFFF';
+      
     // Create a preview object from form values
     const previewAd = {
       id: selectedAd?.id || 0,
@@ -177,8 +212,8 @@ export const AdvertisementManager: React.FC = () => {
       buttonText: formValues.buttonText || 'Learn More',
       buttonLink: formValues.buttonLink || '',
       buttonStyle: formValues.buttonStyle || 'primary',
-      backgroundColor: formValues.backgroundColor || '#8B5CF6',
-      textColor: formValues.textColor || '#FFFFFF',
+      backgroundColor: backgroundColor,
+      textColor: textColor,
       animationType: formValues.animationType || 'fade',
       position: Number(formValues.position || 0),
       startDate: formValues.startDate ? new Date(formValues.startDate) : new Date(),
