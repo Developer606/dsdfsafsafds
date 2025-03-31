@@ -117,7 +117,6 @@ export const predefinedCharacters = sqliteTable("predefined_characters", {
   avatar: text("avatar").notNull(),
   description: text("description").notNull(),
   persona: text("persona").notNull(),
-  isFeatured: integer("is_featured", { mode: "boolean" }).default(false),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -194,7 +193,6 @@ export const insertPredefinedCharacterSchema = createInsertSchema(predefinedChar
   avatar: true,
   description: true,
   persona: true,
-  isFeatured: true,
 });
 
 export type PredefinedCharacter = typeof predefinedCharacters.$inferSelect;

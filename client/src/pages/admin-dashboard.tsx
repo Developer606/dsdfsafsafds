@@ -64,7 +64,6 @@ import {
   Bell,
   ArrowLeft,
   Shield,
-  ImageIcon,
 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -842,14 +841,6 @@ export default function AdminDashboard() {
           </h1>
         </div>
         <div className="flex items-center gap-4">
-          {/* Quick Action Button for Advertisements */}
-          <Link href="/admin/advertisements">
-            <Button variant="outline" className="gap-2 items-center">
-              <ImageIcon className="h-4 w-4" /> 
-              Manage Ads
-            </Button>
-          </Link>
-          
           <NotificationPopover />
           
           {/* Hamburger Menu */}
@@ -874,12 +865,6 @@ export default function AdminDashboard() {
                   <Button variant="secondary" className="w-full gap-2 justify-start">
                     <Palette className="h-4 w-4" />
                     Manage Characters
-                  </Button>
-                </Link>
-                <Link href="/admin/advertisements" className="w-full">
-                  <Button variant="secondary" className="w-full gap-2 justify-start">
-                    <ImageIcon className="h-4 w-4" />
-                    Advertisements
                   </Button>
                 </Link>
                 <Link href="/admin/content-moderation" className="w-full">

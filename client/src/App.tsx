@@ -11,7 +11,6 @@ import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminContentModeration from "@/pages/admin-content-moderation";
 import AdminCharacters from "@/pages/admin-characters";
-import AdminAdvertisements from "@/pages/admin-advertisements";
 import UserSearch from "@/pages/user-search";
 import UserMessages from "@/pages/user-messages";
 import Conversations from "@/pages/conversations";
@@ -69,11 +68,6 @@ function Router() {
       <ProtectedRoute
         path="/admin/characters"
         component={AdminCharacters}
-        requireAdmin
-      />
-      <ProtectedRoute
-        path="/admin/advertisements"
-        component={AdminAdvertisements}
         requireAdmin
       />
 
