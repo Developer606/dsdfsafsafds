@@ -50,17 +50,25 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const formData = new FormData();
       formData.append('file', file);
 
+      console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
+      
       // Upload the file
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('Upload response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to upload file');
+        const errorText = await response.text();
+        console.error('Upload failed with response:', errorText);
+        throw new Error(`Failed to upload file: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Upload successful, received URL:', data.url);
+      
       onUploadComplete(data.url);
     } catch (err) {
       setError('Error uploading file. Please try again.');

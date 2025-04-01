@@ -468,6 +468,22 @@ export const AdvertisementManager: React.FC = () => {
                   
                   {formValues.mediaType === 'image' ? (
                     <div>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-1">Image URL (External)</label>
+                        <input
+                          {...register('imageUrl')}
+                          className="w-full px-3 py-2 border rounded-md"
+                          placeholder="https://example.com/image.jpg"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter an external URL or upload an image below
+                        </p>
+                      </div>
+                      
+                      <div className="mb-2">
+                        <p className="text-sm font-medium mb-1">OR Upload Image</p>
+                      </div>
+                      
                       <FileUpload
                         onFileSelect={(file) => console.log('Image file selected:', file)}
                         onUploadComplete={(url) => {
@@ -484,6 +500,22 @@ export const AdvertisementManager: React.FC = () => {
                     </div>
                   ) : (
                     <div>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-1">Video URL (External)</label>
+                        <input
+                          {...register('videoUrl')}
+                          className="w-full px-3 py-2 border rounded-md"
+                          placeholder="https://example.com/video.mp4"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter an external URL or upload a video below
+                        </p>
+                      </div>
+                      
+                      <div className="mb-2">
+                        <p className="text-sm font-medium mb-1">OR Upload Video</p>
+                      </div>
+                      
                       <FileUpload
                         onFileSelect={(file) => console.log('Video file selected:', file)}
                         onUploadComplete={(url) => {
@@ -496,10 +528,22 @@ export const AdvertisementManager: React.FC = () => {
                         currentUrl={formValues.videoUrl}
                         type="video"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Please also upload a thumbnail image for the video.
-                      </p>
-                      <div className="mt-3">
+                      
+                      <div className="mt-5 border-t pt-5">
+                        <label className="block text-sm font-medium mb-1">Thumbnail Image URL (External)</label>
+                        <input
+                          {...register('imageUrl')}
+                          className="w-full px-3 py-2 border rounded-md"
+                          placeholder="https://example.com/thumbnail.jpg"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Enter an external URL or upload a thumbnail below
+                        </p>
+                        
+                        <div className="mb-2 mt-4">
+                          <p className="text-sm font-medium mb-1">OR Upload Thumbnail</p>
+                        </div>
+                        
                         <FileUpload
                           onFileSelect={(file) => console.log('Thumbnail file selected:', file)}
                           onUploadComplete={(url) => {

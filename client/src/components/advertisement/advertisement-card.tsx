@@ -89,6 +89,24 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
   // Determine if buttonLink is an internal or external link
   const isExternalLink = buttonLink.startsWith('http') || buttonLink.startsWith('https');
   
+  // Ensure URLs are properly formatted
+  const formatUrl = (url: string | null | undefined): string => {
+    if (!url) return '';
+    
+    // If it's already a full URL, return it as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // If it's an uploaded file URL (starts with '/uploads'), make sure it's correctly formed
+    if (url.startsWith('/uploads')) {
+      return url; // URL should be correct as-is since Express serves static files from '/uploads'
+    }
+    
+    // For any other format, assume it might be a relative path and return as is
+    return url;
+  };
+  
   // Video media controls
   const togglePlay = () => {
     if (videoRef.current) {
@@ -124,8 +142,8 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
             <div className="relative w-full h-full">
               <video
                 ref={videoRef}
-                src={videoUrl}
-                poster={imageUrl}
+                src={formatUrl(videoUrl)}
+                poster={formatUrl(imageUrl)}
                 className="w-full h-full object-cover"
                 muted={isMuted}
                 loop
@@ -153,7 +171,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
             </div>
           ) : (
             <img
-              src={imageUrl}
+              src={formatUrl(imageUrl)}
               alt={title}
               className="w-full h-full object-cover"
             />

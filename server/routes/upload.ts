@@ -38,10 +38,14 @@ const fileFilter = (req: express.Request, file: Express.Multer.File, cb: multer.
     'video/ogg'
   ];
   
+  console.log(`File upload request: ${file.originalname}, type: ${file.mimetype}`);
+  
   if (allowedTypes.includes(file.mimetype)) {
+    console.log(`File type ${file.mimetype} is allowed`);
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only images (JPEG, PNG, GIF, WebP) and videos (MP4, WebM, Ogg) are allowed.'));
+    console.error(`Rejected file upload: ${file.originalname} with type ${file.mimetype}`);
+    cb(new Error(`Invalid file type: ${file.mimetype}. Allowed types are: ${allowedTypes.join(', ')}`));
   }
 };
 
