@@ -100,11 +100,51 @@ router.post("/", isAdmin, async (req, res) => {
   try {
     console.log("Received advertisement data:", JSON.stringify(req.body, null, 2));
     
-    // Pre-process the data to convert date strings to Date objects
+    // Helper function to sanitize YouTube URLs
+    const sanitizeYouTubeUrl = (url) => {
+      if (!url) return url;
+      
+      // Check if it's a YouTube URL
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        console.log('Sanitizing YouTube URL');
+        
+        // Extract video ID from various YouTube URL formats
+        let videoId = '';
+        
+        // Extract from youtu.be format
+        if (url.includes('youtu.be/')) {
+          const match = /youtu\.be\/([^?&]+)/.exec(url);
+          if (match && match[1]) videoId = match[1];
+        } 
+        // Extract from youtube.com/watch format
+        else if (url.includes('youtube.com/watch')) {
+          const match = /v=([^&]+)/.exec(url);
+          if (match && match[1]) videoId = match[1];
+        } 
+        // Extract from embed format
+        else if (url.includes('youtube.com/embed/')) {
+          const match = /embed\/([^?&]+)/.exec(url);
+          if (match && match[1]) videoId = match[1];
+        }
+        
+        if (videoId) {
+          // Return a proper YouTube embed URL
+          console.log('Extracted YouTube video ID:', videoId);
+          return `https://www.youtube.com/embed/${videoId}`;
+        }
+      }
+      
+      return url;
+    };
+    
+    // Pre-process the data to convert date strings to Date objects and sanitize URLs
     const processedData = {
       ...req.body,
       startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
       endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      // Sanitize URLs if they exist
+      videoUrl: req.body.videoUrl ? sanitizeYouTubeUrl(req.body.videoUrl) : undefined,
+      imageUrl: req.body.imageUrl ? sanitizeYouTubeUrl(req.body.imageUrl) : undefined,
     };
     
     console.log("Processed data for validation:", JSON.stringify({
@@ -147,11 +187,51 @@ router.put("/:id", isAdmin, async (req, res) => {
     
     console.log("Received update data:", JSON.stringify(req.body, null, 2));
     
-    // Pre-process the data to convert date strings to Date objects
+    // Helper function to sanitize YouTube URLs
+    const sanitizeYouTubeUrl = (url) => {
+      if (!url) return url;
+      
+      // Check if it's a YouTube URL
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        console.log('Sanitizing YouTube URL');
+        
+        // Extract video ID from various YouTube URL formats
+        let videoId = '';
+        
+        // Extract from youtu.be format
+        if (url.includes('youtu.be/')) {
+          const match = /youtu\.be\/([^?&]+)/.exec(url);
+          if (match && match[1]) videoId = match[1];
+        } 
+        // Extract from youtube.com/watch format
+        else if (url.includes('youtube.com/watch')) {
+          const match = /v=([^&]+)/.exec(url);
+          if (match && match[1]) videoId = match[1];
+        } 
+        // Extract from embed format
+        else if (url.includes('youtube.com/embed/')) {
+          const match = /embed\/([^?&]+)/.exec(url);
+          if (match && match[1]) videoId = match[1];
+        }
+        
+        if (videoId) {
+          // Return a proper YouTube embed URL
+          console.log('Extracted YouTube video ID:', videoId);
+          return `https://www.youtube.com/embed/${videoId}`;
+        }
+      }
+      
+      return url;
+    };
+    
+    // Pre-process the data to convert date strings to Date objects and sanitize URLs
     const processedData = {
       ...req.body,
       startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
       endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      // Sanitize URLs if they exist
+      videoUrl: req.body.videoUrl ? sanitizeYouTubeUrl(req.body.videoUrl) : undefined,
+      imageUrl: req.body.imageUrl ? sanitizeYouTubeUrl(req.body.imageUrl) : undefined,
     };
     
     console.log("Processed update data for validation:", JSON.stringify({

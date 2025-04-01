@@ -106,7 +106,29 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
     if (url.includes('/uploads/advertisem') && (url.includes('http://') || url.includes('https://'))) {
       console.log('Fixing malformed URL that contains both upload path and external URL');
       
-      // Extract the actual URL part (http or https)
+      // Extract the YouTube URL more aggressively, handling complex cases with multiple https:// parts
+      if (url.includes('youtu.be') || url.includes('youtube.com')) {
+        console.log('Detected YouTube URL in malformed path');
+        
+        // First try to extract a YouTube URL with standard regex
+        let ytMatch = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[\?&][\w-]+=[\w-]+)*/.exec(url);
+        
+        if (ytMatch && ytMatch[0]) {
+          // Found a full YouTube URL match
+          const videoId = ytMatch[1];
+          console.log('Successfully extracted YouTube video ID:', videoId);
+          return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&loop=1&controls=1`;
+        } else {
+          // Try to at least extract the video ID
+          const idMatch = /([a-zA-Z0-9_-]{11})/.exec(url);
+          if (idMatch && idMatch[1]) {
+            console.log('Extracted only YouTube video ID as fallback:', idMatch[1]);
+            return `https://www.youtube.com/embed/${idMatch[1]}?autoplay=1&mute=1&playsinline=1&loop=1&controls=1`;
+          }
+        }
+      }
+      
+      // For non-YouTube URLs, try the standard extraction
       const externalUrlMatch = /(https?:\/\/[^\s]+)/.exec(url);
       if (externalUrlMatch && externalUrlMatch[0]) {
         console.log('Extracted external URL:', externalUrlMatch[0]);
