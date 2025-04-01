@@ -12,9 +12,30 @@ import type { Advertisement } from '@shared/schema';
 const formSchema = insertAdvertisementSchema.extend({
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
+  mediaType: z.enum(['image', 'video']).default('image'),
+  videoUrl: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formSchema>;
+// Create type to use in the form
+interface FormDataInterface {
+  title: string;
+  description: string;
+  imageUrl: string;
+  videoUrl?: string;
+  mediaType: 'image' | 'video';
+  buttonText: string;
+  buttonLink: string;
+  buttonStyle: string;
+  backgroundColor: string;
+  textColor: string;
+  position: number;
+  animationType: string;
+  startDate: string;
+  endDate: string;
+  isActive?: boolean;
+}
+
+type FormData = FormDataInterface;
 
 export const AdvertisementManager: React.FC = () => {
   const [selectedAd, setSelectedAd] = useState<Advertisement | null>(null);
@@ -23,10 +44,12 @@ export const AdvertisementManager: React.FC = () => {
   const queryClient = useQueryClient();
   
   // Default values for the form
-  const defaultValues = {
+  const defaultValues: FormDataInterface = {
     title: '',
     description: '',
     imageUrl: '',
+    videoUrl: '',
+    mediaType: 'image' as 'image',
     buttonText: 'Learn More',
     buttonLink: '',
     buttonStyle: 'primary',
@@ -43,6 +66,7 @@ export const AdvertisementManager: React.FC = () => {
     resolver: zodResolver(formSchema),
     defaultValues: selectedAd ? {
       ...selectedAd,
+      mediaType: (selectedAd.mediaType as 'image' | 'video') || 'image',
       startDate: format(new Date(selectedAd.startDate), 'yyyy-MM-dd'),
       endDate: format(new Date(selectedAd.endDate), 'yyyy-MM-dd'),
     } : defaultValues,
@@ -172,6 +196,7 @@ export const AdvertisementManager: React.FC = () => {
     setSelectedAd(ad);
     reset({
       ...ad,
+      mediaType: (ad.mediaType as 'image' | 'video') || 'image',
       startDate: format(new Date(ad.startDate), 'yyyy-MM-dd'),
       endDate: format(new Date(ad.endDate), 'yyyy-MM-dd'),
     });
@@ -209,6 +234,8 @@ export const AdvertisementManager: React.FC = () => {
       title: formValues.title || 'Example Advertisement',
       description: formValues.description || 'Example description for this advertisement.',
       imageUrl: formValues.imageUrl || '',
+      videoUrl: formValues.videoUrl || '',
+      mediaType: formValues.mediaType as 'image' | 'video' || 'image',
       buttonText: formValues.buttonText || 'Learn More',
       buttonLink: formValues.buttonLink || '',
       buttonStyle: formValues.buttonStyle || 'primary',
@@ -231,7 +258,24 @@ export const AdvertisementManager: React.FC = () => {
              style={{ backgroundColor: previewAd.backgroundColor || 'rgb(15, 23, 42)' }}>
           <div className="relative">
             <div className="aspect-[3/4] rounded-xl overflow-hidden">
-              {previewAd.imageUrl ? (
+              {previewAd.mediaType === 'video' && previewAd.videoUrl ? (
+                <div className="relative w-full h-full">
+                  <video
+                    src={previewAd.videoUrl}
+                    poster={previewAd.imageUrl}
+                    className="w-full h-full object-cover"
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                  />
+                  <div className="absolute bottom-3 right-3 flex space-x-2">
+                    <div className="w-8 h-8 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm">
+                      <span className="text-xs">Video</span>
+                    </div>
+                  </div>
+                </div>
+              ) : previewAd.imageUrl ? (
                 <img
                   src={previewAd.imageUrl}
                   alt={previewAd.title}
@@ -239,10 +283,10 @@ export const AdvertisementManager: React.FC = () => {
                 />
               ) : (
                 <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                  <p className="text-gray-400">No image URL provided</p>
+                  <p className="text-gray-400">No media provided</p>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
             </div>
             
             <div className="absolute bottom-0 left-0 p-5 w-full">
@@ -411,14 +455,48 @@ export const AdvertisementManager: React.FC = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Image URL</label>
-                    <input
-                      {...register('imageUrl')}
+                    <label className="block text-sm font-medium mb-1">Media Type</label>
+                    <select
+                      {...register('mediaType')}
                       className="w-full px-3 py-2 border rounded-md"
-                      placeholder="https://example.com/image.jpg"
-                    />
-                    {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
+                    >
+                      <option value="image">Image</option>
+                      <option value="video">Video</option>
+                    </select>
                   </div>
+                  
+                  {formValues.mediaType === 'image' ? (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Image URL</label>
+                      <input
+                        {...register('imageUrl')}
+                        className="w-full px-3 py-2 border rounded-md"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                      {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Video URL</label>
+                      <input
+                        {...register('videoUrl')}
+                        className="w-full px-3 py-2 border rounded-md"
+                        placeholder="https://example.com/video.mp4"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Make sure to also provide an image URL as a poster/thumbnail.
+                      </p>
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium mb-1">Thumbnail Image URL</label>
+                        <input
+                          {...register('imageUrl')}
+                          className="w-full px-3 py-2 border rounded-md"
+                          placeholder="https://example.com/thumbnail.jpg"
+                        />
+                        {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>

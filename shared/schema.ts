@@ -537,6 +537,8 @@ export const advertisements = sqliteTable("advertisements", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   imageUrl: text("image_url").notNull(),
+  videoUrl: text("video_url"),
+  mediaType: text("media_type").default("image"),
   buttonText: text("button_text").default("Learn More"),
   buttonLink: text("button_link").notNull(),
   buttonStyle: text("button_style").default("primary"),

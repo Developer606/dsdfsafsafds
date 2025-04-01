@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
+import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import type { Advertisement } from '@shared/schema';
 
 interface AdvertisementCardProps {
@@ -12,11 +13,17 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
   advertisement, 
   className = '' 
 }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+
   const {
     id,
     title,
     description,
     imageUrl,
+    videoUrl,
+    mediaType,
     buttonText,
     buttonLink,
     buttonStyle,
@@ -82,6 +89,25 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
   // Determine if buttonLink is an internal or external link
   const isExternalLink = buttonLink.startsWith('http') || buttonLink.startsWith('https');
   
+  // Video media controls
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
   return (
     <motion.div
       initial="hidden"
@@ -94,35 +120,76 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
     >
       <div className="relative">
         <div className="aspect-[3/4] rounded-xl overflow-hidden">
-          <img
-            src={imageUrl}
-            alt={title}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+          {mediaType === 'video' && videoUrl ? (
+            <div className="relative w-full h-full">
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                poster={imageUrl}
+                className="w-full h-full object-cover"
+                muted={isMuted}
+                loop
+                playsInline
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+              
+              {/* Video controls */}
+              <div className="absolute bottom-3 right-3 flex space-x-2">
+                <button 
+                  onClick={togglePlay}
+                  className="w-8 h-8 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
+                >
+                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                </button>
+                <button 
+                  onClick={toggleMute}
+                  className="w-8 h-8 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
+                >
+                  {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <img
+              src={imageUrl}
+              alt={title}
+              className="w-full h-full object-cover"
+            />
+          )}
+          {/* Always show gradient overlay for better text visibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
         </div>
         
-        <div className="absolute bottom-0 left-0 p-5 w-full">
+        <div className="absolute bottom-0 left-0 p-5 w-full z-10">
           <div className="absolute top-4 left-4">
-            <div className="text-xs text-purple-300 font-medium mb-1">
+            <div className="text-xs text-purple-300 font-bold mb-1 drop-shadow-lg">
               Featured
             </div>
           </div>
           
-          <h2 className="text-2xl font-bold text-white mb-1">
+          <h2 className="text-2xl font-bold text-white mb-1 drop-shadow-md">
             {title}
           </h2>
+
+          {/* Optional short description with improved visibility */}
+          {description && (
+            <p className="text-sm text-gray-200 mb-3 line-clamp-2 drop-shadow-md">
+              {description}
+            </p>
+          )}
           
           <div className="flex items-center mb-3">
-            <span className="bg-gray-800 text-white text-xs px-2 py-0.5 rounded-full">
+            <span className="bg-gray-800 text-white text-xs px-2 py-0.5 rounded-full drop-shadow-sm">
               New
             </span>
-            <span className="mx-2 text-gray-500">•</span>
-            <div className="flex">
+            <span className="mx-2 text-gray-400">•</span>
+            <div className="flex drop-shadow-sm">
               {[1, 2, 3, 4, 5].map((star, i) => (
                 <span
                   key={i}
-                  className={`${i < 3 ? "text-amber-400" : "text-gray-600"} text-xs`}
+                  className={`${i < 3 ? "text-amber-400" : "text-gray-500"} text-xs`}
                 >
                   ★
                 </span>
