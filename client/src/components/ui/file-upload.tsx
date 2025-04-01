@@ -84,8 +84,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       console.log('Uploading file:', file.name, 'Size:', file.size, 'Type:', file.type);
       
-      // Upload the file
-      const response = await fetch('/api/upload', {
+      // Upload the file - for admins use the admin endpoint
+      const adminUser = sessionStorage.getItem('isAdmin') === 'true';
+      const uploadUrl = adminUser ? '/api/upload/admin' : '/api/upload';
+      console.log(`Using upload endpoint: ${uploadUrl}, user is${adminUser ? '' : ' not'} admin`);
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
         // Important: Don't set Content-Type header when using FormData

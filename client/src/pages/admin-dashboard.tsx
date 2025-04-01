@@ -209,6 +209,19 @@ export default function AdminDashboard() {
     max?: number;
   }>({});
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  
+  // Set admin flag in sessionStorage for file uploads
+  useEffect(() => {
+    // Mark user as admin in session storage
+    sessionStorage.setItem('isAdmin', 'true');
+    console.log('Admin flag set in session storage for file uploads');
+    
+    // Clean up when component unmounts
+    return () => {
+      sessionStorage.removeItem('isAdmin');
+      console.log('Admin flag removed from session storage');
+    };
+  }, []);
 
   // Add bulk action mutations
   const bulkDeleteUsers = useMutation({

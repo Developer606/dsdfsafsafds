@@ -146,31 +146,73 @@ router.post('/', (req, res, next) => {
   }
 });
 
-// Special admin-only upload route with fewer restrictions
-router.post('/admin', isAdmin, upload.single('file'), handleMulterError, (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+// Direct file upload route - accepts any file type for admin
+router.post('/admin', isAdmin, (req, res) => {
+  // Use a more permissive configuration for admin uploads
+  const adminUpload = multer({
+    storage: multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, uploadDir);
+      },
+      filename: (req, file, cb) => {
+        // Generate a unique filename with original extension and timestamp
+        const uniqueFilename = `admin-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+        console.log(`Generated admin filename: ${uniqueFilename} for ${file.originalname}`);
+        cb(null, uniqueFilename);
+      },
+    }),
+    limits: {
+      fileSize: 30 * 1024 * 1024, // 30MB limit for admins
+    }
+  }).single('file');
+
+  // Handle the upload
+  adminUpload(req, res, (err) => {
+    if (err) {
+      console.error('Admin upload error:', err);
+      return res.status(400).json({ 
+        error: 'File upload failed', 
+        details: err.message || 'Unknown error'
+      });
     }
 
-    // Generate URL for the uploaded file
-    const fileUrl = `/uploads/${req.file.filename}`;
-    console.log(`Admin file uploaded successfully: ${fileUrl}`);
-    
-    // Ensure file is readable
-    fs.chmodSync(path.join(uploadDir, req.file.filename), 0o644);
-    
-    return res.status(201).json({
-      url: fileUrl,
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-    });
-  } catch (error) {
-    console.error('Admin upload error:', error);
-    return res.status(500).json({ error: 'Failed to upload file' });
-  }
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      // Ensure file was saved correctly
+      const filePath = path.join(uploadDir, req.file.filename);
+      if (!fs.existsSync(filePath)) {
+        console.error(`Admin file not found at expected path: ${filePath}`);
+        return res.status(500).json({ error: 'File was not saved correctly' });
+      }
+
+      // Make sure file permissions are set correctly (world-readable)
+      try {
+        fs.chmodSync(filePath, 0o644);
+        console.log(`Set permissions on ${filePath} to 644`);
+      } catch (err) {
+        console.error(`Failed to set permissions on ${filePath}:`, err);
+        // Continue anyway since the file might still be usable
+      }
+
+      // Generate URL for the uploaded file
+      const fileUrl = `/uploads/${req.file.filename}`;
+      console.log(`Admin file uploaded successfully: ${fileUrl}`);
+      
+      return res.status(201).json({
+        url: fileUrl,
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      });
+    } catch (error) {
+      console.error('Admin upload processing error:', error);
+      return res.status(500).json({ error: 'Failed to process uploaded file' });
+    }
+  });
 });
 
 export default router;
