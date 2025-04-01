@@ -583,10 +583,31 @@ export const baseInsertAdvertisementSchema = createInsertSchema(advertisements).
   clicks: true,
 });
 
-// Enhanced schema that accepts date strings too
+// Enhanced schema that accepts date strings too and makes imageUrl conditional
 export const insertAdvertisementSchema = baseInsertAdvertisementSchema.extend({
   startDate: z.union([z.date(), z.string().transform(str => new Date(str))]),
   endDate: z.union([z.date(), z.string().transform(str => new Date(str))]),
+})
+// Make imageUrl optional when mediaType is video
+.superRefine((data, ctx) => {
+  if (data.mediaType === 'video' && !data.videoUrl) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Video URL is required when media type is video",
+      path: ["videoUrl"]
+    });
+  }
+  
+  if (data.mediaType === 'video' && !data.imageUrl) {
+    // For video type, allow empty imageUrl (will be removed from validation errors in next step)
+    data.imageUrl = data.imageUrl || ""; // Set a default empty string
+  } else if (data.mediaType === 'image' && !data.imageUrl) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Image URL is required when media type is image",
+      path: ["imageUrl"]
+    });
+  }
 });
 
 export const insertAdvertisementMetricSchema = createInsertSchema(advertisementMetrics).omit({

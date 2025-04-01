@@ -211,18 +211,26 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       console.log('Video failed to load, using fallback image if available');
     }
     
-    // Try to fetch the resource to see what error we get
-    fetch(e.currentTarget.src)
-      .then(response => {
-        if (!response.ok) {
-          console.error(`Media fetch failed with status: ${response.status}`);
-        } else {
-          console.log(`Media fetch succeeded but still can't display, might be CORS issue`);
-        }
-      })
-      .catch(err => {
-        console.error(`Network error fetching media: ${err.message}`);
-      });
+    // Only try to fetch if it's not a YouTube URL (which doesn't support direct fetching due to CORS)
+    const isYouTubeUrl = e.currentTarget.src.includes('youtube.com') || e.currentTarget.src.includes('youtu.be');
+    
+    if (!isYouTubeUrl) {
+      fetch(e.currentTarget.src)
+        .then(response => {
+          if (!response.ok) {
+            console.error(`Media fetch failed with status: ${response.status}`);
+          } else {
+            console.log(`Media fetch succeeded but still can't display, might be CORS issue`);
+          }
+        })
+        .catch(err => {
+          console.error(`Network error fetching media: ${err.message}`);
+        });
+    } else {
+      console.log('YouTube URL detected, skipping fetch test due to expected CORS restrictions');
+      // For YouTube, we can't do a fetch test due to CORS, so we'll just assume it's working
+      // The iframe embed should handle this properly
+    }
   };
   
   // Initialize video playback and handle errors
