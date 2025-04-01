@@ -163,15 +163,6 @@ export async function updateAdvertisementInDb(id: number, data: Partial<InsertAd
   return advertisement;
 }
 
-export async function getAdvertisementForDeletion(id: number): Promise<Advertisement | undefined> {
-  // Get advertisement data before deletion for file cleanup
-  return await advertisementDb
-    .select()
-    .from(advertisements)
-    .where(sql`${advertisements.id} = ${id}`)
-    .get();
-}
-
 export async function deleteAdvertisementFromDb(id: number): Promise<void> {
   await advertisementDb
     .delete(advertisements)

@@ -86,20 +86,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       
       // Upload the file - for admins use the admin endpoint
       const adminUser = sessionStorage.getItem('isAdmin') === 'true';
-      
-      // For advertisement uploads, use a special endpoint and add a header
-      const isAdUpload = window.location.pathname.includes('/admin') && 
-                        (type === 'image' || type === 'video');
-      
-      // Build the upload URL with advertisement type parameter for admin
       const uploadUrl = adminUser ? '/api/upload/admin' : '/api/upload';
-      const urlWithParams = isAdUpload ? `${uploadUrl}?type=advertisement` : uploadUrl;
+      console.log(`Using upload endpoint: ${uploadUrl}, user is${adminUser ? '' : ' not'} admin`);
       
-      console.log(`Using upload endpoint: ${urlWithParams}, user is${adminUser ? '' : ' not'} admin, file is${isAdUpload ? '' : ' not'} for advertisement`);
-      
-      const response = await fetch(urlWithParams, {
+      const response = await fetch(uploadUrl, {
         method: 'POST',
-        headers: isAdUpload ? { 'X-Upload-Type': 'advertisement' } : {},
         body: formData,
         // Important: Don't set Content-Type header when using FormData
         // The browser will set the appropriate multipart/form-data boundary
