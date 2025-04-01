@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { CharacterCard } from "@/components/character-card";
@@ -288,6 +288,15 @@ export default function Home() {
     "home" | "search" | "create" | "library" | "profile"
   >("home");
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Refresh featured advertisements and characters when tab changes to home
+  useEffect(() => {
+    if (activeTab === "home") {
+      // Refresh data by invalidating the queries
+      queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/characters'] });
+    }
+  }, [activeTab]);
 
   // Complaint dialog states
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
