@@ -25,12 +25,26 @@ try {
 // Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir);
+    // Check if this is an advertisement upload by query parameter
+    const isAdUpload = req.query && req.query.type === 'advertisement';
+    const destinationDir = isAdUpload ? path.join(uploadDir, 'advertisements') : uploadDir;
+    
+    // Ensure the directory exists
+    if (isAdUpload && !fs.existsSync(destinationDir)) {
+      fs.mkdirSync(destinationDir, { recursive: true });
+      fs.chmodSync(destinationDir, 0o755);
+      console.log(`Created advertisement directory at ${destinationDir}`);
+    }
+    
+    cb(null, destinationDir);
   },
   filename: (req, file, cb) => {
+    // Check if this is an advertisement upload
+    const isAdUpload = req.query && req.query.type === 'advertisement';
     // Generate a unique filename with original extension
-    const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
-    console.log(`Generated filename: ${uniqueFilename} for ${file.originalname}`);
+    const prefix = isAdUpload ? 'ad-' : '';
+    const uniqueFilename = `${prefix}${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+    console.log(`Generated ${isAdUpload ? 'advertisement' : 'regular'} filename: ${uniqueFilename} for ${file.originalname}`);
     cb(null, uniqueFilename);
   },
 });
@@ -113,8 +127,16 @@ router.post('/', (req, res, next) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    // Check if this is an advertisement upload
+    const isAdUpload = req.query && req.query.type === 'advertisement';
+    const destinationDir = isAdUpload ? path.join(uploadDir, 'advertisements') : uploadDir;
+    
     // Ensure file was saved correctly
-    const filePath = path.join(uploadDir, req.file.filename);
+    const filePath = path.join(
+      isAdUpload ? destinationDir : uploadDir, 
+      req.file.filename
+    );
+    
     if (!fs.existsSync(filePath)) {
       console.error(`File not found at expected path: ${filePath}`);
       return res.status(500).json({ error: 'File was not saved correctly' });
@@ -129,8 +151,9 @@ router.post('/', (req, res, next) => {
       console.log(`Updated file permissions for ${filePath}`);
     }
 
-    // Generate URL for the uploaded file (using absolute path with domain)
-    const fileUrl = `/uploads/${req.file.filename}`;
+    // Generate URL for the uploaded file
+    const relativePath = path.relative(uploadDir, filePath);
+    const fileUrl = `/uploads/${relativePath}`;
     console.log(`File uploaded successfully: ${fileUrl}, type: ${req.file.mimetype}, size: ${req.file.size} bytes`);
     
     return res.status(201).json({

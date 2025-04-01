@@ -90,8 +90,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const adminUser = sessionStorage.getItem('isAdmin') === 'true';
       let uploadUrl = adminUser ? '/api/upload/admin' : '/api/upload';
       
-      // Add the uploadType as a query parameter if it's specified
-      if (uploadType && adminUser) {
+      // Add the uploadType as a query parameter if it's specified (for both admin and regular users)
+      if (uploadType) {
         uploadUrl += `?type=${encodeURIComponent(uploadType)}`;
       }
       
