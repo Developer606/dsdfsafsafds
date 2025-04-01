@@ -62,7 +62,6 @@ const CharacterCard = ({ character }: { character: any }) => {
 };
 
 export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = '' }) => {
-  // Initialize with index 0 to always start with a character if available
   const [currentIndex, setCurrentIndex] = useState(0);
   const queryClient = useQueryClient();
 
@@ -87,23 +86,14 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     return 0;
   });
 
-  // Combine characters and advertisements into a single array, with characters first
-  // Create a unique set to prevent duplicate characters and prioritize characters in the slideshow
+  // Combine advertisements and characters into a single array of featured items
+  // Create a unique set to prevent duplicate characters
   const featuredItems = [
-    // Add first 2 characters (or all if less than 2) for featuring if they exist
+    ...advertisements.map(ad => ({ type: 'advertisement', data: ad, id: `ad-${ad.id}` })),
+    // Only add the first character for featuring if it exists
     ...(sortedCharacters.length > 0 ? 
-        sortedCharacters.slice(0, 2).map(char => ({ 
-          type: 'character', 
-          data: char, 
-          id: `char-${char.id}` 
-        })) : 
-        []),
-    // Then add all advertisements
-    ...advertisements.map(ad => ({ 
-      type: 'advertisement', 
-      data: ad, 
-      id: `ad-${ad.id}` 
-    }))
+        [{ type: 'character', data: sortedCharacters[0], id: `char-${sortedCharacters[0].id}` }] : 
+        [])
   ];
 
   // Force refresh advertisements
@@ -178,17 +168,12 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0, x: 20, scale: 0.98 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: -20, scale: 0.98 }}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
           transition={{ 
-            duration: 0.6, 
-            ease: "easeInOut",
-            scale: {
-              type: "spring",
-              stiffness: 300,
-              damping: 20
-            }
+            duration: 0.5, 
+            ease: "easeInOut" 
           }}
           className="relative z-10"
         >
