@@ -18,8 +18,10 @@ app.use(express.urlencoded({ extended: false, limit: '20mb' }));
 // Configure trust proxy to get real client IP when behind a proxy (like in Replit)
 app.set("trust proxy", true);
 
-// Serve files from the uploads directory
+// Serve files from the uploads directory and its subdirectories
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// Make sure advertisement uploads are also accessible
+app.use("/uploads/advertisements", express.static(path.join(process.cwd(), "uploads/advertisements")));
 
 // Enhanced logging middleware
 app.use((req, res, next) => {

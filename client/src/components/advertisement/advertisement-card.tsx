@@ -211,18 +211,16 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       console.log('Video failed to load, using fallback image if available');
     }
     
-    // Try to fetch the resource to see what error we get
-    fetch(e.currentTarget.src)
-      .then(response => {
-        if (!response.ok) {
-          console.error(`Media fetch failed with status: ${response.status}`);
-        } else {
-          console.log(`Media fetch succeeded but still can't display, might be CORS issue`);
-        }
-      })
-      .catch(err => {
-        console.error(`Network error fetching media: ${err.message}`);
-      });
+    // Don't attempt to fetch the resource directly as this may trigger CORS issues
+    // or unnecessary network errors in the console
+    console.log(`Unable to load media from: ${e.currentTarget.src}`);
+    
+    // Check if this is a relative path starting with /uploads
+    if (e.currentTarget.src.includes('/uploads/')) {
+      console.log('This appears to be an uploaded file. Make sure the file exists and permissions are correct.');
+    } else if (e.currentTarget.src.includes('http')) {
+      console.log('This appears to be an external URL. Make sure it allows embedding and CORS access.');
+    }
   };
   
   // Initialize video playback and handle errors
@@ -232,7 +230,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       const playVideo = async () => {
         try {
           // Make sure video is visible and loaded
-          if (videoRef.current.readyState >= 2) {
+          if (videoRef.current && videoRef.current.readyState >= 2) {
             const playPromise = videoRef.current.play();
             
             if (playPromise !== undefined) {
@@ -335,7 +333,8 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
                     loop
                     playsInline
                     autoPlay={true}
-                    webkitPlaysinline="true"
+                    // Remove webkitPlaysinline attribute as it's not in the type definition
+                    // and use the standard playsInline which supports iOS
                     preload="auto"
                     onPlay={() => setIsPlaying(true)}
                     onPause={() => setIsPlaying(false)}
