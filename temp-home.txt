@@ -575,6 +575,11 @@ export default function Home() {
                     ))}
                   </div>
                 </div>
+                
+                {/* Featured Section for Mobile UI */}
+                <div className="px-4 pt-3">
+                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
+                </div>
 
                 {/* Category Grid */}
                 <div className="px-4 pt-2 pb-4">
@@ -663,10 +668,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Featured Section for Mobile UI */}
-                <div className="px-4 pt-5">
-                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
-                </div>
+                {/* Featured Content removed from here to avoid duplication */}
 
                 {/* Top Rated section - Material Design Carousel */}
                 <div className="px-4 pt-5">
