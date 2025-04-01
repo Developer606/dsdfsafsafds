@@ -675,63 +675,15 @@ export default function Home() {
                     </motion.button>
                   </div>
                   
-                  {/* Featured Advertisements */}
-                  <FeaturedSection className="mb-4" />
-                  
-                  {/* Featured Character */}
-                  <div className="relative rounded-xl overflow-hidden shadow-lg">
-                    {sortedCharacters && sortedCharacters.length > 0 && (
-                      <div className="relative">
-                        <div className="aspect-[3/4] rounded-xl overflow-hidden relative">
-                          <img
-                            src={sortedCharacters[0].avatar}
-                            alt={sortedCharacters[0].name}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                        </div>
-                        <div className="absolute bottom-0 left-0 p-5 w-full">
-                          <div className="inline-block px-2 py-1 bg-[#BB86FC]/20 rounded-full text-xs text-[#BB86FC] font-medium mb-2">
-                            Featured
-                          </div>
-                          <h2 className="text-2xl font-bold text-white leading-tight">
-                            {sortedCharacters[0].name}
-                          </h2>
-                          <div className="flex items-center mt-2">
-                            {sortedCharacters[0].isNew ? (
-                              <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
-                                New
-                              </span>
-                            ) : (
-                              <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
-                                Popular
-                              </span>
-                            )}
-                            <span className="mx-2 text-[#888888]">•</span>
-                            <div className="flex">
-                              {[1, 2, 3, 4, 5].map((star, i) => (
-                                <span
-                                  key={i}
-                                  className={`${i < 3 ? "text-[#BB86FC]" : "text-[#444444]"} text-xs`}
-                                >
-                                  ★
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                          <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            className="mt-3 px-4 py-2 bg-[#BB86FC] text-black font-medium text-sm rounded-full shadow-lg flex items-center"
-                            onClick={() =>
-                              setLocation(`/chat/${sortedCharacters[0].id}`)
-                            }
-                          >
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            Start Chat
-                          </motion.button>
-                        </div>
-                      </div>
-                    )}
+                  {/* Featured Content - combined advertisements and characters */}
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-3">
+                      <h2 className="text-xl font-bold text-white">
+                        <span className="inline-block mr-2">✨</span>
+                        Featured
+                      </h2>
+                    </div>
+                    <FeaturedSection className="rounded-xl overflow-hidden" />
                   </div>
                 </div>
 

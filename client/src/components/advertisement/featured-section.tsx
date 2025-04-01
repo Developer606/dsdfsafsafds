@@ -8,35 +8,103 @@ interface FeaturedSectionProps {
   className?: string;
 }
 
+// Character card component for feature section
+const CharacterCard = ({ character }: { character: any }) => {
+  return (
+    <div className="relative rounded-xl overflow-hidden shadow-lg">
+      <div className="relative">
+        <div className="aspect-[16/9] sm:aspect-[3/4] rounded-xl overflow-hidden relative">
+          <img
+            src={character.avatar}
+            alt={character.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+        </div>
+        <div className="absolute bottom-0 left-0 p-5 w-full">
+          <div className="inline-block px-2 py-1 bg-[#BB86FC]/20 rounded-full text-xs text-[#BB86FC] font-medium mb-2">
+            Featured Character
+          </div>
+          <h2 className="text-2xl font-bold text-white leading-tight">
+            {character.name}
+          </h2>
+          <div className="flex items-center mt-2">
+            {character.isNew ? (
+              <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
+                New
+              </span>
+            ) : (
+              <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
+                Popular
+              </span>
+            )}
+            <span className="mx-2 text-[#888888]">•</span>
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map((star, i) => (
+                <span
+                  key={i}
+                  className={`${i < 3 ? "text-[#BB86FC]" : "text-[#444444]"} text-xs`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = '' }) => {
-  const [currentAdIndex, setCurrentAdIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const queryClient = useQueryClient();
 
   // Fetch active advertisements with increased polling frequency
-  const { data: advertisements = [], isLoading, error } = useQuery<Advertisement[]>({
+  const { data: advertisements = [], isLoading: isLoadingAds } = useQuery<Advertisement[]>({
     queryKey: ['/api/advertisements/active'],
-    refetchInterval: 3000, // Refetch more frequently (every 3 seconds) to ensure real-time updates
+    refetchInterval: 3000, // Refetch every 3 seconds
     staleTime: 2000, // Data becomes stale after 2 seconds
   });
 
+  // Fetch characters
+  const { data: characters = [], isLoading: isLoadingCharacters } = useQuery<any[]>({
+    queryKey: ['/api/characters'],
+  });
+
+  // Sort characters to get featured ones first
+  const sortedCharacters = [...characters].sort((a, b) => {
+    // If one has isNew and the other doesn't, the one with isNew comes first
+    if (a.isNew && !b.isNew) return -1;
+    if (!a.isNew && b.isNew) return 1;
+    // Otherwise, maintain the original order
+    return 0;
+  });
+
+  // Combine advertisements and characters into a single array of featured items
+  const featuredItems = [
+    ...advertisements.map(ad => ({ type: 'advertisement', data: ad })),
+    // Only add the first 2 characters for featuring
+    ...(sortedCharacters.slice(0, 2).map(char => ({ type: 'character', data: char })))
+  ];
+
   // Force refresh advertisements
   const refreshAdvertisements = useCallback(() => {
-    console.log("Manually refreshing advertisements");
     queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
   }, [queryClient]);
 
-  // Auto-rotate through advertisements if there are multiple
+  // Auto-rotate through featured items
   useEffect(() => {
-    if (advertisements && advertisements.length > 1) {
+    if (featuredItems.length > 1) {
       const intervalId = setInterval(() => {
-        setCurrentAdIndex((prevIndex) => 
-          prevIndex === advertisements.length - 1 ? 0 : prevIndex + 1
+        setCurrentIndex((prevIndex) => 
+          prevIndex === featuredItems.length - 1 ? 0 : prevIndex + 1
         );
-      }, 8000); // Change ad every 8 seconds
+      }, 7000); // Change featured item every 7 seconds
 
       return () => clearInterval(intervalId);
     }
-  }, [advertisements]);
+  }, [featuredItems.length]);
   
   // Set up an interval to periodically force-refresh advertisements
   useEffect(() => {
@@ -48,46 +116,37 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
   }, [refreshAdvertisements]);
 
   // Handle manual navigation
-  const goToAd = (index: number) => {
-    setCurrentAdIndex(index);
+  const goToItem = (index: number) => {
+    setCurrentIndex(index);
   };
 
   // Loading state
-  if (isLoading) {
+  if (isLoadingAds || isLoadingCharacters) {
     return (
       <div className={`${className} animate-pulse rounded-xl bg-gradient-to-r from-pink-100/50 to-purple-100/50 dark:from-pink-950/50 dark:to-purple-950/50 h-72 mb-6`}></div>
     );
   }
 
-  // Error state
-  if (error || !advertisements) {
-    return null; // Don't show the section if there's an error or no data
-  }
-
-  // No active advertisements
-  if (advertisements.length === 0) {
+  // No featured items
+  if (featuredItems.length === 0) {
     return null;
   }
 
   return (
     <div className={`${className} relative mb-8`}>
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          <span className="inline-block mr-2">✨</span>
-          Featured
-        </h2>
-        {advertisements.length > 1 && (
+        {featuredItems.length > 1 && (
           <div className="flex space-x-2">
-            {advertisements.map((_: any, index: number) => (
+            {featuredItems.map((_, index: number) => (
               <button
                 key={index}
-                onClick={() => goToAd(index)}
+                onClick={() => goToItem(index)}
                 className={`w-3 h-3 rounded-full transition-all ${
-                  currentAdIndex === index 
+                  currentIndex === index 
                     ? 'bg-pink-500 scale-110' 
                     : 'bg-gray-300 dark:bg-gray-600 opacity-70'
                 }`}
-                aria-label={`Go to advertisement ${index + 1}`}
+                aria-label={`Go to featured item ${index + 1}`}
               />
             ))}
           </div>
@@ -96,17 +155,26 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
       
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentAdIndex}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.4 }}
+          key={currentIndex}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ 
+            duration: 0.5, 
+            ease: "easeInOut" 
+          }}
           className="relative z-10"
         >
-          {advertisements[currentAdIndex] && (
-            <AdvertisementCard 
-              advertisement={advertisements[currentAdIndex]} 
-            />
+          {featuredItems[currentIndex] && (
+            featuredItems[currentIndex].type === 'advertisement' ? (
+              <AdvertisementCard 
+                advertisement={featuredItems[currentIndex].data} 
+              />
+            ) : (
+              <CharacterCard
+                character={featuredItems[currentIndex].data}
+              />
+            )
           )}
         </motion.div>
       </AnimatePresence>
