@@ -77,35 +77,65 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     queryKey: ['/api/characters'],
   });
 
-  // Sort characters to prioritize predefined and new characters
+  // Enhanced sorting method to prioritize predefined, new, and then other characters
   const sortedCharacters = [...characters].sort((a, b) => {
     // First, prioritize predefined characters over custom ones
-    const aIsCustom = a.id.startsWith('custom_');
-    const bIsCustom = b.id.startsWith('custom_');
+    const aIsCustom = a.id?.startsWith('custom_') || false;
+    const bIsCustom = b.id?.startsWith('custom_') || false;
     
     if (!aIsCustom && bIsCustom) return -1;
     if (aIsCustom && !bIsCustom) return 1;
     
-    // Then prioritize new characters
-    if (a.isNew && !b.isNew) return -1;
-    if (!a.isNew && b.isNew) return 1;
+    // Second, prioritize characters marked as 'new'
+    const aIsNew = a.isNew || false;
+    const bIsNew = b.isNew || false;
+    
+    if (aIsNew && !bIsNew) return -1;
+    if (!aIsNew && bIsNew) return 1;
+    
+    // Third, prioritize characters with shorter IDs (usually main characters)
+    if (!aIsCustom && !bIsCustom) {
+      return (a.id?.length || 0) - (b.id?.length || 0);
+    }
     
     // Finally, maintain the original order
     return 0;
   });
   
-  // Find a predefined character (not a custom one)
-  const predefinedCharacter = sortedCharacters.find(char => !char.id.startsWith('custom_'));
+  // Get all predefined characters (not custom ones)
+  const predefinedCharacters = sortedCharacters.filter(char => 
+    char.id && !char.id.startsWith('custom_')
+  );
+  
+  // Find the best predefined character to feature first
+  // Prioritize: 1. Predefined + New, 2. Any Predefined, 3. Any Character
+  const featuredPredefinedCharacter = 
+    predefinedCharacters.find(char => char.isNew) || // First choice: new predefined character
+    predefinedCharacters[0] ||                       // Second choice: any predefined character
+    sortedCharacters[0];                             // Fallback: any character
+  
+  // Safety check to ensure we have a valid character
+  const validFeaturedCharacter = featuredPredefinedCharacter && 
+    typeof featuredPredefinedCharacter === 'object' && 
+    featuredPredefinedCharacter.id;
 
   // Combine advertisements and characters into a single array of featured items
-  // Always show a predefined character first, followed by advertisements
   const featuredItems = [
-    // Add the predefined character first if it exists
-    ...(predefinedCharacter ? 
-        [{ type: 'character', data: predefinedCharacter, id: `char-${predefinedCharacter.id}` }] : 
+    // Add the featured character first - only if we have a valid one
+    ...(validFeaturedCharacter ? 
+        [{ 
+          type: 'character', 
+          data: featuredPredefinedCharacter, 
+          id: `char-${featuredPredefinedCharacter.id}` 
+        }] : 
         []),
+    
     // Then add all advertisements
-    ...advertisements.map(ad => ({ type: 'advertisement', data: ad, id: `ad-${ad.id}` }))
+    ...advertisements.map(ad => ({ 
+      type: 'advertisement', 
+      data: ad, 
+      id: `ad-${ad.id}` 
+    }))
   ];
 
   // Force refresh advertisements and characters
@@ -135,7 +165,7 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
       !char.id.startsWith('custom_') && (char.isNew || char.featured)
     );
     
-    if (foundCharacter && predefinedCharacter?.id === foundCharacter.id) {
+    if (foundCharacter && featuredPredefinedCharacter?.id === foundCharacter.id) {
       // Use a small timeout to prevent visual jittering during transition
       const timeoutId = setTimeout(() => {
         setCurrentIndex(0); // First position always has the predefined character
@@ -143,7 +173,7 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
       
       return () => clearTimeout(timeoutId);
     }
-  }, [sortedCharacters, predefinedCharacter?.id]);
+  }, [sortedCharacters, featuredPredefinedCharacter?.id]);
   
   // Set up an interval to periodically force-refresh data without refreshing the whole page
   useEffect(() => {
