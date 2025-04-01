@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'wouter';
+import { MessageSquare } from 'lucide-react';
 import { AdvertisementCard } from './advertisement-card';
 import type { Advertisement } from '@shared/schema';
 
@@ -10,6 +12,8 @@ interface FeaturedSectionProps {
 
 // Character card component for feature section
 const CharacterCard = ({ character }: { character: any }) => {
+  const { setLocation } = useLocation();
+
   return (
     <div className="relative rounded-xl overflow-hidden shadow-lg">
       <div className="relative">
@@ -50,6 +54,14 @@ const CharacterCard = ({ character }: { character: any }) => {
               ))}
             </div>
           </div>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            className="mt-3 px-4 py-2 bg-[#BB86FC] text-black font-medium text-sm rounded-full shadow-lg flex items-center"
+            onClick={() => setLocation(`/chat/${character.id}`)}
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Start Chat
+          </motion.button>
         </div>
       </div>
     </div>
@@ -82,10 +94,13 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
   });
 
   // Combine advertisements and characters into a single array of featured items
+  // Create a unique set to prevent duplicate characters
   const featuredItems = [
-    ...advertisements.map(ad => ({ type: 'advertisement', data: ad })),
-    // Only add the first 2 characters for featuring
-    ...(sortedCharacters.slice(0, 2).map(char => ({ type: 'character', data: char })))
+    ...advertisements.map(ad => ({ type: 'advertisement', data: ad, id: `ad-${ad.id}` })),
+    // Only add the first character for featuring if it exists
+    ...(sortedCharacters.length > 0 ? 
+        [{ type: 'character', data: sortedCharacters[0], id: `char-${sortedCharacters[0].id}` }] : 
+        [])
   ];
 
   // Force refresh advertisements
