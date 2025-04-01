@@ -152,19 +152,32 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   // Function to show error message and log details about URL issues
   const handleMediaError = (e: React.SyntheticEvent<HTMLImageElement | HTMLVideoElement, Event>) => {
     console.error('Media failed to load:', e.currentTarget.src);
-    setError(`Failed to load media. URL: ${e.currentTarget.src}`);
-    // Try to fetch the URL to see what response we get
-    fetch(e.currentTarget.src)
-      .then(response => {
-        console.log('Media URL response status:', response.status);
-        if (!response.ok) {
-          setError(`Media fetch failed with status: ${response.status}`);
+    
+    // Check if it's a YouTube URL (youtu.be or youtube.com)
+    const url = e.currentTarget.src;
+    if (url.includes('youtu.be') || url.includes('youtube.com')) {
+      setError('YouTube videos cannot be previewed directly. They will work in the advertisement display.');
+      
+      // For YouTube URLs, try to convert to embed format for later use
+      try {
+        // Extract video ID from youtu.be URL
+        if (url.includes('youtu.be/')) {
+          const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+          if (videoId) {
+            console.log('Extracted YouTube video ID:', videoId);
+            // Don't try to load the embed URL here, just inform the user
+            setError('YouTube video detected. It will be embedded properly when displayed.');
+          }
         }
-      })
-      .catch(err => {
-        console.error('Error fetching media:', err);
-        setError(`Network error fetching media: ${err.message}`);
-      });
+      } catch (error) {
+        console.error('Error processing YouTube URL:', error);
+      }
+    } else {
+      setError(`Failed to load media. URL: ${e.currentTarget.src}`);
+      // For non-YouTube URLs, we can log the issue but don't try to fetch
+      // This avoids CORS errors in the console
+      console.log('Unable to load media, might be a permission or path issue');
+    }
   };
 
   return (

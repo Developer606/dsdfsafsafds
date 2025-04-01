@@ -110,13 +110,22 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       if (url.includes('youtu.be') || url.includes('youtube.com')) {
         console.log('Detected YouTube URL in malformed path');
         
-        // First try to extract a YouTube URL with standard regex
+        // Extract video ID from youtu.be/ format URL first (simpler case)
+        if (url.includes('youtu.be/')) {
+          const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+          if (videoId) {
+            console.log('Successfully extracted YouTube video ID from youtu.be URL:', videoId);
+            return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&loop=1&controls=1`;
+          }
+        }
+        
+        // Then try to extract a YouTube URL with standard regex (for youtube.com URLs)
         let ytMatch = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[\?&][\w-]+=[\w-]+)*/.exec(url);
         
-        if (ytMatch && ytMatch[0]) {
+        if (ytMatch && ytMatch[1]) {
           // Found a full YouTube URL match
           const videoId = ytMatch[1];
-          console.log('Successfully extracted YouTube video ID:', videoId);
+          console.log('Successfully extracted YouTube video ID with regex:', videoId);
           return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&loop=1&controls=1`;
         } else {
           // Try to at least extract the video ID
