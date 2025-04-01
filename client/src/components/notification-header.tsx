@@ -26,7 +26,7 @@ export function NotificationHeader() {
 
   // Add mutation for marking notifications as read
   const markAsReadMutation = useMutation({
-    mutationFn: async (notificationId: string) => {
+    mutationFn: async (notificationId: number | string) => {
       await apiRequest("PATCH", `/api/notifications/${notificationId}/read`);
     },
     onSuccess: () => {
@@ -154,6 +154,7 @@ export function NotificationHeader() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Notifications */}
             <Popover>
               <PopoverTrigger asChild>
                 <motion.button
@@ -188,7 +189,7 @@ export function NotificationHeader() {
                             "p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors",
                             !notification.read && "bg-blue-50 dark:bg-blue-900/10"
                           )}
-                          onClick={() => markAsReadMutation.mutate(notification.id)}
+                          onClick={() => markAsReadMutation.mutate(notification.id.toString())}
                         >
                           <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">
                             {notification.title}
@@ -211,14 +212,83 @@ export function NotificationHeader() {
               </PopoverContent>
             </Popover>
 
+            {/* Report button */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowComplaintDialog(true)}
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-[#075e54] dark:text-[#00a884]"
+              aria-label="Report an issue"
+              title="Report an issue"
             >
               <AlertCircle className="h-6 w-6" />
             </motion.button>
+            
+            {/* Three-line dropdown menu */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  aria-label="Menu"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-[#075e54] dark:text-[#00a884]"
+                  >
+                    <line x1="4" x2="20" y1="12" y2="12"></line>
+                    <line x1="4" x2="20" y1="6" y2="6"></line>
+                    <line x1="4" x2="20" y1="18" y2="18"></line>
+                  </svg>
+                </motion.button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-0">
+                <div className="py-2">
+                  <a href="/settings" className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <svg className="w-4 h-4 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    Settings
+                  </a>
+                  <a href="/help" className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <svg className="w-4 h-4 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                      <path d="M12 17h.01"></path>
+                    </svg>
+                    Help & FAQ
+                  </a>
+                  <a href="/subscription" className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <svg className="w-4 h-4 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 9a3 3 0 0 1 0-6h20a3 3 0 0 1 0 6Z"></path>
+                      <path d="M2 12h20"></path>
+                      <path d="M2 15h20"></path>
+                      <path d="M2 18h9"></path>
+                    </svg>
+                    Subscription
+                  </a>
+                  <hr className="my-1 border-gray-200 dark:border-gray-700" />
+                  <a href="/logout" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <svg className="w-4 h-4 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                      <polyline points="16 17 21 12 16 7"></polyline>
+                      <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                  </a>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>

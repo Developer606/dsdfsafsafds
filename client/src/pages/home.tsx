@@ -1318,14 +1318,14 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        // Desktop UI (unchanged)
+        // Enhanced Desktop UI
         <div className="flex h-[calc(100vh-64px)]">
-          {/* Left Sidebar */}
+          {/* Left Sidebar - Streamlined */}
           <motion.div
             variants={container}
             initial="hidden"
             animate="show"
-            className="w-80 border-r border-yellow-200 dark:border-amber-800 overflow-y-auto p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm"
+            className="w-72 border-r border-yellow-200 dark:border-amber-800 overflow-y-auto p-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm"
           >
             {/* User Profile and Settings Section */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-yellow-200 dark:border-amber-800">
@@ -1471,6 +1471,68 @@ export default function Home() {
                     Chat with your favorite characters and bring your anime world to
                     life
                   </p>
+                  
+                  {/* Quick Shortcuts Panel */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <motion.div 
+                      whileHover={{ scale: 1.02 }}
+                      className="bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 p-5 rounded-xl shadow-md border border-purple-200 dark:border-purple-800"
+                    >
+                      <h3 className="text-lg font-bold mb-2 text-purple-700 dark:text-purple-300">Quick Shortcuts</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
+                          <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 20a6 6 0 0 0-12 0"></path>
+                            <circle cx="12" cy="10" r="4"></circle>
+                            <circle cx="12" cy="12" r="10"></circle>
+                          </svg>
+                          My Profile
+                        </button>
+                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
+                          <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                          </svg>
+                          Messages
+                        </button>
+                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
+                          <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                          </svg>
+                          Library
+                        </button>
+                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
+                          <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                          </svg>
+                          Settings
+                        </button>
+                      </div>
+                    </motion.div>
+                    
+                    {/* Tips & Help Panel */}
+                    <motion.div 
+                      whileHover={{ scale: 1.02 }}
+                      className="bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 p-5 rounded-xl shadow-md border border-amber-200 dark:border-amber-800"
+                    >
+                      <h3 className="text-lg font-bold mb-2 text-amber-700 dark:text-amber-300">Tips & Help</h3>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-start">
+                          <span className="bg-amber-200 dark:bg-amber-700 text-amber-800 dark:text-amber-200 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</span>
+                          <p className="text-gray-700 dark:text-gray-300">Create custom characters with <span className="font-semibold">detailed personas</span> for more realistic conversations</p>
+                        </div>
+                        <div className="flex items-start">
+                          <span className="bg-amber-200 dark:bg-amber-700 text-amber-800 dark:text-amber-200 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</span>
+                          <p className="text-gray-700 dark:text-gray-300">Use <span className="font-semibold">multiple language support</span> to chat in your preferred language</p>
+                        </div>
+                        <div className="flex items-start">
+                          <span className="bg-amber-200 dark:bg-amber-700 text-amber-800 dark:text-amber-200 rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">3</span>
+                          <p className="text-gray-700 dark:text-gray-300">Press <span className="font-semibold">F1</span> anytime to view keyboard shortcuts</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
                 </motion.div>
               </div>
               
@@ -1481,9 +1543,79 @@ export default function Home() {
                   animate={{ opacity: 1, x: 0 }}
                 >
                   <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
+                  
+                  {/* Trending Characters Panel */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-800 rounded-xl p-4 shadow-md"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-bold text-gray-800 dark:text-gray-200">Trending Characters</h3>
+                      <div className="text-xs bg-yellow-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full">
+                        Popular now
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {sortedCharacters?.slice(0, 3).map((character) => (
+                        <Link href={`/chat/${character.id}`} key={character.id}>
+                          <div className="flex items-center gap-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
+                            <img
+                              src={character.avatar}
+                              alt={character.name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{character.name}</h4>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{character.description}</p>
+                            </div>
+                            <span className="text-amber-500 dark:text-amber-400">
+                              <svg className="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                              </svg>
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                    <Link href="/search">
+                      <button className="w-full mt-4 text-xs flex items-center justify-center py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        View all characters
+                        <svg className="w-3 h-3 ml-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                      </button>
+                    </Link>
+                  </motion.div>
                 </motion.div>
               </div>
             </div>
+            
+            {/* Keyboard Shortcuts Helper - Hidden by default */}
+            <motion.div 
+              className="fixed bottom-4 right-4 z-10"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.5 }}
+            >
+              <button
+                className="bg-yellow-500/90 hover:bg-yellow-500 text-white p-3 rounded-full shadow-lg flex items-center justify-center"
+                title="Keyboard Shortcuts"
+              >
+                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+                  <path d="M6 8h.001"></path>
+                  <path d="M10 8h.001"></path>
+                  <path d="M14 8h.001"></path>
+                  <path d="M18 8h.001"></path>
+                  <path d="M8 12h.001"></path>
+                  <path d="M12 12h.001"></path>
+                  <path d="M16 12h.001"></path>
+                  <path d="M7 16h10"></path>
+                </svg>
+              </button>
+            </motion.div>
           </div>
         </div>
       )}
