@@ -123,13 +123,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <div className="relative border rounded-md overflow-hidden">
           {type === 'image' ? (
             <img 
-              src={formatUrl(previewUrl)} 
+              src={formatUrl(previewUrl) || ''} 
               alt="Preview" 
               className="w-full h-40 object-cover"
             />
           ) : (
             <video 
-              src={formatUrl(previewUrl)} 
+              src={formatUrl(previewUrl) || ''} 
               className="w-full h-40 object-cover"
               controls
             />

@@ -100,7 +100,13 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
     
     // If it's an uploaded file URL (starts with '/uploads'), make sure it's correctly formed
     if (url.startsWith('/uploads')) {
+      console.log('Using uploaded file URL:', url);
       return url; // URL should be correct as-is since Express serves static files from '/uploads'
+    }
+    
+    // If it contains base64 data
+    if (url.startsWith('data:')) {
+      return url;
     }
     
     // For any other format, assume it might be a relative path and return as is
