@@ -233,6 +233,12 @@ router.put("/:id", isAdmin, async (req, res) => {
     
     console.log("Received update data:", JSON.stringify(req.body, null, 2));
     
+    // First, get the existing advertisement to check for files to delete
+    const existingAd = await storage.getAdvertisementById(id);
+    if (!existingAd) {
+      return res.status(404).json({ error: "Advertisement not found" });
+    }
+    
     // Pre-process the data to convert date strings to Date objects and sanitize URLs
     const processedData = {
       ...req.body,
@@ -261,7 +267,47 @@ router.put("/:id", isAdmin, async (req, res) => {
     // Process data to ensure isActive is properly set if included
     const data = validation.data;
     
+    // Track deleted files
+    const deletedFiles = [];
+    
+    // Check if image URL is being updated and delete the old file if it's in our uploads directory
+    if (data.imageUrl !== undefined && 
+        existingAd.imageUrl && 
+        existingAd.imageUrl.startsWith('/uploads/') && 
+        data.imageUrl !== existingAd.imageUrl) {
+      try {
+        await deleteFile(existingAd.imageUrl);
+        deletedFiles.push(existingAd.imageUrl);
+        console.log(`Deleted old image file: ${existingAd.imageUrl}`);
+      } catch (err) {
+        console.error(`Error deleting old image file for advertisement ${id}:`, err);
+        // Continue with update even if file removal fails
+      }
+    }
+    
+    // Check if video URL is being updated and delete the old file if it's in our uploads directory
+    if (data.videoUrl !== undefined &&
+        existingAd.videoUrl && 
+        existingAd.videoUrl.startsWith('/uploads/') && 
+        data.videoUrl !== existingAd.videoUrl) {
+      try {
+        await deleteFile(existingAd.videoUrl);
+        deletedFiles.push(existingAd.videoUrl);
+        console.log(`Deleted old video file: ${existingAd.videoUrl}`);
+      } catch (err) {
+        console.error(`Error deleting old video file for advertisement ${id}:`, err);
+        // Continue with update even if file removal fails
+      }
+    }
+    
     const advertisement = await storage.updateAdvertisement(id, data);
+    
+    if (deletedFiles.length > 0) {
+      console.log(`Advertisement ${id} updated successfully. Deleted old files:`, deletedFiles);
+    } else {
+      console.log(`Advertisement ${id} updated successfully. No files were deleted.`);
+    }
+    
     console.log("Updated advertisement:", JSON.stringify(advertisement, null, 2));
     res.json(advertisement);
   } catch (error) {
