@@ -217,9 +217,9 @@ export function NotificationHeader() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="relative p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 backdrop-blur-sm shadow-sm transition-colors"
+                  className="relative p-2 rounded-full bg-purple-700/90 hover:bg-purple-800 shadow-sm transition-colors"
                 >
-                  <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
+                  <Bell className="h-5 w-5 text-white" />
                   {unreadCount > 0 && (
                     <motion.span 
                       initial={{ scale: 0 }}
