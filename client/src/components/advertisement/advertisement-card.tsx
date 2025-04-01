@@ -102,6 +102,50 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       return 'https://placehold.co/600x800/9333ea/ffffff?text=Advertisement';
     }
     
+    // Fix malformed URLs that incorrectly combine '/uploads/advertisem' with external URLs
+    if (url.includes('/uploads/advertisem') && (url.includes('http://') || url.includes('https://'))) {
+      console.log('Fixing malformed URL that contains both upload path and external URL');
+      
+      // Extract the actual URL part (http or https)
+      const externalUrlMatch = /(https?:\/\/[^\s]+)/.exec(url);
+      if (externalUrlMatch && externalUrlMatch[0]) {
+        console.log('Extracted external URL:', externalUrlMatch[0]);
+        return externalUrlMatch[0];
+      }
+    }
+    
+    // Handle YouTube URLs
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      console.log('Detected YouTube URL:', url);
+      
+      // For embedded players, we need to use the standard format, not for direct video playback
+      let videoId = '';
+      
+      // Extract video ID from various YouTube URL formats
+      if (url.includes('youtu.be/')) {
+        // Short URL format: youtu.be/VIDEO_ID
+        const idMatch = /youtu\.be\/([^?&]+)/.exec(url);
+        if (idMatch && idMatch[1]) videoId = idMatch[1];
+      } else if (url.includes('youtube.com/watch')) {
+        // Standard URL format: youtube.com/watch?v=VIDEO_ID
+        const idMatch = /v=([^&]+)/.exec(url);
+        if (idMatch && idMatch[1]) videoId = idMatch[1];
+      } else if (url.includes('youtube.com/embed/')) {
+        // Embed URL format: youtube.com/embed/VIDEO_ID
+        const idMatch = /embed\/([^?&]+)/.exec(url);
+        if (idMatch && idMatch[1]) videoId = idMatch[1];
+      }
+      
+      if (videoId) {
+        // Return a thumbnail for image mode or the video for video mode
+        if (mediaType === 'video') {
+          return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&loop=1&controls=1`;
+        } else {
+          return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        }
+      }
+    }
+    
     // If it's already a full URL, return it as is
     if (url.startsWith('http://') || url.startsWith('https://')) {
       console.log('Using full URL:', url);
@@ -246,41 +290,59 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
         <div className="aspect-[3/4] rounded-xl overflow-hidden">
           {mediaType === 'video' && videoUrl ? (
             <div className="relative w-full h-full">
-              <video
-                ref={videoRef}
-                src={formatUrl(videoUrl)}
-                poster={formatUrl(imageUrl)}
-                className="w-full h-full object-cover"
-                muted={isMuted}
-                loop
-                playsInline
-                autoPlay={true}
-                webkitPlaysinline="true"
-                preload="auto"
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onError={handleMediaError}
-                controlsList="nodownload"
-                disablePictureInPicture={true}
-                crossOrigin="anonymous"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-              
-              {/* Video controls */}
-              <div className="absolute bottom-3 right-3 flex space-x-2">
-                <button 
-                  onClick={togglePlay}
-                  className="w-8 h-8 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
-                >
-                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                </button>
-                <button 
-                  onClick={toggleMute}
-                  className="w-8 h-8 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
-                >
-                  {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                </button>
-              </div>
+              {/* Check if it's a YouTube URL after formatting */}
+              {formatUrl(videoUrl).includes('youtube.com/embed') ? (
+                <div className="relative w-full h-full">
+                  <iframe
+                    src={formatUrl(videoUrl)}
+                    className="w-full h-full object-cover"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title="Embedded YouTube video"
+                  />
+                  <div className="absolute inset-0 pointer-events-none" 
+                    style={{background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0) 100%)'}}
+                  ></div>
+                </div>
+              ) : (
+                <>
+                  <video
+                    ref={videoRef}
+                    src={formatUrl(videoUrl)}
+                    poster={formatUrl(imageUrl)}
+                    className="w-full h-full object-cover"
+                    muted={isMuted}
+                    loop
+                    playsInline
+                    autoPlay={true}
+                    webkitPlaysinline="true"
+                    preload="auto"
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onError={handleMediaError}
+                    controlsList="nodownload"
+                    disablePictureInPicture={true}
+                    crossOrigin="anonymous"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                  
+                  {/* Video controls for local videos */}
+                  <div className="absolute bottom-3 right-3 flex space-x-2">
+                    <button 
+                      onClick={togglePlay}
+                      className="w-8 h-8 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
+                    >
+                      {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                    </button>
+                    <button 
+                      onClick={toggleMute}
+                      className="w-8 h-8 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm"
+                    >
+                      {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <img
