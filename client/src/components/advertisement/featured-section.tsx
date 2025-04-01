@@ -77,18 +77,21 @@ const CharacterCard = ({ character }: { character: any }) => {
 export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = '' }) => {
   // Always start with index 0 (which will be the predefined character)
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
   const queryClient = useQueryClient();
 
-  // Fetch active advertisements with increased polling frequency
+  // Fetch active advertisements with increased polling frequency for real-time updates
   const { data: advertisements = [], isLoading: isLoadingAds } = useQuery<Advertisement[]>({
     queryKey: ['/api/advertisements/active'],
     refetchInterval: 3000, // Refetch every 3 seconds
     staleTime: 2000, // Data becomes stale after 2 seconds
+    refetchOnWindowFocus: true, // Refresh when window regains focus
   });
 
-  // Fetch characters
+  // Fetch characters with real-time updates
   const { data: characters = [], isLoading: isLoadingCharacters } = useQuery<any[]>({
     queryKey: ['/api/characters'],
+    refetchOnWindowFocus: true, // Refresh when window regains focus
   });
 
   // Sort characters to get featured ones first
@@ -128,18 +131,24 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
   }, [queryClient]);
 
-  // Auto-rotate through featured items
+  // Enhanced real-time auto-rotation through featured items
   useEffect(() => {
     if (featuredItems.length > 1) {
+      // Start timer for smooth automatic rotation
       const intervalId = setInterval(() => {
-        setCurrentIndex((prevIndex) => 
-          prevIndex === featuredItems.length - 1 ? 0 : prevIndex + 1
-        );
+        // Only rotate if we're not currently animating
+        if (!isAnimating) {
+          setIsAnimating(true);
+          setCurrentIndex((prevIndex) => 
+            prevIndex === featuredItems.length - 1 ? 0 : prevIndex + 1
+          );
+        }
       }, 7000); // Change featured item every 7 seconds
-
+      
+      // Clean up timer on unmount
       return () => clearInterval(intervalId);
     }
-  }, [featuredItems.length]);
+  }, [featuredItems.length, advertisements, characters, isAnimating]);
   
   // Set up an interval to periodically force-refresh advertisements
   useEffect(() => {
@@ -150,9 +159,18 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     return () => clearInterval(refreshIntervalId);
   }, [refreshAdvertisements]);
 
-  // Handle manual navigation
+  // Handle manual navigation with animation state tracking
   const goToItem = (index: number) => {
+    // Prevent rapid clicks during animation
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
     setCurrentIndex(index);
+    
+    // Reset animation state after animation completes
+    setTimeout(() => {
+      setIsAnimating(false);
+    }, 700); // Slightly longer than animation duration
   };
 
   // Loading state
@@ -192,7 +210,7 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
         </div>
       </div>
       
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" onExitComplete={() => setIsAnimating(false)}>
         <motion.div
           key={currentIndex}
           initial={{ opacity: 0, x: 20, scale: 0.97 }}
@@ -202,6 +220,7 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
             duration: 0.6, 
             ease: "easeInOut"
           }}
+          onAnimationStart={() => setIsAnimating(true)}
           className="relative z-10"
         >
           {featuredItems[currentIndex] && (
