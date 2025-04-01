@@ -30,7 +30,7 @@ export const AdvertisementManager: React.FC = () => {
     buttonText: 'Learn More',
     buttonLink: '',
     buttonStyle: 'primary',
-    backgroundColor: '#8B5CF6',
+    backgroundColor: '#121827', // Dark theme background
     textColor: '#FFFFFF',
     position: 0,
     animationType: 'fade',
@@ -297,8 +297,8 @@ export const AdvertisementManager: React.FC = () => {
   };
   
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 bg-gray-900 text-white p-6 rounded-lg">
+      <div className="flex justify-between items-center border-b border-gray-800 pb-4">
         <h2 className="text-2xl font-bold">Advertisement Manager</h2>
         <button
           onClick={handleCreateNew}
@@ -308,7 +308,7 @@ export const AdvertisementManager: React.FC = () => {
         </button>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Advertisement list */}
         <div className="lg:col-span-1 space-y-4">
           <h3 className="text-xl font-semibold">Advertisements</h3>
@@ -316,7 +316,7 @@ export const AdvertisementManager: React.FC = () => {
           {isLoadingAds ? (
             <div className="animate-pulse space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                <div key={i} className="h-24 bg-gray-700 rounded-lg"></div>
               ))}
             </div>
           ) : advertisements && advertisements.length > 0 ? (
@@ -324,16 +324,16 @@ export const AdvertisementManager: React.FC = () => {
               {advertisements.map((ad: Advertisement) => (
                 <div
                   key={ad.id}
-                  className={`border rounded-lg p-3 cursor-pointer hover:border-blue-500 transition-colors ${
-                    selectedAd?.id === ad.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''
+                  className={`border border-gray-700 rounded-lg p-3 cursor-pointer hover:border-blue-500 transition-colors ${
+                    selectedAd?.id === ad.id ? 'border-blue-500 bg-blue-900/20' : 'bg-gray-800'
                   }`}
                   onClick={() => handleEdit(ad)}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-medium">{ad.title}</h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{ad.description}</p>
-                      <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <h4 className="font-medium text-white">{ad.title}</h4>
+                      <p className="text-sm text-gray-300 truncate">{ad.description}</p>
+                      <div className="flex items-center mt-1 text-xs text-gray-300">
                         <span className={`w-2 h-2 rounded-full mr-1 ${
                           new Date() >= new Date(ad.startDate) && new Date() <= new Date(ad.endDate) && ad.isActive
                             ? 'bg-green-500'
@@ -346,9 +346,16 @@ export const AdvertisementManager: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      <div>👁️ {ad.impressions || 0}</div>
-                      <div>👆 {ad.clicks || 0}</div>
+                    <div className="flex">
+                      <div className="text-xs text-yellow-400 flex items-center mr-2">
+                        <span className="text-yellow-400 text-xs mr-1">★</span>
+                        <span className="text-yellow-400 text-xs mr-1">★</span>
+                        <span className="text-yellow-400 text-xs">★</span>
+                      </div>
+                      <div className="text-xs text-gray-300">
+                        <div>👁️ {ad.impressions || 0}</div>
+                        <div>👆 {ad.clicks || 0}</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -387,34 +394,34 @@ export const AdvertisementManager: React.FC = () => {
             <PreviewComponent />
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  {/* Content fields */}
+                  {/* Left column */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">Title</label>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Title</label>
                     <input
                       {...register('title')}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       placeholder="Advertisement title"
                     />
                     {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Description</label>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Description</label>
                     <textarea
                       {...register('description')}
-                      className="w-full px-3 py-2 border rounded-md h-24 resize-none"
+                      className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md h-24 resize-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       placeholder="Advertisement description"
                     />
                     {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Image URL</label>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Image URL</label>
                     <input
                       {...register('imageUrl')}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       placeholder="https://example.com/image.jpg"
                     />
                     {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
@@ -422,21 +429,21 @@ export const AdvertisementManager: React.FC = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Start Date</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-300">Start Date</label>
                       <input
                         type="date"
                         {...register('startDate')}
-                        className="w-full px-3 py-2 border rounded-md"
+                        className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       />
                       {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message}</p>}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-1">End Date</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-300">End Date</label>
                       <input
                         type="date"
                         {...register('endDate')}
-                        className="w-full px-3 py-2 border rounded-md"
+                        className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       />
                       {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message}</p>}
                     </div>
@@ -444,32 +451,32 @@ export const AdvertisementManager: React.FC = () => {
                 </div>
                 
                 <div className="space-y-4">
-                  {/* Button and styling fields */}
+                  {/* Right column */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">Button Text</label>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Button Text</label>
                     <input
                       {...register('buttonText')}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       placeholder="Learn More"
                     />
                     {errors.buttonText && <p className="text-red-500 text-xs mt-1">{errors.buttonText.message}</p>}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Button Link</label>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Button Link</label>
                     <input
                       {...register('buttonLink')}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       placeholder="https://example.com or /characters/123"
                     />
                     {errors.buttonLink && <p className="text-red-500 text-xs mt-1">{errors.buttonLink.message}</p>}
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Button Style</label>
+                    <label className="block text-sm font-medium mb-1 text-gray-300">Button Style</label>
                     <select
                       {...register('buttonStyle')}
-                      className="w-full px-3 py-2 border rounded-md"
+                      className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                     >
                       <option value="primary">Primary</option>
                       <option value="secondary">Secondary</option>
@@ -481,33 +488,43 @@ export const AdvertisementManager: React.FC = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Background Color</label>
-                      <div className="flex space-x-2">
+                      <label className="block text-sm font-medium mb-1 text-gray-300">Background Color</label>
+                      <div className="flex">
+                        <div className="relative">
+                          <input
+                            type="color"
+                            {...register('backgroundColor')}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-10 h-10"
+                          />
+                          <div className="w-10 h-10 border border-gray-700 rounded-md flex items-center justify-center overflow-hidden">
+                            <div className="w-full h-full" style={{ background: formValues.backgroundColor || '#8B5CF6' }}></div>
+                          </div>
+                        </div>
                         <input
-                          type="color"
                           {...register('backgroundColor')}
-                          className="w-10 h-10 rounded-md cursor-pointer"
-                        />
-                        <input
-                          {...register('backgroundColor')}
-                          className="flex-1 px-3 py-2 border rounded-md"
-                          placeholder="#8B5CF6"
+                          className="flex-1 ml-2 px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                          placeholder="#121827"
                         />
                       </div>
                       {errors.backgroundColor && <p className="text-red-500 text-xs mt-1">{errors.backgroundColor.message}</p>}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-1">Text Color</label>
-                      <div className="flex space-x-2">
+                      <label className="block text-sm font-medium mb-1 text-gray-300">Text Color</label>
+                      <div className="flex">
+                        <div className="relative">
+                          <input
+                            type="color"
+                            {...register('textColor')}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-10 h-10"
+                          />
+                          <div className="w-10 h-10 border border-gray-700 rounded-md flex items-center justify-center overflow-hidden">
+                            <div className="w-full h-full" style={{ background: formValues.textColor || '#FFFFFF' }}></div>
+                          </div>
+                        </div>
                         <input
-                          type="color"
                           {...register('textColor')}
-                          className="w-10 h-10 rounded-md cursor-pointer"
-                        />
-                        <input
-                          {...register('textColor')}
-                          className="flex-1 px-3 py-2 border rounded-md"
+                          className="flex-1 ml-2 px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                           placeholder="#FFFFFF"
                         />
                       </div>
@@ -517,10 +534,10 @@ export const AdvertisementManager: React.FC = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Animation Type</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-300">Animation Type</label>
                       <select
                         {...register('animationType')}
-                        className="w-full px-3 py-2 border rounded-md"
+                        className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       >
                         <option value="fade">Fade</option>
                         <option value="slide">Slide</option>
@@ -530,11 +547,11 @@ export const AdvertisementManager: React.FC = () => {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-1">Position</label>
+                      <label className="block text-sm font-medium mb-1 text-gray-300">Position</label>
                       <input
                         type="number"
                         {...register('position', { valueAsNumber: true })}
-                        className="w-full px-3 py-2 border rounded-md"
+                        className="w-full px-3 py-2 border border-gray-700 bg-gray-800 text-white rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         placeholder="0"
                         min="0"
                       />
@@ -555,7 +572,7 @@ export const AdvertisementManager: React.FC = () => {
                       reset(defaultValues);
                     }
                   }}
-                  className="px-4 py-2 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="px-4 py-2 border border-gray-700 text-white rounded-md hover:bg-gray-700"
                 >
                   Cancel
                 </button>
