@@ -663,28 +663,9 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Featured Content */}
+                {/* Featured Content - now using the unified component */}
                 <div className="px-4 pt-1">
-                  <div className="flex justify-between items-center mb-3">
-                    <h2 className="text-lg font-bold">Featured</h2>
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      className="text-xs font-medium text-pink-500 dark:text-pink-400"
-                    >
-                      See all
-                    </motion.button>
-                  </div>
-                  
-                  {/* Featured Content - combined advertisements and characters */}
-                  <div className="mb-6">
-                    <div className="flex justify-between items-center mb-3">
-                      <h2 className="text-xl font-bold text-white">
-                        <span className="inline-block mr-2">✨</span>
-                        Featured
-                      </h2>
-                    </div>
-                    <FeaturedSection className="rounded-xl overflow-hidden" />
-                  </div>
+                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
                 </div>
 
                 {/* Top Rated section - Material Design Carousel */}
@@ -1490,8 +1471,7 @@ export default function Home() {
               
               {/* Featured Content */}
               <div className="max-w-xl mx-auto mt-10">
-                <h2 className="text-2xl font-bold mb-4 text-center">Featured</h2>
-                <FeaturedSection />
+                <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
               </div>
             </motion.div>
           </div>

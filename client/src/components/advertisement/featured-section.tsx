@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'wouter';
+import { Link } from 'wouter';
 import { MessageSquare } from 'lucide-react';
 import { AdvertisementCard } from './advertisement-card';
 import type { Advertisement } from '@shared/schema';
@@ -12,12 +12,10 @@ interface FeaturedSectionProps {
 
 // Character card component for feature section
 const CharacterCard = ({ character }: { character: any }) => {
-  const { setLocation } = useLocation();
-
   return (
     <div className="relative rounded-xl overflow-hidden shadow-lg">
       <div className="relative">
-        <div className="aspect-[16/9] sm:aspect-[3/4] rounded-xl overflow-hidden relative">
+        <div className="aspect-[3/4] rounded-xl overflow-hidden relative">
           <img
             src={character.avatar}
             alt={character.name}
@@ -26,42 +24,37 @@ const CharacterCard = ({ character }: { character: any }) => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
         </div>
         <div className="absolute bottom-0 left-0 p-5 w-full">
-          <div className="inline-block px-2 py-1 bg-[#BB86FC]/20 rounded-full text-xs text-[#BB86FC] font-medium mb-2">
-            Featured Character
+          <div className="text-xs text-purple-300 font-medium mb-2">
+            Featured
           </div>
           <h2 className="text-2xl font-bold text-white leading-tight">
             {character.name}
           </h2>
           <div className="flex items-center mt-2">
-            {character.isNew ? (
-              <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
-                New
-              </span>
-            ) : (
-              <span className="text-xs text-[#BBBBBB] font-medium bg-[#333333] px-2 py-1 rounded-full">
-                Popular
-              </span>
-            )}
-            <span className="mx-2 text-[#888888]">•</span>
+            <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full">
+              {character.isNew ? "New" : "Popular"}
+            </span>
+            <span className="mx-2 text-gray-500">•</span>
             <div className="flex">
               {[1, 2, 3, 4, 5].map((star, i) => (
                 <span
                   key={i}
-                  className={`${i < 3 ? "text-[#BB86FC]" : "text-[#444444]"} text-xs`}
+                  className={`${i < 3 ? "text-amber-400" : "text-gray-600"} text-xs`}
                 >
                   ★
                 </span>
               ))}
             </div>
           </div>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            className="mt-3 px-4 py-2 bg-[#BB86FC] text-black font-medium text-sm rounded-full shadow-lg flex items-center"
-            onClick={() => setLocation(`/chat/${character.id}`)}
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            Start Chat
-          </motion.button>
+          <Link href={`/chat/${character.id}`}>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              className="mt-3 px-4 py-2 bg-purple-500 text-white rounded-full text-sm font-medium hover:bg-purple-600 flex items-center"
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Start Chat
+            </motion.button>
+          </Link>
         </div>
       </div>
     </div>
@@ -149,23 +142,27 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
 
   return (
     <div className={`${className} relative mb-8`}>
-      <div className="flex justify-between items-center mb-3">
-        {featuredItems.length > 1 && (
-          <div className="flex space-x-2">
-            {featuredItems.map((_, index: number) => (
-              <button
-                key={index}
-                onClick={() => goToItem(index)}
-                className={`w-3 h-3 rounded-full transition-all ${
-                  currentIndex === index 
-                    ? 'bg-pink-500 scale-110' 
-                    : 'bg-gray-300 dark:bg-gray-600 opacity-70'
-                }`}
-                aria-label={`Go to featured item ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Featured</h2>
+        <div className="flex items-center">
+          <a href="#" className="text-sm text-gray-600 dark:text-gray-400 hover:underline mr-4">See all</a>
+          {featuredItems.length > 1 && (
+            <div className="flex space-x-2">
+              {featuredItems.map((_, index: number) => (
+                <button
+                  key={index}
+                  onClick={() => goToItem(index)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    currentIndex === index 
+                      ? 'bg-purple-500 scale-110' 
+                      : 'bg-gray-300 dark:bg-gray-600 opacity-70'
+                  }`}
+                  aria-label={`Go to featured item ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       
       <AnimatePresence mode="wait">

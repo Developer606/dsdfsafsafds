@@ -227,9 +227,10 @@ export const AdvertisementManager: React.FC = () => {
       <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
         <h3 className="text-lg font-bold mb-4">Preview</h3>
         
-        <div className="relative rounded-xl overflow-hidden shadow-lg mb-4" style={{ backgroundColor: previewAd.backgroundColor }}>
+        <div className="relative rounded-xl overflow-hidden shadow-lg mb-4" 
+             style={{ backgroundColor: previewAd.backgroundColor || 'rgb(15, 23, 42)' }}>
           <div className="relative">
-            <div className="aspect-[3/2] rounded-t-xl overflow-hidden">
+            <div className="aspect-[3/4] rounded-xl overflow-hidden">
               {previewAd.imageUrl ? (
                 <img
                   src={previewAd.imageUrl}
@@ -237,34 +238,52 @@ export const AdvertisementManager: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-                  <p className="text-gray-500 dark:text-gray-400">No image URL provided</p>
+                <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                  <p className="text-gray-400">No image URL provided</p>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
             </div>
             
-            <div className="absolute top-2 left-2">
-              <div className="inline-block px-2 py-1 bg-pink-500/80 rounded-full text-xs text-white font-medium">
-                Featured
+            <div className="absolute bottom-0 left-0 p-5 w-full">
+              <div className="absolute top-4 left-4">
+                <div className="text-xs text-purple-300 font-medium mb-1">
+                  Featured
+                </div>
               </div>
+              
+              <h2 className="text-2xl font-bold text-white mb-1">
+                {previewAd.title}
+              </h2>
+              
+              <div className="flex items-center mb-3">
+                <span className="bg-gray-800 text-white text-xs px-2 py-0.5 rounded-full">
+                  New
+                </span>
+                <span className="mx-2 text-gray-500">•</span>
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((star, i) => (
+                    <span
+                      key={i}
+                      className={`${i < 3 ? "text-amber-400" : "text-gray-600"} text-xs`}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+              </div>
+              
+              <button
+                className={`px-4 py-2 ${
+                  previewAd.buttonStyle === 'primary' ? 'bg-purple-500 hover:bg-purple-600' :
+                  previewAd.buttonStyle === 'secondary' ? 'bg-pink-500 hover:bg-pink-600' :
+                  previewAd.buttonStyle === 'outline' ? 'border border-purple-500 text-purple-500 hover:bg-purple-500/10' :
+                  'bg-purple-500 hover:bg-purple-600'
+                } text-white font-medium text-sm rounded-full shadow-lg flex items-center max-w-fit`}
+              >
+                {previewAd.buttonText}
+              </button>
             </div>
-          </div>
-          
-          <div className="p-4" style={{ color: previewAd.textColor }}>
-            <h3 className="text-lg font-bold mb-1">{previewAd.title}</h3>
-            <p className="text-sm mb-4 opacity-90">{previewAd.description}</p>
-            
-            <button
-              className={`inline-block px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                previewAd.buttonStyle === 'primary' ? 'bg-pink-500 text-white hover:bg-pink-600' :
-                previewAd.buttonStyle === 'secondary' ? 'bg-purple-500 text-white hover:bg-purple-600' :
-                previewAd.buttonStyle === 'outline' ? 'border border-current hover:bg-white/10' :
-                'bg-white text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              {previewAd.buttonText}
-            </button>
           </div>
         </div>
         
