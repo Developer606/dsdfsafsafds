@@ -89,7 +89,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
   // Determine if buttonLink is an internal or external link
   const isExternalLink = buttonLink.startsWith('http') || buttonLink.startsWith('https');
   
-  // Ensure URLs are properly formatted
+  // Ensure URLs are properly formatted and help with video format compatibility
   const formatUrl = (url: string | null | undefined): string => {
     if (!url) {
       console.log('Null or undefined URL provided, using placeholder');
@@ -111,7 +111,16 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
     // If it's an uploaded file URL (starts with '/uploads'), make sure it's correctly formed
     if (url.startsWith('/uploads')) {
       console.log('Using uploaded file URL:', url);
-      // Make sure to use the correct URL
+      
+      // Check if it's a video URL (by extension)
+      const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(url);
+      
+      if (isVideo && mediaType === 'video') {
+        console.log('Adding video cache-busting parameter for better mobile playback');
+        // Add a timestamp query parameter to prevent caching issues on mobile
+        return `${url}?cb=${Date.now()}`;
+      }
+      
       return url;
     }
     
@@ -150,15 +159,64 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       });
   };
   
+  // Initialize video playback and handle errors
+  useEffect(() => {
+    if (mediaType === 'video' && videoRef.current) {
+      // Try to play the video automatically when it's loaded
+      const playVideo = async () => {
+        try {
+          // Make sure video is visible and loaded
+          if (videoRef.current.readyState >= 2) {
+            const playPromise = videoRef.current.play();
+            
+            if (playPromise !== undefined) {
+              playPromise
+                .then(() => {
+                  console.log('Video playing automatically');
+                  setIsPlaying(true);
+                })
+                .catch(error => {
+                  console.warn('Auto-play prevented:', error);
+                  // Auto-play was prevented, show play button instead
+                  setIsPlaying(false);
+                });
+            }
+          }
+        } catch (error) {
+          console.error('Error playing video:', error);
+          setIsPlaying(false);
+        }
+      };
+      
+      // Try to play when video is loaded
+      videoRef.current.addEventListener('loadeddata', playVideo);
+      
+      return () => {
+        if (videoRef.current) {
+          videoRef.current.removeEventListener('loadeddata', playVideo);
+        }
+      };
+    }
+  }, [mediaType]);
+
   // Video media controls
   const togglePlay = () => {
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
+        setIsPlaying(false);
       } else {
-        videoRef.current.play();
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch(error => {
+              console.error('Error playing video on click:', error);
+            });
+        }
       }
-      setIsPlaying(!isPlaying);
     }
   };
 
@@ -166,6 +224,11 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
+      
+      // If unmuting, try to play the video if it's not already playing
+      if (!isMuted && !isPlaying) {
+        togglePlay();
+      }
     }
   };
 
@@ -191,9 +254,14 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
                 muted={isMuted}
                 loop
                 playsInline
+                autoPlay={true}
+                webkitPlaysinline="true"
+                preload="auto"
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 onError={handleMediaError}
+                controlsList="nodownload"
+                disablePictureInPicture={true}
                 crossOrigin="anonymous"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
