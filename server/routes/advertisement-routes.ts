@@ -6,7 +6,89 @@ import type { Request } from "express";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { sanitizeYouTubeUrl } from "../utils/youtube-utils";
+
+// Helper function to sanitize YouTube URLs
+const sanitizeYouTubeUrl = (url: string): string => {
+  if (!url) return url;
+  
+  // First, clean up any malformed URLs that concatenate multiple URLs
+  if (url.includes('http') && url.indexOf('http', 10) > 0) {
+    console.log('Detected malformed URL with multiple http parts:', url);
+    
+    // Look for YouTube patterns first (prioritize YouTube URLs)
+    if (url.includes('youtube.com/shorts/')) {
+      const shortsMatch = /youtube\.com\/shorts\/([^?&/]+)/.exec(url);
+      if (shortsMatch && shortsMatch[1]) {
+        const videoId = shortsMatch[1];
+        console.log('Extracted YouTube Shorts video ID from malformed URL:', videoId);
+        return `https://www.youtube.com/embed/${videoId}?loop=1&controls=1&modestbranding=1&rel=0`;
+      }
+    }
+    
+    if (url.includes('youtu.be/')) {
+      const youtubeMatch = /youtu\.be\/([^?&/]+)/.exec(url);
+      if (youtubeMatch && youtubeMatch[1]) {
+        const videoId = youtubeMatch[1];
+        console.log('Extracted YouTube video ID from malformed youtu.be URL:', videoId);
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+    
+    // Extract the last occurrence of http:// or https://
+    const lastHttpIndex = url.lastIndexOf('http');
+    if (lastHttpIndex > 0) {
+      url = url.substring(lastHttpIndex);
+      console.log('Cleaned URL:', url);
+    }
+  }
+  
+  // Check if it's a YouTube URL
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    console.log('Sanitizing YouTube URL');
+    
+    // Extract video ID from various YouTube URL formats
+    let videoId = '';
+    let isShort = false;
+    
+    // Extract from youtu.be format
+    if (url.includes('youtu.be/')) {
+      const match = /youtu\.be\/([^?&]+)/.exec(url);
+      if (match && match[1]) videoId = match[1];
+    } 
+    // Extract from youtube.com/watch format
+    else if (url.includes('youtube.com/watch')) {
+      const match = /v=([^&]+)/.exec(url);
+      if (match && match[1]) videoId = match[1];
+    } 
+    // Extract from YouTube Shorts format
+    else if (url.includes('youtube.com/shorts/')) {
+      const match = /shorts\/([^?&]+)/.exec(url);
+      if (match && match[1]) {
+        videoId = match[1];
+        isShort = true;
+      }
+    }
+    // Extract from embed format
+    else if (url.includes('youtube.com/embed/')) {
+      const match = /embed\/([^?&]+)/.exec(url);
+      if (match && match[1]) videoId = match[1];
+    }
+    
+    if (videoId) {
+      // Return a proper YouTube embed URL
+      console.log('Extracted YouTube video ID:', videoId, isShort ? '(Short video)' : '');
+      
+      // For Shorts, we need to use the regular embed URL but with special parameters
+      if (isShort) {
+        return `https://www.youtube.com/embed/${videoId}?loop=1&controls=1&modestbranding=1&rel=0`;
+      } else {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+  }
+  
+  return url;
+};
 
 // Extend Express.Request to include the isAuthenticated method
 declare global {
