@@ -120,11 +120,18 @@ export async function getActiveAdvertisementsFromDb(): Promise<Advertisement[]> 
   // For testing/demo: If there are no time-valid ads, return all active ads
   if (allActiveAds.length > 0) {
     console.log(`Found ${allActiveAds.length} active ads regardless of date.`);
-    return allActiveAds;
+    // Add placeholder images for any ads with empty imageUrl
+    return allActiveAds.map(ad => {
+      if (!ad.imageUrl) {
+        console.log(`Fixing empty imageUrl for ad ID ${ad.id}`);
+        return {...ad, imageUrl: "https://placehold.co/600x800/9333ea/ffffff?text=Advertisement"};
+      }
+      return ad;
+    });
   }
   
   // Standard production logic - Find ads where isActive=1 and now is between startDate and endDate
-  return await advertisementDb
+  const timeValidAds = await advertisementDb
     .select()
     .from(advertisements)
     .where(
@@ -133,6 +140,15 @@ export async function getActiveAdvertisementsFromDb(): Promise<Advertisement[]> 
           ${advertisements.endDate} >= ${nowMillis}`
     )
     .orderBy(advertisements.position);
+    
+  // Add placeholder images for any ads with empty imageUrl
+  return timeValidAds.map(ad => {
+    if (!ad.imageUrl) {
+      console.log(`Fixing empty imageUrl for ad ID ${ad.id}`);
+      return {...ad, imageUrl: "https://placehold.co/600x800/9333ea/ffffff?text=Advertisement"};
+    }
+    return ad;
+  });
 }
 
 export async function getAdvertisementByIdFromDb(id: number): Promise<Advertisement | undefined> {

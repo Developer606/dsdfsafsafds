@@ -152,7 +152,15 @@ router.post('/', (req, res, next) => {
     }
 
     // Generate URL for the uploaded file
-    const relativePath = path.relative(uploadDir, filePath);
+    let relativePath = path.relative(uploadDir, filePath);
+    
+    // For advertisement uploads, ensure we're using the correct path format
+    if (isAdUpload) {
+      // Use only the filename in advertisements folder to ensure consistent path
+      relativePath = `advertisements/${path.basename(filePath)}`;
+      console.log(`Creating advertisement-specific path: ${relativePath}`);
+    }
+    
     const fileUrl = `/uploads/${relativePath}`;
     console.log(`File uploaded successfully: ${fileUrl}, type: ${req.file.mimetype}, size: ${req.file.size} bytes`);
     
@@ -237,7 +245,15 @@ router.post('/admin', isAdmin, (req, res) => {
       }
 
       // Generate URL for the uploaded file
-      const relativePath = path.relative(uploadDir, filePath);
+      let relativePath = path.relative(uploadDir, filePath);
+      
+      // For advertisement uploads, ensure we're using the correct path format
+      if (isAdUpload) {
+        // Use only the filename in advertisements folder to ensure consistent path
+        relativePath = `advertisements/${path.basename(filePath)}`;
+        console.log(`Creating advertisement-specific path: ${relativePath}`);
+      }
+      
       const fileUrl = `/uploads/${relativePath}`;
       console.log(`${isAdUpload ? 'Advertisement' : 'Admin'} file uploaded successfully: ${fileUrl}`);
       

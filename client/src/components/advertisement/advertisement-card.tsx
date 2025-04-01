@@ -91,35 +91,63 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
   
   // Ensure URLs are properly formatted
   const formatUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
+    if (!url) {
+      console.log('Null or undefined URL provided, using placeholder');
+      return 'https://placehold.co/600x800/9333ea/ffffff?text=Advertisement';
+    }
+    
+    // If empty string, return a default placeholder
+    if (url.trim() === '') {
+      console.log('Empty URL provided, using placeholder');
+      return 'https://placehold.co/600x800/9333ea/ffffff?text=Advertisement';
+    }
     
     // If it's already a full URL, return it as is
     if (url.startsWith('http://') || url.startsWith('https://')) {
+      console.log('Using full URL:', url);
       return url;
     }
     
     // If it's an uploaded file URL (starts with '/uploads'), make sure it's correctly formed
     if (url.startsWith('/uploads')) {
       console.log('Using uploaded file URL:', url);
-      return url; // URL should be correct as-is since Express serves static files from '/uploads'
+      // Make sure to use the correct URL
+      return url;
     }
     
     // If it contains base64 data
     if (url.startsWith('data:')) {
+      console.log('Using base64 data URL');
       return url;
     }
     
     // For any other format, assume it might be a relative path and return as is
+    console.log('Using relative path URL:', url);
     return url;
   };
   
   // Handle image/video loading errors
   const handleMediaError = (e: React.SyntheticEvent<HTMLImageElement | HTMLVideoElement, Event>) => {
     console.error(`Error loading media from URL: ${e.currentTarget.src}`);
+    console.error(`Original media URL before formatting: ${mediaType === 'video' ? videoUrl : imageUrl}`);
+    
     // If using a video element, try to load the fallback image instead
     if (mediaType === 'video' && e.currentTarget instanceof HTMLVideoElement) {
       console.log('Video failed to load, using fallback image if available');
     }
+    
+    // Try to fetch the resource to see what error we get
+    fetch(e.currentTarget.src)
+      .then(response => {
+        if (!response.ok) {
+          console.error(`Media fetch failed with status: ${response.status}`);
+        } else {
+          console.log(`Media fetch succeeded but still can't display, might be CORS issue`);
+        }
+      })
+      .catch(err => {
+        console.error(`Network error fetching media: ${err.message}`);
+      });
   };
   
   // Video media controls
