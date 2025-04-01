@@ -1494,6 +1494,12 @@ export class DatabaseStorage implements IStorage {
     return await updateAdvertisementInDb(id, data);
   }
   
+  async getAdvertisementForDeletion(id: number): Promise<Advertisement | undefined> {
+    // Get advertisement data before deleting for file cleanup
+    const { getAdvertisementForDeletion } = await import('./advertisement-db');
+    return await getAdvertisementForDeletion(id);
+  }
+  
   async deleteAdvertisement(id: number): Promise<void> {
     // Use the advertisement database implementation
     const { deleteAdvertisementFromDb } = await import('./advertisement-db');

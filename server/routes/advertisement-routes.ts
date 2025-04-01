@@ -151,13 +151,65 @@ router.delete("/:id", isAdmin, async (req, res) => {
       return res.status(400).json({ error: "Invalid advertisement ID" });
     }
     
+    // Get advertisement data before deleting for cleanup
+    const advertisement = await storage.getAdvertisementForDeletion(id);
+    
+    // Delete the advertisement from the database
     await storage.deleteAdvertisement(id);
+    
+    // Clean up associated media files
+    if (advertisement) {
+      try {
+        const fs = require('fs');
+        const path = require('path');
+        const uploadDir = path.join(process.cwd(), 'uploads', 'advertisements');
+        
+        // Check if there are media files to clean up
+        if (advertisement.imageUrl) {
+          cleanupFile(advertisement.imageUrl, uploadDir);
+        }
+        
+        if (advertisement.videoUrl) {
+          cleanupFile(advertisement.videoUrl, uploadDir);
+        }
+      } catch (cleanupError) {
+        console.error('Error cleaning up media files:', cleanupError);
+        // Continue with success response even if cleanup fails
+      }
+    }
+    
     res.status(204).send();
   } catch (error) {
     console.error("Error deleting advertisement:", error);
     res.status(500).json({ error: "Failed to delete advertisement" });
   }
 });
+
+// Helper function to cleanup files
+function cleanupFile(fileUrl: string | null, baseDir: string) {
+  if (!fileUrl) return;
+  
+  const fs = require('fs');
+  const path = require('path');
+  
+  // Extract the filename from the URL
+  // URLs will be in format /uploads/advertisements/filename.ext
+  const urlParts = fileUrl.split('/');
+  const filename = urlParts[urlParts.length - 1];
+  
+  if (!filename) return;
+  
+  // Build the full file path
+  const filePath = path.join(baseDir, filename);
+  
+  // Check if file exists before attempting to delete
+  if (fs.existsSync(filePath)) {
+    console.log(`Deleting advertisement media file: ${filePath}`);
+    fs.unlinkSync(filePath);
+  } else {
+    console.log(`File not found for deletion: ${filePath}`);
+  }
+}
 
 // Record advertisement impression
 router.post("/:id/impression", async (req, res) => {
