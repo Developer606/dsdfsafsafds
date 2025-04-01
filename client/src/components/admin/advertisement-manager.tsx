@@ -8,6 +8,22 @@ import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import type { Advertisement } from '@shared/schema';
 import { FileUpload } from '@/components/ui/file-upload';
+import { 
+  ChevronRight, 
+  ImageIcon, 
+  VideoIcon, 
+  Calendar, 
+  Link, 
+  Palette, 
+  Trash2, 
+  Edit, 
+  Eye, 
+  Plus, 
+  Save, 
+  RotateCcw,
+  PanelLeftClose,
+  PanelLeftOpen
+} from 'lucide-react';
 
 // Extend the schema for form validation
 const formSchema = insertAdvertisementSchema.extend({
