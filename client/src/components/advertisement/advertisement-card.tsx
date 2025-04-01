@@ -309,7 +309,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       }}
     >
       <div className="relative">
-        <div className="aspect-[3/4] rounded-xl overflow-hidden">
+        <div className="aspect-[3/4] rounded-xl overflow-hidden relative">
           {mediaType === 'video' && videoUrl ? (
             <div className="relative w-full h-full">
               {/* Check if it's a YouTube URL after formatting */}
@@ -322,9 +322,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
                     allowFullScreen
                     title="Embedded YouTube video"
                   />
-                  <div className="absolute inset-0 pointer-events-none" 
-                    style={{background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0) 100%)'}}
-                  ></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                 </div>
               ) : (
                 <>
@@ -346,7 +344,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
                     disablePictureInPicture={true}
                     crossOrigin="anonymous"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
                   
                   {/* Video controls for local videos */}
                   <div className="absolute bottom-3 right-3 flex space-x-2">
@@ -375,38 +373,35 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
               crossOrigin="anonymous"
             />
           )}
-          {/* Always show gradient overlay for better text visibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
         </div>
         
-        <div className="absolute bottom-0 left-0 p-5 w-full z-10">
-          <div className="absolute top-4 left-4">
-            <div className="text-xs text-purple-300 font-bold mb-1 drop-shadow-lg">
-              Featured
-            </div>
+        <div className="absolute bottom-0 left-0 p-5 w-full">
+          <div className="text-xs text-purple-300 font-medium mb-2">
+            Featured
           </div>
           
-          <h2 className="text-2xl font-bold text-white mb-1 drop-shadow-md">
+          <h2 className="text-2xl font-bold text-white leading-tight">
             {title}
           </h2>
 
           {/* Optional short description with improved visibility */}
           {description && (
-            <p className="text-sm text-gray-200 mb-3 line-clamp-2 drop-shadow-md">
+            <p className="text-sm text-gray-200 mb-2 line-clamp-2">
               {description}
             </p>
           )}
           
-          <div className="flex items-center mb-3">
-            <span className="bg-gray-800 text-white text-xs px-2 py-0.5 rounded-full drop-shadow-sm">
+          <div className="flex items-center mt-2">
+            <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full">
               New
             </span>
-            <span className="mx-2 text-gray-400">•</span>
-            <div className="flex drop-shadow-sm">
+            <span className="mx-2 text-gray-500">•</span>
+            <div className="flex">
               {[1, 2, 3, 4, 5].map((star, i) => (
                 <span
                   key={i}
-                  className={`${i < 3 ? "text-amber-400" : "text-gray-500"} text-xs`}
+                  className={`${i < 3 ? "text-amber-400" : "text-gray-600"} text-xs`}
                 >
                   ★
                 </span>
