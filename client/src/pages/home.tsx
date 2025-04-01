@@ -33,6 +33,10 @@ import {
   AlertCircle,
   CreditCard,
   Users,
+  Star,
+  Clock,
+  HelpCircle,
+  Lightbulb,
 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { SubscriptionManagement } from "@/components/subscription-management";
@@ -576,96 +580,136 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Category Grid */}
-                <div className="px-4 pt-2 pb-4">
-                  <h2 className="text-lg font-bold mb-3">Categories</h2>
-                  <div className="grid grid-cols-4 gap-3">
-                    <Link href="/search">
-                      <div className="flex flex-col items-center">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="text-white"
-                          >
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                          </svg>
-                        </div>
-                        <span className="text-xs mt-1 font-medium">Chat</span>
-                      </div>
-                    </Link>
-                    <div className="flex flex-col items-center">
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-white"
-                        >
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                        </svg>
-                      </div>
-                      <span className="text-xs mt-1 font-medium">Top</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center shadow-md">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-white"
-                        >
-                          <circle cx="12" cy="12" r="10"></circle>
-                          <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                      </div>
-                      <span className="text-xs mt-1 font-medium">Recent</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-md">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-white"
-                        >
-                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                          <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                      </div>
-                      <span className="text-xs mt-1 font-medium">Custom</span>
-                    </div>
+                {/* Enhanced Category Grid */}
+                <div className="px-4 pt-3 pb-5">
+                  <div className="flex justify-between items-center mb-3">
+                    <h2 className="text-lg font-bold">Quick Actions</h2>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      className="text-xs font-medium text-pink-500 dark:text-pink-400 flex items-center"
+                      onClick={() => {
+                        // Show a tutorial toast or modal here
+                        toast({
+                          title: "How to use Quick Actions",
+                          description: "Tap any category to quickly access your favorite features and characters.",
+                          duration: 5000,
+                        });
+                      }}
+                    >
+                      <HelpCircle className="h-3.5 w-3.5 mr-1" />
+                      Help
+                    </motion.button>
                   </div>
+                  
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ staggerChildren: 0.05, delayChildren: 0.1 }}
+                    className="grid grid-cols-4 gap-3"
+                  >
+                    <Link href="/search">
+                      <motion.div 
+                        whileHover={{ y: -3 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex flex-col items-center"
+                      >
+                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center shadow-md relative overflow-hidden">
+                          <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity"></div>
+                          <MessageSquare className="h-7 w-7 text-white" />
+                        </div>
+                        <span className="text-xs mt-2 font-medium">Chat Now</span>
+                        <span className="text-[10px] text-gray-400">Start talking</span>
+                      </motion.div>
+                    </Link>
+                    
+                    <motion.div 
+                      whileHover={{ y: -3 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex flex-col items-center"
+                      onClick={() => {
+                        // Filter to show top characters
+                        setActiveTab("search");
+                        toast({
+                          title: "Top Rated Characters",
+                          description: "Characters with the highest user ratings",
+                          duration: 3000,
+                        });
+                      }}
+                    >
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md relative overflow-hidden">
+                        <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity"></div>
+                        <Star className="h-7 w-7 text-white" />
+                      </div>
+                      <span className="text-xs mt-2 font-medium">Top Rated</span>
+                      <span className="text-[10px] text-gray-400">Fan favorites</span>
+                    </motion.div>
+                    
+                    <motion.div 
+                      whileHover={{ y: -3 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex flex-col items-center"
+                      onClick={() => {
+                        // Show recent characters
+                        setActiveTab("search");
+                        setSearchQuery("recent");
+                      }}
+                    >
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center shadow-md relative overflow-hidden">
+                        <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity"></div>
+                        <Clock className="h-7 w-7 text-white" />
+                      </div>
+                      <span className="text-xs mt-2 font-medium">Recent</span>
+                      <span className="text-[10px] text-gray-400">Latest chats</span>
+                    </motion.div>
+                    
+                    <motion.div 
+                      whileHover={{ y: -3 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="flex flex-col items-center"
+                      onClick={handleCreateClick}
+                    >
+                      <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-md relative overflow-hidden">
+                        <div className="absolute inset-0 bg-black opacity-0 hover:opacity-10 transition-opacity"></div>
+                        <Plus className="h-7 w-7 text-white" />
+                      </div>
+                      <span className="text-xs mt-2 font-medium">Create</span>
+                      <span className="text-[10px] text-gray-400">Custom character</span>
+                    </motion.div>
+                  </motion.div>
+                  
+                  {/* Usage tip card */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mt-4 bg-gradient-to-r from-indigo-100/80 to-purple-100/80 dark:from-indigo-950/30 dark:to-purple-950/30 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800/30"
+                  >
+                    <div className="flex items-start">
+                      <div className="p-1.5 bg-indigo-500/10 rounded-full mr-3 mt-0.5">
+                        <Lightbulb className="h-4 w-4 text-indigo-500" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1">Pro Tip</h4>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          Swipe between tabs to quickly access different features. Tap a character to start chatting right away.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
                 </div>
 
-                {/* Featured Section for Mobile UI */}
+                {/* Enhanced Featured Section for Mobile UI with instructions */}
                 <div className="px-4 pt-5">
-                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
+                  <div className="bg-gradient-to-r from-pink-50/90 to-amber-50/90 dark:from-pink-950/30 dark:to-amber-950/30 p-3 rounded-xl mb-3 border border-pink-100 dark:border-pink-900/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
+                      <h3 className="font-bold text-sm text-gray-800 dark:text-gray-100">Featured Highlights</h3>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Swipe through featured characters and announcements. Tap the dots below to navigate.
+                    </p>
+                  </div>
+                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden shadow-lg" />
                 </div>
 
                 {/* Top Rated section - Material Design Carousel */}
@@ -1454,10 +1498,10 @@ export default function Home() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Main Content Area - Redesigned with two columns */}
+          {/* Enhanced Main Content Area - Redesigned with two columns */}
           <div className="flex-1 p-8">
-            <div className="flex flex-row max-w-6xl mx-auto gap-8">
-              {/* Left Column - Main Content */}
+            <div className="flex flex-col lg:flex-row max-w-6xl mx-auto gap-8">
+              {/* Left Column - Enhanced Main Content */}
               <div className="flex-1">
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
@@ -1467,20 +1511,116 @@ export default function Home() {
                   <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
                     Immerse in Anime & Manga
                   </h1>
-                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
                     Chat with your favorite characters and bring your anime world to
                     life
                   </p>
+                  
+                  {/* Quick Start Guide Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <motion.div 
+                      whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                      className="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-md border border-amber-100 dark:border-amber-900/30"
+                    >
+                      <MessageSquare className="h-8 w-8 text-amber-500 mb-3" />
+                      <h3 className="font-bold text-xl mb-2">Start Chatting</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">Choose any anime character and start a conversation right away.</p>
+                      <Link href="/search">
+                        <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700">
+                          Find Characters
+                        </Button>
+                      </Link>
+                    </motion.div>
+                    
+                    <motion.div 
+                      whileHover={{ y: -5, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                      className="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-md border border-purple-100 dark:border-purple-900/30"
+                    >
+                      <Plus className="h-8 w-8 text-purple-500 mb-3" />
+                      <h3 className="font-bold text-xl mb-2">Create Characters</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-4">Design your own custom anime characters with unique personas.</p>
+                      <Button 
+                        className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+                        onClick={handleCreateClick}
+                      >
+                        Create New
+                      </Button>
+                    </motion.div>
+                  </div>
+                  
+                  {/* User Stats Section */}
+                  {user && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="bg-gradient-to-br from-pink-50 to-amber-50 dark:from-pink-950/30 dark:to-amber-950/30 p-6 rounded-xl border border-amber-100 dark:border-amber-900/20 shadow-sm"
+                    >
+                      <h3 className="font-bold text-xl mb-4 flex items-center">
+                        <UserIcon className="inline mr-2 h-5 w-5 text-amber-500" />
+                        Your Activity
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white/60 dark:bg-slate-900/60 p-3 rounded-lg text-center">
+                          <p className="text-3xl font-bold text-amber-500">{user.trialCharactersCreated || 0}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Characters Created</p>
+                        </div>
+                        <div className="bg-white/60 dark:bg-slate-900/60 p-3 rounded-lg text-center">
+                          <p className="text-3xl font-bold text-purple-500">
+                            {user.isPremium ? "PRO" : "Free"}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Account Type</p>
+                        </div>
+                        <div className="bg-white/60 dark:bg-slate-900/60 p-3 rounded-lg text-center">
+                          <p className="text-3xl font-bold text-pink-500">
+                            {notifications.filter(n => !n.read).length}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">New Alerts</p>
+                        </div>
+                        <div className="bg-white/60 dark:bg-slate-900/60 p-3 rounded-lg text-center">
+                          <p className="text-3xl font-bold text-emerald-500">
+                            {user.isPremium ? "∞" : 3 - (user.trialCharactersCreated || 0)}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Characters Left</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </motion.div>
               </div>
               
-              {/* Right Column - Featured Content */}
-              <div className="w-96">
+              {/* Right Column - Featured Content with instruction */}
+              <div className="w-full lg:w-96">
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
+                  className="space-y-5"
                 >
-                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
+                  <div className="bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm rounded-xl p-4 border border-amber-100 dark:border-amber-900/30 shadow-sm">
+                    <h3 className="font-bold text-lg mb-2 flex items-center">
+                      <span className="inline-block w-2 h-2 rounded-full bg-amber-500 mr-2"></span>
+                      Featured Content
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                      Discover popular characters and special announcements here. Content rotates automatically.
+                    </p>
+                  </div>
+                  
+                  <FeaturedSection className="rounded-xl overflow-hidden shadow-md border border-gray-100 dark:border-gray-800" />
+                  
+                  {/* Quick Tips */}
+                  <motion.div 
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-950/40 dark:to-pink-950/40 p-4 rounded-xl mt-4 border border-purple-200 dark:border-purple-900/30 shadow-sm"
+                  >
+                    <h3 className="font-bold mb-2 flex items-center text-purple-700 dark:text-purple-400">
+                      <AlertCircle className="h-4 w-4 mr-2" />
+                      Pro Tip
+                    </h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      Click on any featured character to start chatting right away. Upgrade to premium for unlimited character creation.
+                    </p>
+                  </motion.div>
                 </motion.div>
               </div>
             </div>
