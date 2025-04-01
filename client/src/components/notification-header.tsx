@@ -139,41 +139,89 @@ export function NotificationHeader() {
   };
 
   return (
-    <div className="w-full bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800">
-      <div className="container mx-auto px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img
-              src="/images/logo.png"
-              alt="AnimeChat"
-              className="h-8 w-8"
-            />
-            <span className="text-lg font-semibold text-[#075e54] dark:text-[#00a884]">
-              AnimeChat
-            </span>
+    <div className="w-full relative z-10">
+      {/* Enhanced modern header with gradient and glass effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-indigo-500/20 dark:from-pink-900/30 dark:via-purple-900/30 dark:to-indigo-900/30 backdrop-blur-md"></div>
+      
+      <div className="container mx-auto relative">
+        <div className="flex items-center justify-between py-4 px-6">
+          {/* Logo and branding section */}
+          <div className="flex items-center space-x-4">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 to-purple-600 rounded-full opacity-70 group-hover:opacity-100 blur transition duration-200"></div>
+              <div className="relative flex items-center justify-center rounded-full bg-white dark:bg-gray-900 p-1.5">
+                <img
+                  src="/images/logo.png"
+                  alt="AnimeChat"
+                  className="h-8 w-8"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-purple-600 dark:from-pink-500 dark:to-purple-400">
+                AnimeChat
+              </span>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Where anime characters come to life</div>
+            </div>
           </div>
-
-          <div className="flex items-center gap-4">
+          
+          {/* Navigation Links - Center */}
+          <div className="hidden md:flex items-center space-x-1">
+            <a href="/" className="px-3 py-2 rounded-md text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-white/20 dark:hover:bg-gray-800/40 transition-colors">Home</a>
+            <a href="/search" className="px-3 py-2 rounded-md text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-white/20 dark:hover:bg-gray-800/40 transition-colors">Browse</a>
+            <a href="/library" className="px-3 py-2 rounded-md text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-white/20 dark:hover:bg-gray-800/40 transition-colors">My Library</a>
+            <a href="/conversations" className="px-3 py-2 rounded-md text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-white/20 dark:hover:bg-gray-800/40 transition-colors">Messages</a>
+          </div>
+          
+          {/* Right side actions */}
+          <div className="flex items-center space-x-3">
+            {/* Search button */}
+            <motion.a
+              href="/search"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="relative p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 backdrop-blur-sm shadow-sm transition-colors"
+            >
+              <svg 
+                className="h-5 w-5 text-gray-700 dark:text-gray-300" 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </motion.a>
+            
             {/* Notifications */}
             <Popover>
               <PopoverTrigger asChild>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="relative p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 backdrop-blur-sm shadow-sm transition-colors"
                 >
-                  <Bell className="h-6 w-6 text-[#075e54] dark:text-[#00a884]" />
+                  <Bell className="h-5 w-5 text-gray-700 dark:text-gray-300" />
                   {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 h-5 w-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                    <motion.span 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 h-5 w-5 bg-pink-500 dark:bg-pink-600 rounded-full text-xs text-white flex items-center justify-center shadow-md"
+                    >
                       {unreadCount}
-                    </span>
+                    </motion.span>
                   )}
                 </motion.button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="font-semibold text-[#075e54] dark:text-[#00a884]">
-                    Notifications
+              <PopoverContent className="w-80 p-0 bg-white dark:bg-gray-900 border-0 shadow-xl rounded-xl">
+                <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    <span className="text-pink-500 dark:text-pink-400">Notifications</span>
                   </h3>
                 </div>
                 <AnimatePresence>
@@ -187,25 +235,33 @@ export function NotificationHeader() {
                           exit={{ opacity: 0, y: -10 }}
                           className={cn(
                             "p-4 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors",
-                            !notification.read && "bg-blue-50 dark:bg-blue-900/10"
+                            !notification.read && "bg-pink-50 dark:bg-pink-900/20"
                           )}
                           onClick={() => markAsReadMutation.mutate(notification.id.toString())}
                         >
-                          <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                            {notification.title}
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            {notification.message}
-                          </p>
-                          <span className="text-xs text-gray-500 dark:text-gray-500 mt-2 block">
-                            {new Date(notification.createdAt).toLocaleDateString()}
-                          </span>
+                          <div className="flex gap-3">
+                            <div className={`h-2 w-2 mt-2 rounded-full flex-shrink-0 ${!notification.read ? 'bg-pink-500' : 'bg-gray-300 dark:bg-gray-700'}`}></div>
+                            <div>
+                              <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                                {notification.title}
+                              </h4>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                {notification.message}
+                              </p>
+                              <span className="text-xs text-gray-500 dark:text-gray-500 mt-2 block">
+                                {new Date(notification.createdAt).toLocaleDateString()} · {new Date(notification.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </span>
+                            </div>
+                          </div>
                         </motion.div>
                       ))}
                     </div>
                   ) : (
-                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                      No notifications
+                    <div className="p-5 text-center text-gray-500 dark:text-gray-400">
+                      <div className="inline-flex rounded-full bg-pink-100 dark:bg-pink-900/30 p-3 mb-3">
+                        <Bell className="h-6 w-6 text-pink-500 dark:text-pink-400" />
+                      </div>
+                      <p>No notifications yet</p>
                     </div>
                   )}
                 </AnimatePresence>
@@ -217,59 +273,79 @@ export function NotificationHeader() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowComplaintDialog(true)}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center gap-2 text-[#075e54] dark:text-[#00a884]"
+              className="relative p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 backdrop-blur-sm shadow-sm transition-colors"
               aria-label="Report an issue"
               title="Report an issue"
             >
-              <AlertCircle className="h-6 w-6" />
+              <AlertCircle className="h-5 w-5 text-gray-700 dark:text-gray-300" />
             </motion.button>
             
-            {/* Three-line dropdown menu */}
+            {/* Profile with dropdown menu */}
             <Popover>
               <PopoverTrigger asChild>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 backdrop-blur-sm shadow-sm transition-colors"
                   aria-label="Menu"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold">
+                    {user?.username?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {user?.username || 'Account'}
+                  </span>
+                  <svg 
+                    className="h-4 w-4 text-gray-700 dark:text-gray-300"
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
                     strokeLinejoin="round"
-                    className="text-[#075e54] dark:text-[#00a884]"
                   >
-                    <line x1="4" x2="20" y1="12" y2="12"></line>
-                    <line x1="4" x2="20" y1="6" y2="6"></line>
-                    <line x1="4" x2="20" y1="18" y2="18"></line>
+                    <polyline points="6 9 12 15 18 9"></polyline>
                   </svg>
                 </motion.button>
               </PopoverTrigger>
-              <PopoverContent className="w-56 p-0">
+              <PopoverContent className="w-64 p-0 bg-white dark:bg-gray-900 border-0 shadow-xl rounded-xl">
+                <div className="py-3 px-4 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white text-lg font-bold">
+                      {user?.username?.charAt(0).toUpperCase() || 'A'}
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-gray-100">{user?.username}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</div>
+                    </div>
+                  </div>
+                </div>
                 <div className="py-2">
-                  <a href="/settings" className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
-                    <svg className="w-4 h-4 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <a href="/profile" className="flex items-center px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300 transition-colors">
+                    <svg className="w-4 h-4 mr-3 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    My Profile
+                  </a>
+                  <a href="/settings" className="flex items-center px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300 transition-colors">
+                    <svg className="w-4 h-4 mr-3 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                     Settings
                   </a>
-                  <a href="/help" className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
-                    <svg className="w-4 h-4 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <a href="/help" className="flex items-center px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300 transition-colors">
+                    <svg className="w-4 h-4 mr-3 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"></circle>
                       <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
                       <path d="M12 17h.01"></path>
                     </svg>
                     Help & FAQ
                   </a>
-                  <a href="/subscription" className="flex items-center px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
-                    <svg className="w-4 h-4 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <a href="/subscription" className="flex items-center px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300 transition-colors">
+                    <svg className="w-4 h-4 mr-3 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M2 9a3 3 0 0 1 0-6h20a3 3 0 0 1 0 6Z"></path>
                       <path d="M2 12h20"></path>
                       <path d="M2 15h20"></path>
@@ -277,8 +353,8 @@ export function NotificationHeader() {
                     </svg>
                     Subscription
                   </a>
-                  <hr className="my-1 border-gray-200 dark:border-gray-700" />
-                  <a href="/logout" className="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800">
+                  <hr className="my-1 border-gray-100 dark:border-gray-800" />
+                  <a href="/logout" className="flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-800/70 transition-colors">
                     <svg className="w-4 h-4 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                       <polyline points="16 17 21 12 16 7"></polyline>
