@@ -217,8 +217,10 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       // Check if it's a video URL (by extension)
       const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(url);
       
-      if (isVideo && mediaType === 'video') {
-        console.log('Adding video cache-busting parameter for better mobile playback');
+      // If it's a video file (based on extension), add a cache-busting parameter
+      // regardless of the mediaType to ensure proper playback on all devices
+      if (isVideo) {
+        console.log('Detected video file, adding cache-busting parameter for better playback');
         // Add a timestamp query parameter to prevent caching issues on mobile
         return `${url}?cb=${Date.now()}`;
       }
@@ -240,22 +242,46 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
   // Handle image/video loading errors
   const handleMediaError = (e: React.SyntheticEvent<HTMLImageElement | HTMLVideoElement, Event>) => {
     console.error(`Error loading media from URL: ${e.currentTarget.src}`);
-    console.error(`Original media URL before formatting: ${mediaType === 'video' ? videoUrl : imageUrl}`);
+    
+    // Show detailed debugging information based on what fields the advertisement has
+    console.log('Advertisement media debug info:');
+    console.log(`- ID: ${id}`);
+    console.log(`- Media Type: ${mediaType}`);
+    console.log(`- Image URL: ${imageUrl || 'none'}`);
+    console.log(`- Video URL: ${videoUrl || 'none'}`);
+    console.log(`- Formatted Image URL: ${imageUrl ? formatUrl(imageUrl) : 'none'}`);
+    console.log(`- Formatted Video URL: ${videoUrl ? formatUrl(videoUrl) : 'none'}`);
+    
+    // Check if video URL is stored in wrong field
+    if (imageUrl && (
+      /\.(mp4|webm|ogg|mov)$/i.test(imageUrl) || 
+      imageUrl.includes('youtube.com') || 
+      imageUrl.includes('youtu.be')
+    )) {
+      console.warn('Media issue detected: Video content appears to be in the imageUrl field instead of videoUrl field');
+    }
     
     // If using a video element, try to load the fallback image instead
     if (mediaType === 'video' && e.currentTarget instanceof HTMLVideoElement) {
       console.log('Video failed to load, using fallback image if available');
     }
     
-    // Don't attempt to fetch the resource directly as this may trigger CORS issues
-    // or unnecessary network errors in the console
-    console.log(`Network error fetching media: Failed to load`);
-    
-    // Check if this is a relative path starting with /uploads
+    // Location-based diagnostics
     if (e.currentTarget.src.includes('/uploads/')) {
-      console.log('This appears to be an uploaded file. Make sure the file exists and permissions are correct.');
+      console.log('This appears to be an uploaded file. Checking possible issues:');
+      console.log('- Make sure the file exists in the uploads directory');
+      console.log('- Check if path is correct - advertisements should be in /uploads/advertisements/');
+      console.log('- Ensure file permissions are set correctly');
+    } else if (e.currentTarget.src.includes('youtube.com') || e.currentTarget.src.includes('youtu.be')) {
+      console.log('This appears to be a YouTube URL. Checking possible issues:');
+      console.log('- Make sure the video is not private or removed');
+      console.log('- Verify the embed format is correct');
+      console.log('- YouTube Shorts need special handling (which is implemented)');
     } else if (e.currentTarget.src.includes('http')) {
-      console.log('This appears to be an external URL. Make sure it allows embedding and CORS access.');
+      console.log('This appears to be an external URL. Make sure it:');
+      console.log('- Allows embedding and has correct CORS headers');
+      console.log('- Is a valid and accessible resource');
+      console.log('- Uses HTTPS protocol (not HTTP)');
     }
   };
   
@@ -344,26 +370,38 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
     >
       <div className="relative">
         <div className="aspect-[3/4] rounded-xl overflow-hidden relative">
-          {mediaType === 'video' && videoUrl ? (
+          {/* Check if we have a video URL (or if imageUrl is a video based on extension) */}
+          {(mediaType === 'video' && videoUrl) || 
+          (imageUrl && /\.(mp4|webm|ogg|mov)$/i.test(imageUrl)) ? (
             <div className="relative w-full h-full">
-              {/* Check if it's a YouTube URL after formatting */}
+              {/* Check if it's a YouTube URL after formatting (in either videoUrl or imageUrl) */}
               {formatUrl(videoUrl).includes('youtube.com/embed') || 
-               (videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'))) ? (
+               (videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'))) ||
+               (imageUrl && (imageUrl.includes('youtube.com') || imageUrl.includes('youtu.be'))) ? (
                 <div className="relative w-full h-full">
                   <iframe
                     src={
-                      // Special handling for YouTube Shorts - convert to embed format
-                      videoUrl && videoUrl.includes('youtube.com/shorts/') 
-                        ? (() => {
-                            const match = /shorts\/([^?&/]+)/.exec(videoUrl);
-                            if (match && match[1]) {
-                              const videoId = match[1];
-                              console.log('Embedded YouTube Shorts with video ID:', videoId);
-                              return `https://www.youtube.com/embed/${videoId}?loop=1&controls=1&modestbranding=1&rel=0&autoplay=1`;
-                            }
-                            return formatUrl(videoUrl);
-                          })()
-                        : formatUrl(videoUrl)
+                      // Determine which URL to use for the YouTube embed
+                      (() => {
+                        const youtubeUrl = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) 
+                          ? videoUrl 
+                          : imageUrl && (imageUrl.includes('youtube.com') || imageUrl.includes('youtu.be')) 
+                            ? imageUrl 
+                            : null;
+                            
+                        // Special handling for YouTube Shorts - convert to embed format
+                        if (youtubeUrl && youtubeUrl.includes('youtube.com/shorts/')) {
+                          const match = /shorts\/([^?&/]+)/.exec(youtubeUrl);
+                          if (match && match[1]) {
+                            const videoId = match[1];
+                            console.log('Embedded YouTube Shorts with video ID:', videoId);
+                            return `https://www.youtube.com/embed/${videoId}?loop=1&controls=1&modestbranding=1&rel=0&autoplay=1`;
+                          }
+                        }
+                        
+                        // For regular YouTube videos
+                        return formatUrl(youtubeUrl || videoUrl);
+                      })()
                     }
                     className="w-full h-full object-cover"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -376,8 +414,8 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
                 <>
                   <video
                     ref={videoRef}
-                    src={formatUrl(videoUrl)}
-                    poster={formatUrl(imageUrl)}
+                    src={formatUrl(videoUrl || (imageUrl && /\.(mp4|webm|ogg|mov)$/i.test(imageUrl) ? imageUrl : null))}
+                    poster={!imageUrl || /\.(mp4|webm|ogg|mov)$/i.test(imageUrl) ? undefined : formatUrl(imageUrl)}
                     className="w-full h-full object-cover"
                     muted={isMuted}
                     loop

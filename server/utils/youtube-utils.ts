@@ -3,13 +3,30 @@
  */
 
 /**
+ * Utility functions for handling YouTube URLs
+ */
+
+/**
  * Sanitizes a YouTube URL by extracting the video ID and returning an embed URL
  * 
  * @param url The YouTube URL to sanitize
+ * @param isVideo Whether the URL is for a video (true) or an image thumbnail (false)
  * @returns The sanitized URL (embed format) or the original URL if not a YouTube URL
  */
-export const sanitizeYouTubeUrl = (url: string): string => {
+export const sanitizeYouTubeUrl = (url: string, isVideo: boolean = true): string => {
   if (!url) return url;
+  
+  // First, clean up any malformed URLs that concatenate multiple URLs
+  if (url.includes('http') && url.indexOf('http', 10) > 0) {
+    console.log('Detected malformed URL with multiple http parts:', url);
+    
+    // Extract the last occurrence of http:// or https://
+    const lastHttpIndex = url.lastIndexOf('http');
+    if (lastHttpIndex > 0) {
+      url = url.substring(lastHttpIndex);
+      console.log('Cleaned URL:', url);
+    }
+  }
   
   // Check if it's a YouTube URL
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
@@ -17,10 +34,11 @@ export const sanitizeYouTubeUrl = (url: string): string => {
     
     // Extract video ID from various YouTube URL formats
     let videoId = '';
+    let isShort = false;
     
     // Extract from youtu.be format
     if (url.includes('youtu.be/')) {
-      const match = /youtu\.be\/([^?&]+)/.exec(url);
+      const match = /youtu\.be\/([^?&/]+)/.exec(url);
       if (match && match[1]) videoId = match[1];
     } 
     // Extract from youtube.com/watch format
@@ -30,19 +48,33 @@ export const sanitizeYouTubeUrl = (url: string): string => {
     } 
     // Extract from YouTube Shorts format
     else if (url.includes('youtube.com/shorts/')) {
-      const match = /shorts\/([^?&]+)/.exec(url);
-      if (match && match[1]) videoId = match[1];
+      const match = /shorts\/([^?&/]+)/.exec(url);
+      if (match && match[1]) {
+        videoId = match[1];
+        isShort = true;
+      }
     }
     // Extract from embed format
     else if (url.includes('youtube.com/embed/')) {
-      const match = /embed\/([^?&]+)/.exec(url);
+      const match = /embed\/([^?&/]+)/.exec(url);
       if (match && match[1]) videoId = match[1];
     }
     
     if (videoId) {
-      // Return a proper YouTube embed URL
-      console.log('Extracted YouTube video ID:', videoId);
-      return `https://www.youtube.com/embed/${videoId}`;
+      console.log('Extracted YouTube video ID:', videoId, isShort ? '(Short video)' : '');
+      
+      if (isVideo) {
+        // For videos, return proper embed URL with appropriate parameters
+        if (isShort) {
+          // Special parameters for shorts to make them loop and auto-play
+          return `https://www.youtube.com/embed/${videoId}?loop=1&controls=1&modestbranding=1&rel=0&autoplay=1`;
+        } else {
+          return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&loop=1&controls=1`;
+        }
+      } else {
+        // For image thumbnails, use YouTube's thumbnail service
+        return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      }
     }
   }
   
