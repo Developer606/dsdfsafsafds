@@ -1454,26 +1454,36 @@ export default function Home() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Main Content Area */}
+          {/* Main Content Area - Redesigned with two columns */}
           <div className="flex-1 p-8">
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center max-w-2xl mx-auto"
-            >
-              <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
-                Immerse in Anime & Manga
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                Chat with your favorite characters and bring your anime world to
-                life
-              </p>
-              
-              {/* Featured Content */}
-              <div className="max-w-xl mx-auto mt-10">
-                <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
+            <div className="flex flex-row max-w-6xl mx-auto gap-8">
+              {/* Left Column - Main Content */}
+              <div className="flex-1">
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-left"
+                >
+                  <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
+                    Immerse in Anime & Manga
+                  </h1>
+                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                    Chat with your favorite characters and bring your anime world to
+                    life
+                  </p>
+                </motion.div>
               </div>
-            </motion.div>
+              
+              {/* Right Column - Featured Content */}
+              <div className="w-96">
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                >
+                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
+                </motion.div>
+              </div>
+            </div>
           </div>
         </div>
       )}
