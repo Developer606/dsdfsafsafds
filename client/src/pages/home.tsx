@@ -542,6 +542,10 @@ export default function Home() {
             {/* Home Tab Content */}
             {activeTab === "home" && (
               <div className="pb-20">
+                {/* Featured Section for Mobile UI */}
+                <div className="px-4 pt-3">
+                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
+                </div>
                 {/* Horizontal character avatars */}
                 <div className="px-4 pt-4">
                   <div className="flex overflow-x-auto pb-4 space-x-4 hide-scrollbar">
@@ -663,10 +667,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Featured Content - now using the unified component */}
-                <div className="px-4 pt-1">
-                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
-                </div>
+                {/* Featured Content removed from here to avoid duplication */}
 
                 {/* Top Rated section - Material Design Carousel */}
                 <div className="px-4 pt-5">
