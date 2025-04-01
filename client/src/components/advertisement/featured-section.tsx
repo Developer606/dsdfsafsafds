@@ -21,27 +21,15 @@ const CharacterCard = ({ character }: { character: any }) => {
             alt={character.name}
             className="w-full h-full object-cover"
           />
-          {/* Enhanced gradient overlay for better text visibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-          
-          {/* Decorative element in the corner */}
-          {character.isNew && (
-            <div className="absolute top-4 right-4 bg-purple-500 text-white text-xs px-3 py-1 rounded-full shadow-lg font-medium">
-              NEW
-            </div>
-          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
         </div>
         <div className="absolute bottom-0 left-0 p-5 w-full">
-          <div className="text-xs text-purple-300 font-medium mb-2 flex items-center">
-            <span className="mr-2">⭐</span>
-            Featured Character
+          <div className="text-xs text-purple-300 font-medium mb-2">
+            Featured
           </div>
           <h2 className="text-2xl font-bold text-white leading-tight">
             {character.name}
           </h2>
-          <p className="text-gray-300 text-sm mt-1 line-clamp-2 mb-3 opacity-90">
-            {character.description.substring(0, 80) + (character.description.length > 80 ? '...' : '')}
-          </p>
           <div className="flex items-center mt-2">
             <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full">
               {character.isNew ? "New" : "Popular"}
@@ -51,7 +39,7 @@ const CharacterCard = ({ character }: { character: any }) => {
               {[1, 2, 3, 4, 5].map((star, i) => (
                 <span
                   key={i}
-                  className={`${i < 4 ? "text-amber-400" : "text-gray-600"} text-xs`}
+                  className={`${i < 3 ? "text-amber-400" : "text-gray-600"} text-xs`}
                 >
                   ★
                 </span>
@@ -61,8 +49,7 @@ const CharacterCard = ({ character }: { character: any }) => {
           <Link href={`/chat/${character.id}`}>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              whileHover={{ scale: 1.03 }}
-              className="mt-3 px-4 py-2 bg-purple-500 text-white rounded-full text-sm font-medium hover:bg-purple-600 flex items-center shadow-lg"
+              className="mt-3 px-4 py-2 bg-purple-500 text-white rounded-full text-sm font-medium hover:bg-purple-600 flex items-center"
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               Start Chat
@@ -75,7 +62,6 @@ const CharacterCard = ({ character }: { character: any }) => {
 };
 
 export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = '' }) => {
-  // Always start with index 0 (which will be the predefined character)
   const [currentIndex, setCurrentIndex] = useState(0);
   const queryClient = useQueryClient();
 
@@ -91,20 +77,28 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     queryKey: ['/api/characters'],
   });
 
-  // Sort characters to get featured ones first
+  // Sort characters to prioritize predefined and new characters
   const sortedCharacters = [...characters].sort((a, b) => {
-    // If one has isNew and the other doesn't, the one with isNew comes first
+    // First, prioritize predefined characters over custom ones
+    const aIsCustom = a.id.startsWith('custom_');
+    const bIsCustom = b.id.startsWith('custom_');
+    
+    if (!aIsCustom && bIsCustom) return -1;
+    if (aIsCustom && !bIsCustom) return 1;
+    
+    // Then prioritize new characters
     if (a.isNew && !b.isNew) return -1;
     if (!a.isNew && b.isNew) return 1;
-    // Otherwise, maintain the original order
+    
+    // Finally, maintain the original order
     return 0;
   });
-
+  
   // Find a predefined character (not a custom one)
   const predefinedCharacter = sortedCharacters.find(char => !char.id.startsWith('custom_'));
-  
+
   // Combine advertisements and characters into a single array of featured items
-  // Always show a predefined character first if available, then advertisements
+  // Always show a predefined character first, followed by advertisements
   const featuredItems = [
     // Add the predefined character first if it exists
     ...(predefinedCharacter ? 
@@ -113,19 +107,12 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     // Then add all advertisements
     ...advertisements.map(ad => ({ type: 'advertisement', data: ad, id: `ad-${ad.id}` }))
   ];
-  
-  // Reset to the first item (predefined character) when the featured items change
-  // This ensures we always start with the character when it becomes available
-  useEffect(() => {
-    // If there are featured items and predefinedCharacter is the first item, reset index to 0
-    if (featuredItems.length > 0 && predefinedCharacter) {
-      setCurrentIndex(0);
-    }
-  }, [predefinedCharacter, featuredItems.length]);
 
-  // Force refresh advertisements
-  const refreshAdvertisements = useCallback(() => {
+  // Force refresh advertisements and characters
+  const refreshData = useCallback(() => {
+    // Refresh both advertisements and characters data
     queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/characters'] });
   }, [queryClient]);
 
   // Auto-rotate through featured items
@@ -141,14 +128,34 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     }
   }, [featuredItems.length]);
   
-  // Set up an interval to periodically force-refresh advertisements
+  // React to newly added predefined characters (real-time updates)
   useEffect(() => {
+    // When a new or featured predefined character is added, show it immediately
+    const foundCharacter = sortedCharacters.find(char => 
+      !char.id.startsWith('custom_') && (char.isNew || char.featured)
+    );
+    
+    if (foundCharacter && predefinedCharacter?.id === foundCharacter.id) {
+      // Use a small timeout to prevent visual jittering during transition
+      const timeoutId = setTimeout(() => {
+        setCurrentIndex(0); // First position always has the predefined character
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [sortedCharacters, predefinedCharacter?.id]);
+  
+  // Set up an interval to periodically force-refresh data without refreshing the whole page
+  useEffect(() => {
+    // Initial refresh when component mounts
+    refreshData();
+    
     const refreshIntervalId = setInterval(() => {
-      refreshAdvertisements();
-    }, 10000); // Force refresh every 10 seconds
+      refreshData();
+    }, 5000); // Refresh more frequently (every 5 seconds) for smoother real-time updates
     
     return () => clearInterval(refreshIntervalId);
-  }, [refreshAdvertisements]);
+  }, [refreshData]);
 
   // Handle manual navigation
   const goToItem = (index: number) => {
@@ -200,7 +207,8 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
           exit={{ opacity: 0, x: -20, scale: 0.97 }}
           transition={{ 
             duration: 0.6, 
-            ease: "easeInOut"
+            ease: "easeInOut",
+            opacity: { duration: 0.3 }
           }}
           className="relative z-10"
         >
