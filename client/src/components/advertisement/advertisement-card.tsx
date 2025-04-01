@@ -249,7 +249,7 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
     
     // Don't attempt to fetch the resource directly as this may trigger CORS issues
     // or unnecessary network errors in the console
-    console.log(`Unable to load media from: ${e.currentTarget.src}`);
+    console.log(`Network error fetching media: Failed to load`);
     
     // Check if this is a relative path starting with /uploads
     if (e.currentTarget.src.includes('/uploads/')) {

@@ -191,10 +191,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         console.error('Error processing YouTube URL:', error);
       }
     } else {
-      setError(`Failed to load media. URL: ${e.currentTarget.src}`);
-      // For non-YouTube URLs, we can log the issue but don't try to fetch
+      setError(`Network error fetching media: Failed to load`);
+      // For non-YouTube URLs, just log the issue but don't try to fetch
       // This avoids CORS errors in the console
-      console.log('Unable to load media, might be a permission or path issue');
+      console.log('Unable to load media from path:', e.currentTarget.src);
     }
   };
 
