@@ -663,12 +663,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Featured advertisement section */}
-                <div className="px-4 pt-1">
-                  <FeaturedSection className="mt-2" />
-                </div>
-                
-                {/* Featured character section */}
+                {/* Featured Content */}
                 <div className="px-4 pt-1">
                   <div className="flex justify-between items-center mb-3">
                     <h2 className="text-lg font-bold">Featured</h2>
@@ -679,6 +674,11 @@ export default function Home() {
                       See all
                     </motion.button>
                   </div>
+                  
+                  {/* Featured Advertisements */}
+                  <FeaturedSection className="mb-4" />
+                  
+                  {/* Featured Character */}
                   <div className="relative rounded-xl overflow-hidden shadow-lg">
                     {sortedCharacters && sortedCharacters.length > 0 && (
                       <div className="relative">
@@ -1536,8 +1536,11 @@ export default function Home() {
                 life
               </p>
               
-              {/* Featured advertisements */}
-              <FeaturedSection className="max-w-xl mx-auto mt-10" />
+              {/* Featured Content */}
+              <div className="max-w-xl mx-auto mt-10">
+                <h2 className="text-2xl font-bold mb-4 text-center">Featured</h2>
+                <FeaturedSection />
+              </div>
             </motion.div>
           </div>
         </div>
