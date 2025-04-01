@@ -495,6 +495,7 @@ export const AdvertisementManager: React.FC = () => {
                         label="Advertisement Image"
                         currentUrl={formValues.imageUrl}
                         type="image"
+                        uploadType="advertisement"
                       />
                       {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
                     </div>
@@ -527,6 +528,7 @@ export const AdvertisementManager: React.FC = () => {
                         label="Advertisement Video"
                         currentUrl={formValues.videoUrl}
                         type="video"
+                        uploadType="advertisement"
                       />
                       
                       <div className="mt-5 border-t pt-5">
@@ -555,6 +557,7 @@ export const AdvertisementManager: React.FC = () => {
                           label="Video Thumbnail Image"
                           currentUrl={formValues.imageUrl}
                           type="image"
+                          uploadType="advertisement"
                         />
                         {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
                       </div>

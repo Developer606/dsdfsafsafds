@@ -3,6 +3,9 @@ import { insertAdvertisementSchema, insertAdvertisementMetricSchema } from "@sha
 import { isAdmin } from "../auth";
 import { storage } from "../storage";
 import type { Request } from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // Extend Express.Request to include the isAuthenticated method
 declare global {
@@ -14,6 +17,41 @@ declare global {
 }
 
 const router = express.Router();
+
+// Helper function to get the root directory path
+const getRootDir = () => {
+  return process.cwd();
+};
+
+// Helper function to delete a file from the uploads directory
+const deleteFile = (filePath: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // Only delete files within the uploads directory for security
+    if (!filePath || !filePath.startsWith('/uploads/')) {
+      console.warn(`Attempted to delete file outside uploads directory: ${filePath}`);
+      return resolve();
+    }
+    
+    const fullPath = path.join(getRootDir(), filePath);
+    
+    // Check if file exists before attempting to delete
+    fs.access(fullPath, fs.constants.F_OK, (err) => {
+      if (err) {
+        console.warn(`File not found: ${fullPath}`);
+        return resolve();
+      }
+      
+      fs.unlink(fullPath, (err) => {
+        if (err) {
+          console.error(`Error deleting file ${fullPath}:`, err);
+          return reject(err);
+        }
+        console.log(`Successfully deleted file: ${fullPath}`);
+        resolve();
+      });
+    });
+  });
+};
 
 // Get all advertisements (admin only)
 router.get("/", isAdmin, async (req, res) => {
@@ -150,8 +188,42 @@ router.delete("/:id", isAdmin, async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: "Invalid advertisement ID" });
     }
+
+    // First, get the advertisement to find the media files to delete
+    const advertisement = await storage.getAdvertisementById(id);
+    if (!advertisement) {
+      return res.status(404).json({ error: "Advertisement not found" });
+    }
+
+    // Keep track of deleted files
+    const deletedFiles = [];
+
+    // Delete image file if it's in our uploads directory
+    if (advertisement.imageUrl && advertisement.imageUrl.startsWith('/uploads/')) {
+      try {
+        await deleteFile(advertisement.imageUrl);
+        deletedFiles.push(advertisement.imageUrl);
+      } catch (err) {
+        console.error(`Error deleting image file for advertisement ${id}:`, err);
+        // Continue with deletion even if file removal fails
+      }
+    }
+
+    // Delete video file if it exists and is in our uploads directory
+    if (advertisement.videoUrl && advertisement.videoUrl.startsWith('/uploads/')) {
+      try {
+        await deleteFile(advertisement.videoUrl);
+        deletedFiles.push(advertisement.videoUrl);
+      } catch (err) {
+        console.error(`Error deleting video file for advertisement ${id}:`, err);
+        // Continue with deletion even if file removal fails
+      }
+    }
     
+    // Now delete the advertisement from the database
     await storage.deleteAdvertisement(id);
+    
+    console.log(`Advertisement ${id} deleted successfully along with associated files:`, deletedFiles);
     res.status(204).send();
   } catch (error) {
     console.error("Error deleting advertisement:", error);

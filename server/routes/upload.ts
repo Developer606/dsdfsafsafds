@@ -148,16 +148,28 @@ router.post('/', (req, res, next) => {
 
 // Direct file upload route - accepts any file type for admin
 router.post('/admin', isAdmin, (req, res) => {
+  // Check if this is an advertisement upload
+  const isAdUpload = req.query.type === 'advertisement';
+  const destinationDir = isAdUpload ? path.join(uploadDir, 'advertisements') : uploadDir;
+  
+  // Ensure the directory exists
+  if (!fs.existsSync(destinationDir)) {
+    fs.mkdirSync(destinationDir, { recursive: true });
+    fs.chmodSync(destinationDir, 0o755);
+    console.log(`Created directory: ${destinationDir}`);
+  }
+  
   // Use a more permissive configuration for admin uploads
   const adminUpload = multer({
     storage: multer.diskStorage({
       destination: (req, file, cb) => {
-        cb(null, uploadDir);
+        cb(null, destinationDir);
       },
       filename: (req, file, cb) => {
         // Generate a unique filename with original extension and timestamp
-        const uniqueFilename = `admin-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
-        console.log(`Generated admin filename: ${uniqueFilename} for ${file.originalname}`);
+        const prefix = isAdUpload ? 'ad-' : 'admin-';
+        const uniqueFilename = `${prefix}${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+        console.log(`Generated ${isAdUpload ? 'advertisement' : 'admin'} filename: ${uniqueFilename} for ${file.originalname}`);
         cb(null, uniqueFilename);
       },
     }),
@@ -181,10 +193,14 @@ router.post('/admin', isAdmin, (req, res) => {
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
+      // Get the correct directory path
+      const isAdUpload = req.query.type === 'advertisement';
+      const destinationDir = isAdUpload ? path.join(uploadDir, 'advertisements') : uploadDir;
+      
       // Ensure file was saved correctly
-      const filePath = path.join(uploadDir, req.file.filename);
+      const filePath = path.join(destinationDir, req.file.filename);
       if (!fs.existsSync(filePath)) {
-        console.error(`Admin file not found at expected path: ${filePath}`);
+        console.error(`File not found at expected path: ${filePath}`);
         return res.status(500).json({ error: 'File was not saved correctly' });
       }
 
@@ -198,8 +214,9 @@ router.post('/admin', isAdmin, (req, res) => {
       }
 
       // Generate URL for the uploaded file
-      const fileUrl = `/uploads/${req.file.filename}`;
-      console.log(`Admin file uploaded successfully: ${fileUrl}`);
+      const relativePath = path.relative(uploadDir, filePath);
+      const fileUrl = `/uploads/${relativePath}`;
+      console.log(`${isAdUpload ? 'Advertisement' : 'Admin'} file uploaded successfully: ${fileUrl}`);
       
       return res.status(201).json({
         url: fileUrl,

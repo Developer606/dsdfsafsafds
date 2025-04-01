@@ -12,6 +12,8 @@ db.run(`
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     image_url TEXT NOT NULL,
+    video_url TEXT,
+    media_type TEXT DEFAULT 'image',
     button_text TEXT DEFAULT 'Learn More',
     button_link TEXT NOT NULL,
     button_style TEXT DEFAULT 'primary',

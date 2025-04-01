@@ -8,6 +8,7 @@ interface FileUploadProps {
   label: string;
   currentUrl?: string;
   type?: 'image' | 'video';
+  uploadType?: 'advertisement' | string; // Used to route uploads to specific folders
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -16,7 +17,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   accept,
   label,
   currentUrl,
-  type = 'image'
+  type = 'image',
+  uploadType
 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentUrl || null);
@@ -86,8 +88,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       
       // Upload the file - for admins use the admin endpoint
       const adminUser = sessionStorage.getItem('isAdmin') === 'true';
-      const uploadUrl = adminUser ? '/api/upload/admin' : '/api/upload';
-      console.log(`Using upload endpoint: ${uploadUrl}, user is${adminUser ? '' : ' not'} admin`);
+      let uploadUrl = adminUser ? '/api/upload/admin' : '/api/upload';
+      
+      // Add the uploadType as a query parameter if it's specified
+      if (uploadType && adminUser) {
+        uploadUrl += `?type=${encodeURIComponent(uploadType)}`;
+      }
+      
+      console.log(`Using upload endpoint: ${uploadUrl}, user is${adminUser ? '' : ' not'} admin, uploadType: ${uploadType || 'none'}`);
       
       const response = await fetch(uploadUrl, {
         method: 'POST',
