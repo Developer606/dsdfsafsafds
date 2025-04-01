@@ -7,6 +7,7 @@ import { initializeNotifications } from "./notification-db";
 import { startScheduler } from "./scheduler";
 import { initializeAdminDb } from "./admin-db";
 import { setupSocketIOServer } from "./socket-io-server";
+import { initializeNotificationSocketService } from "./notification-socket-service";
 import { initializeFlaggedMessagesDb } from "./content-moderation";
 import path from "path";
 
@@ -96,7 +97,15 @@ app.use((req, res, next) => {
     // Create HTTP server first
     const httpServer = createServer(app);
     
-    // Register routes and setup Socket.IO
+    // Initialize the Socket.IO server for chat functionality
+    setupSocketIOServer(httpServer);
+    log("Chat Socket.IO server initialized successfully");
+    
+    // Initialize the notification socket service
+    initializeNotificationSocketService(httpServer);
+    log("Notification Socket.IO service initialized successfully");
+    
+    // Register routes
     await registerRoutes(app);
 
     // Global error handler with better logging

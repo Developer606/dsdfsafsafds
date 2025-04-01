@@ -17,6 +17,7 @@ import UserMessages from "@/pages/user-messages";
 import Conversations from "@/pages/conversations";
 import { ComplaintsSection } from "@/components/complaints-section";
 import { FeedbackSection } from "@/components/feedback-section";
+import { NotificationSocketProvider } from "@/components/notification-socket-provider";
 import { ProtectedRoute } from "./lib/protected-route";
 import { ThemeProvider } from "./lib/theme-context";
 
@@ -86,8 +87,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <Router />
-        <Toaster />
+        <NotificationSocketProvider>
+          <Router />
+          <Toaster />
+        </NotificationSocketProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

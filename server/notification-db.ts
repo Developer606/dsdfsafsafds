@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import * as schema from "@shared/schema";
 import { db } from "./db"; // Add this import for user data
+import { getNotificationSocketService } from "./notification-socket-service";
 
 // Configure SQLite with WAL mode for better concurrency
 const sqlite = new Database("notifications.db", {
@@ -118,7 +119,7 @@ export async function getAllNotificationsWithUsers() {
   }
 }
 
-// Function to create notifications for all users
+// Function to create notifications for all users with real-time delivery
 export async function createBroadcastNotifications(
   users: Array<{ id: number }>,
   notificationData: {
@@ -130,22 +131,56 @@ export async function createBroadcastNotifications(
   const insertStmt = sqlite.prepare(`
     INSERT INTO notifications (user_id, type, title, message)
     VALUES (?, ?, ?, ?)
+    RETURNING id, created_at as createdAt
   `);
+
+  // Get the notification service for real-time delivery
+  const notificationService = getNotificationSocketService();
+  let totalDelivered = 0;
 
   const transaction = sqlite.transaction((users) => {
     for (const user of users) {
-      insertStmt.run(
+      // Insert notification to database
+      const result = insertStmt.get(
         user.id,
         notificationData.type,
         notificationData.title,
         notificationData.message,
       );
+      
+      // Attempt real-time delivery
+      if (notificationService) {
+        const notification = {
+          id: result.id,
+          userId: user.id,
+          type: notificationData.type,
+          title: notificationData.title,
+          message: notificationData.message,
+          read: false,
+          createdAt: new Date(result.createdAt).toISOString()
+        };
+        
+        const delivered = notificationService.sendNotificationToUser(user.id, notification);
+        if (delivered) {
+          totalDelivered++;
+        }
+      }
     }
   });
 
   try {
     transaction(users);
-    console.log(`Broadcast notification created for ${users.length} users`);
+    console.log(`Broadcast notification created for ${users.length} users (${totalDelivered} received in real-time)`);
+    
+    // Also send through the broadcast channel for users who may have multiple sessions
+    if (notificationService) {
+      notificationService.broadcastNotification({
+        type: notificationData.type,
+        title: notificationData.title,
+        message: notificationData.message
+      });
+    }
+    
     return true;
   } catch (error) {
     console.error("Error creating broadcast notifications:", error);
@@ -247,6 +282,66 @@ export async function deleteScheduledBroadcast(id: number) {
     return true;
   } catch (error) {
     console.error("Error deleting scheduled broadcast:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create a notification for a single user with real-time delivery support
+ * @param userId The ID of the user to receive the notification
+ * @param data Notification data (type, title, message)
+ * @returns The created notification with ID
+ */
+export async function createNotification(
+  userId: number,
+  data: {
+    type: string;
+    title: string;
+    message: string;
+  }
+) {
+  const stmt = sqlite.prepare(`
+    INSERT INTO notifications (user_id, type, title, message)
+    VALUES (?, ?, ?, ?)
+    RETURNING id, user_id as userId, type, title, message, read, created_at as createdAt
+  `);
+
+  try {
+    // Create the notification in the database
+    const notification = stmt.get(
+      userId,
+      data.type,
+      data.title,
+      data.message
+    );
+    
+    // Format the notification object for proper typing
+    const formattedNotification = {
+      id: notification.id,
+      userId: notification.userId,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      read: Boolean(notification.read),
+      createdAt: new Date(notification.createdAt).toISOString()
+    };
+    
+    console.log(`Created notification for user ${userId}: ${data.title}`);
+    
+    // Try to deliver the notification in real-time if the user is online
+    const notificationService = getNotificationSocketService();
+    if (notificationService) {
+      const delivered = notificationService.sendNotificationToUser(userId, formattedNotification);
+      if (delivered) {
+        console.log(`Real-time notification delivered to user ${userId}`);
+      } else {
+        console.log(`User ${userId} is offline, notification will be seen on next login`);
+      }
+    }
+    
+    return formattedNotification;
+  } catch (error) {
+    console.error("Error creating notification:", error);
     throw error;
   }
 }

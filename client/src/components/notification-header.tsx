@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Bell, AlertCircle, Image as ImageIcon, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Bell, AlertCircle, Image as ImageIcon, X, Wifi, WifiOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { type User, type Notification } from "@shared/schema";
+import { useNotificationSocket } from "./notification-socket-provider";
 
 export function NotificationHeader() {
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
@@ -18,6 +19,7 @@ export function NotificationHeader() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { isConnected } = useNotificationSocket();
 
   // Query notifications from the API
   const { data: notifications = [], refetch: refetchNotifications } = useQuery<Notification[]>({
@@ -216,6 +218,17 @@ export function NotificationHeader() {
                       {unreadCount}
                     </motion.span>
                   )}
+                  {/* Real-time connection indicator */}
+                  <motion.span 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border border-white dark:border-gray-800"
+                    title={isConnected ? "Real-time notifications connected" : "Real-time notifications offline"}
+                    style={{ 
+                      backgroundColor: isConnected ? '#10b981' : '#6b7280',
+                    }}
+                  />
                 </motion.button>
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0 bg-white dark:bg-gray-900 border-0 shadow-xl rounded-xl">
@@ -265,6 +278,21 @@ export function NotificationHeader() {
                     </div>
                   )}
                 </AnimatePresence>
+                
+                {/* Connection status footer */}
+                <div className="p-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center">
+                    <span className={`inline-block h-2 w-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                    {isConnected ? 'Real-time notifications active' : 'Real-time notifications offline'}
+                  </div>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="text-gray-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+                    title="Refresh connection"
+                  >
+                    {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+                  </button>
+                </div>
               </PopoverContent>
             </Popover>
 
