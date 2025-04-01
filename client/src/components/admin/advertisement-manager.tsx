@@ -198,6 +198,13 @@ export const AdvertisementManager: React.FC = () => {
       data.mediaType = 'video';
     }
     
+    // For video advertisements, if no image URL is provided, use an empty string
+    // The schema will handle converting empty strings to a placeholder value
+    if (data.mediaType === 'video' && !data.imageUrl) {
+      console.log('Video advertisement with no image - providing empty string for imageUrl');
+      data.imageUrl = '';
+    }
+    
     // Log the data being submitted to help with debugging
     console.log('Submitting form data:', {
       ...data,
