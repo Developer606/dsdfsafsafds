@@ -211,29 +211,18 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       console.log('Video failed to load, using fallback image if available');
     }
     
-    // For security reasons, browsers block fetch requests to different origins
-  // Only try to fetch if it's a same-origin URL, not for external resources like YouTube
-  if (e.currentTarget.src.startsWith(window.location.origin) || e.currentTarget.src.startsWith('/')) {
+    // Try to fetch the resource to see what error we get
     fetch(e.currentTarget.src)
       .then(response => {
         if (!response.ok) {
           console.error(`Media fetch failed with status: ${response.status}`);
         } else {
-          console.log(`Media fetch succeeded but still can't display, might be a format issue`);
+          console.log(`Media fetch succeeded but still can't display, might be CORS issue`);
         }
       })
       .catch(err => {
         console.error(`Network error fetching media: ${err.message}`);
       });
-  } else {
-    // For external resources, we can't fetch directly due to CORS
-    console.log(`Can't verify external media at ${e.currentTarget.src} due to CORS restrictions`);
-    
-    // If this is a YouTube URL that failed to load, suggest using the embed format
-    if (e.currentTarget.src.includes('youtube.com') || e.currentTarget.src.includes('youtu.be')) {
-      console.log('This appears to be a YouTube URL. Try using the YouTube embed format instead.');
-    }
-  }
   };
   
   // Initialize video playback and handle errors
