@@ -27,6 +27,7 @@ import {
 import { generateCharacterResponse } from "./openai";
 import encryptionRoutes from "./encryption-routes";
 import advertisementRoutes from "./routes/advertisement-routes";
+import uploadRoutes from "./routes/upload";
 import { errorHandler } from "./middleware/error-handler";
 import {
   insertMessageSchema,
@@ -3180,6 +3181,10 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Register advertisement routes
   app.use("/api/advertisements", advertisementRoutes);
   app.use("/api/advertisements", errorHandler);
+  
+  // Register routes for file uploads
+  app.use("/api/upload", uploadRoutes);
+  app.use("/api/upload", errorHandler);
 
   return httpServer;
 }

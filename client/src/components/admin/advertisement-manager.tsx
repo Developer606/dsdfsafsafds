@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import type { Advertisement } from '@shared/schema';
+import { FileUpload } from '@/components/ui/file-upload';
 
 // Extend the schema for form validation
 const formSchema = insertAdvertisementSchema.extend({
@@ -467,31 +468,49 @@ export const AdvertisementManager: React.FC = () => {
                   
                   {formValues.mediaType === 'image' ? (
                     <div>
-                      <label className="block text-sm font-medium mb-1">Image URL</label>
-                      <input
-                        {...register('imageUrl')}
-                        className="w-full px-3 py-2 border rounded-md"
-                        placeholder="https://example.com/image.jpg"
+                      <FileUpload
+                        onFileSelect={(file) => console.log('Image file selected:', file)}
+                        onUploadComplete={(url) => {
+                          // Update the form with the new image URL
+                          const imageField = register('imageUrl');
+                          imageField.onChange({ target: { value: url, name: 'imageUrl' } });
+                        }}
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        label="Advertisement Image"
+                        currentUrl={formValues.imageUrl}
+                        type="image"
                       />
                       {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
                     </div>
                   ) : (
                     <div>
-                      <label className="block text-sm font-medium mb-1">Video URL</label>
-                      <input
-                        {...register('videoUrl')}
-                        className="w-full px-3 py-2 border rounded-md"
-                        placeholder="https://example.com/video.mp4"
+                      <FileUpload
+                        onFileSelect={(file) => console.log('Video file selected:', file)}
+                        onUploadComplete={(url) => {
+                          // Update the form with the new video URL
+                          const videoField = register('videoUrl');
+                          videoField.onChange({ target: { value: url, name: 'videoUrl' } });
+                        }}
+                        accept="video/mp4,video/webm,video/ogg"
+                        label="Advertisement Video"
+                        currentUrl={formValues.videoUrl}
+                        type="video"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Make sure to also provide an image URL as a poster/thumbnail.
+                        Please also upload a thumbnail image for the video.
                       </p>
                       <div className="mt-3">
-                        <label className="block text-sm font-medium mb-1">Thumbnail Image URL</label>
-                        <input
-                          {...register('imageUrl')}
-                          className="w-full px-3 py-2 border rounded-md"
-                          placeholder="https://example.com/thumbnail.jpg"
+                        <FileUpload
+                          onFileSelect={(file) => console.log('Thumbnail file selected:', file)}
+                          onUploadComplete={(url) => {
+                            // Update the form with the new thumbnail URL
+                            const imageField = register('imageUrl');
+                            imageField.onChange({ target: { value: url, name: 'imageUrl' } });
+                          }}
+                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          label="Video Thumbnail Image"
+                          currentUrl={formValues.imageUrl}
+                          type="image"
                         />
                         {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
                       </div>
