@@ -663,52 +663,9 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Enhanced Featured Section for Mobile UI */}
+                {/* Featured Section for Mobile UI */}
                 <div className="px-4 pt-5">
-                  <div className="flex justify-between items-center mb-3">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-pink-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      Featured
-                    </h2>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="text-xs px-3 py-1 rounded-full bg-pink-500/10 text-pink-500 font-medium"
-                    >
-                      View All
-                    </motion.button>
-                  </div>
-                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden shadow-md" />
-                  
-                  {/* Quick tips carousel for mobile */}
-                  <div className="mt-4 mb-6">
-                    <div className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-xl p-4 shadow-sm border border-pink-100 dark:border-pink-800/30">
-                      <h3 className="font-bold text-pink-700 dark:text-pink-400 mb-2 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                        </svg>
-                        Pro Tips
-                      </h3>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">
-                        Upgrade to premium for unlimited characters and ad-free experience! Use tags to find characters that match your interests.
-                      </p>
-                      <div className="flex mt-3">
-                        <motion.button
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.97 }}
-                          className="text-xs bg-pink-500 text-white font-medium py-1.5 px-3 rounded-full flex items-center"
-                          onClick={() => setShowSubscription(true)}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
-                          </svg>
-                          Upgrade
-                        </motion.button>
-                      </div>
-                    </div>
-                  </div>
+                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
                 </div>
 
                 {/* Top Rated section - Material Design Carousel */}
@@ -1294,108 +1251,68 @@ export default function Home() {
             )}
           </div>
 
-          {/* Enhanced Bottom navigation bar with animations and indicators */}
-          <div className="mt-auto bg-gradient-to-b from-gray-800/0 via-gray-900/80 to-gray-900 backdrop-blur-md py-3 shadow-lg z-10 fixed bottom-0 left-0 right-0 border-t border-gray-800/30">
+          {/* Bottom navigation bar - Modern Design */}
+          <div className="mt-auto bg-white dark:bg-gray-800 py-2 shadow-lg z-10 border-t border-gray-100 dark:border-gray-700">
             <div className="flex justify-around items-center px-1">
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                initial={false}
-                animate={activeTab === "home" ? 
-                  { y: -5, transition: { type: "spring", stiffness: 500 } } : 
-                  { y: 0 }
-                }
-                className={`flex flex-col items-center py-1.5 px-3 rounded-xl relative ${
+                className={`flex flex-col items-center py-2 px-3 rounded-xl ${
                   activeTab === "home"
-                    ? "text-pink-400"
-                    : "text-gray-400"
+                    ? "text-pink-500 dark:text-pink-400"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
                 onClick={() => setActiveTab("home")}
               >
-                {activeTab === "home" && (
-                  <motion.div
-                    className="absolute -top-1 w-1 h-1 bg-pink-400 rounded-full"
-                    layoutId="navIndicator"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-                <HomeIcon className="h-5 w-5" />
-                <span className="text-[10px] mt-1 font-medium">Home</span>
+                <HomeIcon className="h-6 w-6" />
+                <span className="text-xs mt-1 font-medium">Home</span>
               </motion.button>
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                initial={false}
-                animate={activeTab === "search" ? 
-                  { y: -5, transition: { type: "spring", stiffness: 500 } } : 
-                  { y: 0 }
-                }
-                className={`flex flex-col items-center py-1.5 px-3 rounded-xl relative ${
+                className={`flex flex-col items-center py-2 px-3 rounded-xl ${
                   activeTab === "search"
-                    ? "text-pink-400"
-                    : "text-gray-400"
+                    ? "text-pink-500 dark:text-pink-400"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
                 onClick={() => setActiveTab("search")}
               >
-                {activeTab === "search" && (
-                  <motion.div
-                    className="absolute -top-1 w-1 h-1 bg-pink-400 rounded-full"
-                    layoutId="navIndicator"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-                <Search className="h-5 w-5" />
-                <span className="text-[10px] mt-1 font-medium">Explore</span>
+                <Search className="h-6 w-6" />
+                <span className="text-xs mt-1 font-medium">Explore</span>
               </motion.button>
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                whileHover={{ scale: 1.1 }}
-                className="flex flex-col items-center py-1.5 px-3 relative"
+                className="flex flex-col items-center py-2 px-3 relative text-white"
                 onClick={handleCreateClick}
               >
-                <div className="absolute -top-7 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 p-3.5 shadow-lg border-2 border-gray-900">
-                  <Plus className="h-5 w-5 text-white" />
+                <div className="absolute -top-6 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 p-3.5 shadow-lg">
+                  <Plus className="h-6 w-6" />
                 </div>
-                <span className="text-[10px] mt-7 font-medium text-gray-400">
+                <span className="text-xs mt-7 font-medium text-gray-400 dark:text-gray-500">
                   Create
                 </span>
               </motion.button>
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                className="flex flex-col items-center py-1.5 px-3 rounded-xl text-gray-400 relative"
+                className="flex flex-col items-center py-2 px-3 rounded-xl text-gray-400 dark:text-gray-500"
                 onClick={() => setLocation("/conversations")}
               >
-                <div className="relative">
-                  <MessageSquare className="h-5 w-5" />
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-pink-500 rounded-full" />
-                </div>
-                <span className="text-[10px] mt-1 font-medium">Messages</span>
+                <MessageSquare className="h-6 w-6" />
+                <span className="text-xs mt-1 font-medium">Messages</span>
               </motion.button>
 
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                initial={false}
-                animate={activeTab === "profile" ? 
-                  { y: -5, transition: { type: "spring", stiffness: 500 } } : 
-                  { y: 0 }
-                }
-                className={`flex flex-col items-center py-1.5 px-3 rounded-xl relative ${
+                className={`flex flex-col items-center py-2 px-3 rounded-xl ${
                   activeTab === "profile"
-                    ? "text-pink-400"
-                    : "text-gray-400"
+                    ? "text-pink-500 dark:text-pink-400"
+                    : "text-gray-400 dark:text-gray-500"
                 }`}
                 onClick={() => setActiveTab("profile")}
               >
-                {activeTab === "profile" && (
-                  <motion.div
-                    className="absolute -top-1 w-1 h-1 bg-pink-400 rounded-full"
-                    layoutId="navIndicator"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
-                <UserIcon className="h-5 w-5" />
-                <span className="text-[10px] mt-1 font-medium">Profile</span>
+                <UserIcon className="h-6 w-6" />
+                <span className="text-xs mt-1 font-medium">Profile</span>
               </motion.button>
             </div>
           </div>
@@ -1537,10 +1454,10 @@ export default function Home() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Main Content Area - Enhanced with two columns and extra features */}
+          {/* Main Content Area - Redesigned with two columns */}
           <div className="flex-1 p-8">
             <div className="flex flex-row max-w-6xl mx-auto gap-8">
-              {/* Left Column - Enhanced Main Content */}
+              {/* Left Column - Main Content */}
               <div className="flex-1">
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
@@ -1554,155 +1471,16 @@ export default function Home() {
                     Chat with your favorite characters and bring your anime world to
                     life
                   </p>
-                  
-                  {/* Quick Start Guide */}
-                  <motion.div 
-                    className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 p-6 rounded-xl mb-6 shadow-sm border border-amber-100 dark:border-amber-800/30"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    <h2 className="text-xl font-bold mb-3 text-amber-700 dark:text-amber-400 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
-                      </svg>
-                      Quick Start Guide
-                    </h2>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                      <div className="flex flex-col items-center text-center p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                        <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-3">
-                          <span className="text-amber-600 dark:text-amber-400 text-xl font-bold">1</span>
-                        </div>
-                        <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-1">Choose a Character</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Select from our collection of anime characters</p>
-                      </div>
-                      
-                      <div className="flex flex-col items-center text-center p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                        <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-3">
-                          <span className="text-amber-600 dark:text-amber-400 text-xl font-bold">2</span>
-                        </div>
-                        <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-1">Start Chatting</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Engage in AI-powered conversations</p>
-                      </div>
-                      
-                      <div className="flex flex-col items-center text-center p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                        <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-3">
-                          <span className="text-amber-600 dark:text-amber-400 text-xl font-bold">3</span>
-                        </div>
-                        <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-1">Create Your Own</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Build custom anime characters</p>
-                      </div>
-                    </div>
-                    
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="mt-5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-medium py-2 px-5 rounded-full shadow-md w-full md:w-auto flex items-center justify-center"
-                      onClick={() => window.scrollTo({ top: document.getElementById('characters-list')?.offsetTop, behavior: 'smooth' })}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clipRule="evenodd" />
-                      </svg>
-                      Browse Characters
-                    </motion.button>
-                  </motion.div>
-                  
-                  {/* Popular Tags Cloud */}
-                  <motion.div 
-                    className="mb-6"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <h2 className="text-xl font-bold mb-3 text-gray-800 dark:text-gray-200 flex items-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                      </svg>
-                      Popular Tags
-                    </h2>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {['Action', 'Romance', 'Fantasy', 'Adventure', 'Isekai', 'Shonen', 'Magic', 'Ninja', 'School', 'Mecha'].map((tag) => (
-                        <motion.span 
-                          key={tag}
-                          whileHover={{ scale: 1.05, backgroundColor: '#fdba74' }}
-                          whileTap={{ scale: 0.98 }}
-                          className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full text-sm font-medium cursor-pointer"
-                        >
-                          {tag}
-                        </motion.span>
-                      ))}
-                    </div>
-                  </motion.div>
                 </motion.div>
               </div>
               
-              {/* Right Column - Featured Content with enhancements */}
+              {/* Right Column - Featured Content */}
               <div className="w-96">
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                 >
-                  <div className="sticky top-24">
-                    <div className="mb-4 flex justify-between items-center">
-                      <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                        Featured
-                      </h2>
-                      <a href="#" className="text-sm text-amber-600 dark:text-amber-400 hover:underline">All features</a>
-                    </div>
-                  
-                    <FeaturedSection className="mb-6 rounded-xl overflow-hidden shadow-lg" />
-                    
-                    {/* Subscription Promo Card */}
-                    <motion.div 
-                      className="mt-6 bg-gradient-to-br from-purple-500 to-pink-500 p-5 rounded-xl text-white shadow-xl overflow-hidden relative"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 }}
-                      whileHover={{ y: -5, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
-                    >
-                      <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 blur-2xl"></div>
-                      <h3 className="font-bold text-xl mb-2">Upgrade to Premium</h3>
-                      <p className="text-purple-100 text-sm mb-4">Unlock unlimited characters, conversations, and exclusive features!</p>
-                      
-                      <ul className="space-y-2 mb-5 text-sm">
-                        <li className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-purple-200" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          Create up to 45 custom characters
-                        </li>
-                        <li className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-purple-200" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          Access to private conversations
-                        </li>
-                        <li className="flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-purple-200" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          No ads or limitations
-                        </li>
-                      </ul>
-                      
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className="w-full py-2 bg-white text-purple-600 font-medium rounded-lg flex items-center justify-center shadow-md"
-                        onClick={() => setShowSubscription(true)}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
-                        </svg>
-                        Get Premium Now
-                      </motion.button>
-                    </motion.div>
-                  </div>
+                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
                 </motion.div>
               </div>
             </div>
