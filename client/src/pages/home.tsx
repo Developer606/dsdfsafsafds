@@ -1318,10 +1318,15 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        // Desktop UI - Enhanced with User-Friendly Features
-        <div className="flex h-screen">
+        // Desktop UI (unchanged)
+        <div className="flex h-[calc(100vh-64px)]">
           {/* Left Sidebar */}
-          <div className="w-80 border-r border-yellow-200 dark:border-amber-800 overflow-y-auto p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="w-80 border-r border-yellow-200 dark:border-amber-800 overflow-y-auto p-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm"
+          >
             {/* User Profile and Settings Section */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-yellow-200 dark:border-amber-800">
               <div className="flex items-center gap-2">
@@ -1343,144 +1348,6 @@ export default function Home() {
                       size="icon"
                       className="rounded-full h-8 w-8 bg-yellow-500/10 hover:bg-yellow-500/20 dark:bg-amber-500/10 dark:hover:bg-amber-500/20"
                     >
-                      <UserIcon className="h-4 w-4 text-yellow-600 dark:text-amber-500" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled>
-                      Email: {user?.email}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      Username: {user?.username}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      Status: {user?.subscriptionStatus}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      className="text-red-600"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <Button
-                onClick={handleCreateClick}
-                className="w-full bg-gradient-to-br from-yellow-400/90 to-amber-500/90 hover:from-yellow-400 hover:to-amber-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-              >
-                <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                Create Character
-              </Button>
-            </div>
-
-            <div className="mb-4">
-              <Link href="/search">
-                <Button className="w-full bg-gradient-to-br from-purple-400/90 to-pink-500/90 hover:from-purple-400 hover:to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Chat
-                </Button>
-              </Link>
-            </div>
-
-            <div className="mb-4">
-              <Link href="/user-messages/search">
-                <Button className="w-full bg-gradient-to-br from-blue-400/90 to-indigo-500/90 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
-                  <Users className="h-5 w-5 mr-2" />
-                  Messages
-                </Button>
-              </Link>
-            </div>
-
-            {sortedCharacters?.map((character) => (
-              <motion.div
-                key={character.id}
-                variants={item}
-                initial="hidden"
-                animate="show"
-                className="relative group mb-3"
-              >
-                <Link href={`/chat/${character.id}`}>
-                  <div className="transform transition-all duration-300">
-                    <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-md hover:shadow-lg border border-yellow-500/20 dark:border-amber-500/20 hover:border-yellow-500/40 dark:hover:border-amber-500/40 p-3">
-                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={character.avatar}
-                          alt={character.name}
-                          className="w-12 h-12 rounded-full object-cover"
-                        />
-                        <div>
-                          <h3 className="font-medium text-sm">
-                            {character.name}
-                          </h3>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
-                            {character.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-                {character.id.startsWith("custom_") && (
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute top-2 right-2 p-1.5 bg-red-500/90 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDeleteCharacter(character.id);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </motion.button>
-                )}
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Main Content Area - Redesigned with two columns */}
-          <div className="flex-1 p-8">
-            <div className="flex flex-row max-w-6xl mx-auto gap-8">
-              {/* Left Column - Main Content */}
-              <div className="flex-1">
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-left"
-                >
-                  <h1 className="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
-                    Immerse in Anime & Manga
-                  </h1>
-                  <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
-                    Chat with your favorite characters and bring your anime world to
-                    life
-                  </p>
-                </motion.div>
-              </div>
-              
-              {/* Right Column - Featured Content */}
-              <div className="w-96">
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
-                </motion.div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
                       <UserIcon className="h-4 w-4 text-yellow-600 dark:text-amber-500" />
                     </Button>
                   </DropdownMenuTrigger>
