@@ -113,6 +113,15 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
     return url;
   };
   
+  // Handle image/video loading errors
+  const handleMediaError = (e: React.SyntheticEvent<HTMLImageElement | HTMLVideoElement, Event>) => {
+    console.error(`Error loading media from URL: ${e.currentTarget.src}`);
+    // If using a video element, try to load the fallback image instead
+    if (mediaType === 'video' && e.currentTarget instanceof HTMLVideoElement) {
+      console.log('Video failed to load, using fallback image if available');
+    }
+  };
+  
   // Video media controls
   const togglePlay = () => {
     if (videoRef.current) {
@@ -156,6 +165,8 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
                 playsInline
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
+                onError={handleMediaError}
+                crossOrigin="anonymous"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
               
@@ -180,6 +191,8 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
               src={formatUrl(imageUrl)}
               alt={title}
               className="w-full h-full object-cover"
+              onError={handleMediaError}
+              crossOrigin="anonymous"
             />
           )}
           {/* Always show gradient overlay for better text visibility */}

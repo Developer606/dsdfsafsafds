@@ -34,6 +34,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     
     // If it's an uploaded file URL (starts with '/uploads'), make sure it's correctly formed
     if (url.startsWith('/uploads')) {
+      console.log('Using uploaded file URL:', url);
+      return url;
+    }
+    
+    // If it contains base64 data
+    if (url.startsWith('data:')) {
       return url;
     }
     
@@ -44,6 +50,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   // Update preview URL when currentUrl changes (from parent component)
   useEffect(() => {
     if (currentUrl) {
+      console.log('Current URL updated to:', currentUrl);
       setPreviewUrl(formatUrl(currentUrl));
     }
   }, [currentUrl]);
@@ -81,12 +88,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
+        // Important: Don't set Content-Type header when using FormData
+        // The browser will set the appropriate multipart/form-data boundary
       });
 
       console.log('Upload response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorText = '';
+        try {
+          const errorData = await response.json();
+          errorText = errorData.error || 'Unknown error';
+        } catch (e) {
+          errorText = await response.text();
+        }
+        
         console.error('Upload failed with response:', errorText);
         throw new Error(`Failed to upload file: ${errorText}`);
       }
@@ -94,7 +110,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const data = await response.json();
       console.log('Upload successful, received URL:', data.url);
       
-      onUploadComplete(data.url);
+      // Make sure the URL is properly formatted before setting it
+      if (data.url) {
+        // Use the full URL returned from the server without any manipulation
+        onUploadComplete(data.url);
+      } else {
+        throw new Error('Server did not return a valid URL');
+      }
     } catch (err) {
       setError('Error uploading file. Please try again.');
       console.error('Upload error:', err);
@@ -114,6 +136,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     }
     onUploadComplete('');
   };
+  
+  // Function to show error message and log details about URL issues
+  const handleMediaError = (e: React.SyntheticEvent<HTMLImageElement | HTMLVideoElement, Event>) => {
+    console.error('Media failed to load:', e.currentTarget.src);
+    setError(`Failed to load media. URL: ${e.currentTarget.src}`);
+    // Try to fetch the URL to see what response we get
+    fetch(e.currentTarget.src)
+      .then(response => {
+        console.log('Media URL response status:', response.status);
+        if (!response.ok) {
+          setError(`Media fetch failed with status: ${response.status}`);
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching media:', err);
+        setError(`Network error fetching media: ${err.message}`);
+      });
+  };
 
   return (
     <div className="space-y-2">
@@ -126,12 +166,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               src={formatUrl(previewUrl) || ''} 
               alt="Preview" 
               className="w-full h-40 object-cover"
+              onError={handleMediaError}
+              onLoad={() => setError(null)}
             />
           ) : (
             <video 
               src={formatUrl(previewUrl) || ''} 
               className="w-full h-40 object-cover"
               controls
+              onError={handleMediaError}
+              onLoadedData={() => setError(null)}
             />
           )}
           <button
@@ -142,6 +186,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           >
             <X size={16} />
           </button>
+          
+          {/* Display URL for debugging */}
+          {previewUrl && (
+            <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-xs text-white p-1 truncate">
+              {formatUrl(previewUrl)}
+            </div>
+          )}
         </div>
       ) : (
         <div 
