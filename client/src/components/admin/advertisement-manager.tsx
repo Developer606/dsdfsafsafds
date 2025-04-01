@@ -22,18 +22,18 @@ interface FormDataInterface {
   title: string;
   description: string;
   imageUrl: string;
-  videoUrl?: string;
+  videoUrl?: string | null;
   mediaType: 'image' | 'video';
-  buttonText: string;
+  buttonText: string | null;
   buttonLink: string;
-  buttonStyle: string;
-  backgroundColor: string;
-  textColor: string;
-  position: number;
-  animationType: string;
+  buttonStyle: string | null;
+  backgroundColor: string | null;
+  textColor: string | null;
+  position: number | null;
+  animationType: string | null;
   startDate: string;
   endDate: string;
-  isActive?: boolean;
+  isActive?: boolean | null;
 }
 
 type FormData = FormDataInterface;
@@ -185,6 +185,27 @@ export const AdvertisementManager: React.FC = () => {
   
   // Form submission handler
   const onSubmit = (data: FormData) => {
+    // Ensure we have the correct media type set based on URLs
+    if (data.mediaType === 'video' && !data.videoUrl) {
+      console.warn('Video media type selected but no video URL provided');
+      // If a video URL is missing but image exists, switch to image mode
+      if (data.imageUrl) {
+        data.mediaType = 'image';
+      }
+    } else if (data.mediaType === 'image' && !data.imageUrl && data.videoUrl) {
+      console.warn('Image media type selected but image URL missing and video URL exists');
+      // If image is missing but video exists, switch to video mode
+      data.mediaType = 'video';
+    }
+    
+    // Log the data being submitted to help with debugging
+    console.log('Submitting form data:', {
+      ...data,
+      mediaType: data.mediaType,
+      videoUrl: data.videoUrl,
+      imageUrl: data.imageUrl
+    });
+    
     if (selectedAd) {
       updateMutation.mutate({ ...data, id: selectedAd.id });
     } else {
@@ -195,12 +216,24 @@ export const AdvertisementManager: React.FC = () => {
   // Handle editing an advertisement
   const handleEdit = (ad: Advertisement) => {
     setSelectedAd(ad);
-    reset({
+    
+    // Create a safe copy of the ad to handle null values properly
+    const safeAd = {
       ...ad,
+      videoUrl: ad.videoUrl || '',
+      buttonText: ad.buttonText || 'Learn More',
+      buttonStyle: ad.buttonStyle || 'primary',
+      backgroundColor: ad.backgroundColor || '#8B5CF6',
+      textColor: ad.textColor || '#FFFFFF',
+      animationType: ad.animationType || 'fade',
+      position: ad.position ?? 0,
+      isActive: ad.isActive ?? true,
       mediaType: (ad.mediaType as 'image' | 'video') || 'image',
       startDate: format(new Date(ad.startDate), 'yyyy-MM-dd'),
       endDate: format(new Date(ad.endDate), 'yyyy-MM-dd'),
-    });
+    };
+    
+    reset(safeAd);
     setIsPreviewMode(false);
   };
   
@@ -261,15 +294,35 @@ export const AdvertisementManager: React.FC = () => {
             <div className="aspect-[3/4] rounded-xl overflow-hidden">
               {previewAd.mediaType === 'video' && previewAd.videoUrl ? (
                 <div className="relative w-full h-full">
-                  <video
-                    src={previewAd.videoUrl}
-                    poster={previewAd.imageUrl}
-                    className="w-full h-full object-cover"
-                    muted
-                    loop
-                    autoPlay
-                    playsInline
-                  />
+                  {previewAd.videoUrl.includes('youtube.com') || previewAd.videoUrl.includes('youtu.be') ? (
+                    <iframe
+                      src={previewAd.videoUrl.includes('youtube.com/embed') ? 
+                        previewAd.videoUrl : 
+                        previewAd.videoUrl.includes('youtube.com/shorts/') ?
+                          (() => {
+                            const match = /shorts\/([^?&/]+)/.exec(previewAd.videoUrl);
+                            return match && match[1] ? 
+                              `https://www.youtube.com/embed/${match[1]}?loop=1&controls=1` : 
+                              previewAd.videoUrl;
+                          })() :
+                          previewAd.videoUrl
+                      }
+                      className="w-full h-full object-cover"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title="Embedded video"
+                    />
+                  ) : (
+                    <video
+                      src={previewAd.videoUrl}
+                      poster={previewAd.imageUrl}
+                      className="w-full h-full object-cover"
+                      muted
+                      loop
+                      autoPlay
+                      playsInline
+                    />
+                  )}
                   <div className="absolute bottom-3 right-3 flex space-x-2">
                     <div className="w-8 h-8 flex items-center justify-center bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm">
                       <span className="text-xs">Video</span>
@@ -489,11 +542,11 @@ export const AdvertisementManager: React.FC = () => {
                         onUploadComplete={(url) => {
                           // Update the form with the new image URL
                           const imageField = register('imageUrl');
-                          imageField.onChange({ target: { value: url, name: 'imageUrl' } });
+                          imageField.onChange({ target: { value: url || '', name: 'imageUrl' } });
                         }}
                         accept="image/jpeg,image/png,image/gif,image/webp"
                         label="Advertisement Image"
-                        currentUrl={formValues.imageUrl}
+                        currentUrl={formValues.imageUrl || ''}
                         type="image"
                         uploadType="advertisement"
                       />
@@ -522,11 +575,11 @@ export const AdvertisementManager: React.FC = () => {
                         onUploadComplete={(url) => {
                           // Update the form with the new video URL
                           const videoField = register('videoUrl');
-                          videoField.onChange({ target: { value: url, name: 'videoUrl' } });
+                          videoField.onChange({ target: { value: url || '', name: 'videoUrl' } });
                         }}
                         accept="video/mp4,video/webm,video/ogg"
                         label="Advertisement Video"
-                        currentUrl={formValues.videoUrl}
+                        currentUrl={formValues.videoUrl || ''}
                         type="video"
                         uploadType="advertisement"
                       />
@@ -551,11 +604,11 @@ export const AdvertisementManager: React.FC = () => {
                           onUploadComplete={(url) => {
                             // Update the form with the new thumbnail URL
                             const imageField = register('imageUrl');
-                            imageField.onChange({ target: { value: url, name: 'imageUrl' } });
+                            imageField.onChange({ target: { value: url || '', name: 'imageUrl' } });
                           }}
                           accept="image/jpeg,image/png,image/gif,image/webp"
                           label="Video Thumbnail Image"
-                          currentUrl={formValues.imageUrl}
+                          currentUrl={formValues.imageUrl || ''}
                           type="image"
                           uploadType="advertisement"
                         />
