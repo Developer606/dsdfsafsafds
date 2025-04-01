@@ -8,6 +8,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import type { Advertisement } from '@shared/schema';
 import { FileUpload } from '@/components/ui/file-upload';
+import { PlusCircle, Edit, Trash2, BarChart, Eye, EyeOff, CircleCheck, Folder, Image, Video, Calendar, Layout, Paintbrush, LayoutGrid, Layers, Check, Info, Upload, CalendarDays, Upload as UploadIcon, Link2 } from 'lucide-react';
 
 // Extend the schema for form validation
 const formSchema = insertAdvertisementSchema.extend({
@@ -402,21 +403,28 @@ export const AdvertisementManager: React.FC = () => {
   };
   
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Advertisement Manager</h2>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+        <div className="flex items-center space-x-2">
+          <LayoutGrid className="h-6 w-6 text-purple-500" />
+          <h2 className="text-2xl font-bold">Advertisement Manager</h2>
+        </div>
         <button
           onClick={handleCreateNew}
-          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md"
+          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md flex items-center space-x-2 shadow-sm transition-all hover:shadow"
         >
-          Create New
+          <PlusCircle className="h-5 w-5" />
+          <span>Create New</span>
         </button>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Advertisement list */}
-        <div className="lg:col-span-1 space-y-4">
-          <h3 className="text-xl font-semibold">Advertisements</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Advertisement list panel */}
+        <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-gray-700">
+          <div className="flex items-center space-x-2 mb-4">
+            <Folder className="h-5 w-5 text-blue-500" />
+            <h3 className="text-xl font-semibold">Your Advertisements</h3>
+          </div>
           
           {isLoadingAds ? (
             <div className="animate-pulse space-y-4">
@@ -425,65 +433,104 @@ export const AdvertisementManager: React.FC = () => {
               ))}
             </div>
           ) : advertisements && advertisements.length > 0 ? (
-            <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
+            <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
               {advertisements.map((ad: Advertisement) => (
                 <div
                   key={ad.id}
-                  className={`border rounded-lg p-3 cursor-pointer hover:border-blue-500 transition-colors ${
-                    selectedAd?.id === ad.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''
+                  className={`border rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-all hover:shadow-md ${
+                    selectedAd?.id === ad.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md' : 'bg-white dark:bg-gray-900'
                   }`}
                   onClick={() => handleEdit(ad)}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-medium">{ad.title}</h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{ad.description}</p>
-                      <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <h4 className="font-medium text-base">{ad.title || "Untitled Advertisement"}</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{ad.description || "No description"}</p>
+                      <div className="flex items-center mt-2 text-xs">
                         <span className={`w-2 h-2 rounded-full mr-1 ${
                           new Date() >= new Date(ad.startDate) && new Date() <= new Date(ad.endDate) && ad.isActive
                             ? 'bg-green-500'
                             : 'bg-red-500'
                         }`}></span>
-                        <span>
+                        <span className={`${
+                          new Date() >= new Date(ad.startDate) && new Date() <= new Date(ad.endDate) && ad.isActive
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400'
+                        } font-medium`}>
                           {new Date() >= new Date(ad.startDate) && new Date() <= new Date(ad.endDate) && ad.isActive
                             ? 'Active'
                             : 'Inactive'}
                         </span>
+                        <span className="mx-2 text-gray-400">•</span>
+                        <span className="text-gray-500 dark:text-gray-400">
+                          {ad.mediaType === 'image' ? <Image className="inline-block w-3 h-3 mr-1" /> : <Video className="inline-block w-3 h-3 mr-1" />}
+                          {ad.mediaType}
+                        </span>
                       </div>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      <div>👁️ {ad.impressions || 0}</div>
-                      <div>👆 {ad.clicks || 0}</div>
+                    <div className="text-xs bg-gray-100 dark:bg-gray-800 rounded-lg p-2">
+                      <div className="flex items-center mb-1 text-gray-700 dark:text-gray-300">
+                        <Eye className="w-3 h-3 mr-1" /> 
+                        <span>{ad.impressions || 0} views</span>
+                      </div>
+                      <div className="flex items-center text-gray-700 dark:text-gray-300">
+                        <BarChart className="w-3 h-3 mr-1" /> 
+                        <span>{ad.clicks || 0} clicks</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400">No advertisements found. Create one to get started.</p>
+            <div className="flex flex-col items-center justify-center py-10 text-center border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+              <Layout className="h-12 w-12 text-gray-400 mb-3" />
+              <p className="text-gray-500 dark:text-gray-400 mb-2">No advertisements found</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm">Create your first advertisement to get started</p>
+            </div>
           )}
         </div>
         
-        {/* Form or preview */}
-        <div className="lg:col-span-2">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">
-              {selectedAd ? `Edit: ${selectedAd.title}` : 'Create New Advertisement'}
-            </h3>
+        {/* Form or preview panel */}
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-5 border border-gray-100 dark:border-gray-700">
+          <div className="flex justify-between items-center mb-4 pb-3 border-b dark:border-gray-700">
+            <div className="flex items-center space-x-2">
+              {selectedAd ? (
+                <Edit className="h-5 w-5 text-amber-500" />
+              ) : (
+                <PlusCircle className="h-5 w-5 text-green-500" />
+              )}
+              <h3 className="text-xl font-semibold">
+                {selectedAd ? `Edit: ${selectedAd.title || "Untitled Advertisement"}` : 'Create New Advertisement'}
+              </h3>
+            </div>
             <div className="flex space-x-2">
               {selectedAd && (
                 <button
                   onClick={() => handleDelete(selectedAd.id)}
-                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md"
+                  className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md flex items-center space-x-1 transition-all"
+                  title="Delete advertisement"
                 >
-                  Delete
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete</span>
                 </button>
               )}
               <button
                 onClick={() => setIsPreviewMode(!isPreviewMode)}
-                className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+                className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md flex items-center space-x-1 transition-all"
+                title={isPreviewMode ? "Switch to edit mode" : "Preview advertisement"}
               >
-                {isPreviewMode ? 'Edit' : 'Preview'}
+                {isPreviewMode ? (
+                  <>
+                    <Edit className="h-4 w-4" />
+                    <span>Edit</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    <span>Preview</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -494,261 +541,478 @@ export const AdvertisementManager: React.FC = () => {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-4">
-                  {/* Content fields */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Title</label>
-                    <input
-                      {...register('title')}
-                      className="w-full px-3 py-2 border rounded-md"
-                      placeholder="Advertisement title"
-                    />
-                    {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Description</label>
-                    <textarea
-                      {...register('description')}
-                      className="w-full px-3 py-2 border rounded-md h-24 resize-none"
-                      placeholder="Advertisement description"
-                    />
-                    {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Media Type</label>
-                    <select
-                      {...register('mediaType')}
-                      className="w-full px-3 py-2 border rounded-md"
-                    >
-                      <option value="image">Image</option>
-                      <option value="video">Video</option>
-                    </select>
-                  </div>
-                  
-                  {formValues.mediaType === 'image' ? (
-                    <div>
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">Image URL (External)</label>
-                        <input
-                          {...register('imageUrl')}
-                          className="w-full px-3 py-2 border rounded-md"
-                          placeholder="https://example.com/image.jpg"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Enter an external URL or upload an image below
-                        </p>
-                      </div>
-                      
-                      <div className="mb-2">
-                        <p className="text-sm font-medium mb-1">OR Upload Image</p>
-                      </div>
-                      
-                      <FileUpload
-                        onFileSelect={(file) => console.log('Image file selected:', file)}
-                        onUploadComplete={(url) => {
-                          // Update the form with the new image URL
-                          const imageField = register('imageUrl');
-                          imageField.onChange({ target: { value: url || '', name: 'imageUrl' } });
-                        }}
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        label="Advertisement Image"
-                        currentUrl={formValues.imageUrl || ''}
-                        type="image"
-                        uploadType="advertisement"
-                      />
-                      {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
+                  {/* Content fields section */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center space-x-2 mb-3 text-blue-600 dark:text-blue-400 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      <Layers className="h-4 w-4" />
+                      <h4 className="font-medium">Content Information</h4>
                     </div>
-                  ) : (
-                    <div>
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium mb-1">Video URL (External)</label>
+                  
+                    <div className="mb-4">
+                      <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                        <span className="mr-1">Title</span>
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
                         <input
-                          {...register('videoUrl')}
-                          className="w-full px-3 py-2 border rounded-md"
-                          placeholder="https://example.com/video.mp4"
+                          {...register('title')}
+                          className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          placeholder="Enter advertisement title"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Enter an external URL or upload a video below
-                        </p>
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                          <Edit className="h-4 w-4" />
+                        </div>
                       </div>
-                      
-                      <div className="mb-2">
-                        <p className="text-sm font-medium mb-1">OR Upload Video</p>
-                      </div>
-                      
-                      <FileUpload
-                        onFileSelect={(file) => console.log('Video file selected:', file)}
-                        onUploadComplete={(url) => {
-                          // Update the form with the new video URL
-                          const videoField = register('videoUrl');
-                          videoField.onChange({ target: { value: url || '', name: 'videoUrl' } });
-                        }}
-                        accept="video/mp4,video/webm,video/ogg"
-                        label="Advertisement Video"
-                        currentUrl={formValues.videoUrl || ''}
-                        type="video"
-                        uploadType="advertisement"
-                      />
-                      
-                      <div className="mt-5 border-t pt-5">
-                        <label className="block text-sm font-medium mb-1">Thumbnail Image URL (External)</label>
-                        <input
-                          {...register('imageUrl')}
-                          className="w-full px-3 py-2 border rounded-md"
-                          placeholder="https://example.com/thumbnail.jpg"
+                      {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                        <span className="mr-1">Description</span>
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <textarea
+                          {...register('description')}
+                          className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 h-24 resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          placeholder="Enter advertisement description"
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Enter an external URL or upload a thumbnail below
-                        </p>
+                        <div className="absolute left-3 top-3 text-gray-500">
+                          <Layout className="h-4 w-4" />
+                        </div>
+                      </div>
+                      {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
+                    </div>
+                    
+                    <div className="mb-2">
+                      <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                        <span className="mr-1">Media Type</span>
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex space-x-2">
+                        <label className={`flex items-center p-3 border rounded-md cursor-pointer transition-all ${
+                          formValues.mediaType === 'image' 
+                            ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800' 
+                            : 'bg-white border-gray-300 dark:bg-gray-800 dark:border-gray-700'
+                        } flex-1`}>
+                          <input
+                            type="radio"
+                            value="image"
+                            {...register('mediaType')}
+                            className="sr-only"
+                          />
+                          <Image className={`h-4 w-4 mr-2 ${formValues.mediaType === 'image' ? 'text-blue-500' : 'text-gray-500'}`} />
+                          <span className={formValues.mediaType === 'image' ? 'font-medium text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}>Image</span>
+                          {formValues.mediaType === 'image' && <Check className="h-4 w-4 text-blue-500 ml-auto" />}
+                        </label>
                         
-                        <div className="mb-2 mt-4">
-                          <p className="text-sm font-medium mb-1">OR Upload Thumbnail</p>
+                        <label className={`flex items-center p-3 border rounded-md cursor-pointer transition-all ${
+                          formValues.mediaType === 'video' 
+                            ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800' 
+                            : 'bg-white border-gray-300 dark:bg-gray-800 dark:border-gray-700'
+                        } flex-1`}>
+                          <input
+                            type="radio"
+                            value="video"
+                            {...register('mediaType')}
+                            className="sr-only"
+                          />
+                          <Video className={`h-4 w-4 mr-2 ${formValues.mediaType === 'video' ? 'text-blue-500' : 'text-gray-500'}`} />
+                          <span className={formValues.mediaType === 'video' ? 'font-medium text-blue-700 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}>Video</span>
+                          {formValues.mediaType === 'video' && <Check className="h-4 w-4 text-blue-500 ml-auto" />}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Media upload section */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center space-x-2 mb-3 text-purple-600 dark:text-purple-400 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      {formValues.mediaType === 'image' ? (
+                        <Image className="h-4 w-4" />
+                      ) : (
+                        <Video className="h-4 w-4" />
+                      )}
+                      <h4 className="font-medium">{formValues.mediaType === 'image' ? 'Image Upload' : 'Video Upload'}</h4>
+                    </div>
+                  
+                    {formValues.mediaType === 'image' ? (
+                      <div>
+                        <div className="mb-4">
+                          <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                            <span>Image URL (External)</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              {...register('imageUrl')}
+                              className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                              placeholder="https://example.com/image.jpg"
+                            />
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                              <Image className="h-4 w-4" />
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 flex items-center">
+                            <Info className="h-3 w-3 mr-1" />
+                            Enter an external URL or upload an image below
+                          </p>
+                        </div>
+                        
+                        <div className="mb-2">
+                          <p className="inline-flex items-center text-sm font-medium px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded">
+                            <Upload className="h-3 w-3 mr-1" />
+                            OR Upload Image
+                          </p>
                         </div>
                         
                         <FileUpload
-                          onFileSelect={(file) => console.log('Thumbnail file selected:', file)}
+                          onFileSelect={(file) => console.log('Image file selected:', file)}
                           onUploadComplete={(url) => {
-                            // Update the form with the new thumbnail URL
+                            // Update the form with the new image URL
                             const imageField = register('imageUrl');
                             imageField.onChange({ target: { value: url || '', name: 'imageUrl' } });
                           }}
                           accept="image/jpeg,image/png,image/gif,image/webp"
-                          label="Video Thumbnail Image"
+                          label="Advertisement Image"
                           currentUrl={formValues.imageUrl || ''}
                           type="image"
                           uploadType="advertisement"
                         />
                         {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div>
+                        <div className="mb-4">
+                          <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                            <span>Video URL (External)</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              {...register('videoUrl')}
+                              className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                              placeholder="https://example.com/video.mp4 or YouTube URL"
+                            />
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                              <Video className="h-4 w-4" />
+                            </div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1 flex items-center">
+                            <Info className="h-3 w-3 mr-1" />
+                            YouTube, Vimeo or direct video URL
+                          </p>
+                        </div>
+                        
+                        <div className="mb-2">
+                          <p className="inline-flex items-center text-sm font-medium px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded">
+                            <Upload className="h-3 w-3 mr-1" />
+                            OR Upload Video
+                          </p>
+                        </div>
+                        
+                        <FileUpload
+                          onFileSelect={(file) => console.log('Video file selected:', file)}
+                          onUploadComplete={(url) => {
+                            // Update the form with the new video URL
+                            const videoField = register('videoUrl');
+                            videoField.onChange({ target: { value: url || '', name: 'videoUrl' } });
+                          }}
+                          accept="video/mp4,video/webm,video/ogg"
+                          label="Advertisement Video"
+                          currentUrl={formValues.videoUrl || ''}
+                          type="video"
+                          uploadType="advertisement"
+                        />
+                        
+                        <div className="mt-5 pt-5 border-t border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center space-x-2 mb-3">
+                            <Image className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                            <h4 className="font-medium text-purple-600 dark:text-purple-400">Thumbnail Image</h4>
+                          </div>
+                          
+                          <div className="mb-4">
+                            <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                              <span>Thumbnail URL (External)</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                {...register('imageUrl')}
+                                className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                                placeholder="https://example.com/thumbnail.jpg"
+                              />
+                              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                                <Image className="h-4 w-4" />
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1 flex items-center">
+                              <Info className="h-3 w-3 mr-1" />
+                              Used as poster for video when not playing
+                            </p>
+                          </div>
+                          
+                          <div className="mb-2">
+                            <p className="inline-flex items-center text-sm font-medium px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded">
+                              <Upload className="h-3 w-3 mr-1" />
+                              OR Upload Thumbnail
+                            </p>
+                          </div>
+                          
+                          <FileUpload
+                            onFileSelect={(file) => console.log('Thumbnail file selected:', file)}
+                            onUploadComplete={(url) => {
+                              // Update the form with the new thumbnail URL
+                              const imageField = register('imageUrl');
+                              imageField.onChange({ target: { value: url || '', name: 'imageUrl' } });
+                            }}
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            label="Video Thumbnail Image"
+                            currentUrl={formValues.imageUrl || ''}
+                            type="image"
+                            uploadType="advertisement"
+                          />
+                          {errors.imageUrl && <p className="text-red-500 text-xs mt-1">{errors.imageUrl.message}</p>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Start Date</label>
-                      <input
-                        type="date"
-                        {...register('startDate')}
-                        className="w-full px-3 py-2 border rounded-md"
-                      />
-                      {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message}</p>}
+                  {/* Schedule section */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center space-x-2 mb-3 text-green-600 dark:text-green-400 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      <CalendarDays className="h-4 w-4" />
+                      <h4 className="font-medium">Ad Schedule</h4>
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium mb-1">End Date</label>
-                      <input
-                        type="date"
-                        {...register('endDate')}
-                        className="w-full px-3 py-2 border rounded-md"
-                      />
-                      {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message}</p>}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                          <span>Start Date</span>
+                          <span className="text-red-500 ml-1">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            {...register('startDate')}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                          />
+                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            <Calendar className="h-4 w-4" />
+                          </div>
+                        </div>
+                        {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate.message}</p>}
+                      </div>
+                      
+                      <div>
+                        <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                          <span>End Date</span>
+                          <span className="text-red-500 ml-1">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            {...register('endDate')}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                          />
+                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            <Calendar className="h-4 w-4" />
+                          </div>
+                        </div>
+                        {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate.message}</p>}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 text-xs text-gray-500 bg-green-50 dark:bg-green-900/20 p-2 rounded border border-green-100 dark:border-green-900/30 flex items-start">
+                      <CalendarDays className="h-3 w-3 text-green-500 mt-0.5 mr-1 flex-shrink-0" />
+                      <span>
+                        Advertisement will be active between these dates if toggled on. You can schedule ads in advance.
+                      </span>
                     </div>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
-                  {/* Button and styling fields */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Button Text</label>
-                    <input
-                      {...register('buttonText')}
-                      className="w-full px-3 py-2 border rounded-md"
-                      placeholder="Learn More"
-                    />
-                    {errors.buttonText && <p className="text-red-500 text-xs mt-1">{errors.buttonText.message}</p>}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Button Link</label>
-                    <input
-                      {...register('buttonLink')}
-                      className="w-full px-3 py-2 border rounded-md"
-                      placeholder="https://example.com or /characters/123"
-                    />
-                    {errors.buttonLink && <p className="text-red-500 text-xs mt-1">{errors.buttonLink.message}</p>}
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Button Style</label>
-                    <select
-                      {...register('buttonStyle')}
-                      className="w-full px-3 py-2 border rounded-md"
-                    >
-                      <option value="primary">Primary</option>
-                      <option value="secondary">Secondary</option>
-                      <option value="outline">Outline</option>
-                      <option value="default">Default</option>
-                    </select>
-                    {errors.buttonStyle && <p className="text-red-500 text-xs mt-1">{errors.buttonStyle.message}</p>}
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Background Color</label>
-                      <div className="flex space-x-2">
+                  {/* Button settings section */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center space-x-2 mb-3 text-amber-600 dark:text-amber-400 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      <Link2 className="h-4 w-4" />
+                      <h4 className="font-medium">Button & Link Settings</h4>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                        <span>Button Text</span>
+                      </label>
+                      <div className="relative">
                         <input
-                          type="color"
-                          {...register('backgroundColor')}
-                          className="w-10 h-10 rounded-md cursor-pointer"
+                          {...register('buttonText')}
+                          className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
+                          placeholder="Learn More"
                         />
-                        <input
-                          {...register('backgroundColor')}
-                          className="flex-1 px-3 py-2 border rounded-md"
-                          placeholder="#8B5CF6"
-                        />
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                          <Edit className="h-4 w-4" />
+                        </div>
                       </div>
-                      {errors.backgroundColor && <p className="text-red-500 text-xs mt-1">{errors.backgroundColor.message}</p>}
+                      {errors.buttonText && <p className="text-red-500 text-xs mt-1">{errors.buttonText.message}</p>}
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                        <span>Button Link</span>
+                        <span className="text-red-500 ml-1">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          {...register('buttonLink')}
+                          className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
+                          placeholder="https://example.com or /characters/123"
+                        />
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                          <Link2 className="h-4 w-4" />
+                        </div>
+                      </div>
+                      {errors.buttonLink && <p className="text-red-500 text-xs mt-1">{errors.buttonLink.message}</p>}
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-1">Text Color</label>
-                      <div className="flex space-x-2">
-                        <input
-                          type="color"
-                          {...register('textColor')}
-                          className="w-10 h-10 rounded-md cursor-pointer"
-                        />
-                        <input
-                          {...register('textColor')}
-                          className="flex-1 px-3 py-2 border rounded-md"
-                          placeholder="#FFFFFF"
-                        />
+                      <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                        <span>Button Style</span>
+                      </label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {['primary', 'secondary', 'outline', 'default'].map((style) => (
+                          <label key={style} className={`flex flex-col items-center border p-2 rounded-md cursor-pointer transition-all ${
+                            formValues.buttonStyle === style 
+                              ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/30' 
+                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                          }`}>
+                            <input
+                              type="radio"
+                              value={style}
+                              {...register('buttonStyle')}
+                              className="sr-only"
+                            />
+                            <div className={`h-8 w-full mb-1 rounded flex items-center justify-center ${
+                              style === 'primary' ? 'bg-purple-500 text-white' :
+                              style === 'secondary' ? 'bg-pink-500 text-white' :
+                              style === 'outline' ? 'border border-purple-500 text-purple-500' :
+                              'bg-gray-200 text-gray-700'
+                            }`}>
+                              <span className="text-xs">Button</span>
+                            </div>
+                            <span className="text-xs capitalize">{style}</span>
+                            {formValues.buttonStyle === style && <Check className="h-3 w-3 text-amber-500 mt-1" />}
+                          </label>
+                        ))}
                       </div>
-                      {errors.textColor && <p className="text-red-500 text-xs mt-1">{errors.textColor.message}</p>}
+                      {errors.buttonStyle && <p className="text-red-500 text-xs mt-1">{errors.buttonStyle.message}</p>}
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Animation Type</label>
-                      <select
-                        {...register('animationType')}
-                        className="w-full px-3 py-2 border rounded-md"
-                      >
-                        <option value="fade">Fade</option>
-                        <option value="slide">Slide</option>
-                        <option value="zoom">Zoom</option>
-                      </select>
-                      {errors.animationType && <p className="text-red-500 text-xs mt-1">{errors.animationType.message}</p>}
+                  {/* Styling section */}
+                  <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-lg border border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center space-x-2 mb-3 text-purple-600 dark:text-purple-400 pb-2 border-b border-gray-200 dark:border-gray-700">
+                      <Paintbrush className="h-4 w-4" />
+                      <h4 className="font-medium">Visual Styling</h4>
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Position</label>
-                      <input
-                        type="number"
-                        {...register('position', { valueAsNumber: true })}
-                        className="w-full px-3 py-2 border rounded-md"
-                        placeholder="0"
-                        min="0"
-                      />
-                      {errors.position && <p className="text-red-500 text-xs mt-1">{errors.position.message}</p>}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                          <span>Background Color</span>
+                        </label>
+                        <div className="flex space-x-2">
+                          <input
+                            type="color"
+                            {...register('backgroundColor')}
+                            className="w-10 h-10 rounded-md cursor-pointer border border-gray-300 dark:border-gray-700"
+                          />
+                          <div className="relative flex-1">
+                            <input
+                              {...register('backgroundColor')}
+                              className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                              placeholder="#8B5CF6"
+                            />
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                              <span className="text-xs">#</span>
+                            </div>
+                          </div>
+                        </div>
+                        {errors.backgroundColor && <p className="text-red-500 text-xs mt-1">{errors.backgroundColor.message}</p>}
+                      </div>
+                      
+                      <div>
+                        <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                          <span>Text Color</span>
+                        </label>
+                        <div className="flex space-x-2">
+                          <input
+                            type="color"
+                            {...register('textColor')}
+                            className="w-10 h-10 rounded-md cursor-pointer border border-gray-300 dark:border-gray-700"
+                          />
+                          <div className="relative flex-1">
+                            <input
+                              {...register('textColor')}
+                              className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                              placeholder="#FFFFFF"
+                            />
+                            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                              <span className="text-xs">#</span>
+                            </div>
+                          </div>
+                        </div>
+                        {errors.textColor && <p className="text-red-500 text-xs mt-1">{errors.textColor.message}</p>}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                          <span>Animation Type</span>
+                        </label>
+                        <div className="relative">
+                          <select
+                            {...register('animationType')}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors appearance-none"
+                          >
+                            <option value="fade">Fade</option>
+                            <option value="slide">Slide</option>
+                            <option value="zoom">Zoom</option>
+                          </select>
+                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            <LayoutGrid className="h-4 w-4" />
+                          </div>
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                            <svg className="h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                        {errors.animationType && <p className="text-red-500 text-xs mt-1">{errors.animationType.message}</p>}
+                      </div>
+                      
+                      <div>
+                        <label className="flex items-center text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
+                          <span>Display Position</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            {...register('position', { valueAsNumber: true })}
+                            className="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                            placeholder="0"
+                            min="0"
+                          />
+                          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                            <Layers className="h-4 w-4" />
+                          </div>
+                        </div>
+                        {errors.position && <p className="text-red-500 text-xs mt-1">{errors.position.message}</p>}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
               
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="flex justify-end space-x-3 pt-6 border-t dark:border-gray-700">
                 <button
                   type="button"
                   onClick={() => {
@@ -759,20 +1023,43 @@ export const AdvertisementManager: React.FC = () => {
                       reset(defaultValues);
                     }
                   }}
-                  className="px-4 py-2 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex items-center space-x-2 text-gray-700 dark:text-gray-300"
                 >
-                  Cancel
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  <span>Cancel</span>
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+                  className={`px-5 py-2.5 rounded-md flex items-center space-x-2 transition-all ${
+                    createMutation.isPending || updateMutation.isPending
+                      ? 'bg-gray-400 text-gray-100 cursor-not-allowed'
+                      : selectedAd
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md hover:shadow-lg'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg'
+                  }`}
                   disabled={createMutation.isPending || updateMutation.isPending}
                 >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? 'Saving...'
-                    : selectedAd
-                    ? 'Update'
-                    : 'Create'}
+                  {createMutation.isPending || updateMutation.isPending ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Saving...</span>
+                    </>
+                  ) : selectedAd ? (
+                    <>
+                      <Edit className="h-4 w-4" />
+                      <span>Update Advertisement</span>
+                    </>
+                  ) : (
+                    <>
+                      <PlusCircle className="h-4 w-4" />
+                      <span>Create Advertisement</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
