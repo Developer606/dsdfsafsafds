@@ -76,6 +76,7 @@ router.post('/', (req, res, next) => {
 
     // Generate URL for the uploaded file
     const fileUrl = `/uploads/${req.file.filename}`;
+    console.log(`File uploaded successfully: ${fileUrl}, type: ${req.file.mimetype}`);
     
     return res.status(201).json({
       url: fileUrl,

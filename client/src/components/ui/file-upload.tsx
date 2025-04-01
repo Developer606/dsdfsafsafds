@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, X, FileImage, FileVideo } from 'lucide-react';
 
 interface FileUploadProps {
@@ -22,6 +22,31 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentUrl || null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Format URL for display and functionality
+  const formatUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    
+    // If it's already a full URL, return it as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // If it's an uploaded file URL (starts with '/uploads'), make sure it's correctly formed
+    if (url.startsWith('/uploads')) {
+      return url;
+    }
+    
+    // For any other format, assume it might be a relative path
+    return url;
+  };
+
+  // Update preview URL when currentUrl changes (from parent component)
+  useEffect(() => {
+    if (currentUrl) {
+      setPreviewUrl(formatUrl(currentUrl));
+    }
+  }, [currentUrl]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -98,13 +123,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <div className="relative border rounded-md overflow-hidden">
           {type === 'image' ? (
             <img 
-              src={previewUrl} 
+              src={formatUrl(previewUrl)} 
               alt="Preview" 
               className="w-full h-40 object-cover"
             />
           ) : (
             <video 
-              src={previewUrl} 
+              src={formatUrl(previewUrl)} 
               className="w-full h-40 object-cover"
               controls
             />
