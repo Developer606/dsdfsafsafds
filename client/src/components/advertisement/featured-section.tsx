@@ -79,22 +79,16 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
   const [currentIndex, setCurrentIndex] = useState(0);
   const queryClient = useQueryClient();
 
-  // Fetch active advertisements with increased polling frequency and real-time updates
+  // Fetch active advertisements with increased polling frequency
   const { data: advertisements = [], isLoading: isLoadingAds } = useQuery<Advertisement[]>({
     queryKey: ['/api/advertisements/active'],
     refetchInterval: 3000, // Refetch every 3 seconds
-    staleTime: 1000, // Data becomes stale after 1 second
-    refetchOnWindowFocus: true, // Refresh when window gets focus
-    refetchOnMount: true, // Always refresh when component mounts
-    refetchOnReconnect: true, // Refresh when reconnecting after lost connection
+    staleTime: 2000, // Data becomes stale after 2 seconds
   });
 
-  // Fetch characters with real-time updates
+  // Fetch characters
   const { data: characters = [], isLoading: isLoadingCharacters } = useQuery<any[]>({
     queryKey: ['/api/characters'],
-    refetchInterval: 5000, // Refresh every 5 seconds to check for new characters
-    refetchOnWindowFocus: true, // Refresh when window gets focus
-    refetchOnMount: true, // Always refresh when component mounts
   });
 
   // Sort characters to get featured ones first
@@ -129,16 +123,9 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     }
   }, [predefinedCharacter, featuredItems.length]);
 
-  // Create a key that changes when featured items change to force re-render
-  const [featuredItemsKey, setFeaturedItemsKey] = useState(Date.now());
-  
-  // Force refresh all data
-  const refreshAllData = useCallback(() => {
-    // Invalidate both queries to force a refresh
+  // Force refresh advertisements
+  const refreshAdvertisements = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['/api/advertisements/active'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/characters'] });
-    // Update the key to force re-render
-    setFeaturedItemsKey(Date.now());
   }, [queryClient]);
 
   // Auto-rotate through featured items
@@ -154,24 +141,14 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     }
   }, [featuredItems.length]);
   
-  // Set up an interval to periodically force-refresh all data
+  // Set up an interval to periodically force-refresh advertisements
   useEffect(() => {
     const refreshIntervalId = setInterval(() => {
-      refreshAllData();
-    }, 8000); // Force refresh all data every 8 seconds
-    
-    // Also refresh when this component mounts
-    refreshAllData();
+      refreshAdvertisements();
+    }, 10000); // Force refresh every 10 seconds
     
     return () => clearInterval(refreshIntervalId);
-  }, [refreshAllData]);
-  
-  // Watch for changes in featured items and update the key
-  useEffect(() => {
-    if (advertisements.length > 0 || characters.length > 0) {
-      setFeaturedItemsKey(Date.now());
-    }
-  }, [advertisements, characters]);
+  }, [refreshAdvertisements]);
 
   // Handle manual navigation
   const goToItem = (index: number) => {
@@ -191,20 +168,16 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
   }
 
   return (
-    <div className={`${className} relative mb-8`} key={`featured-section-${featuredItemsKey}`}>
+    <div className={`${className} relative mb-8`}>
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Featured
-          {/* Add a small indicator when content refreshes */}
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-purple-500 ml-1.5 opacity-0 animate-ping" />
-        </h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Featured</h2>
         <div className="flex items-center">
           <a href="#" className="text-sm text-gray-600 dark:text-gray-400 hover:underline mr-4">See all</a>
           {featuredItems.length > 1 && (
             <div className="flex space-x-2">
-              {featuredItems.map((item, index: number) => (
+              {featuredItems.map((_, index: number) => (
                 <button
-                  key={`${item.id}-${index}`}
+                  key={index}
                   onClick={() => goToItem(index)}
                   className={`w-2 h-2 rounded-full transition-all ${
                     currentIndex === index 
@@ -221,7 +194,7 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
       
       <AnimatePresence mode="wait">
         <motion.div
-          key={`${currentIndex}-${featuredItemsKey}`}
+          key={currentIndex}
           initial={{ opacity: 0, x: 20, scale: 0.97 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: -20, scale: 0.97 }}
@@ -234,12 +207,10 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
           {featuredItems[currentIndex] && (
             featuredItems[currentIndex].type === 'advertisement' ? (
               <AdvertisementCard 
-                key={`ad-${featuredItems[currentIndex].id}-${featuredItemsKey}`}
                 advertisement={featuredItems[currentIndex].data} 
               />
             ) : (
               <CharacterCard
-                key={`char-${featuredItems[currentIndex].data.id}-${featuredItemsKey}`}
                 character={featuredItems[currentIndex].data}
               />
             )
