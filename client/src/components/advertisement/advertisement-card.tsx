@@ -34,65 +34,33 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
 
   // Record impression when ad is viewed
   useEffect(() => {
-    // Use a flag to prevent multiple attempts on the same visit
-    let attempted = false;
-    
     const recordImpression = async () => {
-      // Skip if already attempted or no ID available
-      if (attempted || !id) return;
-      
-      attempted = true;
-      
       try {
-        const response = await fetch(`/api/advertisements/${id}/impression`, {
+        await fetch(`/api/advertisements/${id}/impression`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           }
         });
-        
-        // Only log errors when there's an actual problem (not database read-only issues)
-        if (!response.ok) {
-          // Don't log if it's a server error as this is likely due to the read-only database in dev mode
-          if (response.status !== 500) {
-            console.error(`Failed to record impression: ${response.status} ${response.statusText}`);
-          }
-        }
       } catch (error) {
-        // Suppress the error logging in development since read-only database errors are expected
-        if (process.env.NODE_ENV === 'production') {
-          console.error('Error recording impression:', error);
-        }
+        console.error('Error recording impression:', error);
       }
     };
 
-    // Small delay to avoid immediate errors during page load/transitions
-    const timeoutId = setTimeout(() => {
-      recordImpression();
-    }, 500);
-    
-    return () => clearTimeout(timeoutId);
+    recordImpression();
   }, [id]);
 
   // Handle click on the advertisement button
   const handleClick = async () => {
     try {
-      const response = await fetch(`/api/advertisements/${id}/click`, {
+      await fetch(`/api/advertisements/${id}/click`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
-      // Only log errors for non-server errors (not database read-only issues)
-      if (!response.ok && response.status !== 500) {
-        console.error(`Failed to record click: ${response.status} ${response.statusText}`);
-      }
     } catch (error) {
-      // Suppress the error logging in development since read-only database errors are expected
-      if (process.env.NODE_ENV === 'production') {
-        console.error('Error recording click:', error);
-      }
+      console.error('Error recording click:', error);
     }
   };
 
