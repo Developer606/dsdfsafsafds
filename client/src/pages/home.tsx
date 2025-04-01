@@ -88,7 +88,6 @@ export default function Home() {
   const [showSubscription, setShowSubscription] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(
     null,
   );
@@ -296,71 +295,6 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Add keyboard shortcut handlers
-  useEffect(() => {
-    const handleKeyboardShortcuts = (e: KeyboardEvent) => {
-      // Skip if user is typing in an input field
-      if (
-        document.activeElement?.tagName === "INPUT" ||
-        document.activeElement?.tagName === "TEXTAREA"
-      ) {
-        return;
-      }
-
-      // F1 key press shows keyboard shortcuts
-      if (e.key === "F1") {
-        e.preventDefault();
-        setShowKeyboardShortcuts(true);
-      }
-
-      // Ctrl+N creates a new character
-      if (e.ctrlKey && e.key === "n") {
-        e.preventDefault();
-        handleCreateClick();
-      }
-
-      // Ctrl+D toggles dark mode
-      if (e.ctrlKey && e.key === "d") {
-        e.preventDefault();
-        toggleTheme();
-      }
-
-      // Alt+H goes to home
-      if (e.altKey && e.key === "h") {
-        e.preventDefault();
-        setActiveTab("home");
-      }
-
-      // Alt+M goes to messages
-      if (e.altKey && e.key === "m") {
-        e.preventDefault();
-        setLocation("/conversations");
-      }
-
-      // Alt+P goes to profile
-      if (e.altKey && e.key === "p") {
-        e.preventDefault();
-        setActiveTab("profile");
-      }
-
-      // Alt+Q logs out (after confirmation)
-      if (e.altKey && e.key === "q") {
-        e.preventDefault();
-        if (confirm("Are you sure you want to log out?")) {
-          handleLogout();
-        }
-      }
-    };
-
-    // Add event listener
-    window.addEventListener("keydown", handleKeyboardShortcuts);
-
-    // Clean up
-    return () => {
-      window.removeEventListener("keydown", handleKeyboardShortcuts);
-    };
-  }, [toggleTheme, handleLogout]); // Add dependencies
 
   if (isLoading) {
     return (
@@ -1546,50 +1480,34 @@ export default function Home() {
                     >
                       <h3 className="text-lg font-bold mb-2 text-purple-700 dark:text-purple-300">Quick Shortcuts</h3>
                       <div className="grid grid-cols-2 gap-3">
-                        <motion.button 
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setActiveTab("profile")}
-                          className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
-                        >
+                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
                           <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M18 20a6 6 0 0 0-12 0"></path>
                             <circle cx="12" cy="10" r="4"></circle>
                             <circle cx="12" cy="12" r="10"></circle>
                           </svg>
                           My Profile
-                        </motion.button>
-                        <motion.button 
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setLocation("/conversations")}
-                          className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
-                        >
+                        </button>
+                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
                           <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                           </svg>
                           Messages
-                        </motion.button>
-                        <motion.button 
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setLocation("/library")}
-                          className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
-                        >
+                        </button>
+                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
                           <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
                           </svg>
                           Library
-                        </motion.button>
-                        <motion.button 
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => setLocation("/settings")}
-                          className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
-                        >
+                        </button>
+                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
                           <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="3"></circle>
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                           </svg>
                           Settings
-                        </motion.button>
+                        </button>
                       </div>
                     </motion.div>
                     
@@ -1681,10 +1599,7 @@ export default function Home() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.5 }}
             >
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowKeyboardShortcuts(true)}
+              <button
                 className="bg-yellow-500/90 hover:bg-yellow-500 text-white p-3 rounded-full shadow-lg flex items-center justify-center"
                 title="Keyboard Shortcuts"
               >
@@ -1699,145 +1614,8 @@ export default function Home() {
                   <path d="M16 12h.001"></path>
                   <path d="M7 16h10"></path>
                 </svg>
-              </motion.button>
+              </button>
             </motion.div>
-            
-            {/* Keyboard Shortcuts Dialog */}
-            <Dialog open={showKeyboardShortcuts} onOpenChange={setShowKeyboardShortcuts}>
-              <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-2 border-yellow-500/20 dark:border-amber-500/20 rounded-2xl">
-                <DialogHeader className="px-6 pt-6 pb-2">
-                  <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600 flex items-center">
-                    <svg className="w-6 h-6 mr-2 text-yellow-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
-                      <path d="M6 8h.001"></path>
-                      <path d="M10 8h.001"></path>
-                      <path d="M14 8h.001"></path>
-                      <path d="M18 8h.001"></path>
-                      <path d="M8 12h.001"></path>
-                      <path d="M12 12h.001"></path>
-                      <path d="M16 12h.001"></path>
-                      <path d="M7 16h10"></path>
-                    </svg>
-                    Keyboard Shortcuts
-                  </DialogTitle>
-                  <DialogDescription className="text-gray-500 dark:text-gray-400">
-                    Master these shortcuts to navigate the application faster
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <div className="border-t border-gray-100 dark:border-gray-800 overflow-y-auto max-h-[70vh]">
-                  <div className="px-6 py-4">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Navigation</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Go to home</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Alt</kbd>
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">H</kbd>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Go to messages</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Alt</kbd>
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">M</kbd>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Go to profile</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Alt</kbd>
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">P</kbd>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="px-6 py-4 bg-amber-50 dark:bg-amber-950/20">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Character Management</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Create new character</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Ctrl</kbd>
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">N</kbd>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Search characters</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Ctrl</kbd>
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">F</kbd>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="px-6 py-4">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">Conversation</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Send message</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Enter</kbd>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">New line in message</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Shift</kbd>
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Enter</kbd>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Clear conversation</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Alt</kbd>
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">C</kbd>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="px-6 py-4 bg-amber-50 dark:bg-amber-950/20">
-                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">General</h3>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Toggle dark mode</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Ctrl</kbd>
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">D</kbd>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Show this help</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">F1</kbd>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">Logout</span>
-                        <div className="flex space-x-1">
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Alt</kbd>
-                          <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Q</kbd>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 flex justify-between items-center border-t border-gray-100 dark:border-gray-800">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Tip: Press F1 anytime to show this dialog</div>
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => setShowKeyboardShortcuts(false)}
-                    className="text-gray-700 dark:text-gray-300"
-                  >
-                    Close
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
         </div>
       )}
