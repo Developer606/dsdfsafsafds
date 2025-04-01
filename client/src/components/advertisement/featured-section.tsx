@@ -21,15 +21,27 @@ const CharacterCard = ({ character }: { character: any }) => {
             alt={character.name}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+          {/* Enhanced gradient overlay for better text visibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+          
+          {/* Decorative element in the corner */}
+          {character.isNew && (
+            <div className="absolute top-4 right-4 bg-purple-500 text-white text-xs px-3 py-1 rounded-full shadow-lg font-medium">
+              NEW
+            </div>
+          )}
         </div>
         <div className="absolute bottom-0 left-0 p-5 w-full">
-          <div className="text-xs text-purple-300 font-medium mb-2">
-            Featured
+          <div className="text-xs text-purple-300 font-medium mb-2 flex items-center">
+            <span className="mr-2">⭐</span>
+            Featured Character
           </div>
           <h2 className="text-2xl font-bold text-white leading-tight">
             {character.name}
           </h2>
+          <p className="text-gray-300 text-sm mt-1 line-clamp-2 mb-3 opacity-90">
+            {character.description.substring(0, 80) + (character.description.length > 80 ? '...' : '')}
+          </p>
           <div className="flex items-center mt-2">
             <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-full">
               {character.isNew ? "New" : "Popular"}
@@ -39,7 +51,7 @@ const CharacterCard = ({ character }: { character: any }) => {
               {[1, 2, 3, 4, 5].map((star, i) => (
                 <span
                   key={i}
-                  className={`${i < 3 ? "text-amber-400" : "text-gray-600"} text-xs`}
+                  className={`${i < 4 ? "text-amber-400" : "text-gray-600"} text-xs`}
                 >
                   ★
                 </span>
@@ -49,7 +61,8 @@ const CharacterCard = ({ character }: { character: any }) => {
           <Link href={`/chat/${character.id}`}>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className="mt-3 px-4 py-2 bg-purple-500 text-white rounded-full text-sm font-medium hover:bg-purple-600 flex items-center"
+              whileHover={{ scale: 1.03 }}
+              className="mt-3 px-4 py-2 bg-purple-500 text-white rounded-full text-sm font-medium hover:bg-purple-600 flex items-center shadow-lg"
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               Start Chat
@@ -62,6 +75,7 @@ const CharacterCard = ({ character }: { character: any }) => {
 };
 
 export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = '' }) => {
+  // Always start with index 0 (which will be the predefined character)
   const [currentIndex, setCurrentIndex] = useState(0);
   const queryClient = useQueryClient();
 
@@ -86,15 +100,28 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
     return 0;
   });
 
+  // Find a predefined character (not a custom one)
+  const predefinedCharacter = sortedCharacters.find(char => !char.id.startsWith('custom_'));
+  
   // Combine advertisements and characters into a single array of featured items
-  // Create a unique set to prevent duplicate characters
+  // Always show a predefined character first if available, then advertisements
   const featuredItems = [
-    ...advertisements.map(ad => ({ type: 'advertisement', data: ad, id: `ad-${ad.id}` })),
-    // Only add the first character for featuring if it exists
-    ...(sortedCharacters.length > 0 ? 
-        [{ type: 'character', data: sortedCharacters[0], id: `char-${sortedCharacters[0].id}` }] : 
-        [])
+    // Add the predefined character first if it exists
+    ...(predefinedCharacter ? 
+        [{ type: 'character', data: predefinedCharacter, id: `char-${predefinedCharacter.id}` }] : 
+        []),
+    // Then add all advertisements
+    ...advertisements.map(ad => ({ type: 'advertisement', data: ad, id: `ad-${ad.id}` }))
   ];
+  
+  // Reset to the first item (predefined character) when the featured items change
+  // This ensures we always start with the character when it becomes available
+  useEffect(() => {
+    // If there are featured items and predefinedCharacter is the first item, reset index to 0
+    if (featuredItems.length > 0 && predefinedCharacter) {
+      setCurrentIndex(0);
+    }
+  }, [predefinedCharacter, featuredItems.length]);
 
   // Force refresh advertisements
   const refreshAdvertisements = useCallback(() => {
@@ -168,12 +195,12 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ className = ''
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: 20, scale: 0.97 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: -20, scale: 0.97 }}
           transition={{ 
-            duration: 0.5, 
-            ease: "easeInOut" 
+            duration: 0.6, 
+            ease: "easeInOut"
           }}
           className="relative z-10"
         >
