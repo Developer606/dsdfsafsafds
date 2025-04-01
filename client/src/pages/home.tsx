@@ -5,6 +5,7 @@ import { CharacterCard } from "@/components/character-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { BackgroundSlideshow } from "@/components/background-slideshow";
@@ -291,6 +292,8 @@ export default function Home() {
 
   // Complaint dialog states
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showKeyboardShortcutsDialog, setShowKeyboardShortcutsDialog] = useState(false);
   const [complaint, setComplaint] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -1480,34 +1483,52 @@ export default function Home() {
                     >
                       <h3 className="text-lg font-bold mb-2 text-purple-700 dark:text-purple-300">Quick Shortcuts</h3>
                       <div className="grid grid-cols-2 gap-3">
-                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
+                        <motion.button 
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setActiveTab("profile")}
+                          className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
+                        >
                           <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M18 20a6 6 0 0 0-12 0"></path>
                             <circle cx="12" cy="10" r="4"></circle>
                             <circle cx="12" cy="12" r="10"></circle>
                           </svg>
                           My Profile
-                        </button>
-                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
+                        </motion.button>
+                        <motion.button 
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setLocation("/conversations")}
+                          className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
+                        >
                           <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                           </svg>
                           Messages
-                        </button>
-                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
+                        </motion.button>
+                        <motion.button 
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setActiveTab("library")}
+                          className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
+                        >
                           <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
                           </svg>
                           Library
-                        </button>
-                        <button className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm">
+                        </motion.button>
+                        <motion.button 
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            setShowSettingsDialog(true);
+                          }}
+                          className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm"
+                        >
                           <svg className="w-4 h-4 mr-2 text-purple-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="3"></circle>
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                           </svg>
                           Settings
-                        </button>
+                        </motion.button>
                       </div>
                     </motion.div>
                     
@@ -1592,14 +1613,17 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Keyboard Shortcuts Helper - Hidden by default */}
+            {/* Keyboard Shortcuts Helper */}
             <motion.div 
               className="fixed bottom-4 right-4 z-10"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.5 }}
             >
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowKeyboardShortcutsDialog(true)}
                 className="bg-yellow-500/90 hover:bg-yellow-500 text-white p-3 rounded-full shadow-lg flex items-center justify-center"
                 title="Keyboard Shortcuts"
               >
@@ -1614,7 +1638,7 @@ export default function Home() {
                   <path d="M16 12h.001"></path>
                   <path d="M7 16h10"></path>
                 </svg>
-              </button>
+              </motion.button>
             </motion.div>
           </div>
         </div>
@@ -1764,6 +1788,174 @@ export default function Home() {
         onClose={() => setShowSubscription(false)}
         isMobile={isMobile}
       />
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
+        <DialogContent className={`${isMobile ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" : "sm:max-w-[425px]"}`}>
+          <DialogHeader>
+            <DialogTitle className={isMobile ? "text-xl font-bold text-red-400" : "text-2xl font-bold"}>
+              Settings
+            </DialogTitle>
+            <DialogDescription className={isMobile ? "text-gray-400" : ""}>
+              Customize your preferences and account settings.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            {/* Theme Settings */}
+            <div className="space-y-2">
+              <h3 className={`text-sm font-medium ${isMobile ? "text-gray-300" : ""}`}>Theme</h3>
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Dark Mode</span>
+                <Switch 
+                  checked={theme === "dark"} 
+                  onCheckedChange={() => toggleTheme()}
+                  className={theme === "dark" ? "bg-amber-500" : ""}
+                />
+              </div>
+            </div>
+
+            {/* Notification Settings */}
+            <div className="space-y-2">
+              <h3 className={`text-sm font-medium ${isMobile ? "text-gray-300" : ""}`}>Notifications</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Email Notifications</span>
+                  <Switch defaultChecked className={theme === "dark" ? "bg-amber-500" : ""} />
+                </div>
+                <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Push Notifications</span>
+                  <Switch defaultChecked className={theme === "dark" ? "bg-amber-500" : ""} />
+                </div>
+              </div>
+            </div>
+
+            {/* Privacy Settings */}
+            <div className="space-y-2">
+              <h3 className={`text-sm font-medium ${isMobile ? "text-gray-300" : ""}`}>Privacy</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Share My Activity</span>
+                  <Switch className={theme === "dark" ? "bg-amber-500" : ""} />
+                </div>
+                <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Allow Message Requests</span>
+                  <Switch defaultChecked className={theme === "dark" ? "bg-amber-500" : ""} />
+                </div>
+              </div>
+            </div>
+
+            {/* Subscription Management Button */}
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button 
+                onClick={() => {
+                  setShowSettingsDialog(false);
+                  setShowSubscription(true);
+                }}
+                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white shadow-md"
+              >
+                Manage Subscription
+              </Button>
+            </motion.div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Keyboard Shortcuts Dialog */}
+      <Dialog open={showKeyboardShortcutsDialog} onOpenChange={setShowKeyboardShortcutsDialog}>
+        <DialogContent className={`${isMobile ? "max-w-[95%] rounded-xl bg-gray-900 border-gray-800 text-white" : "sm:max-w-[500px]"}`}>
+          <DialogHeader>
+            <DialogTitle className={isMobile ? "text-xl font-bold text-amber-400" : "text-2xl font-bold text-amber-600"}>
+              Keyboard Shortcuts
+            </DialogTitle>
+            <DialogDescription className={isMobile ? "text-gray-400" : ""}>
+              Boost your productivity with these handy shortcuts.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-4">
+            <div className="space-y-3">
+              <h3 className={`text-sm font-medium ${isMobile ? "text-amber-400" : "text-amber-600"}`}>Navigation</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Go to Home</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Alt</kbd>
+                    <span className="text-gray-500">+</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">H</kbd>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Go to Search</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Alt</kbd>
+                    <span className="text-gray-500">+</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">S</kbd>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Go to Library</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Alt</kbd>
+                    <span className="text-gray-500">+</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">L</kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className={`text-sm font-medium ${isMobile ? "text-amber-400" : "text-amber-600"}`}>Actions</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Create New Character</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Ctrl</kbd>
+                    <span className="text-gray-500">+</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">N</kbd>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Toggle Dark Mode</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Ctrl</kbd>
+                    <span className="text-gray-500">+</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">D</kbd>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Open Settings</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Ctrl</kbd>
+                    <span className="text-gray-500">+</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">,</kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className={`text-sm font-medium ${isMobile ? "text-amber-400" : "text-amber-600"}`}>Chat</h3>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>Send Message</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Enter</kbd>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                  <span className={`text-sm ${isMobile ? "text-gray-300" : ""}`}>New Line in Chat</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Shift</kbd>
+                    <span className="text-gray-500">+</span>
+                    <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-lg dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600">Enter</kbd>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Complaint Dialog */}
       <Dialog open={showComplaintDialog} onOpenChange={setShowComplaintDialog}>
