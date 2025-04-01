@@ -29,6 +29,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const formatUrl = (url: string | null | undefined): string | null => {
     if (!url) return null;
     
+    // Clean up malformed URLs that might contain multiple http parts
+    if (url.includes('http') && url.indexOf('http', 10) > 0) {
+      console.log('Cleaning up potentially malformed URL with multiple http parts');
+      const lastHttpIndex = url.lastIndexOf('http');
+      if (lastHttpIndex > 0) {
+        url = url.substring(lastHttpIndex);
+        console.log('Cleaned URL:', url);
+      }
+    }
+    
+    // Check for YouTube URLs
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      // For preview purposes in the upload component, we won't convert to embed format
+      // The actual conversion happens in the advertisement-card component
+      console.log('YouTube URL detected in file uploader. It will be properly embedded when displayed.');
+      return url;
+    }
+    
     // If it's already a full URL, return it as is
     if (url.startsWith('http://') || url.startsWith('https://')) {
       return url;

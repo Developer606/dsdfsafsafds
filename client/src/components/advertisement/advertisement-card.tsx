@@ -110,12 +110,32 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
       if (url.includes('youtu.be') || url.includes('youtube.com')) {
         console.log('Detected YouTube URL in malformed path');
         
+        // Clean up malformed URLs first (containing multiple https://)
+        if (url.includes('http') && url.indexOf('http', 10) > 0) {
+          console.log('Detected malformed URL with multiple http parts:', url);
+          // Extract the last occurrence of http:// or https://
+          const lastHttpIndex = url.lastIndexOf('http');
+          if (lastHttpIndex > 0) {
+            url = url.substring(lastHttpIndex);
+            console.log('Cleaned URL:', url);
+          }
+        }
+        
         // Extract video ID from youtu.be/ format URL first (simpler case)
         if (url.includes('youtu.be/')) {
           const videoId = url.split('youtu.be/')[1]?.split('?')[0];
           if (videoId) {
             console.log('Successfully extracted YouTube video ID from youtu.be URL:', videoId);
             return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&loop=1&controls=1`;
+          }
+        }
+        
+        // Check for YouTube Shorts format
+        if (url.includes('youtube.com/shorts/')) {
+          const videoId = url.split('shorts/')[1]?.split('?')[0];
+          if (videoId) {
+            console.log('Successfully extracted YouTube Shorts video ID:', videoId);
+            return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&loop=1&controls=1&modestbranding=1&rel=0`;
           }
         }
         
@@ -161,6 +181,13 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
         // Standard URL format: youtube.com/watch?v=VIDEO_ID
         const idMatch = /v=([^&]+)/.exec(url);
         if (idMatch && idMatch[1]) videoId = idMatch[1];
+      } else if (url.includes('youtube.com/shorts/')) {
+        // YouTube Shorts format: youtube.com/shorts/VIDEO_ID
+        const idMatch = /shorts\/([^?&]+)/.exec(url);
+        if (idMatch && idMatch[1]) {
+          videoId = idMatch[1];
+          console.log('Detected YouTube Shorts format, using video ID:', videoId);
+        }
       } else if (url.includes('youtube.com/embed/')) {
         // Embed URL format: youtube.com/embed/VIDEO_ID
         const idMatch = /embed\/([^?&]+)/.exec(url);
@@ -320,10 +347,24 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
           {mediaType === 'video' && videoUrl ? (
             <div className="relative w-full h-full">
               {/* Check if it's a YouTube URL after formatting */}
-              {formatUrl(videoUrl).includes('youtube.com/embed') ? (
+              {formatUrl(videoUrl).includes('youtube.com/embed') || 
+               (videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'))) ? (
                 <div className="relative w-full h-full">
                   <iframe
-                    src={formatUrl(videoUrl)}
+                    src={
+                      // Special handling for YouTube Shorts - convert to embed format
+                      videoUrl && videoUrl.includes('youtube.com/shorts/') 
+                        ? (() => {
+                            const match = /shorts\/([^?&/]+)/.exec(videoUrl);
+                            if (match && match[1]) {
+                              const videoId = match[1];
+                              console.log('Embedded YouTube Shorts with video ID:', videoId);
+                              return `https://www.youtube.com/embed/${videoId}?loop=1&controls=1&modestbranding=1&rel=0&autoplay=1`;
+                            }
+                            return formatUrl(videoUrl);
+                          })()
+                        : formatUrl(videoUrl)
+                    }
                     className="w-full h-full object-cover"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
