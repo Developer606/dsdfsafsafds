@@ -13,7 +13,7 @@ import {
   ImageIcon, 
   VideoIcon, 
   Calendar, 
-  Link, 
+  Link as LinkIcon, 
   Palette, 
   Trash2, 
   Edit, 
@@ -22,7 +22,15 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
   RotateCcw,
-  Save
+  Save,
+  Play,
+  Settings,
+  Calendar as CalendarIcon,
+  Type,
+  Layout,
+  Monitor,
+  ArrowRight,
+  X
 } from 'lucide-react';
 
 // Extend the schema for form validation
@@ -420,16 +428,16 @@ export const AdvertisementManager: React.FC = () => {
   
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm sticky top-0 z-10">
+      <div className="flex justify-between items-center bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-lg shadow-md sticky top-0 z-10">
         <div className="flex items-center">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Advertisement Manager</h2>
-          <span className="ml-2 px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full dark:bg-purple-900 dark:text-purple-200">
+          <h2 className="text-2xl font-bold text-white">Advertisement Manager</h2>
+          <span className="ml-3 px-3 py-1 bg-white/20 text-white text-xs font-medium rounded-full backdrop-blur-sm">
             {advertisements.length} Ads
           </span>
         </div>
         <button
           onClick={handleCreateNew}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-100 text-purple-600 rounded-full font-medium transition-colors shadow-md"
         >
           <Plus size={16} />
           <span>Create New</span>
@@ -439,17 +447,18 @@ export const AdvertisementManager: React.FC = () => {
       {/* Responsive toggle for mobile view */}
       <div className="lg:hidden flex justify-end mb-2">
         <button 
-          className="p-2 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          className="p-2 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors shadow-sm"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Advertisement list sidebar */}
-        <div className={`lg:col-span-3 ${sidebarCollapsed ? 'hidden' : 'block'} lg:block`}>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
+        <div className={`lg:col-span-4 ${sidebarCollapsed ? 'hidden' : 'block'} lg:block`}>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white">My Advertisements</h3>
               <button
@@ -546,28 +555,54 @@ export const AdvertisementManager: React.FC = () => {
         </div>
         
         {/* Form or preview */}
-        <div className="lg:col-span-2">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold">
-              {selectedAd ? `Edit: ${selectedAd.title}` : 'Create New Advertisement'}
-            </h3>
-            <div className="flex space-x-2">
-              {selectedAd && (
+        <div className="lg:col-span-8">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm">
+            <div className="flex justify-between items-center mb-6 border-b pb-4">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                {selectedAd ? (
+                  <>
+                    <Edit size={18} className="text-purple-500" />
+                    <span>Edit: {selectedAd.title || "Untitled Ad"}</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus size={18} className="text-purple-500" />
+                    <span>Create New Advertisement</span>
+                  </>
+                )}
+              </h3>
+              <div className="flex space-x-3">
+                {selectedAd && (
+                  <button
+                    onClick={() => handleDelete(selectedAd.id)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded-full transition-colors"
+                  >
+                    <Trash2 size={16} />
+                    <span>Delete</span>
+                  </button>
+                )}
                 <button
-                  onClick={() => handleDelete(selectedAd.id)}
-                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md"
+                  onClick={() => setIsPreviewMode(!isPreviewMode)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors ${
+                    isPreviewMode 
+                      ? 'bg-purple-100 text-purple-600 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50' 
+                      : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50'
+                  }`}
                 >
-                  Delete
+                  {isPreviewMode ? (
+                    <>
+                      <Edit size={16} />
+                      <span>Edit</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye size={16} />
+                      <span>Preview</span>
+                    </>
+                  )}
                 </button>
-              )}
-              <button
-                onClick={() => setIsPreviewMode(!isPreviewMode)}
-                className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
-              >
-                {isPreviewMode ? 'Edit' : 'Preview'}
-              </button>
+              </div>
             </div>
-          </div>
           
           {isPreviewMode ? (
             <PreviewComponent />
@@ -829,7 +864,7 @@ export const AdvertisementManager: React.FC = () => {
                 </div>
               </div>
               
-              <div className="flex justify-end space-x-2 pt-4">
+              <div className="sticky bottom-0 bg-white dark:bg-gray-800 pt-6 pb-2 border-t mt-8 flex justify-between items-center">
                 <button
                   type="button"
                   onClick={() => {
@@ -840,21 +875,43 @@ export const AdvertisementManager: React.FC = () => {
                       reset(defaultValues);
                     }
                   }}
-                  className="px-4 py-2 border rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Cancel
+                  <RotateCcw size={16} />
+                  <span>Reset</span>
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                >
-                  {createMutation.isPending || updateMutation.isPending
-                    ? 'Saving...'
-                    : selectedAd
-                    ? 'Update'
-                    : 'Create'}
-                </button>
+                
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsPreviewMode(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 rounded-full hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors"
+                  >
+                    <Eye size={16} />
+                    <span>Preview</span>
+                  </button>
+                  
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-full font-medium transition-colors shadow-md disabled:opacity-70 disabled:cursor-not-allowed"
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                  >
+                    {createMutation.isPending || updateMutation.isPending ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} />
+                        <span>{selectedAd ? 'Update Ad' : 'Create Ad'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           )}
