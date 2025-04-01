@@ -217,23 +217,23 @@ export function NotificationHeader() {
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="relative p-2 rounded-full bg-purple-700/90 hover:bg-purple-800 shadow-sm transition-colors"
+                  className="relative p-2 transition-transform"
                 >
-                  <Bell className="h-5 w-5 text-white" />
+                  <Bell className="h-6 w-6 text-gray-700 dark:text-gray-400" />
                   {unreadCount > 0 && (
                     <motion.span 
                       initial={{ scale: 0 }}
                       animate={{ 
                         scale: [1, 1.1, 1],
-                        opacity: [1, 0.85, 1]
+                        opacity: [1, 0.9, 1]
                       }}
                       transition={{ 
                         repeat: Infinity,
                         repeatType: "reverse",
-                        duration: 2,
+                        duration: 1.5,
                         ease: "easeInOut"
                       }}
-                      className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center shadow-md border border-white dark:border-gray-800"
+                      className="absolute top-0 right-0 h-5 w-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center shadow-md border border-white dark:border-gray-800"
                     >
                       {unreadCount}
                     </motion.span>
