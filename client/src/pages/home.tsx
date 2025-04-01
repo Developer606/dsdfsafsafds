@@ -1404,6 +1404,12 @@ export default function Home() {
               </Link>
             </div>
 
+            {/* Featured Content moved to left sidebar */}
+            <div className="mb-6">
+              <h3 className="font-semibold text-lg mb-3 text-yellow-700 dark:text-amber-400">Featured</h3>
+              <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
+            </div>
+
             <AnimatePresence>
               {sortedCharacters?.map((character) => (
                 <motion.div
@@ -1468,11 +1474,6 @@ export default function Home() {
                 Chat with your favorite characters and bring your anime world to
                 life
               </p>
-              
-              {/* Featured Content */}
-              <div className="max-w-xl mx-auto mt-10">
-                <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
-              </div>
             </motion.div>
           </div>
         </div>
