@@ -1454,10 +1454,10 @@ export default function Home() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Main Content Area - Redesigned with two columns */}
+          {/* Main Content Area - Enhanced with multiple sections and features */}
           <div className="flex-1 p-8">
             <div className="flex flex-row max-w-6xl mx-auto gap-8">
-              {/* Left Column - Main Content */}
+              {/* Left Column - Interactive Content */}
               <div className="flex-1">
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
@@ -1471,16 +1471,275 @@ export default function Home() {
                     Chat with your favorite characters and bring your anime world to
                     life
                   </p>
+                  
+                  {/* Quick Start Guide Section */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-amber-900/20 p-6 rounded-2xl shadow-sm mb-8 border border-amber-100 dark:border-amber-900/50"
+                  >
+                    <h2 className="text-2xl font-bold mb-3 text-amber-700 dark:text-amber-400 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                        <path d="M12 16v-4"></path><path d="M12 8h.01"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                      </svg>
+                      Quick Start Guide
+                    </h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                      <motion.div 
+                        whileHover={{ scale: 1.03 }}
+                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-amber-100 dark:border-amber-900/50"
+                      >
+                        <div className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-2 flex items-center">
+                          <span className="bg-amber-100 dark:bg-amber-900/50 w-7 h-7 rounded-full flex items-center justify-center mr-2 text-amber-700 dark:text-amber-300">1</span>
+                          Choose a Character
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm">Select from our diverse collection of anime characters to start your conversation.</p>
+                      </motion.div>
+                      <motion.div 
+                        whileHover={{ scale: 1.03 }}
+                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-amber-100 dark:border-amber-900/50"
+                      >
+                        <div className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-2 flex items-center">
+                          <span className="bg-amber-100 dark:bg-amber-900/50 w-7 h-7 rounded-full flex items-center justify-center mr-2 text-amber-700 dark:text-amber-300">2</span>
+                          Start a Chat
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm">Initiate a conversation in any language. Our AI will respond in the same language.</p>
+                      </motion.div>
+                      <motion.div 
+                        whileHover={{ scale: 1.03 }}
+                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-amber-100 dark:border-amber-900/50"
+                      >
+                        <div className="text-amber-600 dark:text-amber-400 font-bold text-lg mb-2 flex items-center">
+                          <span className="bg-amber-100 dark:bg-amber-900/50 w-7 h-7 rounded-full flex items-center justify-center mr-2 text-amber-700 dark:text-amber-300">3</span>
+                          Customize Experience
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm">Create your own custom characters with unique personalities and backgrounds.</p>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                  
+                  {/* Popular Characters Showcase */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="mb-8"
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Popular Characters</h2>
+                      <Button variant="ghost" size="sm" className="text-amber-600 dark:text-amber-400">
+                        View All Characters
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {sortedCharacters.slice(0, 3).map(character => (
+                        <motion.div
+                          key={character.id}
+                          whileHover={{ y: -5, scale: 1.02 }}
+                          className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-gray-700"
+                        >
+                          <div className="relative h-36">
+                            <img 
+                              src={character.avatar} 
+                              alt={character.name} 
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                            {character.isNew && (
+                              <div className="absolute top-2 right-2 bg-amber-500 text-white text-xs px-2 py-1 rounded-md font-semibold">
+                                NEW
+                              </div>
+                            )}
+                            <div className="absolute bottom-2 left-3">
+                              <h3 className="text-white font-bold">{character.name}</h3>
+                            </div>
+                          </div>
+                          <div className="p-4">
+                            <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">{character.description}</p>
+                            <Link href={`/chat/${character.id}`}>
+                              <Button 
+                                variant="ghost" 
+                                className="w-full mt-3 bg-gradient-to-r from-amber-100 to-amber-50 hover:from-amber-200 hover:to-amber-100 text-amber-800 dark:from-amber-900/40 dark:to-amber-800/40 dark:text-amber-400 dark:hover:from-amber-800/60 dark:hover:to-amber-700/60"
+                              >
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Start Chatting
+                              </Button>
+                            </Link>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                  
+                  {/* Premium Features Section */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-900/20 p-6 rounded-2xl shadow-sm border border-purple-100 dark:border-purple-900/50"
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-bold text-purple-700 dark:text-purple-400 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                          <path d="M20 6H4l8 9z"></path><path d="m12 19-2-2H7l5 5 5-5h-3l-2 2z"></path>
+                        </svg>
+                        Premium Features
+                      </h2>
+                      <Button 
+                        onClick={() => setShowSubscription(true)}
+                        size="sm"
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      >
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Upgrade Now
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white/70 dark:bg-gray-800/50 p-4 rounded-xl shadow-sm flex items-start">
+                        <div className="bg-purple-100 dark:bg-purple-900/50 p-2 rounded-xl mr-3">
+                          <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900 dark:text-white">Create Up To 45 Custom Characters</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Design anime characters with unique personalities and backstories</p>
+                        </div>
+                      </div>
+                      <div className="bg-white/70 dark:bg-gray-800/50 p-4 rounded-xl shadow-sm flex items-start">
+                        <div className="bg-purple-100 dark:bg-purple-900/50 p-2 rounded-xl mr-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-purple-600 dark:text-purple-400">
+                            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path>
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900 dark:text-white">Priority Access to New Characters</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">Get early access to newly released anime characters</p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
                 </motion.div>
               </div>
               
-              {/* Right Column - Featured Content */}
-              <div className="w-96">
+              {/* Right Column - Featured Content and Stats */}
+              <div className="w-96 space-y-6">
                 <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
                 >
-                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
+                  <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 mb-6">
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-amber-500">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                      </svg>
+                      Featured
+                    </h2>
+                    <FeaturedSection className="rounded-xl overflow-hidden" />
+                  </div>
+                  
+                  {/* User Stats Card */}
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md border border-gray-100 dark:border-gray-700 mb-6"
+                  >
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-purple-500">
+                        <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"></path><path d="M3 12h18"></path>
+                        <path d="M12 3a9 9 0 0 1 0 18"></path>
+                      </svg>
+                      Activity Stats
+                    </h2>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-600 dark:text-gray-400">Current Plan</div>
+                        <div className="font-medium">
+                          {user?.isPremium ? (
+                            <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-md text-xs font-bold">
+                              Premium
+                            </span>
+                          ) : (
+                            <span className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-2 py-1 rounded-md text-xs font-bold">
+                              Free
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-600 dark:text-gray-400">Custom Characters</div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {user?.customCharacterCount || 0} / {user?.isPremium ? 45 : 3}
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-600 dark:text-gray-400">Last Activity</div>
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {user?.lastActivity ? new Date(user.lastActivity).toLocaleDateString() : 'Today'}
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2">
+                        <Button
+                          onClick={() => setLocation("/conversations")}
+                          variant="outline"
+                          className="w-full border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-900 dark:text-purple-400 dark:hover:bg-purple-900/30"
+                        >
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          View Conversation History
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                  
+                  {/* Quick Tips */}
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 }}
+                    className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-900/20 p-5 rounded-xl shadow-md border border-blue-100 dark:border-blue-900/50"
+                  >
+                    <h2 className="text-xl font-bold text-blue-700 dark:text-blue-400 mb-3 flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                        <path d="M12 2v8"></path><path d="m4.93 10.93 1.41 1.41"></path>
+                        <path d="M2 18h2"></path><path d="M20 18h2"></path>
+                        <path d="m19.07 10.93-1.41 1.41"></path>
+                        <path d="M22 22H2"></path><path d="m16 6-4 4-4-4"></path>
+                        <path d="M16 18a4 4 0 0 0-8 0"></path>
+                      </svg>
+                      Pro Tips
+                    </h2>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-start">
+                        <span className="bg-blue-100 dark:bg-blue-900/50 p-1 rounded-full mr-2 mt-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-700 dark:text-blue-400">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span className="text-gray-700 dark:text-gray-300">Use consistent language to maintain character immersion</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="bg-blue-100 dark:bg-blue-900/50 p-1 rounded-full mr-2 mt-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-700 dark:text-blue-400">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span className="text-gray-700 dark:text-gray-300">Ask about character's universe, feelings, or opinions</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="bg-blue-100 dark:bg-blue-900/50 p-1 rounded-full mr-2 mt-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-700 dark:text-blue-400">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </span>
+                        <span className="text-gray-700 dark:text-gray-300">Use the report feature if you encounter inappropriate responses</span>
+                      </li>
+                    </ul>
+                  </motion.div>
                 </motion.div>
               </div>
             </div>
