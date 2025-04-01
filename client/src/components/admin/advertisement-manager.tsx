@@ -297,43 +297,43 @@ export const AdvertisementManager: React.FC = () => {
   };
   
   return (
-    <div className="bg-black text-white">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-bold text-white">Advertisement Manager</h2>
+        <h2 className="text-2xl font-bold">Advertisement Manager</h2>
         <button
           onClick={handleCreateNew}
-          className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-sm rounded-md"
+          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md"
         >
           Create New
         </button>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Advertisement list */}
-        <div className="lg:col-span-1">
-          <h3 className="text-sm font-medium text-white mb-3">Advertisements</h3>
+        <div className="lg:col-span-1 space-y-4">
+          <h3 className="text-xl font-semibold">Advertisements</h3>
           
           {isLoadingAds ? (
-            <div className="animate-pulse space-y-3">
+            <div className="animate-pulse space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-20 bg-gray-800 rounded-lg"></div>
+                <div key={i} className="h-24 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
               ))}
             </div>
           ) : advertisements && advertisements.length > 0 ? (
-            <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto">
+            <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
               {advertisements.map((ad: Advertisement) => (
                 <div
                   key={ad.id}
-                  className={`bg-gray-900 border border-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-800 transition-colors ${
-                    selectedAd?.id === ad.id ? 'border-blue-500' : ''
+                  className={`border rounded-lg p-3 cursor-pointer hover:border-blue-500 transition-colors ${
+                    selectedAd?.id === ad.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : ''
                   }`}
                   onClick={() => handleEdit(ad)}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-medium text-white text-sm">{ad.title}</h4>
-                      <p className="text-xs text-gray-400 truncate">{ad.description}</p>
-                      <div className="flex items-center mt-1 text-xs text-gray-400">
+                      <h4 className="font-medium">{ad.title}</h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{ad.description}</p>
+                      <div className="flex items-center mt-1 text-xs text-gray-500 dark:text-gray-400">
                         <span className={`w-2 h-2 rounded-full mr-1 ${
                           new Date() >= new Date(ad.startDate) && new Date() <= new Date(ad.endDate) && ad.isActive
                             ? 'bg-green-500'
@@ -346,43 +346,37 @@ export const AdvertisementManager: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end">
-                      <div className="flex items-center">
-                        <span className="text-xs text-yellow-500 text-right">⭐</span>
-                        <span className="text-xs text-yellow-500 ml-1">⭐</span>
-                      </div>
-                      <div className="flex items-center mt-2">
-                        <span className="text-xs text-orange-400">👁️</span>
-                        <span className="text-xs text-gray-400 ml-1">{ad.impressions || 0}</span>
-                      </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div>👁️ {ad.impressions || 0}</div>
+                      <div>👆 {ad.clicks || 0}</div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-400 text-sm">No advertisements found. Create one to get started.</p>
+            <p className="text-gray-500 dark:text-gray-400">No advertisements found. Create one to get started.</p>
           )}
         </div>
         
         {/* Form or preview */}
-        <div className="lg:col-span-3">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-medium text-white">
+        <div className="lg:col-span-2">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold">
               {selectedAd ? `Edit: ${selectedAd.title}` : 'Create New Advertisement'}
             </h3>
             <div className="flex space-x-2">
               {selectedAd && (
                 <button
                   onClick={() => handleDelete(selectedAd.id)}
-                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md"
+                  className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md"
                 >
                   Delete
                 </button>
               )}
               <button
                 onClick={() => setIsPreviewMode(!isPreviewMode)}
-                className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-md"
+                className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
               >
                 {isPreviewMode ? 'Edit' : 'Preview'}
               </button>
