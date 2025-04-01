@@ -29,12 +29,23 @@ export function NotificationHeader() {
   // Add mutation for marking notifications as read
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: number | string) => {
-      await apiRequest("PATCH", `/api/notifications/${notificationId}/read`);
+      console.log("Marking notification as read:", notificationId);
+      return await apiRequest("PATCH", `/api/notifications/${notificationId}/read`);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Successfully marked notification as read:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+      
+      // Show success toast for better user feedback
+      toast({
+        title: "Notification marked as read",
+        description: "Your notification has been updated",
+        variant: "default",
+        duration: 2000
+      });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error marking notification as read:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -212,8 +223,17 @@ export function NotificationHeader() {
                   {unreadCount > 0 && (
                     <motion.span 
                       initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="absolute -top-1 -right-1 h-5 w-5 bg-pink-500 dark:bg-pink-600 rounded-full text-xs text-white flex items-center justify-center shadow-md"
+                      animate={{ 
+                        scale: [1, 1.1, 1],
+                        opacity: [1, 0.85, 1]
+                      }}
+                      transition={{ 
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                        duration: 2,
+                        ease: "easeInOut"
+                      }}
+                      className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center shadow-md border border-white dark:border-gray-800"
                     >
                       {unreadCount}
                     </motion.span>
