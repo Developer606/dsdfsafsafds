@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, memo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Bell, Users, Send, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,48 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type NotificationType = 'admin_reply' | 'update' | 'feature';
 
+// Types to ensure proper typing for broadcasts and reduce unknown types
+interface ScheduledBroadcast {
+  id: number;
+  title: string;
+  message: string;
+  type: string;
+  scheduledFor: string;
+}
+
+interface UserBasicInfo {
+  id: number;
+  username: string;
+  email: string;
+}
+
+// Memoized user selector component to prevent re-renders
+const MemoizedUserSelector = memo(({ 
+  users = [] as UserBasicInfo[],
+  value = "", 
+  onChange 
+}: { 
+  users: UserBasicInfo[];
+  value: string;
+  onChange: (value: string) => void;
+}) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger>
+      <SelectValue placeholder="Select user (optional)" />
+    </SelectTrigger>
+    <SelectContent>
+      {users.map((user) => (
+        <SelectItem key={user.id} value={String(user.id)}>
+          {user.username} ({user.email})
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+));
+
+MemoizedUserSelector.displayName = "MemoizedUserSelector";
+
+// Memory-optimized notification popover
 export function NotificationPopover() {
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<string>("");
@@ -28,20 +70,42 @@ export function NotificationPopover() {
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("");
 
-  // Fetch all users for the user selector
-  const { data: users = [] } = useQuery({
+  // Memory-optimized user query with proper type and caching settings
+  const { data: users = [] } = useQuery<UserBasicInfo[]>({
     queryKey: ["/api/admin/users"],
+    staleTime: 60000, // Cache for 1 minute 
+    select: (data) => 
+      // Only extract the fields we need to reduce memory footprint
+      data.map(({ id, username, email }) => ({ id, username, email })),
+    refetchOnWindowFocus: false,
   });
 
-  // Fetch scheduled broadcasts
-  const { data: scheduledBroadcasts = [] } = useQuery({
+  // Memory-optimized scheduled broadcasts query with proper type
+  const { data: scheduledBroadcasts = [] } = useQuery<ScheduledBroadcast[]>({
     queryKey: ["/api/admin/broadcasts/scheduled"],
-    refetchInterval: 30000,
+    staleTime: 30000,
+    refetchInterval: 60000, // Reduced from 30s to 60s
+    refetchOnWindowFocus: false,
   });
 
-  // Mutation for sending notification to specific user
+  // Cleanup function to reset form - extracted to avoid recreating on every render
+  const resetForm = useCallback(() => {
+    setTitle("");
+    setMessage("");
+  }, []);
+  
+  const resetScheduleForm = useCallback(() => {
+    setTitle("");
+    setMessage("");
+    setDate(undefined);
+    setTime("");
+  }, []);
+
+  // Memory-optimized mutation with reduced closure scope
   const sendToUserMutation = useMutation({
     mutationFn: async () => {
+      if (!selectedUser || !title || !message) return;
+      
       await apiRequest(
         "POST",
         `/api/admin/notifications/user/${selectedUser}`,
@@ -55,8 +119,7 @@ export function NotificationPopover() {
         variant: "default",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
-      setTitle("");
-      setMessage("");
+      resetForm();
     },
     onError: () => {
       toast({
@@ -67,9 +130,11 @@ export function NotificationPopover() {
     },
   });
 
-  // Mutation for broadcasting to all users
+  // Memory-optimized broadcast mutation
   const broadcastMutation = useMutation({
     mutationFn: async () => {
+      if (!title || !message) return;
+      
       await apiRequest(
         "POST",
         "/api/admin/notifications/broadcast",
@@ -83,22 +148,23 @@ export function NotificationPopover() {
         variant: "default"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
-      setTitle("");
-      setMessage("");
+      resetForm();
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to broadcast notification",
+        description: error instanceof Error ? error.message : "Failed to broadcast notification",
         variant: "destructive",
       });
     },
   });
 
-  // Mutation for scheduling broadcasts
+  // Memory-optimized schedule broadcast mutation
   const scheduleBroadcastMutation = useMutation({
     mutationFn: async () => {
-      if (!date || !time) throw new Error("Date and time are required");
+      if (!date || !time || !title || !message) {
+        throw new Error("All fields are required");
+      }
 
       const [hours, minutes] = time.split(':');
       const scheduledDate = new Date(date);
@@ -123,25 +189,20 @@ export function NotificationPopover() {
         variant: "default"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/broadcasts/scheduled"] });
-      setTitle("");
-      setMessage("");
-      setDate(undefined);
-      setTime("");
+      resetScheduleForm();
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to schedule broadcast",
+        description: error instanceof Error ? error.message : "Failed to schedule broadcast",
         variant: "destructive",
       });
     },
   });
 
-  // Mutation for deleting scheduled broadcasts
+  // Optimized delete broadcast mutation with minimal state
   const deleteScheduledBroadcastMutation = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/broadcasts/scheduled/${id}`);
-    },
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/admin/broadcasts/scheduled/${id}`),
     onSuccess: () => {
       toast({
         title: "Success",
@@ -152,7 +213,8 @@ export function NotificationPopover() {
     },
   });
 
-  const handleSendToUser = () => {
+  // Memoized handlers to prevent recreation on every render
+  const handleSendToUser = useCallback(() => {
     if (!selectedUser) {
       toast({
         title: "Error",
@@ -170,9 +232,9 @@ export function NotificationPopover() {
       return;
     }
     sendToUserMutation.mutate();
-  };
+  }, [selectedUser, title, message, sendToUserMutation, toast]);
 
-  const handleBroadcast = () => {
+  const handleBroadcast = useCallback(() => {
     if (!title || !message) {
       toast({
         title: "Error",
@@ -182,9 +244,9 @@ export function NotificationPopover() {
       return;
     }
     broadcastMutation.mutate();
-  };
+  }, [title, message, broadcastMutation, toast]);
 
-  const handleScheduleBroadcast = () => {
+  const handleScheduleBroadcast = useCallback(() => {
     if (!title || !message || !date || !time) {
       toast({
         title: "Error",
@@ -194,7 +256,7 @@ export function NotificationPopover() {
       return;
     }
     scheduleBroadcastMutation.mutate();
-  };
+  }, [title, message, date, time, scheduleBroadcastMutation, toast]);
 
   return (
     <Popover>
@@ -244,21 +306,11 @@ export function NotificationPopover() {
               className="min-h-[100px]"
             />
 
-            <Select
+            <MemoizedUserSelector
+              users={users}
               value={selectedUser}
-              onValueChange={setSelectedUser}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select user (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                {users.map((user: any) => (
-                  <SelectItem key={user.id} value={String(user.id)}>
-                    {user.username} ({user.email})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={setSelectedUser}
+            />
 
             <div className="flex gap-2">
               <Button
@@ -347,7 +399,7 @@ export function NotificationPopover() {
               <div className="mt-6">
                 <h5 className="font-medium mb-2">Scheduled Broadcasts</h5>
                 <div className="space-y-2">
-                  {scheduledBroadcasts.map((broadcast: any) => (
+                  {scheduledBroadcasts.map((broadcast: ScheduledBroadcast) => (
                     <div
                       key={broadcast.id}
                       className="flex items-center justify-between p-2 bg-secondary rounded-lg"
