@@ -147,320 +147,50 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   const httpServer = existingServer || createServer(app);
   
   // Set up Socket.IO server with our enhanced implementation
-  const io = setupSocketIOServer(httpServer);
+  // Pass true to indicate we want the Socket.IO server to handle all WebSocket traffic
+  // This eliminates duplicate WebSocket servers to reduce memory and CPU usage
+  const io = setupSocketIOServer(httpServer, true);
 
-  // Initialize WebSocket server with session verification
-  const wss = new WebSocketServer({
-    server: httpServer,
-    path: "/ws",
-    verifyClient: async (info: {
-      origin: string;
-      secure: boolean;
-      req: IncomingMessage;
-    }) => {
-      const cookies = info.req.headers.cookie;
-      if (!cookies) return false;
+  // Tracking for socket.io connections will be handled within the socket-io-server.ts
+  // The code below gets replaced by the io.on('connection') handler in socket-io-server.ts
 
-      // Parse session ID from cookies
-      const sessionMatch = cookies.match(/connect\.sid=([^;]+)/);
-      if (!sessionMatch) return false;
+  // REMOVED: Legacy WebSocket code that was migrated to socket-io-server.ts
+  // All WebSocket traffic is now handled by Socket.IO with optimized connections
 
-      const sessionId = decodeURIComponent(sessionMatch[1]);
-
-      try {
-        // Verify session exists
-        const session: any = await new Promise((resolve, reject) => {
-          storage.sessionStore.get(
-            sessionId.replace("s:", ""),
-            (err, session) => {
-              if (err) reject(err);
-              else resolve(session);
-            },
-          );
-        });
-
-        // Allow any authenticated user (not just admins)
-        return !!session?.passport?.user;
-      } catch (error) {
-        console.error("WebSocket authentication error:", error);
-        return false;
-      }
-    },
-  });
-
-  // Map to track user connections by userId
-  const userConnections = new Map<number, Set<WebSocket>>();
-  // Set for admin clients (for admin-only broadcasts)
-  const adminClients = new Set<WebSocket>();
-
-  wss.on("connection", async (ws: WebSocket, req: IncomingMessage) => {
-    // Parse the user ID from the session
-    try {
-      const cookies = req.headers.cookie;
-      if (!cookies) return;
-
-      const sessionMatch = cookies.match(/connect\.sid=([^;]+)/);
-      if (!sessionMatch) return;
-
-      const sessionId = decodeURIComponent(sessionMatch[1]);
-      
-      const session: any = await new Promise((resolve, reject) => {
-        storage.sessionStore.get(
-          sessionId.replace("s:", ""),
-          (err, session) => {
-            if (err) reject(err);
-            else resolve(session);
-          },
-        );
-      });
-
-      const userId = session?.passport?.user;
-      if (!userId) return;
-
-      // Get the user to check if they're an admin
-      const user = await storage.getUser(userId);
-      if (!user) return;
-
-      // Assign this connection to the user
-      if (!userConnections.has(userId)) {
-        userConnections.set(userId, new Set());
-      }
-      userConnections.get(userId)?.add(ws);
-
-      // Also add admins to the admin set
-      if (user.isAdmin) {
-        adminClients.add(ws);
-      }
-
-      // Store the userId in the WebSocket for later use
-      (ws as any).userId = userId;
-      console.log(`User ${userId} connected via WebSocket`);
-
-      // Handle user messages
-      ws.on("message", async (data: WebSocket.Data) => {
-        try {
-          const message = JSON.parse(data.toString());
-          
-          // Handle different message types
-          switch (message.type) {
-            case "user_message":
-              await handleUserMessage(userId, message);
-              break;
-            case "message_status_update":
-              await handleMessageStatusUpdate(userId, message);
-              break;
-            case "typing_indicator":
-              await handleTypingIndicator(userId, message);
-              break;
-          }
-        } catch (error) {
-          console.error("Error processing WebSocket message:", error);
-        }
-      });
-
-      // Remove connection when closed
-      ws.on("close", () => {
-        userConnections.get(userId)?.delete(ws);
-        if (userConnections.get(userId)?.size === 0) {
-          userConnections.delete(userId);
-        }
-        adminClients.delete(ws);
-        console.log(`User ${userId} disconnected from WebSocket`);
-      });
-    } catch (error) {
-      console.error("Error handling WebSocket connection:", error);
-    }
-  });
-
-  // Function to handle user messages
+  // These message handling functions have been moved to socket-io-server.ts
+  // We now use Socket.IO for all real-time communication, including direct messages
+  
+  // Function signature remains for reference but implementation is in socket-io-server.ts
   async function handleUserMessage(senderId: number, message: any) {
-    try {
-      console.log("Handling user message:", { senderId, message });
-      const { receiverId, content } = message;
-      
-      if (!receiverId || !content) {
-        console.error("Invalid message format:", message);
-        return;
-      }
-      
-      // Create message in database
-      const newMessage = await storage.createUserMessage({
-        senderId,
-        receiverId,
-        content,
-        status: "sent"
-      });
-      
-      console.log("Created new message in database:", newMessage);
-      
-      // Send message to all connections of the receiver
-      const receiverConnections = userConnections.get(receiverId);
-      console.log(`Receiver ${receiverId} has ${receiverConnections?.size || 0} active connections`);
-      
-      if (receiverConnections && receiverConnections.size > 0) {
-        const messageData = JSON.stringify({
-          type: "new_message",
-          message: newMessage
-        });
-        
-        let delivered = false;
-        
-        receiverConnections.forEach(conn => {
-          if (conn.readyState === WebSocket.OPEN) {
-            console.log(`Sending message to receiver ${receiverId}`);
-            conn.send(messageData);
-            delivered = true;
-          }
-        });
-        
-        // Only update status if at least one connection received the message
-        if (delivered) {
-          console.log(`Updating message ${newMessage.id} status to delivered`);
-          await storage.updateMessageStatus(newMessage.id, "delivered");
-        }
-      }
-      
-      // Send confirmation back to sender's connections
-      const senderConnections = userConnections.get(senderId);
-      console.log(`Sender ${senderId} has ${senderConnections?.size || 0} active connections`);
-      
-      if (senderConnections) {
-        const confirmationData = JSON.stringify({
-          type: "message_sent",
-          messageId: newMessage.id,
-          message: newMessage,
-          timestamp: newMessage.timestamp
-        });
-        
-        senderConnections.forEach(conn => {
-          if (conn.readyState === WebSocket.OPEN) {
-            console.log(`Sending confirmation to sender ${senderId}`);
-            conn.send(confirmationData);
-          }
-        });
-      }
-      
-      // Also send the message to the sender's connections to ensure both sides see the message
-      // This ensures the sender can immediately see their own message
-      if (senderConnections) {
-        const messageDataForSender = JSON.stringify({
-          type: "new_message",
-          message: newMessage
-        });
-        
-        senderConnections.forEach(conn => {
-          if (conn.readyState === WebSocket.OPEN) {
-            console.log(`Sending message copy to sender ${senderId}`);
-            conn.send(messageDataForSender);
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Error handling user message:", error);
-    }
+    console.log("[DEPRECATED] This function has been moved to socket-io-server.ts");
+    return;
   }
   
-  // Function to handle message status updates
+  // Function signature remains for reference but implementation is in socket-io-server.ts
   async function handleMessageStatusUpdate(userId: number, message: any) {
-    try {
-      console.log("Handling message status update:", { userId, message });
-      const { messageId, status } = message;
-      
-      if (!messageId || !status) {
-        console.error("Invalid message status update format:", message);
-        return;
-      }
-      
-      // Update message status in database
-      await storage.updateMessageStatus(messageId, status);
-      console.log(`Updated message ${messageId} status to ${status} in database`);
-      
-      // Get the message details using storage interface
-      console.log("Fetching message details...");
-      const allUserMessages = await storage.getUserMessages(userId, 0); // Get all messages
-      const msg = allUserMessages.find(m => m.id === messageId);
-      
-      if (!msg) {
-        console.log(`Message ${messageId} not found`);
-        return;
-      }
-      
-      console.log("Found message:", msg);
-      
-      // Only proceed if this user is the receiver of the message
-      if (msg.receiverId !== userId) {
-        console.log(`User ${userId} is not the receiver of message ${messageId}`);
-        return;
-      }
-      
-      // Notify the sender about the status update
-      const senderConnections = userConnections.get(msg.senderId);
-      console.log(`Sender ${msg.senderId} has ${senderConnections?.size || 0} active connections`);
-      
-      if (senderConnections) {
-        const statusData = JSON.stringify({
-          type: "message_status_update",
-          messageId,
-          status
-        });
-        
-        senderConnections.forEach(conn => {
-          if (conn.readyState === WebSocket.OPEN) {
-            console.log(`Notifying sender ${msg.senderId} about message ${messageId} status update to ${status}`);
-            conn.send(statusData);
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Error updating message status:", error);
-    }
+    console.log("[DEPRECATED] This function has been moved to socket-io-server.ts");
+    return;
   }
   
-  // Function to handle typing indicators
+  // Function signature remains for reference but implementation is in socket-io-server.ts
   async function handleTypingIndicator(senderId: number, message: any) {
-    try {
-      const { receiverId, isTyping } = message;
-      
-      // Send typing indicator to receiver
-      const receiverConnections = userConnections.get(receiverId);
-      if (receiverConnections) {
-        const typingData = JSON.stringify({
-          type: "typing_indicator",
-          senderId,
-          isTyping
-        });
-        
-        receiverConnections.forEach(conn => {
-          if (conn.readyState === WebSocket.OPEN) {
-            conn.send(typingData);
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Error sending typing indicator:", error);
-    }
+    console.log("[DEPRECATED] This function has been moved to socket-io-server.ts");
+    return;
   }
 
-  // Updated broadcast function to use tracked clients
+  // Updated broadcast function to use Socket.IO
   const broadcastUpdate = (type: string, adminOnly = false) => {
-    const message = JSON.stringify({ type });
+    // Import the socketService to access the Socket.IO instance
+    const { socketService } = require('./socket-io-server');
     
+    // Use the Socket.IO server to emit events instead of direct WebSocket connections
+    // This is optimized to reduce RAM and CPU usage with a single source of broadcasts
     if (adminOnly) {
       // Send only to admin clients
-      adminClients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(message);
-        }
-      });
+      socketService.io.to('admin').emit(type);
     } else {
-      // Send to all connected users
-      for (const connections of userConnections.values()) {
-        connections.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(message);
-          }
-        });
-      }
+      // Send to all connected users as a broadcast event
+      socketService.io.emit(type);
     }
   };
 

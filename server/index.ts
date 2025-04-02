@@ -94,19 +94,15 @@ app.use((req, res, next) => {
     startScheduler();
     log("Broadcast scheduler started successfully");
 
-    // Create HTTP server first
-    const httpServer = createServer(app);
+    // Register routes and get the HTTP server
+    // Note: The Socket.IO server is now set up inside registerRoutes
+    const httpServer = await registerRoutes(app);
+    log("Routes registered and Socket.IO server initialized successfully");
     
-    // Initialize the Socket.IO server for chat functionality
-    setupSocketIOServer(httpServer);
-    log("Chat Socket.IO server initialized successfully");
-    
-    // Initialize the notification socket service
+    // Initialize the notification socket service using the same HTTP server
+    // This now uses the shared Socket.IO instance through socketService
     initializeNotificationSocketService(httpServer);
     log("Notification Socket.IO service initialized successfully");
-    
-    // Register routes
-    await registerRoutes(app);
 
     // Global error handler with better logging
     app.use((err: any, req: Request, res: Response, _next: NextFunction) => {

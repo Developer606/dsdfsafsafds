@@ -14,19 +14,116 @@ import {
   flagMessage 
 } from './content-moderation';
 
-export function setupSocketIOServer(httpServer: HTTPServer) {
+// Socket performance configuration
+const SOCKET_LOG_LEVEL = process.env.NODE_ENV === 'production' ? 'error' : 'info';
+const PING_TIMEOUT = 20000; // 20 seconds
+const PING_INTERVAL = 25000; // 25 seconds
+const MAX_RECONNECTION_ATTEMPTS = 3;
+
+// Memory usage optimization constants
+const MEMORY_CLEANUP_INTERVAL = 15 * 60 * 1000; // 15 minutes
+const INACTIVE_USER_THRESHOLD = 30 * 60 * 1000; // 30 minutes
+
+// Debouncing mechanism for log reduction
+const lastLogTime = new Map<string, number>();
+
+/**
+ * Debounced logging to reduce log volume and memory pressure
+ */
+function debouncedLog(key: string, message: string, level: 'info' | 'error' = 'info'): void {
+  const now = Date.now();
+  const lastTime = lastLogTime.get(key) || 0;
+  
+  // Only log if it's been more than 10 seconds since the last log with this key
+  if (now - lastTime > 10000) {
+    if (level === 'info' && SOCKET_LOG_LEVEL === 'info') {
+      console.log(message);
+    } else if (level === 'error') {
+      console.error(message);
+    }
+    lastLogTime.set(key, now);
+  }
+}
+
+/**
+ * Socket service for centralized access to the Socket.IO instance
+ */
+class SocketService {
+  public io: Server | null = null;
+  
+  /**
+   * Get the Socket.IO instance
+   */
+  getIO(): Server {
+    if (!this.io) {
+      throw new Error('Socket.IO has not been initialized');
+    }
+    return this.io;
+  }
+  
+  /**
+   * Initialize the Socket.IO instance
+   */
+  initialize(io: Server): void {
+    this.io = io;
+  }
+}
+
+// Export a singleton instance
+export const socketService = new SocketService();
+
+/**
+ * Set up optimized Socket.IO server with reduced memory footprint
+ * @param httpServer HTTP server to attach to
+ * @param handleWebSocketTraffic Whether to also handle WebSocket traffic (instead of using a separate server)
+ */
+export function setupSocketIOServer(httpServer: HTTPServer, handleWebSocketTraffic = false) {
+  // Optimized Socket.IO configuration
   const io = new Server(httpServer, {
     cors: {
       origin: process.env.NODE_ENV === 'production' ? false : '*',
       methods: ['GET', 'POST'],
       credentials: true
     },
-    transports: ['websocket', 'polling'] // Enable fallback to polling if WebSocket fails
+    transports: handleWebSocketTraffic ? ['websocket'] : ['websocket', 'polling'],
+    pingTimeout: PING_TIMEOUT,
+    pingInterval: PING_INTERVAL,
+    connectTimeout: 15000,
+    maxHttpBufferSize: 1e6, // 1MB limit to prevent memory issues
+    allowUpgrades: !handleWebSocketTraffic, // Disable upgrades if only using WebSocket
+    serveClient: false // Don't serve client files for better performance
   });
 
-  // Map to track user connections
+  // Memory-optimized connection tracking
   const userConnections = new Map<number, Set<Socket>>();
   const typingUsers = new Map<number, Set<number>>();
+  
+  // Set up periodic memory cleanup for inactive connections
+  setInterval(() => {
+    // Clear old logging timestamps to prevent memory leaks
+    const now = Date.now();
+    lastLogTime.forEach((timestamp, key) => {
+      if (now - timestamp > 3600000) { // 1 hour
+        lastLogTime.delete(key);
+      }
+    });
+    
+    // Remove inactive users from tracking
+    cleanupInactiveUsers(INACTIVE_USER_THRESHOLD);
+    
+    // Clear any empty sets
+    userConnections.forEach((connections, userId) => {
+      if (connections.size === 0) {
+        userConnections.delete(userId);
+      }
+    });
+    
+    typingUsers.forEach((users, conversationId) => {
+      if (users.size === 0) {
+        typingUsers.delete(conversationId);
+      }
+    });
+  }, MEMORY_CLEANUP_INTERVAL);
   
   // Wrapper for console.log with socket.io prefix
   const log = (message: string) => {
@@ -383,8 +480,11 @@ export function setupSocketIOServer(httpServer: HTTPServer) {
 
   // Set up maintenance interval for user status cleanup
   setInterval(() => {
-    cleanupInactiveUsers();
+    cleanupInactiveUsers(INACTIVE_USER_THRESHOLD);
   }, 60 * 60 * 1000); // Run every hour
 
+  // Initialize the socket service with this io instance
+  socketService.initialize(io);
+  
   return io;
 }

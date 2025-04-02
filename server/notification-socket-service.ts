@@ -1,42 +1,29 @@
-import { Server } from 'socket.io';
+import { Server, Namespace } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { Notification } from '@shared/schema';
+import { socketService } from './socket-io-server';
 
 // Keep track of connected users and their sockets - optimized structure
 type ConnectedUsers = Map<number, Set<string>>;
 
 // Cache control constants
 const SOCKET_LOG_LEVEL = process.env.NODE_ENV === 'production' ? 'error' : 'info';
-const MAX_RECONNECTION_ATTEMPTS = 3;
-const PING_TIMEOUT = 20000; // 20 seconds
-const PING_INTERVAL = 25000; // 25 seconds
 
 export class NotificationSocketService {
   private io: Server;
+  private notificationNamespace: Namespace;
   private connectedUsers: ConnectedUsers = new Map();
   // Add debounce tracking for logging
   private lastLogTime: Map<string, number> = new Map();
 
   constructor(httpServer: HTTPServer) {
-    // Create a namespace for notifications with optimized configuration
-    this.io = new Server(httpServer, {
-      serveClient: false, // Don't serve client files
-      pingTimeout: PING_TIMEOUT, 
-      pingInterval: PING_INTERVAL,
-      connectTimeout: 15000,
-      transports: ['websocket'], // Only use WebSocket, avoid long-polling
-      allowUpgrades: false, // Disable transport upgrades
-      maxHttpBufferSize: 1e6, // 1MB max payload
-      cors: {
-        origin: true,
-        methods: ["GET", "POST"],
-        credentials: true
-      }
-    });
-    
-    const notificationNamespace = this.io.of('/notifications');
+    // Use the existing Socket.IO instance from socketService
+    // This ensures we're using a single Socket.IO instance for all realtime functionality
+    // which greatly reduces memory usage and connection overhead
+    this.io = socketService.getIO();
+    this.notificationNamespace = this.io.of('/notifications');
 
-    notificationNamespace.on('connection', (socket) => {
+    this.notificationNamespace.on('connection', (socket) => {
       const userId = this.getUserIdFromSocket(socket);
       
       if (!userId) {
@@ -78,13 +65,12 @@ export class NotificationSocketService {
       createdAt: notification.createdAt
     };
 
-    // Send notification to all connected devices of this user
-    const namespace = this.io.of('/notifications');
+    // Send notification to all connected devices of this user using the stored namespace
     let delivered = false;
     
     // Use for...of loop instead of forEach for better performance with early return
     for (const socketId of socketIds) {
-      const socket = namespace.sockets.get(socketId);
+      const socket = this.notificationNamespace.sockets.get(socketId);
       if (socket && socket.connected) {
         socket.emit('new_notification', minimalNotification);
         delivered = true;
@@ -107,8 +93,7 @@ export class NotificationSocketService {
       message: notification.message
     };
     
-    const namespace = this.io.of('/notifications');
-    namespace.emit('broadcast_notification', minimalNotification);
+    this.notificationNamespace.emit('broadcast_notification', minimalNotification);
     this.debouncedLog('broadcast', `[NotificationSocket] Broadcast notification sent`);
   }
 
