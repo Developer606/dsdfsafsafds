@@ -19,7 +19,7 @@ export function NotificationHeader() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { isConnected } = useNotificationSocket();
+  const { isConnected, refreshNotifications: forceRefresh, markAllAsRead, pendingNotificationsCount } = useNotificationSocket();
 
   // Query notifications from the API with auto-refresh 
   const { data: notifications = [], refetch: refetchNotifications } = useQuery<Notification[]>({
@@ -223,6 +223,14 @@ export function NotificationHeader() {
                   className="relative p-2 transition-transform"
                 >
                   <Bell className="h-6 w-6 text-gray-700 dark:text-gray-400" />
+                  {pendingNotificationsCount > 0 && (
+                    <motion.span 
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="absolute top-1 left-1 h-2 w-2 bg-blue-500 rounded-full"
+                      title={`${pendingNotificationsCount} notifications being processed`}
+                    />
+                  )}
                   {unreadCount > 0 && (
                     <motion.span 
                       initial={{ scale: 0 }}
@@ -256,9 +264,30 @@ export function NotificationHeader() {
               </PopoverTrigger>
               <PopoverContent className="w-80 p-0 bg-white dark:bg-gray-900 border-0 shadow-xl rounded-xl">
                 <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    <span className="text-pink-500 dark:text-pink-400">Notifications</span>
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                      <span className="text-pink-500 dark:text-pink-400">Notifications</span>
+                    </h3>
+                    {unreadCount > 0 && (
+                      <motion.button
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        whileHover={{ scale: 1.05 }}
+                        onClick={() => {
+                          markAllAsRead();
+                          toast({
+                            title: "All notifications marked as read",
+                            description: `${unreadCount} notification${unreadCount !== 1 ? 's' : ''} updated`,
+                            variant: "default",
+                            duration: 2000
+                          });
+                        }}
+                        className="text-xs text-pink-500 hover:text-pink-600 dark:text-pink-400 dark:hover:text-pink-300 font-medium"
+                      >
+                        Mark all as read
+                      </motion.button>
+                    )}
+                  </div>
                 </div>
                 <AnimatePresence>
                   {notifications.length > 0 ? (
@@ -311,7 +340,10 @@ export function NotificationHeader() {
                   <div className="flex items-center space-x-2">
                     {/* Manual refresh button */}
                     <button 
-                      onClick={() => {
+                      onClick={async () => {
+                        // Use the optimized force refresh method
+                        await forceRefresh();
+                        // Also trigger React Query's refresh for UI sync
                         refetchNotifications();
                         toast({
                           title: "Refreshed",

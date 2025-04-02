@@ -525,6 +525,10 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   });
 
   // Notification Routes
+  // Cache configuration for notifications
+  const notificationCache = new Map<number, {data: any[], timestamp: number}>();
+  const CACHE_TTL = 30 * 1000; // 30 seconds cache lifetime
+  
   app.get("/api/notifications", async (req, res) => {
     if (!req.user) {
       return res.status(401).json({ error: "User not authenticated" });
@@ -532,14 +536,28 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     
     try {
       const userId = req.user.id;
-      console.log(`Fetching notifications for user ID: ${userId}`);
+      const now = Date.now();
+      const isForceFresh = req.query.fresh === 'true';
       
-      // Force a direct database connection for maximum freshness
+      // Check cache first if this isn't a force-fresh request
+      if (!isForceFresh && notificationCache.has(userId)) {
+        const cachedData = notificationCache.get(userId);
+        
+        // If cache is still valid (within TTL)
+        if (cachedData && (now - cachedData.timestamp) < CACHE_TTL) {
+          console.log(`Returning cached notifications for user ID: ${userId}`);
+          return res.json(cachedData.data);
+        }
+      }
+      
+      console.log(`Fetching fresh notifications for user ID: ${userId}`);
+      
+      // If not cached or stale cache, fetch from database
       const rawNotifications = await new Promise((resolve, reject) => {
         try {
           const db = notificationDb.$client;
           
-          // To ensure we always get the most current data, we'll use a direct prepared statement
+          // Optimized query using index on user_id and created_at
           const query = `
             SELECT 
               id,
@@ -552,7 +570,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             FROM notifications
             WHERE user_id = ?
             ORDER BY created_at DESC
-            LIMIT 100
+            LIMIT 50
           `;
           
           const stmt = db.prepare(query);
@@ -565,13 +583,27 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         }
       });
       
-      console.log(`Found ${(rawNotifications as any[]).length} notifications for user ID: ${userId}`);
-      
-      // Format dates properly
+      // Format and prepare the result
       const notifications = (rawNotifications as any[]).map(notification => ({
         ...notification,
         createdAt: new Date(notification.createdAt) // Ensure proper date formatting
       }));
+      
+      // Update the cache with fresh data
+      notificationCache.set(userId, {
+        data: notifications,
+        timestamp: now
+      });
+      
+      // Cleanup old cache entries every 100 requests (statistically)
+      if (Math.random() < 0.01) {
+        console.log("Performing cache cleanup");
+        for (const [cachedUserId, cachedData] of notificationCache.entries()) {
+          if ((now - cachedData.timestamp) > CACHE_TTL * 2) {
+            notificationCache.delete(cachedUserId);
+          }
+        }
+      }
       
       res.json(notifications);
     } catch (error: any) {
