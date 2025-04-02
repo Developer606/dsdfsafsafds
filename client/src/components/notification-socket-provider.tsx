@@ -14,103 +14,133 @@ const NotificationSocketContext = createContext<NotificationSocketContextType>({
   refreshNotifications: async () => {}
 });
 
+// Constants for optimized behavior
+const NOTIFICATION_LIMIT = 7; // Maximum notifications to keep in-memory
+const RECONNECT_DELAY = 5000; // 5 seconds
+const FETCH_DELAY = 200; // 200ms delay for refetching
+
+// Socket.IO options for performance optimization
+const SOCKET_OPTIONS = {
+  reconnectionAttempts: 3, // Limit reconnection attempts
+  reconnectionDelay: 1000,
+  timeout: 5000, // Reduce timeout
+  transports: ['websocket'], // Prefer WebSocket only (more efficient)
+  upgrade: false // Prevent transport upgrades to reduce overhead
+};
+
 export const useNotificationSocket = () => useContext(NotificationSocketContext);
 
 export function NotificationSocketProvider({ children }: { children: ReactNode }) {
   const socketRef = useRef<Socket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
   
-  // Get current user for authentication
+  // Get current user for authentication with minimal fetching
   const { data: currentUser } = useQuery<User>({
     queryKey: ['/api/user'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Create a function to refresh notifications that can be called from anywhere
+  // Optimized function to refresh notifications that can be called from anywhere
   const refreshNotifications = useCallback(async () => {
     try {
       if (!currentUser) return;
       
-      console.log('Manually refreshing notifications');
-      // Invalidate the query cache to trigger a refetch
-      await queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      // Clear any pending fetch timeout to prevent duplicate fetches
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+        fetchTimeoutRef.current = null;
+      }
       
-      // Optional: You could also manually fetch here if needed
-      // const response = await fetch('/api/notifications');
-      // if (response.ok) {
-      //   const data = await response.json();
-      //   queryClient.setQueryData(['/api/notifications'], data);
-      // }
+      // Fetch notifications directly rather than just invalidating cache
+      const response = await fetch('/api/notifications', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const allNotifications = await response.json();
+        
+        // Only keep the most recent NOTIFICATION_LIMIT notifications in memory
+        const limitedNotifications = allNotifications.slice(0, NOTIFICATION_LIMIT);
+        
+        // Update the cache directly
+        queryClient.setQueryData(['/api/notifications'], limitedNotifications);
+      } else {
+        // Fallback to query invalidation if fetch fails
+        queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      }
     } catch (error) {
       console.error('Error refreshing notifications:', error);
     }
   }, [currentUser, queryClient]);
 
-  // Setup socket connection
+  // Optimized socket connection
   useEffect(() => {
     // Only connect if we have a user
     if (!currentUser) return;
     
     const connectSocket = () => {
+      // Clean up any existing socket to prevent memory leaks
+      if (socketRef.current && socketRef.current.connected) {
+        socketRef.current.disconnect();
+      }
+      
       // Clear any pending reconnect timeout
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
       
-      // Create socket connection
+      // Create socket connection with optimized options
       const socket = io('/notifications', {
         auth: {
-          token: localStorage.getItem('token') // Use stored JWT if available
+          token: localStorage.getItem('token')
         },
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        timeout: 10000
+        ...SOCKET_OPTIONS
       });
       
       socketRef.current = socket;
       
-      // Set up socket event listeners
+      // Optimized event listeners with minimal processing
       socket.on('connect', () => {
-        console.log('Connected to notification socket');
         setIsConnected(true);
-        // Refresh notifications on reconnect to ensure we have the latest data
+        // Refresh notifications on reconnect
         refreshNotifications();
       });
       
-      socket.on('connect_error', (error) => {
-        console.error('Connection error:', error);
+      socket.on('connect_error', () => {
         setIsConnected(false);
       });
       
       socket.on('disconnect', (reason) => {
-        console.log('Disconnected from notification socket:', reason);
         setIsConnected(false);
         
-        // Attempt manual reconnect if normal reconnection fails
+        // Only attempt manual reconnect if needed
         if (reason === 'io server disconnect' || reason === 'io client disconnect') {
-          // Server/client initiated disconnect, need manual reconnect
           reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Attempting manual reconnect...');
             connectSocket();
-          }, 5000);
+          }, RECONNECT_DELAY);
         }
       });
       
-      // Handle new notifications
+      // Handle new notifications with optimized memory usage
       socket.on('new_notification', (notification: Notification) => {
-        console.log('Received new notification:', notification);
-        
-        // Add the new notification to the cache
+        // Add the new notification to the cache with limit enforcement
         const notifications = queryClient.getQueryData<Notification[]>(['/api/notifications']) || [];
-        const updatedNotifications = [notification, ...notifications];
         
-        // Update the notification count and list
+        // Only keep the most recent NOTIFICATION_LIMIT notifications
+        const updatedNotifications = [notification, ...notifications.slice(0, NOTIFICATION_LIMIT - 1)];
+        
+        // Update the notification list with the limited set
         queryClient.setQueryData(['/api/notifications'], updatedNotifications);
         
-        // Show toast notification
+        // Show toast notification with minimal processing
         toast({
           title: notification.title,
           description: notification.message,
@@ -119,13 +149,11 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
         });
       });
       
-      // Handle broadcast notifications (system-wide)
+      // Handle broadcast notifications (system-wide) with optimized memory usage
       socket.on('broadcast_notification', (data: Omit<Notification, 'userId'>) => {
         if (!currentUser) return;
         
-        console.log('Received broadcast notification:', data);
-        
-        // Show toast notification immediately
+        // Show toast notification with minimal processing
         toast({
           title: data.title,
           description: data.message,
@@ -133,35 +161,15 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
           duration: 5000
         });
         
-        // Force an immediate fetch of fresh notifications from server
-        const fetchLatestNotifications = async () => {
-          try {
-            // Wait a moment for the server to finish processing the broadcast
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            // Fetch notifications directly rather than just invalidating cache
-            console.log('Fetching latest notifications after broadcast');
-            const response = await fetch('/api/notifications', {
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-              }
-            });
-            
-            if (!response.ok) throw new Error('Failed to fetch notifications');
-            
-            const freshNotifications = await response.json();
-            
-            // Update the query cache with fresh data
-            queryClient.setQueryData(['/api/notifications'], freshNotifications);
-            console.log('Updated notifications in cache:', freshNotifications.length);
-          } catch (error) {
-            console.error('Error fetching fresh notifications:', error);
-            // Fallback to invalidation on error
-            queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-          }
-        };
+        // Debounce the fetch to prevent multiple fetches when receiving batched notifications
+        if (fetchTimeoutRef.current) {
+          clearTimeout(fetchTimeoutRef.current);
+        }
         
-        fetchLatestNotifications();
+        fetchTimeoutRef.current = setTimeout(() => {
+          refreshNotifications();
+          fetchTimeoutRef.current = null;
+        }, FETCH_DELAY);
       });
     };
     
@@ -178,6 +186,11 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
+      }
+      
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+        fetchTimeoutRef.current = null;
       }
       
       setIsConnected(false);

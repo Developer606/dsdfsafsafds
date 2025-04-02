@@ -2,74 +2,114 @@ import { Server } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { Notification } from '@shared/schema';
 
-// Keep track of connected users and their sockets
+// Keep track of connected users and their sockets - optimized structure
 type ConnectedUsers = Map<number, Set<string>>;
+
+// Cache control constants
+const SOCKET_LOG_LEVEL = process.env.NODE_ENV === 'production' ? 'error' : 'info';
+const MAX_RECONNECTION_ATTEMPTS = 3;
+const PING_TIMEOUT = 20000; // 20 seconds
+const PING_INTERVAL = 25000; // 25 seconds
 
 export class NotificationSocketService {
   private io: Server;
   private connectedUsers: ConnectedUsers = new Map();
+  // Add debounce tracking for logging
+  private lastLogTime: Map<string, number> = new Map();
 
   constructor(httpServer: HTTPServer) {
-    // Create a namespace for notifications to keep them separate from other socket communications
-    this.io = new Server(httpServer);
+    // Create a namespace for notifications with optimized configuration
+    this.io = new Server(httpServer, {
+      serveClient: false, // Don't serve client files
+      pingTimeout: PING_TIMEOUT, 
+      pingInterval: PING_INTERVAL,
+      connectTimeout: 15000,
+      transports: ['websocket'], // Only use WebSocket, avoid long-polling
+      allowUpgrades: false, // Disable transport upgrades
+      maxHttpBufferSize: 1e6, // 1MB max payload
+      cors: {
+        origin: true,
+        methods: ["GET", "POST"],
+        credentials: true
+      }
+    });
+    
     const notificationNamespace = this.io.of('/notifications');
 
     notificationNamespace.on('connection', (socket) => {
       const userId = this.getUserIdFromSocket(socket);
       
       if (!userId) {
-        console.log('[NotificationSocket] Connection rejected - no user ID');
+        this.debouncedLog('socket-error', `[NotificationSocket] Connection rejected - no user ID`);
         socket.disconnect();
         return;
       }
 
-      console.log(`[NotificationSocket] User ${userId} connected`);
+      this.debouncedLog(`user-${userId}`, `[NotificationSocket] User ${userId} connected`);
       
       // Register this socket with the user
       this.registerUserSocket(userId, socket.id);
 
       // Handle disconnection
       socket.on('disconnect', () => {
-        console.log(`[NotificationSocket] User ${userId} disconnected`);
+        this.debouncedLog(`user-${userId}`, `[NotificationSocket] User ${userId} disconnected`);
         this.removeUserSocket(userId, socket.id);
       });
     });
   }
 
   /**
-   * Send a notification to a specific user
+   * Send a notification to a specific user - optimized for performance
    */
   public sendNotificationToUser(userId: number, notification: Notification): boolean {
     // Get all socket IDs for this user
     const socketIds = this.connectedUsers.get(userId);
     if (!socketIds || socketIds.size === 0) {
-      console.log(`[NotificationSocket] User ${userId} not connected, notification will be seen on next login`);
-      return false;
+      return false; // Silently fail without logging to reduce overhead
     }
+
+    // Prepare a minimal notification object by removing unnecessary properties
+    const minimalNotification = {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      message: notification.message,
+      read: notification.read,
+      createdAt: notification.createdAt
+    };
 
     // Send notification to all connected devices of this user
     const namespace = this.io.of('/notifications');
     let delivered = false;
     
-    socketIds.forEach(socketId => {
+    // Use for...of loop instead of forEach for better performance with early return
+    for (const socketId of socketIds) {
       const socket = namespace.sockets.get(socketId);
       if (socket && socket.connected) {
-        socket.emit('new_notification', notification);
+        socket.emit('new_notification', minimalNotification);
         delivered = true;
-        console.log(`[NotificationSocket] Notification sent to user ${userId} on socket ${socketId}`);
+        // Skip individual delivery logs to reduce overhead
+        break; // Only need one successful delivery to mark as delivered
       }
-    });
+    }
 
     return delivered;
   }
 
   /**
-   * Broadcast a notification to all connected users
+   * Broadcast a notification to all connected users - optimized
    */
   public broadcastNotification(notification: Omit<Notification, 'userId'>): void {
+    // Create a minimal payload
+    const minimalNotification = {
+      type: notification.type,
+      title: notification.title,
+      message: notification.message
+    };
+    
     const namespace = this.io.of('/notifications');
-    namespace.emit('broadcast_notification', notification);
-    console.log(`[NotificationSocket] Broadcast notification sent to all users`);
+    namespace.emit('broadcast_notification', minimalNotification);
+    this.debouncedLog('broadcast', `[NotificationSocket] Broadcast notification sent`);
   }
 
   /**
@@ -115,6 +155,25 @@ export class NotificationSocketService {
       if (userSockets.size === 0) {
         this.connectedUsers.delete(userId);
       }
+    }
+  }
+  
+  /**
+   * Debounced logging to reduce log volume
+   * Only logs once per key per 10 seconds
+   */
+  private debouncedLog(key: string, message: string): void {
+    const now = Date.now();
+    const lastTime = this.lastLogTime.get(key) || 0;
+    
+    // Only log if it's been more than 10 seconds since the last log with this key
+    if (now - lastTime > 10000) {
+      if (SOCKET_LOG_LEVEL === 'info') {
+        console.log(message);
+      } else if (SOCKET_LOG_LEVEL === 'error' && message.includes('error')) {
+        console.error(message);
+      }
+      this.lastLogTime.set(key, now);
     }
   }
 }

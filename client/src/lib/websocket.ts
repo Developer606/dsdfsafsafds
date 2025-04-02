@@ -1,43 +1,107 @@
 import { queryClient } from "./queryClient";
 
+// Constants for optimized WebSocket behavior
+const RECONNECT_DELAY = 5000; // 5 seconds
+const NOTIFICATION_LIMIT = 7; // Maximum notifications to keep
+const FETCH_DELAY = 200; // 200ms delay for fetch
+
+// Debounce mechanism to avoid excessive fetches
+const debounces = new Map<string, NodeJS.Timeout>();
+
+// Cache check to prevent redundant invalidations
+let lastInvalidationTime = new Map<string, number>();
+
+/**
+ * Debounced query invalidation to reduce unnecessary fetches
+ */
+function debouncedInvalidateQuery(queryKey: string | any[], delay: number = 300) {
+  const key = Array.isArray(queryKey) ? queryKey.join('/') : queryKey;
+  
+  // Clear existing timeout for this key
+  if (debounces.has(key)) {
+    clearTimeout(debounces.get(key)!);
+  }
+  
+  // Set new timeout
+  debounces.set(key, setTimeout(() => {
+    queryClient.invalidateQueries({ queryKey: Array.isArray(queryKey) ? queryKey : [queryKey] });
+    debounces.delete(key);
+  }, delay));
+}
+
+/**
+ * Rate-limited invalidation that only triggers if enough time has passed
+ */
+function rateLimitedInvalidation(queryKey: string | any[], minInterval: number = 2000) {
+  const key = Array.isArray(queryKey) ? queryKey.join('/') : queryKey;
+  const now = Date.now();
+  const lastTime = lastInvalidationTime.get(key) || 0;
+  
+  if (now - lastTime > minInterval) {
+    queryClient.invalidateQueries({ queryKey: Array.isArray(queryKey) ? queryKey : [queryKey] });
+    lastInvalidationTime.set(key, now);
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Optimized WebSocket setup with reduced memory and CPU usage
+ */
 export const setupWebSocket = () => {
+  // Only create one socket instance and reuse it
+  if ((window as any).__websocket && (window as any).__websocket.readyState === WebSocket.OPEN) {
+    return (window as any).__websocket;
+  }
+  
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const wsUrl = `${protocol}//${window.location.host}/ws`;
   const socket = new WebSocket(wsUrl);
-
+  
+  // Store the socket in window to prevent multiple connections
+  (window as any).__websocket = socket;
+  
+  // Use a more efficient message handler
   socket.onmessage = (event) => {
     try {
+      // Parse the message only once
       const data = JSON.parse(event.data);
-      console.log("WebSocket received message:", data);
       
-      // Handle different types of updates
+      // Handle different types of updates with optimized approach
       switch (data.type) {
-        // Admin updates
+        // Group admin updates to reduce redundant invalidations
         case 'user_update':
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/dashboard/stats"] });
+          debouncedInvalidateQuery(["/api/admin/users"]);
+          debouncedInvalidateQuery(["/api/admin/dashboard/stats"]);
           break;
-        case 'message_update':
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/messages/recent"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/messages"] });
-          break;
-        case 'character_update':
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/characters/stats"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics/characters/popularity"] });
-          break;
-        case 'subscription_update':
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/plans"] });
-          break;
-        case 'notification_update':
-          console.log("Received notification_update via WebSocket");
           
-          // For user notifications, use a more direct approach
-          const fetchFreshNotifications = async () => {
+        case 'message_update':
+          debouncedInvalidateQuery(["/api/admin/messages/recent"]);
+          debouncedInvalidateQuery(["/api/admin/analytics/messages"]);
+          break;
+          
+        case 'character_update':
+          debouncedInvalidateQuery(["/api/admin/characters/stats"]);
+          debouncedInvalidateQuery(["/api/admin/analytics/characters/popularity"]);
+          break;
+          
+        case 'subscription_update':
+          debouncedInvalidateQuery(["/api/admin/plans"]);
+          break;
+          
+        case 'notification_update':
+          // For admin notifications, use rate limited invalidation
+          rateLimitedInvalidation(["/api/admin/notifications/all"], 5000);
+          
+          // For user notifications, use optimized direct fetch approach
+          const fetchKey = 'notifications-fetch';
+          if (debounces.has(fetchKey)) {
+            clearTimeout(debounces.get(fetchKey)!);
+          }
+          
+          debounces.set(fetchKey, setTimeout(async () => {
             try {
-              // Wait a brief moment for the server to finish processing
-              await new Promise(resolve => setTimeout(resolve, 300));
-              
-              console.log("Fetching fresh notifications from server after WebSocket update");
               const response = await fetch('/api/notifications', {
                 headers: {
                   'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -45,73 +109,65 @@ export const setupWebSocket = () => {
               });
               
               if (!response.ok) {
-                console.error("Error fetching notifications:", response.status);
                 throw new Error('Failed to fetch notifications');
               }
               
-              const freshNotifications = await response.json();
-              console.log(`Received ${freshNotifications.length} fresh notifications`);
+              const allNotifications = await response.json();
               
-              // Update the cache directly with fresh data
-              queryClient.setQueryData(['/api/notifications'], freshNotifications);
+              // Only keep the most recent NOTIFICATION_LIMIT notifications
+              const limitedNotifications = allNotifications.slice(0, NOTIFICATION_LIMIT);
+              
+              // Update the cache directly with optimized data
+              queryClient.setQueryData(['/api/notifications'], limitedNotifications);
             } catch (error) {
-              console.error("Error fetching fresh notifications, falling back to cache invalidation:", error);
               // Fallback to invalidation on error
               queryClient.invalidateQueries({ queryKey: ["/api/notifications"] });
+            } finally {
+              debounces.delete(fetchKey);
             }
-          };
-          
-          // For admin notifications, still use invalidation as it's less critical for real-time
-          queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
-          
-          // Execute the fetch
-          fetchFreshNotifications();
+          }, FETCH_DELAY));
           break;
           
-        // User messaging updates
+        // Optimize user messaging updates
         case 'new_message':
-          // Handle new message notification
           if (data.message) {
-            // Invalidate conversation list
-            queryClient.invalidateQueries({ queryKey: ["/api/user/conversations"] });
-            
-            // Invalidate specific conversation messages
             const otherUserId = data.message.senderId;
-            queryClient.invalidateQueries({ queryKey: ["/api/user-messages", otherUserId] });
+            debouncedInvalidateQuery(["/api/user/conversations"]);
+            debouncedInvalidateQuery(["/api/user-messages", otherUserId]);
           }
           break;
           
         case 'message_sent':
-          // Message sent confirmation
-          if (data.messageId) {
-            queryClient.invalidateQueries({ queryKey: ["/api/user-messages"] });
-          }
-          break;
-          
         case 'message_status_update':
-          // Message status update
           if (data.messageId) {
-            queryClient.invalidateQueries({ queryKey: ["/api/user-messages"] });
+            debouncedInvalidateQuery(["/api/user-messages"]);
           }
           break;
       }
     } catch (error) {
-      console.error("Error handling WebSocket message:", error);
+      // Minimal error handling to reduce processing
+      console.error("WebSocket error:", error);
     }
   };
 
-  socket.onopen = () => {
-    console.log("WebSocket connection established");
-  };
+  // Minimized event handlers
+  socket.onopen = () => socket.readyState === WebSocket.OPEN;
+  socket.onerror = () => socket.readyState !== WebSocket.OPEN;
 
-  socket.onerror = (error) => {
-    console.error('WebSocket error:', error);
-  };
-
+  // Optimized reconnect logic
   socket.onclose = () => {
-    console.log("WebSocket connection closed");
-    // Attempt to reconnect after 5 seconds
-    setTimeout(() => setupWebSocket(), 5000);
+    // Clean up existing debounces
+    debounces.forEach((timeout) => clearTimeout(timeout));
+    debounces.clear();
+    
+    // Only reconnect if no other socket exists
+    if (!(window as any).__websocketReconnectTimer) {
+      (window as any).__websocketReconnectTimer = setTimeout(() => {
+        delete (window as any).__websocket;
+        delete (window as any).__websocketReconnectTimer;
+        setupWebSocket();
+      }, RECONNECT_DELAY);
+    }
   };
 
   return socket;
