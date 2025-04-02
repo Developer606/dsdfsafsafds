@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Bell, Users, Send, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type NotificationType = 'admin_reply' | 'update' | 'feature';
 
+// Create constants to avoid recreating objects in the component
+const NOTIFICATION_TYPES = [
+  { value: "admin_reply", label: "Admin Reply" },
+  { value: "update", label: "Update" },
+  { value: "feature", label: "New Feature" }
+] as const;
+
 export function NotificationPopover() {
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<string>("");
@@ -28,16 +35,47 @@ export function NotificationPopover() {
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("");
 
-  // Fetch all users for the user selector
+  // Fetch all users for the user selector with ultra-optimized memory settings
   const { data: users = [] } = useQuery({
     queryKey: ["/api/admin/users"],
+    staleTime: 900000, // 15 minutes - users list rarely changes 
+    refetchOnWindowFocus: false, // Prevent unnecessary refetches
+    gcTime: 3600000, // GC after 1 hour to reduce memory pressure (replaces cacheTime)
+    refetchInterval: false, // Disable automatic refetching
   });
 
-  // Fetch scheduled broadcasts
+  // Fetch scheduled broadcasts with ultra-optimized memory-efficient settings
   const { data: scheduledBroadcasts = [] } = useQuery({
     queryKey: ["/api/admin/broadcasts/scheduled"],
-    refetchInterval: 30000,
+    refetchInterval: 180000, // Reduced to once every 3 minutes to minimize resource usage
+    staleTime: 120000, // 2 minutes stale time to reduce unnecessary fetches
+    refetchOnWindowFocus: false, // Disable automatic refetch on window focus
+    gcTime: 1800000, // GC after 30 minutes to improve memory efficiency (replaces cacheTime)
   });
+
+  // Memoize invalidation callback to avoid recreating functions
+  const invalidateQueries = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
+  }, []);
+
+  // Memoize broadcast invalidation callback
+  const invalidateBroadcasts = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["/api/admin/broadcasts/scheduled"] });
+  }, []);
+
+  // Memoize form reset function to avoid recreation
+  const resetForm = useCallback(() => {
+    setTitle("");
+    setMessage("");
+  }, []);
+
+  // Memoize schedule form reset
+  const resetScheduleForm = useCallback(() => {
+    setTitle("");
+    setMessage("");
+    setDate(undefined);
+    setTime("");
+  }, []);
 
   // Mutation for sending notification to specific user
   const sendToUserMutation = useMutation({
@@ -54,9 +92,8 @@ export function NotificationPopover() {
         description: "Notification sent successfully",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
-      setTitle("");
-      setMessage("");
+      invalidateQueries();
+      resetForm();
     },
     onError: () => {
       toast({
@@ -82,9 +119,8 @@ export function NotificationPopover() {
         description: "Notification broadcasted to all users",
         variant: "default"
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications/all"] });
-      setTitle("");
-      setMessage("");
+      invalidateQueries();
+      resetForm();
     },
     onError: (error) => {
       toast({
@@ -95,26 +131,30 @@ export function NotificationPopover() {
     },
   });
 
-  // Mutation for scheduling broadcasts
+  // Mutation for scheduling broadcasts - optimized to reduce object creation
   const scheduleBroadcastMutation = useMutation({
     mutationFn: async () => {
       if (!date || !time) throw new Error("Date and time are required");
 
+      // Parse time once and reuse values
       const [hours, minutes] = time.split(':');
+      const hoursNum = parseInt(hours, 10);
+      const minutesNum = parseInt(minutes, 10);
+      
+      // Create date object only once
       const scheduledDate = new Date(date);
-      scheduledDate.setHours(parseInt(hours, 10));
-      scheduledDate.setMinutes(parseInt(minutes, 10));
+      scheduledDate.setHours(hoursNum);
+      scheduledDate.setMinutes(minutesNum);
 
-      await apiRequest(
-        "POST",
-        "/api/admin/broadcasts/schedule",
-        {
-          title,
-          message,
-          type: notificationType,
-          scheduledFor: scheduledDate.toISOString()
-        }
-      );
+      // Use a single payload object to avoid multiple allocations
+      const payload = {
+        title,
+        message,
+        type: notificationType,
+        scheduledFor: scheduledDate.toISOString()
+      };
+
+      await apiRequest("POST", "/api/admin/broadcasts/schedule", payload);
     },
     onSuccess: () => {
       toast({
@@ -122,11 +162,8 @@ export function NotificationPopover() {
         description: "Broadcast scheduled successfully",
         variant: "default"
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/broadcasts/scheduled"] });
-      setTitle("");
-      setMessage("");
-      setDate(undefined);
-      setTime("");
+      invalidateBroadcasts();
+      resetScheduleForm();
     },
     onError: (error) => {
       toast({
@@ -137,7 +174,7 @@ export function NotificationPopover() {
     },
   });
 
-  // Mutation for deleting scheduled broadcasts
+  // Mutation for deleting scheduled broadcasts - optimized with explicit types
   const deleteScheduledBroadcastMutation = useMutation({
     mutationFn: async (id: number) => {
       await apiRequest("DELETE", `/api/admin/broadcasts/scheduled/${id}`);
@@ -148,11 +185,12 @@ export function NotificationPopover() {
         description: "Scheduled broadcast deleted successfully",
         variant: "default"
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/broadcasts/scheduled"] });
+      invalidateBroadcasts();
     },
   });
 
-  const handleSendToUser = () => {
+  // Optimized handlers with useCallback to prevent recreation
+  const handleSendToUser = useCallback(() => {
     if (!selectedUser) {
       toast({
         title: "Error",
@@ -170,9 +208,9 @@ export function NotificationPopover() {
       return;
     }
     sendToUserMutation.mutate();
-  };
+  }, [selectedUser, title, message, sendToUserMutation, toast]);
 
-  const handleBroadcast = () => {
+  const handleBroadcast = useCallback(() => {
     if (!title || !message) {
       toast({
         title: "Error",
@@ -182,9 +220,9 @@ export function NotificationPopover() {
       return;
     }
     broadcastMutation.mutate();
-  };
+  }, [title, message, broadcastMutation, toast]);
 
-  const handleScheduleBroadcast = () => {
+  const handleScheduleBroadcast = useCallback(() => {
     if (!title || !message || !date || !time) {
       toast({
         title: "Error",
@@ -194,7 +232,7 @@ export function NotificationPopover() {
       return;
     }
     scheduleBroadcastMutation.mutate();
-  };
+  }, [title, message, date, time, scheduleBroadcastMutation, toast]);
 
   return (
     <Popover>

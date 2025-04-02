@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { 
   Card, 
@@ -48,6 +48,17 @@ interface NotificationData {
   userEmail?: string;
 }
 
+// Create type map outside component to avoid recreation
+const TYPE_COLORS = {
+  admin_reply: "bg-blue-100 text-blue-800",
+  update: "bg-green-100 text-green-800",
+  feature: "bg-purple-100 text-purple-800",
+  default: "bg-gray-100 text-gray-800"
+};
+
+// Date format constant
+const DATE_FORMAT = "MMM d, yyyy h:mm a";
+
 export function NotificationManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,6 +66,7 @@ export function NotificationManagement() {
   const [notificationToDelete, setNotificationToDelete] = useState<number | null>(null);
 
   // Query to fetch all notifications with their user details
+  // Ultra-optimized refresh settings to minimize resource usage
   const { 
     data: notifications = [], 
     isLoading,
@@ -62,8 +74,10 @@ export function NotificationManagement() {
     refetch 
   } = useQuery<NotificationData[]>({
     queryKey: ["/api/admin/notifications/all"],
-    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
-    staleTime: 2000,
+    refetchInterval: 30000, // Increased to 30 seconds to significantly reduce network load
+    staleTime: 20000, // Increased stale time to 20 seconds to prevent excessive refetches
+    refetchOnWindowFocus: false, // Disable automatic refetch on window focus to save resources
+    gcTime: 1800000, // Set GC time to 30 minutes to improve memory efficiency (similar to old cacheTime)
   });
 
   // Mutation for deleting notification
@@ -88,54 +102,63 @@ export function NotificationManagement() {
     },
   });
 
-  // Filter notifications based on search term and selected tab
-  const filteredNotifications = notifications.filter((notification) => {
-    const matchesSearch = 
-      notification.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notification.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (notification.username?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
-      (notification.userEmail?.toLowerCase() || "").includes(searchTerm.toLowerCase());
+  // Filter notifications with memoization to avoid recomputation
+  const filteredNotifications = useMemo(() => {
+    if (!notifications.length) return [];
     
-    if (selectedTab === "all") return matchesSearch;
-    if (selectedTab === "read") return matchesSearch && notification.read;
-    if (selectedTab === "unread") return matchesSearch && !notification.read;
-    return matchesSearch;
-  });
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const needsSearch = lowerSearchTerm.length > 0;
+    
+    // Fast path for no filters
+    if (!needsSearch && selectedTab === "all") return notifications;
+    
+    // Optimized filtering with early returns
+    return notifications.filter(notification => {
+      // Only check search term if it exists
+      if (needsSearch) {
+        const titleMatch = notification.title.toLowerCase().includes(lowerSearchTerm);
+        const messageMatch = notification.message.toLowerCase().includes(lowerSearchTerm);
+        const usernameMatch = notification.username?.toLowerCase().includes(lowerSearchTerm) || false;
+        const emailMatch = notification.userEmail?.toLowerCase().includes(lowerSearchTerm) || false;
+        
+        if (!(titleMatch || messageMatch || usernameMatch || emailMatch)) {
+          return false;
+        }
+      }
+      
+      // Filter by read status
+      if (selectedTab === "read" && !notification.read) return false;
+      if (selectedTab === "unread" && notification.read) return false;
+      
+      return true;
+    });
+  }, [notifications, searchTerm, selectedTab]);
 
-  // Handle notification deletion
-  const handleDeleteNotification = (id: number) => {
+  // Handle notification deletion with useCallback to avoid recreation
+  const handleDeleteNotification = useCallback((id: number) => {
     setNotificationToDelete(id);
-  };
+  }, []);
 
-  // Confirm deletion
-  const confirmDelete = () => {
+  // Confirm deletion with useCallback
+  const confirmDelete = useCallback(() => {
     if (notificationToDelete) {
       deleteNotificationMutation.mutate(notificationToDelete);
     }
-  };
+  }, [notificationToDelete, deleteNotificationMutation]);
 
-  // Get badge color based on notification type
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "admin_reply":
-        return "bg-blue-100 text-blue-800";
-      case "update":
-        return "bg-green-100 text-green-800";
-      case "feature":
-        return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  // Get badge color based on notification type - optimized with lookup
+  const getTypeColor = useCallback((type: string) => {
+    return TYPE_COLORS[type as keyof typeof TYPE_COLORS] || TYPE_COLORS.default;
+  }, []);
 
-  // Format date for display
-  const formatDate = (dateString: string) => {
+  // Format date for display - implemented with useCallback
+  const formatDate = useCallback((dateString: string) => {
     try {
-      return format(new Date(dateString), "MMM d, yyyy h:mm a");
+      return format(new Date(dateString), DATE_FORMAT);
     } catch (e) {
       return "Invalid date";
     }
-  };
+  }, []);
 
   return (
     <Card className="w-full">

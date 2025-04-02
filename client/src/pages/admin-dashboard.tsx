@@ -321,44 +321,74 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  // Add 1-second interval refresh for stats and charts
+  // Optimized refresh intervals for stats and charts - reduced frequency to save memory
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      // Refresh critical stats every second
+    // Staggered refresh approach for different data categories to reduce memory pressure
+    
+    // Track if component is mounted to prevent state updates on unmounted component
+    let isMounted = true;
+    
+    // Less frequent updates for most stats (5 second interval)
+    const statsIntervalId = setInterval(() => {
+      if (!isMounted || document.hidden) return; // Skip updates when tab not visible
+      
+      // Refresh only the essential stats (reduced from 7 API calls to 3)
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/dashboard/stats"],
       });
       queryClient.invalidateQueries({
-        queryKey: ["/api/admin/characters/stats"],
+        queryKey: ["/api/admin/users"],
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] }); // For subscription and user status charts
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/analytics/activity"],
+      });
+    }, 5000); // Increased from 1s to 5s
+    
+    // Separate interval for less critical data (10 second interval)
+    const analyticsIntervalId = setInterval(() => {
+      if (!isMounted || document.hidden) return; // Skip updates when tab not visible
+      
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/characters/stats"],
       });
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/analytics/messages"],
       });
+    }, 10000); // 10s interval for less critical data
+    
+    // Even less frequent updates for rarely changing data (30 second interval)
+    const slowDataIntervalId = setInterval(() => {
+      if (!isMounted || document.hidden) return; // Skip updates when tab not visible
+      
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/analytics/characters/popularity"],
       });
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/analytics/user-locations"],
       });
-    }, 1000);
+    }, 30000); // 30s interval for rarely changing data
 
-    return () => clearInterval(intervalId);
+    // Clean up all intervals on unmount
+    return () => {
+      isMounted = false;
+      clearInterval(statsIntervalId);
+      clearInterval(analyticsIntervalId);
+      clearInterval(slowDataIntervalId);
+    };
   }, []);
 
-  // Stats queries with specific query keys for targeted updates
+  // Stats queries with increased staleTime for memory efficiency
   const { data: stats = {} as DashboardStats, isLoading: statsLoading } =
     useQuery<DashboardStats>({
       queryKey: ["/api/admin/dashboard/stats"],
-      staleTime: 0, // Allow immediate refreshes
+      staleTime: 5000, // Increased to 5s to reduce refetching
+      refetchOnWindowFocus: false, // Disable focus-based refetching to save memory
     });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    staleTime: 0, // Allow immediate refreshes for real-time chart updates
+    staleTime: 5000, // Increased to 5s to reduce refetching
+    refetchOnWindowFocus: false, // Disable focus-based refetching
   });
 
   // Define type for recent messages
@@ -372,7 +402,8 @@ export default function AdminDashboard() {
   
   const { data: recentMessages = [], isLoading: messagesLoading } = useQuery<RecentMessage[]>({
     queryKey: ["/api/admin/messages/recent"],
-    staleTime: 0, // Allow immediate refreshes
+    staleTime: 10000, // Increased to 10s to reduce memory usage
+    refetchOnWindowFocus: false, // Disable focus-based refetching
   });
 
   const {
@@ -380,7 +411,8 @@ export default function AdminDashboard() {
     isLoading: charactersLoading,
   } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/characters/stats"],
-    staleTime: 0, // Allow immediate refreshes
+    staleTime: 10000, // Increased to 10s to reduce memory usage
+    refetchOnWindowFocus: false, // Disable focus-based refetching
   });
 
   const { data: feedback = [], isLoading: feedbackLoading } = useQuery<
@@ -422,7 +454,8 @@ export default function AdminDashboard() {
     isLoading: activityLoading,
   } = useQuery<ActivityData>({
     queryKey: ["/api/admin/analytics/activity"],
-    staleTime: 0, // Allow immediate refreshes
+    staleTime: 10000, // Increased to 10s to save memory
+    refetchOnWindowFocus: false, // Disable focus refetching
   });
 
   const {
@@ -430,7 +463,8 @@ export default function AdminDashboard() {
     isLoading: messageVolumeLoading,
   } = useQuery<MessageVolumeData>({
     queryKey: ["/api/admin/analytics/messages"],
-    staleTime: 0, // Allow immediate refreshes
+    staleTime: 30000, // Increased to 30s since this data changes less often
+    refetchOnWindowFocus: false, // Disable focus refetching
   });
 
   const {
@@ -438,7 +472,8 @@ export default function AdminDashboard() {
     isLoading: characterPopularityLoading,
   } = useQuery<CharacterPopularityData>({
     queryKey: ["/api/admin/analytics/characters/popularity"],
-    staleTime: 0, // Allow immediate refreshes
+    staleTime: 30000, // Increased to 30s since popularity doesn't change frequently
+    refetchOnWindowFocus: false, // Disable focus refetching
   });
 
   // Extend the existing SubscriptionPlan type with parsed features
@@ -469,6 +504,8 @@ export default function AdminDashboard() {
   } = useQuery<CountryDistributionData>({
     queryKey: ["/api/admin/analytics/user-locations"],
     staleTime: 60000, // Refresh every minute as location data doesn't change frequently
+    refetchOnWindowFocus: false, // Disable focus refetching
+    refetchOnMount: false, // Only fetch once when component mounts
   });
 
   const blockUser = useMutation({
