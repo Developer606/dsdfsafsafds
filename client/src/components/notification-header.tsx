@@ -19,7 +19,7 @@ export function NotificationHeader() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { isConnected } = useNotificationSocket();
+  const { isConnected, refreshNotifications } = useNotificationSocket();
 
   // Query notifications from the API with auto-refresh 
   const { data: notifications = [], refetch: refetchNotifications } = useQuery<Notification[]>({
@@ -311,14 +311,29 @@ export function NotificationHeader() {
                   <div className="flex items-center space-x-2">
                     {/* Manual refresh button */}
                     <button 
-                      onClick={() => {
-                        refetchNotifications();
-                        toast({
-                          title: "Refreshed",
-                          description: "Notifications updated",
-                          variant: "default",
-                          duration: 2000
-                        });
+                      onClick={async () => {
+                        try {
+                          // First use the socket-based refresh for real-time updates
+                          await refreshNotifications();
+                          // Then also use the query-based refresh as a fallback
+                          refetchNotifications();
+                          toast({
+                            title: "Refreshed",
+                            description: "Notifications updated",
+                            variant: "default",
+                            duration: 2000
+                          });
+                        } catch (error) {
+                          console.error("Error refreshing notifications:", error);
+                          // Fallback to just the query refresh if socket refresh fails
+                          refetchNotifications();
+                          toast({
+                            title: "Refreshed",
+                            description: "Notifications updated",
+                            variant: "default",
+                            duration: 2000
+                          });
+                        }
                       }}
                       className="text-gray-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
                       title="Refresh notifications"

@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { NotificationHeader } from "@/components/notification-header";
 import { BackgroundSlideshow } from "@/components/background-slideshow";
 import { FeaturedSection } from "@/components/advertisement/featured-section";
+import { useNotificationSocket } from "@/components/notification-socket-provider";
 import {
   Dialog,
   DialogContent,
@@ -118,9 +119,12 @@ export default function Home() {
     return 0;
   });
 
-  // Query notifications from the API
-  const { data: notifications = [] } = useQuery<Notification[]>({
+  // Query notifications from the API with auto-refresh for real-time updates
+  const { data: notifications = [], refetch: refetchNotifications } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
+    refetchInterval: 30000, // Refetch every 30 seconds automatically
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 10000, // Consider data stale after 10 seconds
   });
 
   // Add mutation for marking notifications as read
@@ -142,6 +146,7 @@ export default function Home() {
 
   // Use theme context instead of local state
   const { theme, toggleTheme } = useTheme();
+  const { isConnected, refreshNotifications } = useNotificationSocket();
 
   const handleLogout = async () => {
     try {
@@ -386,6 +391,17 @@ export default function Home() {
                             {notifications.filter((n) => !n.read).length}
                           </span>
                         )}
+                      {/* Real-time connection status dot */}
+                      <motion.span 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full border border-pink-500"
+                        title={isConnected ? "Real-time notifications connected" : "Real-time notifications offline"}
+                        style={{ 
+                          backgroundColor: isConnected ? '#10b981' : '#6b7280',
+                        }}
+                      />
                     </motion.button>
                   </PopoverTrigger>
                   <PopoverContent className="w-72 p-0 bg-white dark:bg-gray-800 border-0 rounded-xl shadow-xl text-gray-800 dark:text-white">
@@ -427,7 +443,7 @@ export default function Home() {
                               <span className="text-xs text-gray-400 mt-2 block">
                                 {new Date(
                                   notification.createdAt,
-                                ).toLocaleDateString()}
+                                ).toLocaleDateString()} · {new Date(notification.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                               </span>
                             </motion.div>
                           ))}
@@ -441,6 +457,43 @@ export default function Home() {
                         </div>
                       )}
                     </AnimatePresence>
+                    
+                    {/* Mobile connection status footer for real-time capabilities */}
+                    <div className="p-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center">
+                        <span className={`inline-block h-2 w-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                        {isConnected ? 'Real-time active' : 'Offline'}
+                      </div>
+                      <button 
+                        onClick={async () => {
+                          try {
+                            // First use the socket-based refresh which is real-time
+                            await refreshNotifications();
+                            // Then also use the query-based refresh as a fallback
+                            refetchNotifications();
+                            toast({
+                              title: "Refreshed",
+                              description: "Notifications updated",
+                              variant: "default",
+                              duration: 2000
+                            });
+                          } catch (error) {
+                            console.error("Error refreshing notifications:", error);
+                            // Fallback to just the query refresh
+                            refetchNotifications();
+                          }
+                        }}
+                        className="flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M23 4v6h-6"></path>
+                          <path d="M1 20v-6h6"></path>
+                          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                          <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                        </svg>
+                        Refresh
+                      </button>
+                    </div>
                   </PopoverContent>
                 </Popover>
 
