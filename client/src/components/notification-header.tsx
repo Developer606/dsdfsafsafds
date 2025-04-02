@@ -304,13 +304,7 @@ export function NotificationHeader() {
                 </AnimatePresence>
                 
                 {/* Connection status footer */}
-                {notifications.length > 7 && (
-                  <div className="p-2 border-t border-gray-100 dark:border-gray-800 text-center">
-                    <a href="/notifications" className="text-xs text-pink-500 dark:text-pink-400 hover:underline">
-                      View all notifications
-                    </a>
-                  </div>
-                )}
+
                 <div className="p-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center">
                     <span className={`inline-block h-2 w-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></span>

@@ -459,14 +459,7 @@ export default function Home() {
                       )}
                     </AnimatePresence>
                     
-                    {/* View all notifications link if there are more than 7 */}
-                    {notifications && notifications.length > 7 && (
-                      <div className="p-2 border-t border-gray-100 dark:border-gray-700 text-center">
-                        <a href="/notifications" className="text-xs text-pink-500 dark:text-pink-400 hover:underline">
-                          View all notifications
-                        </a>
-                      </div>
-                    )}
+
                     
                     {/* Mobile connection status footer for real-time capabilities */}
                     <div className="p-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
