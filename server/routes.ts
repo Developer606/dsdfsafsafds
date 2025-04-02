@@ -525,13 +525,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   });
 
   // Notification Routes
-  // Low-RAM cache configuration for notifications
-  // Using LRU (Least Recently Used) pattern to limit cache size
-  const notificationCache = new Map<number, {data: any[], timestamp: number}>();
-  const MAX_CACHE_ENTRIES = 50; // Limit number of users in cache
-  const CACHE_TTL = 20 * 1000; // Reduce cache lifetime to 20 seconds for freshness
-  const cacheKeys: number[] = []; // Track order for LRU implementation
-  
   app.get("/api/notifications", async (req, res) => {
     if (!req.user) {
       return res.status(401).json({ error: "User not authenticated" });
@@ -539,28 +532,14 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     
     try {
       const userId = req.user.id;
-      const now = Date.now();
-      const isForceFresh = req.query.fresh === 'true';
+      console.log(`Fetching notifications for user ID: ${userId}`);
       
-      // Check cache first if this isn't a force-fresh request
-      if (!isForceFresh && notificationCache.has(userId)) {
-        const cachedData = notificationCache.get(userId);
-        
-        // If cache is still valid (within TTL)
-        if (cachedData && (now - cachedData.timestamp) < CACHE_TTL) {
-          console.log(`Returning cached notifications for user ID: ${userId}`);
-          return res.json(cachedData.data);
-        }
-      }
-      
-      console.log(`Fetching fresh notifications for user ID: ${userId}`);
-      
-      // If not cached or stale cache, fetch from database
+      // Force a direct database connection for maximum freshness
       const rawNotifications = await new Promise((resolve, reject) => {
         try {
           const db = notificationDb.$client;
           
-          // Optimized query using index on user_id and created_at
+          // To ensure we always get the most current data, we'll use a direct prepared statement
           const query = `
             SELECT 
               id,
@@ -573,7 +552,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             FROM notifications
             WHERE user_id = ?
             ORDER BY created_at DESC
-            LIMIT 50
+            LIMIT 100
           `;
           
           const stmt = db.prepare(query);
@@ -586,58 +565,13 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         }
       });
       
-      // Format and prepare the result
+      console.log(`Found ${(rawNotifications as any[]).length} notifications for user ID: ${userId}`);
+      
+      // Format dates properly
       const notifications = (rawNotifications as any[]).map(notification => ({
         ...notification,
         createdAt: new Date(notification.createdAt) // Ensure proper date formatting
       }));
-      
-      // Update the cache with fresh data using LRU pattern
-      notificationCache.set(userId, {
-        data: notifications,
-        timestamp: now
-      });
-      
-      // Maintain LRU order - remove from array if exists and add to end (most recently used)
-      const existingIndex = cacheKeys.indexOf(userId);
-      if (existingIndex !== -1) {
-        cacheKeys.splice(existingIndex, 1);
-      }
-      cacheKeys.push(userId);
-      
-      // Enforce cache size limit to keep memory usage low
-      if (cacheKeys.length > MAX_CACHE_ENTRIES) {
-        // Remove least recently used entry (first in array)
-        const oldestKey = cacheKeys.shift();
-        if (oldestKey !== undefined) {
-          console.log(`Removing LRU cache entry for user: ${oldestKey}`);
-          notificationCache.delete(oldestKey);
-        }
-      }
-      
-      // Additionally cleanup expired entries every 200 requests (statistically)
-      if (Math.random() < 0.005) {
-        console.log("Performing expired cache cleanup");
-        const expiredKeys = [];
-        for (const [cachedUserId, cachedData] of notificationCache.entries()) {
-          if ((now - cachedData.timestamp) > CACHE_TTL * 2) {
-            expiredKeys.push(cachedUserId);
-          }
-        }
-        
-        // Delete expired entries and remove from the LRU tracking array
-        for (const expiredKey of expiredKeys) {
-          notificationCache.delete(expiredKey);
-          const keyIndex = cacheKeys.indexOf(expiredKey);
-          if (keyIndex !== -1) {
-            cacheKeys.splice(keyIndex, 1);
-          }
-        }
-        
-        if (expiredKeys.length > 0) {
-          console.log(`Cleaned up ${expiredKeys.length} expired cache entries`);
-        }
-      }
       
       res.json(notifications);
     } catch (error: any) {

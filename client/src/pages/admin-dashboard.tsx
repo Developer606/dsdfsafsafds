@@ -320,93 +320,43 @@ export default function AdminDashboard() {
   }, []);
 
   // Add 1-second interval refresh for stats and charts
-  // Memory-optimized refresh strategy with tiered intervals
   useEffect(() => {
-    // Track component mounted state to prevent memory leaks
-    let isMounted = true;
-    
-    // Group queries by refresh frequency
-    const highFrequencyQueries = ["/api/admin/dashboard/stats"];
-    const mediumFrequencyQueries = [
-      "/api/admin/characters/stats",
-      "/api/admin/analytics/activity",
-      "/api/admin/analytics/messages"
-    ];
-    const lowFrequencyQueries = [
-      "/api/admin/users",
-      "/api/admin/analytics/characters/popularity",
-      "/api/admin/analytics/user-locations"
-    ];
-    
-    // More memory-efficient approach: Use separate intervals with different frequencies
-    const highFrequencyInterval = setInterval(() => {
-      if (!isMounted || document.hidden) return; // Skip updates when tab is inactive
-      
-      // Only refresh critical stats at highest frequency (5 seconds)
-      highFrequencyQueries.forEach(queryKey => {
-        queryClient.invalidateQueries({ queryKey: [queryKey] });
+    const intervalId = setInterval(() => {
+      // Refresh critical stats every second
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/dashboard/stats"],
       });
-    }, 5000); // 5 seconds instead of 1 second
-    
-    const mediumFrequencyInterval = setInterval(() => {
-      if (!isMounted || document.hidden) return;
-      
-      // Refresh medium priority stats less frequently
-      mediumFrequencyQueries.forEach(queryKey => {
-        queryClient.invalidateQueries({ queryKey: [queryKey] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/characters/stats"],
       });
-    }, 15000); // 15 seconds
-    
-    const lowFrequencyInterval = setInterval(() => {
-      if (!isMounted || document.hidden) return;
-      
-      // Refresh low priority stats even less frequently
-      lowFrequencyQueries.forEach(queryKey => {
-        queryClient.invalidateQueries({ queryKey: [queryKey] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] }); // For subscription and user status charts
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/analytics/activity"],
       });
-    }, 30000); // 30 seconds
-    
-    // Listen for visibility changes to optimize when tab is inactive
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && isMounted) {
-        // Refresh all data when tab becomes visible again
-        [...highFrequencyQueries, ...mediumFrequencyQueries, ...lowFrequencyQueries].forEach(queryKey => {
-          queryClient.invalidateQueries({ queryKey: [queryKey] });
-        });
-      }
-    };
-    
-    // Add visibility change listener
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Clean up function - clear all intervals
-    return () => {
-      isMounted = false;
-      clearInterval(highFrequencyInterval);
-      clearInterval(mediumFrequencyInterval);
-      clearInterval(lowFrequencyInterval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [queryClient]);
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/analytics/messages"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/analytics/characters/popularity"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/admin/analytics/user-locations"],
+      });
+    }, 1000);
 
-  // Memory-optimized stats queries with appropriate staleTime values to reduce unnecessary fetches
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Stats queries with specific query keys for targeted updates
   const { data: stats = {} as DashboardStats, isLoading: statsLoading } =
     useQuery<DashboardStats>({
       queryKey: ["/api/admin/dashboard/stats"],
-      staleTime: 5000, // Refresh every 5 seconds, not immediately
-      // Use structural sharing to avoid excessive re-renders
-      select: (data) => data,
-      // Avoid refetching when window regains focus
-      refetchOnWindowFocus: false,
+      staleTime: 0, // Allow immediate refreshes
     });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    staleTime: 30000, // Refresh every 30 seconds instead of immediately
-    // Implement memoization to prevent unnecessary re-renders
-    select: (data) => data,
-    // Avoid refetching when window regains focus to reduce memory consumption
-    refetchOnWindowFocus: false,
+    staleTime: 0, // Allow immediate refreshes for real-time chart updates
   });
 
   // Define type for recent messages
@@ -420,9 +370,7 @@ export default function AdminDashboard() {
   
   const { data: recentMessages = [], isLoading: messagesLoading } = useQuery<RecentMessage[]>({
     queryKey: ["/api/admin/messages/recent"],
-    staleTime: 10000, // Refresh every 10 seconds instead of immediately
-    select: (data) => data,
-    refetchOnWindowFocus: false,
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const {
@@ -430,9 +378,7 @@ export default function AdminDashboard() {
     isLoading: charactersLoading,
   } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/characters/stats"],
-    staleTime: 15000, // Refresh every 15 seconds instead of immediately
-    select: (data) => data,
-    refetchOnWindowFocus: false,
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const { data: feedback = [], isLoading: feedbackLoading } = useQuery<
@@ -474,9 +420,7 @@ export default function AdminDashboard() {
     isLoading: activityLoading,
   } = useQuery<ActivityData>({
     queryKey: ["/api/admin/analytics/activity"],
-    staleTime: 15000, // Refresh every 15 seconds instead of immediately
-    select: (data) => data, // Preserve reference equality if data unchanged
-    refetchOnWindowFocus: false, // Avoid unnecessary refreshes
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const {
@@ -484,9 +428,7 @@ export default function AdminDashboard() {
     isLoading: messageVolumeLoading,
   } = useQuery<MessageVolumeData>({
     queryKey: ["/api/admin/analytics/messages"],
-    staleTime: 15000, // Refresh every 15 seconds instead of immediately
-    select: (data) => data, // Preserve reference equality if data unchanged
-    refetchOnWindowFocus: false, // Avoid unnecessary refreshes
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const {
@@ -494,9 +436,7 @@ export default function AdminDashboard() {
     isLoading: characterPopularityLoading,
   } = useQuery<CharacterPopularityData>({
     queryKey: ["/api/admin/analytics/characters/popularity"],
-    staleTime: 30000, // Refresh every 30 seconds instead of immediately
-    select: (data) => data, // Preserve reference equality if data unchanged
-    refetchOnWindowFocus: false, // Avoid unnecessary refreshes
+    staleTime: 0, // Allow immediate refreshes
   });
 
   // Extend the existing SubscriptionPlan type with parsed features
