@@ -31,22 +31,22 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
   // Create a function to refresh notifications that can be called from anywhere
   const refreshNotifications = useCallback(async () => {
     try {
-      // Don't depend on currentUser here to avoid circular dependencies
+      if (!currentUser) return;
+      
       console.log('Manually refreshing notifications');
-      
-      // First try using the socket to request fresh notifications if connected
-      if (socketRef.current && socketRef.current.connected) {
-        console.log('Using socket to refresh notifications');
-        // Emit an event to request latest notifications
-        socketRef.current.emit('request_notifications');
-      }
-      
-      // Always invalidate the query cache as a fallback mechanism
+      // Invalidate the query cache to trigger a refetch
       await queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      
+      // Optional: You could also manually fetch here if needed
+      // const response = await fetch('/api/notifications');
+      // if (response.ok) {
+      //   const data = await response.json();
+      //   queryClient.setQueryData(['/api/notifications'], data);
+      // }
     } catch (error) {
       console.error('Error refreshing notifications:', error);
     }
-  }, [queryClient]);
+  }, [currentUser, queryClient]);
 
   // Setup socket connection
   useEffect(() => {
@@ -163,24 +163,6 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
         
         fetchLatestNotifications();
       });
-      
-      // Handle direct notification refresh responses from server
-      socket.on('notification_refresh', (notifications: Notification[]) => {
-        console.log('Received notification refresh with', notifications.length, 'notifications');
-        
-        // Update the query cache directly with fresh data from server
-        if (notifications && Array.isArray(notifications)) {
-          queryClient.setQueryData(['/api/notifications'], notifications);
-          
-          // Show a small toast to confirm refresh
-          toast({
-            title: "Notifications refreshed",
-            description: `${notifications.length} notifications loaded`,
-            variant: 'default',
-            duration: 2000
-          });
-        }
-      });
     };
     
     // Initial connection
@@ -200,9 +182,7 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
       
       setIsConnected(false);
     };
-  // We're intentionally not including refreshNotifications in the dependency array
-  // to avoid circular dependencies, as refreshNotifications uses socketRef which is set in this effect
-  }, [currentUser, queryClient, toast]);
+  }, [currentUser, queryClient, toast, refreshNotifications]);
   
   return (
     <NotificationSocketContext.Provider value={{ isConnected, refreshNotifications }}>
