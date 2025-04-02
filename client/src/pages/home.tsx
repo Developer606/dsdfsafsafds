@@ -413,7 +413,8 @@ export default function Home() {
                     <AnimatePresence>
                       {notifications && notifications.length > 0 ? (
                         <div className="max-h-[400px] overflow-y-auto">
-                          {notifications.map((notification) => (
+                          {/* Only show the 7 most recent notifications */}
+                          {notifications.slice(0, 7).map((notification) => (
                             <motion.div
                               key={notification.id}
                               initial={{ opacity: 0, y: 10 }}
@@ -457,6 +458,15 @@ export default function Home() {
                         </div>
                       )}
                     </AnimatePresence>
+                    
+                    {/* View all notifications link if there are more than 7 */}
+                    {notifications && notifications.length > 7 && (
+                      <div className="p-2 border-t border-gray-100 dark:border-gray-700 text-center">
+                        <a href="/notifications" className="text-xs text-pink-500 dark:text-pink-400 hover:underline">
+                          View all notifications
+                        </a>
+                      </div>
+                    )}
                     
                     {/* Mobile connection status footer for real-time capabilities */}
                     <div className="p-2 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">

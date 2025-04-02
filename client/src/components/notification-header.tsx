@@ -263,7 +263,8 @@ export function NotificationHeader() {
                 <AnimatePresence>
                   {notifications.length > 0 ? (
                     <div className="max-h-[300px] overflow-y-auto">
-                      {notifications.map((notification) => (
+                      {/* Only show the 7 most recent notifications */}
+                      {notifications.slice(0, 7).map((notification) => (
                         <motion.div
                           key={notification.id}
                           initial={{ opacity: 0, y: 10 }}
@@ -303,6 +304,13 @@ export function NotificationHeader() {
                 </AnimatePresence>
                 
                 {/* Connection status footer */}
+                {notifications.length > 7 && (
+                  <div className="p-2 border-t border-gray-100 dark:border-gray-800 text-center">
+                    <a href="/notifications" className="text-xs text-pink-500 dark:text-pink-400 hover:underline">
+                      View all notifications
+                    </a>
+                  </div>
+                )}
                 <div className="p-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                   <div className="flex items-center">
                     <span className={`inline-block h-2 w-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></span>
