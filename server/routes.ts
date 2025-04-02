@@ -525,9 +525,12 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   });
 
   // Notification Routes
-  // Cache configuration for notifications
+  // Low-RAM cache configuration for notifications
+  // Using LRU (Least Recently Used) pattern to limit cache size
   const notificationCache = new Map<number, {data: any[], timestamp: number}>();
-  const CACHE_TTL = 30 * 1000; // 30 seconds cache lifetime
+  const MAX_CACHE_ENTRIES = 50; // Limit number of users in cache
+  const CACHE_TTL = 20 * 1000; // Reduce cache lifetime to 20 seconds for freshness
+  const cacheKeys: number[] = []; // Track order for LRU implementation
   
   app.get("/api/notifications", async (req, res) => {
     if (!req.user) {
@@ -589,19 +592,50 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         createdAt: new Date(notification.createdAt) // Ensure proper date formatting
       }));
       
-      // Update the cache with fresh data
+      // Update the cache with fresh data using LRU pattern
       notificationCache.set(userId, {
         data: notifications,
         timestamp: now
       });
       
-      // Cleanup old cache entries every 100 requests (statistically)
-      if (Math.random() < 0.01) {
-        console.log("Performing cache cleanup");
+      // Maintain LRU order - remove from array if exists and add to end (most recently used)
+      const existingIndex = cacheKeys.indexOf(userId);
+      if (existingIndex !== -1) {
+        cacheKeys.splice(existingIndex, 1);
+      }
+      cacheKeys.push(userId);
+      
+      // Enforce cache size limit to keep memory usage low
+      if (cacheKeys.length > MAX_CACHE_ENTRIES) {
+        // Remove least recently used entry (first in array)
+        const oldestKey = cacheKeys.shift();
+        if (oldestKey !== undefined) {
+          console.log(`Removing LRU cache entry for user: ${oldestKey}`);
+          notificationCache.delete(oldestKey);
+        }
+      }
+      
+      // Additionally cleanup expired entries every 200 requests (statistically)
+      if (Math.random() < 0.005) {
+        console.log("Performing expired cache cleanup");
+        const expiredKeys = [];
         for (const [cachedUserId, cachedData] of notificationCache.entries()) {
           if ((now - cachedData.timestamp) > CACHE_TTL * 2) {
-            notificationCache.delete(cachedUserId);
+            expiredKeys.push(cachedUserId);
           }
+        }
+        
+        // Delete expired entries and remove from the LRU tracking array
+        for (const expiredKey of expiredKeys) {
+          notificationCache.delete(expiredKey);
+          const keyIndex = cacheKeys.indexOf(expiredKey);
+          if (keyIndex !== -1) {
+            cacheKeys.splice(keyIndex, 1);
+          }
+        }
+        
+        if (expiredKeys.length > 0) {
+          console.log(`Cleaned up ${expiredKeys.length} expired cache entries`);
         }
       }
       
