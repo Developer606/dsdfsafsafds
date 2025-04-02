@@ -72,7 +72,6 @@ import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationPopover } from "@/components/admin/notification-popover";
-import { NotificationManagement } from "@/components/admin/notification-management";
 import {
   BarChart,
   Bar,
@@ -210,7 +209,6 @@ export default function AdminDashboard() {
     max?: number;
   }>({});
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
   
   // Set admin flag in sessionStorage for file uploads
   useEffect(() => {
@@ -321,74 +319,44 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  // Optimized refresh intervals for stats and charts - reduced frequency to save memory
+  // Add 1-second interval refresh for stats and charts
   useEffect(() => {
-    // Staggered refresh approach for different data categories to reduce memory pressure
-    
-    // Track if component is mounted to prevent state updates on unmounted component
-    let isMounted = true;
-    
-    // Less frequent updates for most stats (5 second interval)
-    const statsIntervalId = setInterval(() => {
-      if (!isMounted || document.hidden) return; // Skip updates when tab not visible
-      
-      // Refresh only the essential stats (reduced from 7 API calls to 3)
+    const intervalId = setInterval(() => {
+      // Refresh critical stats every second
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/dashboard/stats"],
       });
       queryClient.invalidateQueries({
-        queryKey: ["/api/admin/users"],
+        queryKey: ["/api/admin/characters/stats"],
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] }); // For subscription and user status charts
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/analytics/activity"],
-      });
-    }, 5000); // Increased from 1s to 5s
-    
-    // Separate interval for less critical data (10 second interval)
-    const analyticsIntervalId = setInterval(() => {
-      if (!isMounted || document.hidden) return; // Skip updates when tab not visible
-      
-      queryClient.invalidateQueries({
-        queryKey: ["/api/admin/characters/stats"],
       });
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/analytics/messages"],
       });
-    }, 10000); // 10s interval for less critical data
-    
-    // Even less frequent updates for rarely changing data (30 second interval)
-    const slowDataIntervalId = setInterval(() => {
-      if (!isMounted || document.hidden) return; // Skip updates when tab not visible
-      
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/analytics/characters/popularity"],
       });
       queryClient.invalidateQueries({
         queryKey: ["/api/admin/analytics/user-locations"],
       });
-    }, 30000); // 30s interval for rarely changing data
+    }, 1000);
 
-    // Clean up all intervals on unmount
-    return () => {
-      isMounted = false;
-      clearInterval(statsIntervalId);
-      clearInterval(analyticsIntervalId);
-      clearInterval(slowDataIntervalId);
-    };
+    return () => clearInterval(intervalId);
   }, []);
 
-  // Stats queries with increased staleTime for memory efficiency
+  // Stats queries with specific query keys for targeted updates
   const { data: stats = {} as DashboardStats, isLoading: statsLoading } =
     useQuery<DashboardStats>({
       queryKey: ["/api/admin/dashboard/stats"],
-      staleTime: 5000, // Increased to 5s to reduce refetching
-      refetchOnWindowFocus: false, // Disable focus-based refetching to save memory
+      staleTime: 0, // Allow immediate refreshes
     });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
-    staleTime: 5000, // Increased to 5s to reduce refetching
-    refetchOnWindowFocus: false, // Disable focus-based refetching
+    staleTime: 0, // Allow immediate refreshes for real-time chart updates
   });
 
   // Define type for recent messages
@@ -402,8 +370,7 @@ export default function AdminDashboard() {
   
   const { data: recentMessages = [], isLoading: messagesLoading } = useQuery<RecentMessage[]>({
     queryKey: ["/api/admin/messages/recent"],
-    staleTime: 10000, // Increased to 10s to reduce memory usage
-    refetchOnWindowFocus: false, // Disable focus-based refetching
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const {
@@ -411,8 +378,7 @@ export default function AdminDashboard() {
     isLoading: charactersLoading,
   } = useQuery<DashboardStats>({
     queryKey: ["/api/admin/characters/stats"],
-    staleTime: 10000, // Increased to 10s to reduce memory usage
-    refetchOnWindowFocus: false, // Disable focus-based refetching
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const { data: feedback = [], isLoading: feedbackLoading } = useQuery<
@@ -454,8 +420,7 @@ export default function AdminDashboard() {
     isLoading: activityLoading,
   } = useQuery<ActivityData>({
     queryKey: ["/api/admin/analytics/activity"],
-    staleTime: 10000, // Increased to 10s to save memory
-    refetchOnWindowFocus: false, // Disable focus refetching
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const {
@@ -463,8 +428,7 @@ export default function AdminDashboard() {
     isLoading: messageVolumeLoading,
   } = useQuery<MessageVolumeData>({
     queryKey: ["/api/admin/analytics/messages"],
-    staleTime: 30000, // Increased to 30s since this data changes less often
-    refetchOnWindowFocus: false, // Disable focus refetching
+    staleTime: 0, // Allow immediate refreshes
   });
 
   const {
@@ -472,8 +436,7 @@ export default function AdminDashboard() {
     isLoading: characterPopularityLoading,
   } = useQuery<CharacterPopularityData>({
     queryKey: ["/api/admin/analytics/characters/popularity"],
-    staleTime: 30000, // Increased to 30s since popularity doesn't change frequently
-    refetchOnWindowFocus: false, // Disable focus refetching
+    staleTime: 0, // Allow immediate refreshes
   });
 
   // Extend the existing SubscriptionPlan type with parsed features
@@ -504,8 +467,6 @@ export default function AdminDashboard() {
   } = useQuery<CountryDistributionData>({
     queryKey: ["/api/admin/analytics/user-locations"],
     staleTime: 60000, // Refresh every minute as location data doesn't change frequently
-    refetchOnWindowFocus: false, // Disable focus refetching
-    refetchOnMount: false, // Only fetch once when component mounts
   });
 
   const blockUser = useMutation({
@@ -940,19 +901,6 @@ export default function AdminDashboard() {
                     ) : null}
                   </Button>
                 </Link>
-                
-                {/* Notification Management menu item */}
-                <div className="w-full" onClick={() => setActiveSection("notifications")}>
-                  <Button variant="secondary" className="w-full gap-2 justify-start relative">
-                    <Bell className="h-4 w-4" />
-                    Notification Management
-                    {notifications?.length > 0 && (
-                      <span className="ml-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
-                        {notifications.length}
-                      </span>
-                    )}
-                  </Button>
-                </div>
                 <Link href="/admin/dashboard/feedback" className="w-full">
                   <Button variant="secondary" className="w-full gap-2 justify-start">
                     <MessageCircle className="h-4 w-4" />
@@ -1142,37 +1090,7 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Notification Management Section */}
-      {activeSection === "notifications" && (
-        <div className="mt-8 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Bell className="h-6 w-6 text-blue-500" />
-              Notification Management
-            </h2>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setActiveSection(null)}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </div>
-          <div className="space-y-6">
-            <p className="text-muted-foreground">
-              Manage all system notifications and see which users have received them. Delete notifications that are no longer needed.
-            </p>
-            <NotificationManagement />
-          </div>
-        </div>  
-      )}
-
-      {/* Only show regular dashboard content when no special section is active */}
-      {!activeSection && (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="p-6">
           <h3 className="text-lg font-medium mb-4">
             User Distribution by Country
@@ -2241,8 +2159,6 @@ export default function AdminDashboard() {
           </Form>
         </DialogContent>
       </Dialog>
-        </>
-      )}
     </div>
   );
 }

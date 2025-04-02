@@ -4,13 +4,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { type User, type Notification } from '@shared/schema';
 
-// Configuration constants - ultra-optimized for minimal RAM usage
-const DEBOUNCE_DELAY = 800; // Increased to 800ms to further reduce processing frequency
-const REFRESH_INTERVAL = 300000; // Increased to 5 minutes to minimize polling
-const MINIMUM_REFRESH_INTERVAL = 10000; // Increased to 10 seconds to prevent frequent API calls
-const MAX_RECONNECT_DELAY = 120000; // Increased to 2 minutes for further resource saving
-const NOTIFICATION_BATCH_SIZE = 3; // Further reduced to 3 for even smaller memory allocations
-const MAX_CACHE_SIZE = 20; // Reduced maximum cache size to limit memory footprint
+// Configuration constants
+const DEBOUNCE_DELAY = 300; // ms
+const REFRESH_INTERVAL = 60000; // ms
+const MINIMUM_REFRESH_INTERVAL = 2000; // ms
+const MAX_RECONNECT_DELAY = 30000; // ms
+const NOTIFICATION_BATCH_SIZE = 10; // Max notifications to process at once
 
 // Enhanced context type with additional methods
 interface NotificationSocketContextType {
@@ -56,98 +55,98 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
   const [pendingNotifications, setPendingNotifications] = useState<Notification[]>([]);
   const lastRefreshTimeRef = useRef<number>(0);
   const connectionAttemptsRef = useRef(0);
-  // Using the MAX_RECONNECT_DELAY constant (120000ms) for consistency
+  const maxReconnectDelay = 30000; // Max 30 seconds between reconnection attempts
   
   // Get current user for authentication
   const { data: currentUser } = useQuery<User>({
     queryKey: ['/api/user'],
   });
 
-  // Ultra memory-efficient batch processing of notifications queue
+  // Memory-efficient batch processing of notifications queue
   const processPendingNotifications = useCallback(() => {
     if (pendingNotifications.length === 0) return;
     
-    // Process fewer notifications at once to reduce memory spikes
+    // Limit number of notifications to process at once to conserve memory
     const batchSize = Math.min(pendingNotifications.length, NOTIFICATION_BATCH_SIZE);
+    console.log(`Processing ${batchSize} of ${pendingNotifications.length} pending notifications`);
     
     // Get current notifications without creating a copy
-    const existingNotifications = queryClient.getQueryData<Notification[]>(['/api/notifications']) || [];
+    const existingNotifications = queryClient.getQueryData<Notification[]>(['/api/notifications']);
     
-    // Limit the cache size to prevent memory growth
-    let notificationsToStore: Notification[] = [];
-    
-    // Process a limited batch of notifications
+    // Process a limited batch of notifications to reduce memory pressure
     const processingBatch = pendingNotifications.slice(0, batchSize);
     
-    // Create efficient Set for de-duplication - use primitive IDs instead of objects
-    const existingIds = new Set<number>();
-    for (let i = 0; i < existingNotifications.length; i++) {
-      existingIds.add(existingNotifications[i].id);
+    // Create efficient Set for de-duplication
+    const existingIds = new Set();
+    if (existingNotifications) {
+      // Use for loop instead of map for better memory efficiency
+      for (let i = 0; i < existingNotifications.length; i++) {
+        existingIds.add(existingNotifications[i].id);
+      }
     }
     
-    // Process with minimal allocations
+    // Filter efficiently without creating large intermediate arrays
     const newNotifications: Notification[] = [];
-    const typeCount: Record<string, number> = {}; // Track counts by type
+    const typeMap: Record<string, number> = {}; // Track counts by type instead of arrays
+    let hasNewNotifications = false;
     
-    // Process each notification without creating intermediate arrays
+    // Process each notification with minimal object creation
     for (let i = 0; i < processingBatch.length; i++) {
       const notification = processingBatch[i];
       if (!existingIds.has(notification.id)) {
         newNotifications.push(notification);
+        hasNewNotifications = true;
         
-        // Track type for toast aggregation
+        // Track notification type counts for toasts
         const type = notification.type || 'default';
-        typeCount[type] = (typeCount[type] || 0) + 1;
+        typeMap[type] = (typeMap[type] || 0) + 1;
       }
     }
     
-    if (newNotifications.length > 0) {
-      // Combine new and existing notifications, but limit total size
-      notificationsToStore = [...newNotifications, ...existingNotifications];
-      
-      // If we exceed max cache size, truncate the oldest notifications
-      if (notificationsToStore.length > MAX_CACHE_SIZE) {
-        notificationsToStore = notificationsToStore.slice(0, MAX_CACHE_SIZE);
+    if (hasNewNotifications) {
+      // Update query cache with minimal array creation
+      if (existingNotifications) {
+        queryClient.setQueryData(['/api/notifications'], 
+          [...newNotifications, ...existingNotifications]
+        );
+      } else {
+        queryClient.setQueryData(['/api/notifications'], newNotifications);
       }
       
-      // Update query cache with our size-limited array
-      queryClient.setQueryData(['/api/notifications'], notificationsToStore);
-      
-      // Show minimal toast notifications - at most one per type
-      for (const type in typeCount) {
-        const count = typeCount[type];
+      // Show compact toast notifications
+      Object.entries(typeMap).forEach(([type, count]) => {
         if (count === 1) {
-          // For a single notification, show its content
-          const notification = newNotifications.find(n => (n.type || 'default') === type);
-          if (notification) {
+          // Find the single notification of this type
+          const singleNotification = newNotifications.find(n => (n.type || 'default') === type);
+          if (singleNotification) {
             toast({
-              title: notification.title,
-              description: notification.message.substring(0, 100), // Limit text length
+              title: singleNotification.title,
+              description: singleNotification.message,
               variant: 'default',
-              duration: 3000
+              duration: 3000 // Shorter duration to reduce UI clutter
             });
           }
         } else if (count > 1) {
-          // For multiple notifications, just show the count
+          // Multiple notifications of same type - just show count
           toast({
-            title: `${count} new notifications`,
-            description: `You have ${count} new ${type} notifications`,
+            title: `${count} new ${type} notifications`,
+            description: 'Check your notification panel for details',
             variant: 'default',
             duration: 3000
           });
         }
-      }
+      });
     }
     
     // Remove processed notifications from queue
-    setPendingNotifications(prev => 
-      prev.length <= batchSize ? [] : prev.slice(batchSize)
+    setPendingNotifications(prevState => 
+      prevState.length <= batchSize ? [] : prevState.slice(batchSize)
     );
   }, [pendingNotifications, queryClient, toast]);
   
-  // Debounced version of the processing function with increased delay
+  // Debounced version of the processing function
   const debouncedProcessNotifications = useCallback(
-    debounce(processPendingNotifications, DEBOUNCE_DELAY), // Using the global constant (800ms) for consistency
+    debounce(processPendingNotifications, 300), 
     [processPendingNotifications]
   );
   
@@ -158,23 +157,24 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
     }
   }, [pendingNotifications, debouncedProcessNotifications]);
   
-  // Ultra-optimized function to force refresh notifications with minimal RAM usage
+  // Function to force refresh notifications
   const refreshNotifications = useCallback(async () => {
     if (!currentUser) return;
     
     const now = Date.now();
+    const minimumInterval = 2000; // Minimum 2 seconds between refreshes
     
-    // Increase minimum interval to reduce API calls
-    if (now - lastRefreshTimeRef.current < MINIMUM_REFRESH_INTERVAL) {
-      // Skip refresh if called too frequently
+    if (now - lastRefreshTimeRef.current < minimumInterval) {
+      console.log('Throttling notification refresh');
       return;
     }
     
     lastRefreshTimeRef.current = now;
     
     try {
+      console.log('Manually refreshing notifications');
       // Use force-fresh parameter to bypass server cache
-      const response = await fetch('/api/notifications?fresh=true&limit=' + MAX_CACHE_SIZE, {
+      const response = await fetch('/api/notifications?fresh=true', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -182,22 +182,17 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
       
       if (!response.ok) throw new Error('Failed to fetch notifications');
       
-      // Parse response with minimal allocations
       const freshNotifications = await response.json();
       
-      // Apply size limit to prevent memory growth
-      const limitedData = freshNotifications.length > MAX_CACHE_SIZE 
-        ? freshNotifications.slice(0, MAX_CACHE_SIZE)
-        : freshNotifications;
+      // Update the query cache with fresh data
+      queryClient.setQueryData(['/api/notifications'], freshNotifications);
+      console.log('Updated notifications in cache:', freshNotifications.length);
       
-      // Update the query cache with limited, fresh data
-      queryClient.setQueryData(['/api/notifications'], limitedData);
-      
-      return limitedData;
+      return freshNotifications;
     } catch (error) {
-      // Fallback to invalidation only on error
+      console.error('Error refreshing notifications:', error);
+      // Fallback to invalidation on error
       queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
-      return null;
     }
   }, [currentUser, queryClient]);
   
@@ -333,97 +328,63 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
         connectionAttemptsRef.current++;
       };
       
-      // Ultra memory-efficient notification handler
+      // Memory-efficient handler that doesn't create a full copy of the notification array
       const handleNewNotification = (notification: Notification) => {
         if (!isActive) return;
-        
-        // Use a simple state update with duplicate check to prevent memory issues
+        console.log('Received new direct notification:', notification.id);
         setPendingNotifications(prev => {
-          // Fast path: only process if queue isn't already too large
-          if (prev.length >= MAX_CACHE_SIZE * 2) {
-            // If queue is too large, just return unchanged to prevent memory growth
-            return prev;
+          // Check if we've already received this notification to prevent duplicates
+          if (prev.some(n => n.id === notification.id)) {
+            return prev; // No change if duplicate
           }
-          
-          // Check for duplicates using a for loop instead of .some() for better perf
-          let isDuplicate = false;
-          for (let i = 0; i < prev.length; i++) {
-            if (prev[i].id === notification.id) {
-              isDuplicate = true;
-              break;
-            }
-          }
-          
-          // No change if duplicate
-          if (isDuplicate) return prev;
-          
-          // Add to front of array for more efficient processing (LIFO)
-          return [notification, ...prev.slice(0, MAX_CACHE_SIZE * 2 - 1)];
+          return [...prev, notification];
         });
       };
       
-      // Memory-optimized broadcast handler
+      // Handle broadcast with minimal processing in the callback
       const handleBroadcast = (data: Omit<Notification, 'userId'>) => {
         if (!isActive || !currentUser) return;
         
-        // Only refresh if document is visible to avoid unnecessary processing
+        console.log('Received broadcast notification');
+        
+        // Queue refresh rather than immediate processing
         if (document.visibilityState === 'visible') {
-          // Use a variable to track if we've already scheduled a refresh
-          let refreshScheduled = false;
+          const refreshTimer = setTimeout(() => {
+            if (isActive) {
+              refreshNotifications();
+            }
+          }, DEBOUNCE_DELAY);
           
-          // Use a minimal timeout approach - we just need one refresh regardless of broadcast count
-          if (!refreshScheduled) {
-            refreshScheduled = true;
-            setTimeout(() => {
-              if (isActive) {
-                refreshNotifications();
-                refreshScheduled = false;
-              }
-            }, DEBOUNCE_DELAY);
-          }
+          // Clear timer if component unmounts
+          return () => clearTimeout(refreshTimer);
         }
       };
       
-      // Ultimate memory-efficient batch handler
+      // Optimized batch handling to process notifications in smaller groups
       const handleBatch = (data: { notifications: Notification[], count: number }) => {
-        if (!isActive || data.count === 0) return;
+        if (!isActive) return;
         
-        // Throttle large batches
-        const batchToProcess = data.count > NOTIFICATION_BATCH_SIZE 
-          ? data.notifications.slice(0, NOTIFICATION_BATCH_SIZE)
-          : data.notifications;
-        
-        // Efficiently update with a single state change
-        setPendingNotifications(prev => {
-          // First, create a map of existing notification IDs for fast lookups
-          const existingIds = new Set<number>();
-          for (let i = 0; i < prev.length; i++) {
-            existingIds.add(prev[i].id);
-          }
+        // Log only the count to save on console memory
+        if (data.count > 0) {
+          console.log(`Received batch: ${data.count} notifications`);
           
-          // Then build a list of non-duplicate notifications
-          const newItems: Notification[] = [];
-          for (let i = 0; i < batchToProcess.length; i++) {
-            const notification = batchToProcess[i];
-            if (!existingIds.has(notification.id)) {
-              newItems.push(notification);
-              
-              // Stop if we hit our max size to prevent memory issues
-              if (newItems.length + prev.length >= MAX_CACHE_SIZE * 2) {
-                break;
-              }
+          // Only append new notifications that aren't duplicates
+          setPendingNotifications(prev => {
+            // Create a Set of existing IDs for efficient lookup
+            const existingIds = new Set(prev.map(n => n.id));
+            
+            // Filter only new notifications
+            const newNotifications = data.notifications.filter(n => !existingIds.has(n.id));
+            
+            // If no new notifications, return unchanged
+            if (newNotifications.length === 0) {
+              return prev;
             }
-          }
-          
-          // If nothing new, avoid allocation by returning original array
-          if (newItems.length === 0) return prev;
-          
-          // Combine and limit max size
-          const combined = [...newItems, ...prev];
-          return combined.length > MAX_CACHE_SIZE * 2 
-            ? combined.slice(0, MAX_CACHE_SIZE * 2) 
-            : combined;
-        });
+            
+            // Otherwise append new notifications
+            return [...prev, ...newNotifications];
+          });
+        }
       };
       
       // Register event handlers
