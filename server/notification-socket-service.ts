@@ -33,6 +33,66 @@ export class NotificationSocketService {
         console.log(`[NotificationSocket] User ${userId} disconnected`);
         this.removeUserSocket(userId, socket.id);
       });
+      
+      // Handle manual refresh requests from client
+      socket.on('request_notifications', async () => {
+        console.log(`[NotificationSocket] User ${userId} requested notifications refresh`);
+        try {
+          // Import storage dynamically to avoid circular dependencies
+          const { storage } = await import('./storage');
+          
+          // Use the same direct database connection method that the API uses
+          // for maximum consistency with the standard API
+          const { notificationDb } = await import('./notification-db');
+          
+          // Get the raw notifications through a direct query for the freshest data
+          const rawNotifications = await new Promise((resolve, reject) => {
+            try {
+              const db = notificationDb.$client;
+              
+              // Use the same query format as the API endpoint
+              const query = `
+                SELECT 
+                  id,
+                  user_id as userId,
+                  type,
+                  title,
+                  message,
+                  read,
+                  created_at as createdAt
+                FROM notifications
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+                LIMIT 20
+              `;
+              
+              const stmt = db.prepare(query);
+              const results = stmt.all(userId);
+              
+              resolve(results);
+            } catch (err) {
+              console.error("Database error in notification socket query:", err);
+              reject(err);
+            }
+          });
+            
+          // Format the notifications in the same way the API does
+          const notifications = (rawNotifications as any[]).map(notification => ({
+            ...notification,
+            read: Boolean(notification.read),
+            createdAt: new Date(notification.createdAt).toISOString()
+          }));
+          
+          // Send the notifications directly to just this specific socket
+          socket.emit('notification_refresh', notifications);
+          
+          console.log(`[NotificationSocket] Sent ${notifications.length} notifications to user ${userId}`);
+        } catch (error) {
+          console.error(`[NotificationSocket] Error getting notifications for user ${userId}:`, error);
+          // Send an empty array if there was an error, to avoid client-side errors
+          socket.emit('notification_refresh', []);
+        }
+      });
     });
   }
 
