@@ -21,9 +21,12 @@ export function NotificationHeader() {
   const { toast } = useToast();
   const { isConnected } = useNotificationSocket();
 
-  // Query notifications from the API
+  // Query notifications from the API with auto-refresh 
   const { data: notifications = [], refetch: refetchNotifications } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
+    refetchInterval: 30000, // Refetch every 30 seconds automatically
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    staleTime: 10000, // Consider data stale after 10 seconds
   });
 
   // Add mutation for marking notifications as read
@@ -305,13 +308,38 @@ export function NotificationHeader() {
                     <span className={`inline-block h-2 w-2 rounded-full mr-2 ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}></span>
                     {isConnected ? 'Real-time notifications active' : 'Real-time notifications offline'}
                   </div>
-                  <button 
-                    onClick={() => window.location.reload()}
-                    className="text-gray-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
-                    title="Refresh connection"
-                  >
-                    {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    {/* Manual refresh button */}
+                    <button 
+                      onClick={() => {
+                        refetchNotifications();
+                        toast({
+                          title: "Refreshed",
+                          description: "Notifications updated",
+                          variant: "default",
+                          duration: 2000
+                        });
+                      }}
+                      className="text-gray-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+                      title="Refresh notifications"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M23 4v6h-6"></path>
+                        <path d="M1 20v-6h6"></path>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+                        <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+                      </svg>
+                    </button>
+                    
+                    {/* Connection status button */}
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="text-gray-500 hover:text-pink-500 dark:hover:text-pink-400 transition-colors"
+                      title={isConnected ? "Connection active" : "Connection offline - click to reconnect"}
+                    >
+                      {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+                    </button>
+                  </div>
                 </div>
               </PopoverContent>
             </Popover>

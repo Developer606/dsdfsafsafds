@@ -68,26 +68,45 @@ export function NotificationSocketProvider({ children }: { children: ReactNode }
     socket.on('broadcast_notification', (data: Omit<Notification, 'userId'>) => {
       if (!currentUser) return;
       
-      // Create a full notification object
-      const notification: Notification = {
-        ...data,
-        id: Date.now(), // Temporary ID until we refresh from server
-        userId: currentUser.id,
-        read: false,
-        createdAt: new Date()
-      };
+      console.log('Received broadcast notification:', data);
       
-      // Add the new notification to the cache
-      const notifications = queryClient.getQueryData<Notification[]>(['/api/notifications']) || [];
-      queryClient.setQueryData(['/api/notifications'], [notification, ...notifications]);
-      
-      // Show toast notification
+      // Show toast notification immediately
       toast({
-        title: notification.title,
-        description: notification.message,
+        title: data.title,
+        description: data.message,
         variant: 'default',
         duration: 5000
       });
+      
+      // Force an immediate fetch of fresh notifications from server
+      const fetchLatestNotifications = async () => {
+        try {
+          // Wait a moment for the server to finish processing the broadcast
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Fetch notifications directly rather than just invalidating cache
+          console.log('Fetching latest notifications after broadcast');
+          const response = await fetch('/api/notifications', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          if (!response.ok) throw new Error('Failed to fetch notifications');
+          
+          const freshNotifications = await response.json();
+          
+          // Update the query cache with fresh data
+          queryClient.setQueryData(['/api/notifications'], freshNotifications);
+          console.log('Updated notifications in cache:', freshNotifications.length);
+        } catch (error) {
+          console.error('Error fetching fresh notifications:', error);
+          // Fallback to invalidation on error
+          queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+        }
+      };
+      
+      fetchLatestNotifications();
     });
     
     // Clean up on component unmount

@@ -526,12 +526,53 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
 
   // Notification Routes
   app.get("/api/notifications", async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+    
     try {
-      const notifications = await notificationDb.query.notifications.findMany({
-        where: (notifications, { eq }) => eq(notifications.userId, req.user.id),
-        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)],
+      const userId = req.user.id;
+      console.log(`Fetching notifications for user ID: ${userId}`);
+      
+      // Force a direct database connection for maximum freshness
+      const rawNotifications = await new Promise((resolve, reject) => {
+        try {
+          const db = notificationDb.$client;
+          
+          // To ensure we always get the most current data, we'll use a direct prepared statement
+          const query = `
+            SELECT 
+              id,
+              user_id as userId,
+              type,
+              title,
+              message,
+              read,
+              created_at as createdAt
+            FROM notifications
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT 100
+          `;
+          
+          const stmt = db.prepare(query);
+          const results = stmt.all(userId);
+          
+          resolve(results);
+        } catch (err) {
+          console.error("Database error in direct query:", err);
+          reject(err);
+        }
       });
-
+      
+      console.log(`Found ${(rawNotifications as any[]).length} notifications for user ID: ${userId}`);
+      
+      // Format dates properly
+      const notifications = (rawNotifications as any[]).map(notification => ({
+        ...notification,
+        createdAt: new Date(notification.createdAt) // Ensure proper date formatting
+      }));
+      
       res.json(notifications);
     } catch (error: any) {
       console.error("Error fetching notifications:", error);
@@ -2692,20 +2733,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   });
 
   // Get user notifications
-  app.get("/api/notifications", async (req, res) => {
-    try {
-      const notifications = await notificationDb.query.notifications.findMany({
-        where: (notifications, { eq }) => eq(notifications.userId, req.user.id),
-        orderBy: (notifications, { desc }) => [desc(notifications.createdAt)],
-      });
-
-      res.json(notifications);
-    } catch (error: any) {
-      console.error("Error fetching notifications:", error);
-      res.status(500).json({ error: "Failed to fetch notifications" });
-    }
-  });
-
   // Mark notification as read
   app.patch("/api/notifications/:id/read", async (req, res) => {
     try {
