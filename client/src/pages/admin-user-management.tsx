@@ -236,7 +236,7 @@
 </div>
 const filteredUsers = users?.filter((user) => {
   // Search filter
-  const matchesSearch =
+  const matchesSearch = 
     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -294,7 +294,7 @@ const filteredUsers = users?.filter((user) => {
     matchesLogin &&
     matchesCharacters
   );
-}) ?? [];
+}) || [];
 // Add selection handlers
 const handleSelectAll = (checked: boolean) => {
   if (checked) {
