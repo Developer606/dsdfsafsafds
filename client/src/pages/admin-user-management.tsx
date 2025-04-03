@@ -578,7 +578,7 @@ export default function AdminUserManagement() {
               <Users className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
-          
+
           {/* Add bulk actions section */}
           <div className="flex items-center justify-between mb-4 pb-4 border-b">
             <div className="flex items-center gap-4">
@@ -598,7 +598,7 @@ export default function AdminUserManagement() {
                 </span>
               </div>
             </div>
-            
+
             {selectedUsers.length > 0 && (
               <div className="flex items-center gap-2">
                 <Button
@@ -636,10 +636,104 @@ export default function AdminUserManagement() {
                   <Lock className="h-4 w-4" />
                   Restrict
                 </Button>
-                {/* Additional bulk action buttons would be here */}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    bulkUpdateUsers.mutate({
+                      userIds: selectedUsers,
+                      action: "restrict",
+                      value: false,
+                    })
+                  }
+                  disabled={bulkUpdateUsers.isPending}
+                  className="gap-2"
+                >
+                  <UnlockIcon className="h-4 w-4" />
+                  Unrestrict
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    bulkUpdateUsers.mutate({
+                      userIds: selectedUsers,
+                      action: "block",
+                      value: true,
+                    })
+                  }
+                  disabled={bulkUpdateUsers.isPending}
+                  className="gap-2"
+                >
+                  <Ban className="h-4 w-4" />
+                  Block
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    bulkUpdateUsers.mutate({
+                      userIds: selectedUsers,
+                      action: "block",
+                      value: false,
+                    })
+                  }
+                  disabled={bulkUpdateUsers.isPending}
+                  className="gap-2"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Unblock
+                </Button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      disabled={bulkUpdateSubscription.isPending}
+                    >
+                      <ShoppingBag className="h-4 w-4" />
+                      Subscription
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuLabel>Select Plan</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {plans.map((plan) => (
+                      <DropdownMenuItem
+                        key={plan.id}
+                        onClick={() =>
+                          bulkUpdateSubscription.mutate({
+                            userIds: selectedUsers,
+                            planId: plan.id,
+                          })
+                        }
+                      >
+                        {plan.name}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() =>
+                        bulkUpdateSubscription.mutate({
+                          userIds: selectedUsers,
+                          planId: "free",
+                        })
+                      }
+                    >
+                      Downgrade to Free
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )}
           </div>
+
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -705,7 +799,161 @@ export default function AdminUserManagement() {
                       </Popover>
                     </div>
                   </TableHead>
-                  {/* Other table headers for subscription, login, etc. follow similar pattern */}
+                  <TableHead className="w-[150px]">
+                    <div className="flex items-center gap-2">
+                      Subscription
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[200px] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Filter subscription..." />
+                            <CommandEmpty>No subscription found.</CommandEmpty>
+                            <CommandGroup>
+                              {getUniqueSubscriptions().map((sub) => (
+                                <CommandItem
+                                  key={sub}
+                                  onSelect={() => {
+                                    setSubscriptionFilter((prev) =>
+                                      prev.includes(sub)
+                                        ? prev.filter((s) => s !== sub)
+                                        : [...prev, sub],
+                                    );
+                                  }}
+                                >
+                                  <div
+                                    className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${
+                                      subscriptionFilter.includes(sub)
+                                        ? "bg-primary"
+                                        : "border-primary"
+                                    }`}
+                                  >
+                                    {subscriptionFilter.includes(sub) && "✓"}
+                                  </div>
+                                  {sub}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[150px]">
+                    <div className="flex items-center gap-2">
+                      Last Login
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[200px] p-0" align="start">
+                          <Command>
+                            <CommandGroup>
+                              {[
+                                { value: "all", label: "All time" },
+                                { value: "week", label: "Last 7 days" },
+                                { value: "month", label: "Last 30 days" },
+                                { value: "never", label: "Never logged in" },
+                              ].map((option) => (
+                                <CommandItem
+                                  key={option.value}
+                                  onSelect={() => setLoginFilter(option.value)}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className={`h-4 w-4 rounded-full border ${
+                                        loginFilter === option.value
+                                          ? "border-primary bg-primary"
+                                          : "border-primary"
+                                      } flex items-center justify-center`}
+                                    >
+                                      {loginFilter === option.value && (
+                                        <div className="h-2 w-2 rounded-full bg-background" />
+                                      )}
+                                    </div>
+                                    <span>{option.label}</span>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[100px]">
+                    <div className="flex items-center gap-2">
+                      Characters
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[200px] p-4" align="start">
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Minimum Characters</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={characterFilter.min ?? ""}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                    ? parseInt(e.target.value)
+                                    : undefined;
+                                  setCharacterFilter((prev) => ({
+                                    ...prev,
+                                    min:
+                                      value && value >= 0 ? value : undefined,
+                                  }));
+                                }}
+                                placeholder="Min characters"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Maximum Characters</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={characterFilter.max ?? ""}
+                                onChange={(e) => {
+                                  const value = e.target.value
+                                    ? parseInt(e.target.value)
+                                    : undefined;
+                                  setCharacterFilter((prev) => ({
+                                    ...prev,
+                                    max:
+                                      value && value >= 0 ? value : undefined,
+                                  }));
+                                }}
+                                placeholder="Max characters"
+                              />
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[100px]">Created</TableHead>
+                  <TableHead className="w-[150px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -729,18 +977,72 @@ export default function AdminUserManagement() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
-                        {user.isBlocked 
-                          ? <Badge variant="destructive">Blocked</Badge>
-                          : user.isRestricted
-                          ? <Badge variant="outline">Restricted</Badge>
-                          : <Badge variant="default" className="bg-green-600 hover:bg-green-700">Active</Badge>
-                        }
+                        {user.isBlocked ? (
+                          <Badge variant="destructive">Blocked</Badge>
+                        ) : user.isRestricted ? (
+                          <Badge variant="outline">Restricted</Badge>
+                        ) : (
+                          <Badge variant="default" className="bg-green-600 hover:bg-green-700">Active</Badge>
+                        )}
                       </div>
                     </TableCell>
-                    {/* Other table cells follow */}
+                    <TableCell>
+                      <Badge
+                        variant={user.isPremium ? "default" : "outline"}
+                        className={
+                          user.isPremium
+                            ? "bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                            : ""
+                        }
+                      >
+                        {user.subscriptionTier || (user.isPremium ? "Premium" : "Free")}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.lastLoginAt ? (
+                        new Date(user.lastLoginAt).toLocaleString(undefined, {
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "numeric",
+                        })
+                      ) : (
+                        <span className="text-muted-foreground">Never</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.countryName || (
+                        <span className="text-muted-foreground">Unknown</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.trialCharactersCreated || 0}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(user.createdAt).toLocaleString(undefined, {
+                        month: "numeric",
+                        day: "numeric",
+                        year: "2-digit",
+                        hour: "numeric",
+                        minute: "numeric",
+                      })}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {/* Action buttons */}
+                        <Switch
+                          checked={!user.isBlocked}
+                          onCheckedChange={(checked) =>
+                            toggleUserBlocked.mutate({
+                              userId: user.id,
+                              isBlocked: !checked,
+                            })
+                          }
+                          aria-label={
+                            user.isBlocked ? "Unblock user" : "Block user"
+                          }
+                          disabled={toggleUserBlocked.isPending}
+                        />
+
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -748,7 +1050,6 @@ export default function AdminUserManagement() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {/* User action menu items */}
                             <DropdownMenuLabel>User Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
@@ -771,17 +1072,33 @@ export default function AdminUserManagement() {
                                 </>
                               )}
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => alert("Edit user profile")}
+                            >
+                              <Settings className="h-4 w-4 mr-2" />
+                              Edit Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => alert("Login as user")}
+                              className="text-blue-600"
+                            >
+                              <LogOut className="h-4 w-4 mr-2" />
+                              Login as User
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive"
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
-                            {/* Delete confirmation dialog */}
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete User</AlertDialogTitle>
                               <AlertDialogDescription>
