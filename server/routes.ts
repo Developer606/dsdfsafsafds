@@ -2543,7 +2543,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
 
         // Create notification
         const notification = await notificationDb
-          .insert(notifications)
+          .insert(schema.notifications)
           .values({
             userId: parseInt(userId),
             type,
