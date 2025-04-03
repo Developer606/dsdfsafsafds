@@ -79,7 +79,7 @@ function Router() {
         requireAdmin
       />
       <ProtectedRoute
-        path="/admin/users"
+        path="/admin/user-management"
         component={AdminUserManagement}
         requireAdmin
       />
