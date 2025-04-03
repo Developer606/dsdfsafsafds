@@ -240,88 +240,63 @@ export default function AdminUserManagement() {
       return response.json();
     },
     onSuccess: () => {
-      // WebSocket will handle the updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: "Success",
-        description: "User deleted successfully",
+        title: "User deleted",
+        description: "User has been permanently deleted",
       });
     },
   });
 
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
-      const response = await apiRequest("POST", `/api/admin/users/${userId}/block`, {
+      const response = await apiRequest("POST", "/api/admin/users/block", {
+        userId,
         blocked,
       });
       return response.json();
     },
     onSuccess: () => {
-      // WebSocket will handle the updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: "Success",
-        description: "User status updated successfully",
+        title: "User updated",
+        description: "User block status updated successfully",
       });
     },
-    onError: (error) => {
-      console.error("Block user error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update user status",
-        variant: "destructive",
-      });
-    }
   });
 
   const restrictUser = useMutation({
     mutationFn: async ({ userId, restricted }: { userId: number; restricted: boolean }) => {
-      const response = await apiRequest("POST", `/api/admin/users/${userId}/restrict`, {
+      const response = await apiRequest("POST", "/api/admin/users/restrict", {
+        userId,
         restricted,
       });
       return response.json();
     },
     onSuccess: () => {
-      // WebSocket will handle the updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: "Success",
-        description: "User restrictions updated successfully",
+        title: "User updated",
+        description: "User restriction status updated successfully",
       });
     },
-    onError: (error) => {
-      console.error("Restrict user error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update user restrictions",
-        variant: "destructive",
-      });
-    }
   });
 
   const updateSubscription = useMutation({
     mutationFn: async ({ userId, planId }: { userId: number; planId: string }) => {
-      const response = await apiRequest("POST", `/api/admin/users/${userId}/subscription`, {
+      const response = await apiRequest("POST", "/api/admin/users/update-subscription", {
+        userId,
         planId,
       });
       return response.json();
     },
     onSuccess: () => {
-      // WebSocket will handle the updates
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
-        title: "Success",
-        description: "User subscription updated successfully",
+        title: "Subscription updated",
+        description: "User subscription plan has been updated",
       });
     },
-    onError: (error) => {
-      console.error("Update subscription error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update user subscription",
-        variant: "destructive",
-      });
-    }
   });
 
   // Bulk mutations
@@ -340,14 +315,6 @@ export default function AdminUserManagement() {
       });
       setSelectedUsers([]);
     },
-    onError: (error) => {
-      console.error("Bulk delete users error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete selected users",
-        variant: "destructive",
-      });
-    }
   });
 
   const bulkUpdateUsers = useMutation({
@@ -374,14 +341,6 @@ export default function AdminUserManagement() {
       });
       setSelectedUsers([]);
     },
-    onError: (error, variables) => {
-      console.error(`Bulk ${variables.action} users error:`, error);
-      toast({
-        title: "Error",
-        description: `Failed to update selected users' ${variables.action} status`,
-        variant: "destructive",
-      });
-    }
   });
 
   const bulkUpdateSubscription = useMutation({
@@ -392,7 +351,7 @@ export default function AdminUserManagement() {
       userIds: number[];
       planId: string;
     }) => {
-      const res = await apiRequest("POST", "/api/admin/users/bulk-subscription", {
+      const res = await apiRequest("POST", "/api/admin/users/bulk-update-subscription", {
         userIds,
         planId,
       });
@@ -406,14 +365,6 @@ export default function AdminUserManagement() {
       });
       setSelectedUsers([]);
     },
-    onError: (error) => {
-      console.error("Bulk update subscription error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update selected users' subscription plans",
-        variant: "destructive",
-      });
-    }
   });
 
   return (

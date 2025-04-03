@@ -972,14 +972,29 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const userId = parseInt(req.params.userId);
       const { blocked } = req.body;
 
-      // Skip session handling to avoid errors
-      // Simply update the user status directly
+      // Get all active sessions
+      const sessions = await new Promise((resolve, reject) => {
+        storage.sessionStore.all((err, sessions) => {
+          if (err) reject(err);
+          else resolve(sessions || {});
+        });
+      });
+
+      // If blocking the user, find and destroy their session
+      if (blocked && sessions) {
+        Object.entries(sessions as Record<string, any>).forEach(
+          ([sessionId, session]) => {
+            if (session?.passport?.user === userId) {
+              storage.sessionStore.destroy(sessionId);
+            }
+          },
+        );
+      }
+
       await storage.updateUserStatus(userId, { isBlocked: blocked });
-      
       broadcastUpdate("user_update"); // Broadcast update
       res.json({ success: true });
     } catch (error: any) {
-      console.error("Error updating user block status:", error);
       res.status(500).json({ error: "Failed to update user block status" });
     }
   });
@@ -1000,14 +1015,25 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     try {
       const userId = parseInt(req.params.userId);
 
-      // Skip session handling to avoid errors
-      // Simply delete the user directly
+      // Get all active sessions
+      const sessions = await new Promise((resolve, reject) => {
+        storage.sessionStore.all((err, sessions) => {
+          if (err) reject(err);
+          else resolve(sessions || {});
+        });
+      });
+
+      // Find and destroy session of the deleted user
+      Object.entries(sessions).forEach(([sessionId, session]) => {
+        if (session.passport?.user === userId) {
+          storage.sessionStore.destroy(sessionId);
+        }
+      });
+
       await storage.deleteUser(userId);
-      
       broadcastUpdate("user_update"); // Broadcast user deletion
       res.json({ success: true });
     } catch (error: any) {
-      console.error("Error deleting user:", error);
       res.status(500).json({ error: "Failed to delete user" });
     }
   });
@@ -1056,142 +1082,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       }
     },
   );
-
-  // Bulk operations endpoints
-  app.post("/api/admin/users/bulk-delete", isAdmin, async (req, res) => {
-    try {
-      const { userIds } = req.body;
-      
-      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-        return res.status(400).json({ error: "Valid array of user IDs is required" });
-      }
-      
-      // Delete each user sequentially
-      for (const userId of userIds) {
-        await storage.deleteUser(userId);
-      }
-      
-      broadcastUpdate("user_update"); // Broadcast user deletion
-      res.json({ success: true, message: `${userIds.length} users deleted successfully` });
-    } catch (error) {
-      console.error("Error bulk deleting users:", error);
-      res.status(500).json({ error: "Failed to delete users" });
-    }
-  });
-  
-  app.post("/api/admin/users/bulk-block", isAdmin, async (req, res) => {
-    try {
-      const { userIds, value } = req.body;
-      
-      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-        return res.status(400).json({ error: "Valid array of user IDs is required" });
-      }
-      
-      if (typeof value !== 'boolean') {
-        return res.status(400).json({ error: "Block value must be a boolean" });
-      }
-      
-      // Block/unblock each user
-      for (const userId of userIds) {
-        await storage.updateUserStatus(userId, { isBlocked: value });
-      }
-      
-      broadcastUpdate("user_update"); // Broadcast user update
-      res.json({ 
-        success: true, 
-        message: `${userIds.length} users ${value ? 'blocked' : 'unblocked'} successfully` 
-      });
-    } catch (error) {
-      console.error("Error bulk blocking users:", error);
-      res.status(500).json({ error: "Failed to update user block status" });
-    }
-  });
-  
-  app.post("/api/admin/users/bulk-restrict", isAdmin, async (req, res) => {
-    try {
-      const { userIds, value } = req.body;
-      
-      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-        return res.status(400).json({ error: "Valid array of user IDs is required" });
-      }
-      
-      if (typeof value !== 'boolean') {
-        return res.status(400).json({ error: "Restrict value must be a boolean" });
-      }
-      
-      // Restrict/unrestrict each user
-      for (const userId of userIds) {
-        await storage.updateUserStatus(userId, { isRestricted: value });
-      }
-      
-      broadcastUpdate("user_update"); // Broadcast user update
-      res.json({ 
-        success: true, 
-        message: `${userIds.length} users ${value ? 'restricted' : 'unrestricted'} successfully` 
-      });
-    } catch (error) {
-      console.error("Error bulk restricting users:", error);
-      res.status(500).json({ error: "Failed to update user restriction status" });
-    }
-  });
-  
-  app.post("/api/admin/users/bulk-subscription", isAdmin, async (req, res) => {
-    try {
-      const { userIds, planId } = req.body;
-      
-      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-        return res.status(400).json({ error: "Valid array of user IDs is required" });
-      }
-      
-      if (!planId) {
-        return res.status(400).json({ error: "Plan ID is required" });
-      }
-      
-      // Set expiration to 1 year from now for admin-assigned plans
-      const expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-      
-      // Update each user's subscription
-      for (const userId of userIds) {
-        if (planId === "free") {
-          await storage.updateUserSubscription(userId, {
-            isPremium: false,
-            subscriptionTier: null,
-            subscriptionStatus: "cancelled",
-            subscriptionExpiresAt: new Date(),
-          });
-        } else {
-          // Validate plan exists before applying
-          if (
-            planId !== "basic" &&
-            planId !== "premium" &&
-            planId !== "pro" &&
-            !Object.keys(subscriptionPlans).some(
-              (plan) => subscriptionPlans[plan as SubscriptionTier].id === planId,
-            )
-          ) {
-            continue; // Skip invalid plans
-          }
-          
-          await storage.updateUserSubscription(userId, {
-            isPremium: true,
-            subscriptionTier: planId,
-            subscriptionStatus: "active",
-            subscriptionExpiresAt: expiresAt,
-          });
-        }
-      }
-      
-      broadcastUpdate("user_update"); // Broadcast user update
-      res.json({ 
-        success: true, 
-        message: `Subscription updated for ${userIds.length} users successfully` 
-      });
-    } catch (error) {
-      console.error("Error updating bulk user subscriptions:", error);
-      res.status(500).json({ error: "Failed to update user subscriptions" });
-    }
-  });
 
   // Add new plan management routes before httpServer creation
   app.get("/api/admin/plans", isAdmin, async (req, res) => {
