@@ -123,6 +123,16 @@ export default function AdminUserManagement() {
       }
     };
   }, []);
+  
+  // Add polling refresh for user data
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Refresh user data every 2 seconds
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    }, 2000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Fetch users
   const { data: users = [] as User[] } = useQuery<User[]>({
