@@ -313,7 +313,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const socket = setupWebSocket();
     return () => {
-      if (socket.readyState === WebSocket.OPEN) {
+      if (socket && socket.readyState === 1) { // 1 is equivalent to WebSocket.OPEN
         socket.close();
       }
     };

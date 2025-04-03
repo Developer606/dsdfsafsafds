@@ -40,6 +40,7 @@ import {
   MoreHorizontal,
   X,
   ChevronDown,
+  ChevronLeft,
   Loader2,
   Ban,
   Crown,
@@ -114,8 +115,9 @@ export default function AdminUserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage, setUsersPerPage] = useState(10); // Display 10 users per page by default
   const pageSizeOptions = [5, 10, 25, 50, 100];
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Setup WebSocket connection when component mounts
+  // Setup WebSocket connection when component mounts - more efficient events
   useEffect(() => {
     const socket = setupWebSocket();
     
@@ -134,21 +136,26 @@ export default function AdminUserManagement() {
     };
   }, []);
   
-  // Add polling refresh for user data
+  // Add polling refresh for user data - less frequent updates to reduce CPU/RAM usage
   useEffect(() => {
     const intervalId = setInterval(() => {
-      // Refresh user data every 2 seconds
+      // Refresh user data every 5 seconds instead of 2
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-    }, 2000);
+    }, 5000);
     
     return () => clearInterval(intervalId);
   }, []);
 
-  // Fetch users
-  const { data: users = [] as User[] } = useQuery<User[]>({
+  // Fetch users with loading state
+  const { data: users = [] as User[], isLoading: isLoadingUsers } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
   });
   
+  // Set loading state when query status changes
+  useEffect(() => {
+    setIsLoading(isLoadingUsers);
+  }, [isLoadingUsers]);
+
   // Fetch plans for subscription dropdown
   const { data: plans = [] as SubscriptionPlanWithFeatures[] } = useQuery<SubscriptionPlanWithFeatures[]>({
     queryKey: ["/api/admin/subscription-plans"],
@@ -407,11 +414,26 @@ export default function AdminUserManagement() {
     },
   });
 
+  // Add navigation to dashboard
+  const navigateToDashboard = () => {
+    window.location.href = "/admin";
+  };
+
   return (
     <div className="container mx-auto p-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-green-500">User Management</h1>
-        <p className="text-muted-foreground mt-1">Manage user accounts, permissions, and subscriptions</p>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-green-500">User Management</h1>
+          <p className="text-muted-foreground mt-1">Manage user accounts, permissions, and subscriptions</p>
+        </div>
+        <Button
+          onClick={navigateToDashboard}
+          variant="outline"
+          className="gap-2"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
       </div>
 
       <div className="flex items-center justify-between mb-6">
@@ -587,7 +609,16 @@ export default function AdminUserManagement() {
         </div>
       )}
       
-      <div className="overflow-x-auto">
+      {/* Show loading state */}
+      {isLoading || isLoadingUsers ? (
+        <div className="w-full flex justify-center items-center py-10">
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Loading user data...</p>
+          </div>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -1113,9 +1144,10 @@ export default function AdminUserManagement() {
           </TableBody>
         </Table>
       </div>
+      )}
       
-      {/* Pagination Controls */}
-      {(
+      {/* Pagination Controls - enhanced with rows per page selector */}
+      {filteredUsers.length > 0 && (
         <div className="flex justify-between items-center mt-4">
           <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground">
