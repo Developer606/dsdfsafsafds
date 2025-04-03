@@ -117,6 +117,9 @@ export default function AdminUserManagement() {
     return () => {
       if (socket) {
         socket.off("user_update");
+        if (socket.connected) {
+          socket.disconnect();
+        }
       }
     };
   }, []);
@@ -301,10 +304,13 @@ export default function AdminUserManagement() {
   // Bulk mutations
   const bulkDeleteUsers = useMutation({
     mutationFn: async (userIds: number[]) => {
-      const res = await apiRequest("POST", "/api/admin/users/bulk-delete", {
-        userIds,
-      });
-      return res.json();
+      // Handle each user individually since there's no bulk endpoint
+      const promises = userIds.map(userId =>
+        apiRequest("DELETE", `/api/admin/users/${userId}`)
+      );
+      
+      await Promise.all(promises);
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -326,11 +332,15 @@ export default function AdminUserManagement() {
       action: string;
       value: boolean;
     }) => {
-      const res = await apiRequest("POST", `/api/admin/users/bulk-${action}`, {
-        userIds,
-        value,
-      });
-      return res.json();
+      // Handle each user individually since there's no bulk endpoint
+      const promises = userIds.map(userId =>
+        apiRequest("POST", `/api/admin/users/${userId}/${action}`, {
+          [action === 'block' ? 'blocked' : 'restricted']: value,
+        })
+      );
+      
+      await Promise.all(promises);
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -350,11 +360,15 @@ export default function AdminUserManagement() {
       userIds: number[];
       planId: string;
     }) => {
-      const res = await apiRequest("POST", "/api/admin/users/bulk-subscription", {
-        userIds,
-        planId,
-      });
-      return res.json();
+      // Since there's no bulk subscription endpoint, update each user individually
+      const promises = userIds.map(userId => 
+        apiRequest("POST", `/api/admin/users/${userId}/subscription`, {
+          planId,
+        })
+      );
+      
+      await Promise.all(promises);
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
