@@ -67,6 +67,7 @@ import {
   Newspaper,
   ShoppingBag,
   Megaphone,
+  Sparkles,
 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -313,8 +314,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     const socket = setupWebSocket();
     return () => {
-      if (socket && socket.readyState === 1) { // 1 is equivalent to WebSocket.OPEN
-        socket.close();
+      // Clean up socket on component unmount if it exists
+      if (socket) {
+        socket.disconnect();
       }
     };
   }, []);
@@ -922,6 +924,12 @@ export default function AdminDashboard() {
                   <Button variant="secondary" className="w-full gap-2 justify-start">
                     <Users className="h-4 w-4" />
                     User Management
+                  </Button>
+                </Link>
+                <Link href="/admin/user-management-new" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    Animated User Management
                   </Button>
                 </Link>
                 <Button 
