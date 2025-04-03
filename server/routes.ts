@@ -2523,37 +2523,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
 
-  // Broadcast notification to all users
-  app.post("/api/admin/notifications/broadcast", isAdmin, async (req, res) => {
-    try {
-      const { title, message, type } = req.body;
-
-      // Get all active users
-      const users = await storage.getAllUsers();
-
-      // Create notifications for all users
-      const notifications = await Promise.all(
-        users.map((user) =>
-          notificationDb
-            .insert(notifications)
-            .values({
-              userId: user.id,
-              type,
-              title,
-              message,
-              read: false,
-            })
-            .returning()
-            .get(),
-        ),
-      );
-
-      res.json({ success: true, count: notifications.length });
-    } catch (error: any) {
-      console.error("Error broadcasting notification:", error);
-      res.status(500).json({ error: "Failed to broadcast notification" });
-    }
-  });
+  // This endpoint was removed to fix a duplicate implementation
+  // The broadcast functionality is already implemented earlier in the file
 
   // Send notification to specific user
   app.post(
