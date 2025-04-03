@@ -105,7 +105,7 @@ export default function AdminUserManagement() {
   }>({});
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   
-  // Connect to WebSocket for real-time updates
+  // Setup WebSocket connection when component mounts
   useEffect(() => {
     const socket = setupWebSocket();
     
@@ -115,7 +115,9 @@ export default function AdminUserManagement() {
     });
     
     return () => {
-      socket?.off("user_update");
+      if (socket) {
+        socket.off("user_update");
+      }
     };
   }, []);
 
@@ -250,8 +252,7 @@ export default function AdminUserManagement() {
 
   const blockUser = useMutation({
     mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
-      const response = await apiRequest("POST", "/api/admin/users/block", {
-        userId,
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/block`, {
         blocked,
       });
       return response.json();
@@ -267,8 +268,7 @@ export default function AdminUserManagement() {
 
   const restrictUser = useMutation({
     mutationFn: async ({ userId, restricted }: { userId: number; restricted: boolean }) => {
-      const response = await apiRequest("POST", "/api/admin/users/restrict", {
-        userId,
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/restrict`, {
         restricted,
       });
       return response.json();
@@ -284,8 +284,7 @@ export default function AdminUserManagement() {
 
   const updateSubscription = useMutation({
     mutationFn: async ({ userId, planId }: { userId: number; planId: string }) => {
-      const response = await apiRequest("POST", "/api/admin/users/update-subscription", {
-        userId,
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/subscription`, {
         planId,
       });
       return response.json();
@@ -351,7 +350,7 @@ export default function AdminUserManagement() {
       userIds: number[];
       planId: string;
     }) => {
-      const res = await apiRequest("POST", "/api/admin/users/bulk-update-subscription", {
+      const res = await apiRequest("POST", "/api/admin/users/bulk-subscription", {
         userIds,
         planId,
       });
