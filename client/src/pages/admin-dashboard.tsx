@@ -918,6 +918,12 @@ export default function AdminDashboard() {
                     Advertisements
                   </Button>
                 </Link>
+                <Link href="/admin/users" className="w-full">
+                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                    <Users className="h-4 w-4" />
+                    User Management
+                  </Button>
+                </Link>
                 <Button 
                   variant="destructive" 
                   className="w-full gap-2 justify-start mt-8" 
