@@ -49,6 +49,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Command,
   CommandEmpty,
   CommandGroup,
@@ -105,7 +112,8 @@ export default function AdminUserManagement() {
   }>({});
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 10; // Display 10 users per page
+  const [usersPerPage, setUsersPerPage] = useState(10); // Display 10 users per page by default
+  const pageSizeOptions = [5, 10, 25, 50, 100];
   
   // Setup WebSocket connection when component mounts
   useEffect(() => {
@@ -1107,10 +1115,31 @@ export default function AdminUserManagement() {
       </div>
       
       {/* Pagination Controls */}
-      {totalPages > 1 && (
+      {(
         <div className="flex justify-between items-center mt-4">
-          <div className="text-sm text-muted-foreground">
-            Showing {indexOfFirstUser + 1} to {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} users
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {indexOfFirstUser + 1} to {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} users
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Rows per page:</span>
+              <Select 
+                value={usersPerPage.toString()} 
+                onValueChange={(value) => {
+                  setUsersPerPage(Number(value));
+                  setCurrentPage(1); // Reset to first page when changing the number of rows
+                }}
+              >
+                <SelectTrigger className="w-[80px] h-8">
+                  <SelectValue placeholder="10" />
+                </SelectTrigger>
+                <SelectContent>
+                  {pageSizeOptions.map(size => (
+                    <SelectItem key={size} value={size.toString()}>{size}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <Button
