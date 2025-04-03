@@ -267,8 +267,7 @@ export default function AdminUserManagement() {
 
   const restrictUser = useMutation({
     mutationFn: async ({ userId, restricted }: { userId: number; restricted: boolean }) => {
-      const response = await apiRequest("POST", "/api/admin/users/restrict", {
-        userId,
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/restrict`, {
         restricted,
       });
       return response.json();
@@ -284,8 +283,7 @@ export default function AdminUserManagement() {
 
   const updateSubscription = useMutation({
     mutationFn: async ({ userId, planId }: { userId: number; planId: string }) => {
-      const response = await apiRequest("POST", "/api/admin/users/update-subscription", {
-        userId,
+      const response = await apiRequest("POST", `/api/admin/users/${userId}/subscription`, {
         planId,
       });
       return response.json();
@@ -351,7 +349,7 @@ export default function AdminUserManagement() {
       userIds: number[];
       planId: string;
     }) => {
-      const res = await apiRequest("POST", "/api/admin/users/bulk-update-subscription", {
+      const res = await apiRequest("POST", "/api/admin/users/bulk-subscription", {
         userIds,
         planId,
       });
