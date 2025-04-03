@@ -519,7 +519,37 @@ export default function AdminUserManagement() {
               >
                 Free Plan
               </DropdownMenuItem>
-              {plans.map((plan: SubscriptionPlanWithFeatures) => (
+              <DropdownMenuItem
+                onClick={() =>
+                  bulkUpdateSubscription.mutate({
+                    userIds: selectedUsers,
+                    planId: "basic",
+                  })
+                }
+              >
+                Basic Plan
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  bulkUpdateSubscription.mutate({
+                    userIds: selectedUsers,
+                    planId: "premium",
+                  })
+                }
+              >
+                Premium Plan
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  bulkUpdateSubscription.mutate({
+                    userIds: selectedUsers,
+                    planId: "pro",
+                  })
+                }
+              >
+                Pro Plan
+              </DropdownMenuItem>
+              {plans.filter(plan => !["free", "basic", "premium", "pro"].includes(plan.id)).map((plan: SubscriptionPlanWithFeatures) => (
                 <DropdownMenuItem
                   key={plan.id}
                   onClick={() =>
@@ -848,23 +878,37 @@ export default function AdminUserManagement() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        variant="outline"
-                        className="w-full justify-start"
+                        variant="ghost"
+                        className="h-auto flex items-center justify-start p-2 w-full hover:bg-slate-100 dark:hover:bg-slate-800"
                       >
                         <div className="flex flex-col items-start gap-1">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.isPremium
-                                ? "bg-purple-100 text-purple-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            {user.isPremium ? "Premium" : "Free"}
-                          </span>
-                          {user.subscriptionTier && (
-                            <span className="text-xs text-muted-foreground">
-                              {user.subscriptionTier}
-                            </span>
+                          {user.subscriptionTier ? (
+                            <>
+                              <Badge className="bg-purple-500 text-white hover:bg-purple-600">
+                                {user.subscriptionTier.charAt(0).toUpperCase() + user.subscriptionTier.slice(1)}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {user.subscriptionTier.toLowerCase()}
+                              </span>
+                            </>
+                          ) : user.isPremium ? (
+                            <>
+                              <Badge className="bg-purple-500 text-white hover:bg-purple-600">
+                                Premium
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                premium
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Badge variant="outline" className="text-slate-500 border-slate-300">
+                                Free
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                free
+                              </span>
+                            </>
                           )}
                         </div>
                       </Button>
@@ -882,7 +926,37 @@ export default function AdminUserManagement() {
                       >
                         Free Plan
                       </DropdownMenuItem>
-                      {plans.map((plan: SubscriptionPlanWithFeatures) => (
+                      <DropdownMenuItem
+                        onClick={() =>
+                          updateSubscription.mutate({
+                            userId: user.id,
+                            planId: "basic",
+                          })
+                        }
+                      >
+                        Basic Plan
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          updateSubscription.mutate({
+                            userId: user.id,
+                            planId: "premium",
+                          })
+                        }
+                      >
+                        Premium Plan
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          updateSubscription.mutate({
+                            userId: user.id,
+                            planId: "pro",
+                          })
+                        }
+                      >
+                        Pro Plan
+                      </DropdownMenuItem>
+                      {plans.filter(plan => !["free", "basic", "premium", "pro"].includes(plan.id)).map((plan: SubscriptionPlanWithFeatures) => (
                         <DropdownMenuItem
                           key={plan.id}
                           onClick={() =>
