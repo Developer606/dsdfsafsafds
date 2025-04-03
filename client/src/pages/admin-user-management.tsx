@@ -68,7 +68,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { setupWebSocket } from "@/lib/websocket";
-import { Link } from "wouter";
 
 // Define types for user management
 interface User {
@@ -135,12 +134,12 @@ export default function AdminUserManagement() {
     };
   }, []);
   
-  // Add polling refresh for user data with optimized interval
+  // Add polling refresh for user data
   useEffect(() => {
     const intervalId = setInterval(() => {
-      // Refresh user data every 10 seconds instead of 2 seconds to reduce server load
+      // Refresh user data every 2 seconds
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-    }, 10000);
+    }, 2000);
     
     return () => clearInterval(intervalId);
   }, []);
@@ -410,20 +409,8 @@ export default function AdminUserManagement() {
 
   return (
     <div className="container mx-auto p-4">
-      {/* Dashboard redirect button */}
-      <div className="mb-4">
-        <Link href="/admin-dashboard">
-          <Button variant="outline" className="gap-2" size="sm">
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-              <path d="M7.07926 0.222253C7.31275 -0.007434 7.6873 -0.007434 7.92079 0.222253L14.6708 6.86227C14.907 7.09465 14.9101 7.47453 14.6778 7.71076C14.4454 7.947 14.0655 7.95012 13.8293 7.71773L13 6.90201V12.5C13 12.7761 12.7762 13 12.5 13H2.50002C2.22388 13 2.00002 12.7761 2.00002 12.5V6.90201L1.17079 7.71773C0.934558 7.95012 0.554672 7.947 0.32229 7.71076C0.0899079 7.47453 0.0930283 7.09465 0.32926 6.86227L7.07926 0.222253ZM7.50002 1.49163L12 5.91831V12H10V8.49999C10 8.22385 9.77617 7.99999 9.50002 7.99999H5.50002C5.22388 7.99999 5.00002 8.22385 5.00002 8.49999V12H3.00002V5.91831L7.50002 1.49163ZM6.00002 12H9.00002V8.99999H6.00002V12Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-            </svg>
-            Back to Dashboard
-          </Button>
-        </Link>
-      </div>
-      
-      <div className="mb-6 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-4 rounded-lg shadow-sm border border-green-200 dark:border-green-800">
-        <h1 className="text-2xl font-bold text-green-600 dark:text-green-400">User Management</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-green-500">User Management</h1>
         <p className="text-muted-foreground mt-1">Manage user accounts, permissions, and subscriptions</p>
       </div>
 
@@ -600,8 +587,8 @@ export default function AdminUserManagement() {
         </div>
       )}
       
-      <div className="overflow-x-auto rounded-md border shadow-sm">
-        <Table className="bg-white dark:bg-zinc-950">
+      <div className="overflow-x-auto">
+        <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px]">
@@ -1128,11 +1115,11 @@ export default function AdminUserManagement() {
       </div>
       
       {/* Pagination Controls */}
-      <div className="py-4 px-6 bg-white dark:bg-zinc-950 border-t">
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <div className="text-sm text-muted-foreground bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-md">
-              Showing <span className="font-medium text-foreground">{indexOfFirstUser + 1}</span> to <span className="font-medium text-foreground">{Math.min(indexOfLastUser, filteredUsers.length)}</span> of <span className="font-medium text-foreground">{filteredUsers.length}</span> users
+      {(
+        <div className="flex justify-between items-center mt-4">
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {indexOfFirstUser + 1} to {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} users
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Rows per page:</span>
@@ -1143,7 +1130,7 @@ export default function AdminUserManagement() {
                   setCurrentPage(1); // Reset to first page when changing the number of rows
                 }}
               >
-                <SelectTrigger className="w-[80px] h-8 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                <SelectTrigger className="w-[80px] h-8">
                   <SelectValue placeholder="10" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1154,86 +1141,45 @@ export default function AdminUserManagement() {
               </Select>
             </div>
           </div>
-          
-          {totalPages > 1 && (
-            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-900 p-1 rounded-md">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="h-8 w-8"
-              >
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-                  <path d="M8.84182 3.13514C9.04327 3.32401 9.05348 3.64042 8.86462 3.84188L5.43521 7.49991L8.86462 11.1579C9.05348 11.3594 9.04327 11.6758 8.84182 11.8647C8.64036 12.0535 8.32394 12.0433 8.13508 11.8419L4.38508 7.84188C4.20477 7.64955 4.20477 7.35027 4.38508 7.15794L8.13508 3.15794C8.32394 2.95648 8.64036 2.94628 8.84182 3.13514Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                </svg>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="h-8 w-8"
-              >
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-                  <path d="M6.85355 3.14645C7.04882 3.34171 7.04882 3.65829 6.85355 3.85355L3.70711 7L6.85355 10.1464C7.04882 10.3417 7.04882 10.6583 6.85355 10.8536C6.65829 11.0488 6.34171 11.0488 6.14645 10.8536L2.64645 7.35355C2.45118 7.15829 2.45118 6.84171 2.64645 6.64645L6.14645 3.14645C6.34171 2.95118 6.65829 2.95118 6.85355 3.14645Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                </svg>
-              </Button>
-              
-              <div className="flex items-center gap-1 px-2">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  // Calculate page numbers to show, centered on current page
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <Button
-                      key={i}
-                      variant={currentPage === pageNum ? "default" : "ghost"}
-                      size="icon"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className="h-8 w-8"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-              </div>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="h-8 w-8"
-              >
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-                  <path d="M8.14645 3.14645C8.34171 2.95118 8.65829 2.95118 8.85355 3.14645L12.3536 6.64645C12.5488 6.84171 12.5488 7.15829 12.3536 7.35355L8.85355 10.8536C8.65829 11.0488 8.34171 11.0488 8.14645 10.8536C7.95118 10.6583 7.95118 10.3417 8.14645 10.1464L11.2929 7L8.14645 3.85355C7.95118 3.65829 7.95118 3.34171 8.14645 3.14645Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                </svg>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="h-8 w-8"
-              >
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-                  <path d="M6.1584 3.13508C5.95694 3.32394 5.94673 3.64036 6.1356 3.84182L9.56499 7.49991L6.1356 11.158C5.94673 11.3594 5.95694 11.6759 6.1584 11.8647C6.35986 12.0536 6.67627 12.0434 6.86514 11.8419L10.6151 7.84182C10.7954 7.64949 10.7954 7.35021 10.6151 7.15788L6.86514 3.15788C6.67627 2.95642 6.35986 2.94621 6.1584 3.13508Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                </svg>
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+            >
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <span className="mx-2 text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              Last
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
