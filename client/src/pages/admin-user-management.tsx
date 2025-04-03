@@ -420,21 +420,30 @@ export default function AdminUserManagement() {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-6 px-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-green-500">User Management</h1>
-          <p className="text-muted-foreground mt-1">Manage user accounts, permissions, and subscriptions</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-500 to-emerald-700 bg-clip-text text-transparent">User Management</h1>
+            <Badge variant="outline" className="ml-2 uppercase text-xs font-semibold bg-green-50 text-green-700 border-green-200">
+              <Users className="h-3 w-3 mr-1" /> 
+              {users.length} Users
+            </Badge>
+          </div>
+          <p className="text-muted-foreground mt-2 text-sm">Manage user accounts, permissions, and subscriptions</p>
         </div>
         <Button
           onClick={navigateToDashboard}
           variant="outline"
-          className="gap-2"
+          className="gap-2 transition-all hover:bg-green-50 hover:text-green-700 hover:border-green-200"
         >
           <ChevronLeft className="h-4 w-4" />
           Back to Dashboard
         </Button>
       </div>
+      
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border p-6 mb-6"
+      
 
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -1145,6 +1154,7 @@ export default function AdminUserManagement() {
         </Table>
       </div>
       )}
+      </div> {/* End of main card wrapper */}
       
       {/* Pagination Controls - enhanced with rows per page selector */}
       {filteredUsers.length > 0 && (
