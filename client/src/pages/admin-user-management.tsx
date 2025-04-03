@@ -14,24 +14,37 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Trash2,
   Lock,
+  UnlockIcon,
   Users,
   MoreHorizontal,
   X,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
@@ -45,6 +58,37 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { setupWebSocket } from "@/lib/websocket";
+
+// Define types for user management
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  isBlocked: boolean;
+  isRestricted: boolean;
+  isPremium: boolean;
+  subscriptionTier?: string;
+  trialCharactersCreated: number;
+  createdAt: string;
+  lastLoginAt?: string;
+  countryName?: string;
+  cityName?: string;
+}
+
+// Define types for subscription plans
+interface SubscriptionFeature {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface SubscriptionPlanWithFeatures {
+  id: string;
+  name: string;
+  price: number;
+  features: SubscriptionFeature[];
+}
 
 export default function AdminUserManagement() {
   const { toast } = useToast();
@@ -58,14 +102,48 @@ export default function AdminUserManagement() {
     max?: number;
   }>({});
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  
+  // Connect to WebSocket for real-time updates
+  useEffect(() => {
+    const socket = setupWebSocket();
+    
+    // Set up user update event listener
+    socket?.on("user_update", () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    });
+    
+    return () => {
+      socket?.off("user_update");
+    };
+  }, []);
 
   // Fetch users
-  const { data: users = [] } = useQuery({
+  const { data: users = [] as User[] } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
   });
+  
+  // Fetch plans for subscription dropdown
+  const { data: plans = [] as SubscriptionPlanWithFeatures[] } = useQuery<SubscriptionPlanWithFeatures[]>({
+    queryKey: ["/api/admin/subscription-plans"],
+  });
+
+  // Get unique subscription tiers for filter
+  const getUniqueSubscriptions = (): string[] => {
+    const subscriptions = users
+      .map((user: User) => user.subscriptionTier || (user.isPremium ? "Premium" : "Free"))
+      .filter((sub: string, index: number, self: string[]) => self.indexOf(sub) === index);
+    return subscriptions;
+  };
+  
+  // Get unique locations for filter
+  const getUniqueLocations = (): string[] => {
+    return users
+      .map((user: User) => user.countryName || "Unknown")
+      .filter((location: string, index: number, self: string[]) => self.indexOf(location) === index);
+  };
 
   // Filter users based on search and filters
-  const filteredUsers = users?.filter((user) => {
+  const filteredUsers: User[] = users.filter((user: User) => {
     // Search filter
     const matchesSearch = 
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -125,12 +203,12 @@ export default function AdminUserManagement() {
       matchesLogin &&
       matchesCharacters
     );
-  }) || [];
+  });
 
   // Add selection handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedUsers(filteredUsers.map((user) => user.id));
+      setSelectedUsers(filteredUsers.map((user: User) => user.id));
     } else {
       setSelectedUsers([]);
     }
@@ -152,6 +230,72 @@ export default function AdminUserManagement() {
     setLoginFilter("all");
     setCharacterFilter({});
   };
+
+  // User action mutations
+  const deleteUser = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await apiRequest("DELETE", `/api/admin/users/${userId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "User deleted",
+        description: "User has been permanently deleted",
+      });
+    },
+  });
+
+  const blockUser = useMutation({
+    mutationFn: async ({ userId, blocked }: { userId: number; blocked: boolean }) => {
+      const response = await apiRequest("POST", "/api/admin/users/block", {
+        userId,
+        blocked,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "User updated",
+        description: "User block status updated successfully",
+      });
+    },
+  });
+
+  const restrictUser = useMutation({
+    mutationFn: async ({ userId, restricted }: { userId: number; restricted: boolean }) => {
+      const response = await apiRequest("POST", "/api/admin/users/restrict", {
+        userId,
+        restricted,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "User updated",
+        description: "User restriction status updated successfully",
+      });
+    },
+  });
+
+  const updateSubscription = useMutation({
+    mutationFn: async ({ userId, planId }: { userId: number; planId: string }) => {
+      const response = await apiRequest("POST", "/api/admin/users/update-subscription", {
+        userId,
+        planId,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Subscription updated",
+        description: "User subscription plan has been updated",
+      });
+    },
+  });
 
   // Bulk mutations
   const bulkDeleteUsers = useMutation({
@@ -197,6 +341,30 @@ export default function AdminUserManagement() {
     },
   });
 
+  const bulkUpdateSubscription = useMutation({
+    mutationFn: async ({
+      userIds,
+      planId,
+    }: {
+      userIds: number[];
+      planId: string;
+    }) => {
+      const res = await apiRequest("POST", "/api/admin/users/bulk-update-subscription", {
+        userIds,
+        planId,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "Success",
+        description: "Selected users' subscriptions updated successfully",
+      });
+      setSelectedUsers([]);
+    },
+  });
+
   return (
     <Card className="mt-8">
       <div className="p-6">
@@ -230,11 +398,16 @@ export default function AdminUserManagement() {
                 Clear Filters
               </Button>
             )}
-            <Users className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center gap-1">
+              <Users className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                {users.length} Users
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Add bulk actions section */}
+        {/* Bulk actions section */}
         <div className="flex items-center justify-between mb-4 pb-4 border-b">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -291,10 +464,62 @@ export default function AdminUserManagement() {
                 <Lock className="h-4 w-4" />
                 Restrict
               </Button>
-              {/* Additional bulk action buttons would be here */}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  bulkUpdateUsers.mutate({
+                    userIds: selectedUsers,
+                    action: "block",
+                    value: true,
+                  })
+                }
+                disabled={bulkUpdateUsers.isPending}
+                className="gap-2"
+              >
+                Block
+              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    Subscription
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>Update Plan</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() =>
+                      bulkUpdateSubscription.mutate({
+                        userIds: selectedUsers,
+                        planId: "free",
+                      })
+                    }
+                  >
+                    Free Plan
+                  </DropdownMenuItem>
+                  {plans.map((plan: SubscriptionPlanWithFeatures) => (
+                    <DropdownMenuItem
+                      key={plan.id}
+                      onClick={() =>
+                        bulkUpdateSubscription.mutate({
+                          userIds: selectedUsers,
+                          planId: plan.id,
+                        })
+                      }
+                    >
+                      {plan.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>
+        
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -360,11 +585,213 @@ export default function AdminUserManagement() {
                     </Popover>
                   </div>
                 </TableHead>
-                {/* Other table headers for subscription, login, etc. follow similar pattern */}
+                <TableHead className="w-[150px]">
+                  <div className="flex items-center gap-2">
+                    Subscription
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Filter subscription..." />
+                          <CommandEmpty>No subscription found.</CommandEmpty>
+                          <CommandGroup>
+                            {getUniqueSubscriptions().map((sub: string) => (
+                              <CommandItem
+                                key={sub}
+                                onSelect={() => {
+                                  setSubscriptionFilter((prev) =>
+                                    prev.includes(sub)
+                                      ? prev.filter((s) => s !== sub)
+                                      : [...prev, sub],
+                                  );
+                                }}
+                              >
+                                <div
+                                  className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${
+                                    subscriptionFilter.includes(sub)
+                                      ? "bg-primary"
+                                      : "border-primary"
+                                  }`}
+                                >
+                                  {subscriptionFilter.includes(sub) && "✓"}
+                                </div>
+                                {sub}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </TableHead>
+                <TableHead className="w-[150px]">
+                  <div className="flex items-center gap-2">
+                    Last Login
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0" align="start">
+                        <Command>
+                          <CommandGroup>
+                            {[
+                              { value: "all", label: "All time" },
+                              { value: "week", label: "Last 7 days" },
+                              { value: "month", label: "Last 30 days" },
+                              { value: "never", label: "Never logged in" },
+                            ].map((option) => (
+                              <CommandItem
+                                key={option.value}
+                                onSelect={() => setLoginFilter(option.value)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={`h-4 w-4 rounded-full border ${
+                                      loginFilter === option.value
+                                        ? "border-primary bg-primary"
+                                        : "border-primary"
+                                    } flex items-center justify-center`}
+                                  >
+                                    {loginFilter === option.value && (
+                                      <div className="h-2 w-2 rounded-full bg-background" />
+                                    )}
+                                  </div>
+                                  <span>{option.label}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </TableHead>
+                <TableHead className="w-[100px]">
+                  <div className="flex items-center gap-2">
+                    Location
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Filter location..." />
+                          <CommandEmpty>No location found.</CommandEmpty>
+                          <CommandGroup>
+                            {getUniqueLocations().map((location: string) => (
+                              <CommandItem
+                                key={location}
+                                onSelect={() => {
+                                  setLocationFilter((prev) =>
+                                    prev.includes(location)
+                                      ? prev.filter((s) => s !== location)
+                                      : [...prev, location],
+                                  );
+                                }}
+                              >
+                                <div
+                                  className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${
+                                    locationFilter.includes(location)
+                                      ? "bg-primary"
+                                      : "border-primary"
+                                  }`}
+                                >
+                                  {locationFilter.includes(location) && "✓"}
+                                </div>
+                                {location}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </TableHead>
+                <TableHead className="w-[100px]">
+                  <div className="flex items-center gap-2">
+                    Characters
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-4" align="start">
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Minimum Characters</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={characterFilter.min ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                  ? parseInt(e.target.value)
+                                  : undefined;
+                                setCharacterFilter((prev) => ({
+                                  ...prev,
+                                  min:
+                                    value && value >= 0 ? value : undefined,
+                                }));
+                              }}
+                              placeholder="Min characters"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Maximum Characters</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={characterFilter.max ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                  ? parseInt(e.target.value)
+                                  : undefined;
+                                setCharacterFilter((prev) => ({
+                                  ...prev,
+                                  max:
+                                    value && value >= 0 ? value : undefined,
+                                }));
+                              }}
+                              placeholder="Max characters"
+                            />
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </TableHead>
+                <TableHead className="w-[100px]">Characters</TableHead>
+                <TableHead className="w-[100px]">Created</TableHead>
+                <TableHead className="w-[150px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
+              {filteredUsers.map((user: User) => (
                 <TableRow
                   key={user.id}
                   className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors"
@@ -384,37 +811,182 @@ export default function AdminUserManagement() {
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {user.isBlocked 
-                        ? <Badge variant="destructive">Blocked</Badge>
-                        : user.isRestricted
-                        ? <Badge variant="outline">Restricted</Badge>
-                        : <Badge variant="success">Active</Badge>
-                      }
+                      {user.isBlocked && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Blocked
+                        </span>
+                      )}
+                      {user.isRestricted && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Restricted
+                        </span>
+                      )}
+                      {!user.isBlocked && !user.isRestricted && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Active
+                        </span>
+                      )}
                     </div>
                   </TableCell>
-                  {/* Other table cells follow */}
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {/* Action buttons */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {/* User action menu items */}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start"
+                        >
+                          <div className="flex flex-col items-start gap-1">
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                user.isPremium
+                                  ? "bg-purple-100 text-purple-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {user.isPremium ? "Premium" : "Free"}
+                            </span>
+                            {user.subscriptionTier && (
+                              <span className="text-xs text-muted-foreground">
+                                {user.subscriptionTier}
+                              </span>
+                            )}
+                          </div>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[200px]">
+                        <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() =>
+                            updateSubscription.mutate({
+                              userId: user.id,
+                              planId: "free",
+                            })
+                          }
+                        >
+                          Free Plan
+                        </DropdownMenuItem>
+                        {plans.map((plan: SubscriptionPlanWithFeatures) => (
+                          <DropdownMenuItem
+                            key={plan.id}
+                            onClick={() =>
+                              updateSubscription.mutate({
+                                userId: user.id,
+                                planId: plan.id,
+                              })
+                            }
+                          >
+                            {plan.name}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span>
+                        {user.lastLoginAt
+                          ? new Date(user.lastLoginAt).toLocaleDateString()
+                          : "Never"}
+                      </span>
+                      {user.lastLoginAt && (
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(user.lastLoginAt).toLocaleTimeString()}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      {user.countryName ? (
+                        <>
+                          <span>{user.countryName}</span>
+                          {user.cityName && (
+                            <span className="text-xs text-muted-foreground">
+                              {user.cityName}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          Unknown
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{user.trialCharactersCreated}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span>
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(user.createdAt).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={user.isBlocked}
+                        onCheckedChange={(checked) =>
+                          blockUser.mutate({
+                            userId: user.id,
+                            blocked: checked,
+                          })
+                        }
+                        disabled={blockUser.isPending}
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() =>
+                          restrictUser.mutate({
+                            userId: user.id,
+                            restricted: !user.isRestricted,
+                          })
+                        }
+                        disabled={restrictUser.isPending}
+                      >
+                        {restrictUser.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : user.isRestricted ? (
+                          <Lock className="h-4 w-4" />
+                        ) : (
+                          <UnlockIcon className="h-4 w-4" />
+                        )}
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="text-destructive">
-                            <Trash2 className="h-4 w-4" />
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            disabled={deleteUser.isPending}
+                          >
+                            {deleteUser.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
-                          {/* Delete confirmation dialog */}
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this user? This
+                              action cannot be undone. All user data including
+                              messages and custom characters will be deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteUser.mutate(user.id)}
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>

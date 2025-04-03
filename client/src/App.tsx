@@ -83,6 +83,11 @@ function Router() {
         component={AdminUserManagement}
         requireAdmin
       />
+      <ProtectedRoute
+        path="/admin/user-management"
+        component={AdminUserManagement}
+        requireAdmin
+      />
 
       <Route component={NotFound} />
     </Switch>
