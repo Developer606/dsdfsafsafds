@@ -1083,6 +1083,142 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     },
   );
 
+  // Bulk operations endpoints
+  app.post("/api/admin/users/bulk-delete", isAdmin, async (req, res) => {
+    try {
+      const { userIds } = req.body;
+      
+      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: "Valid array of user IDs is required" });
+      }
+      
+      // Delete each user sequentially
+      for (const userId of userIds) {
+        await storage.deleteUser(userId);
+      }
+      
+      broadcastUpdate("user_update"); // Broadcast user deletion
+      res.json({ success: true, message: `${userIds.length} users deleted successfully` });
+    } catch (error) {
+      console.error("Error bulk deleting users:", error);
+      res.status(500).json({ error: "Failed to delete users" });
+    }
+  });
+  
+  app.post("/api/admin/users/bulk-block", isAdmin, async (req, res) => {
+    try {
+      const { userIds, value } = req.body;
+      
+      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: "Valid array of user IDs is required" });
+      }
+      
+      if (typeof value !== 'boolean') {
+        return res.status(400).json({ error: "Block value must be a boolean" });
+      }
+      
+      // Block/unblock each user
+      for (const userId of userIds) {
+        await storage.updateUserStatus(userId, { isBlocked: value });
+      }
+      
+      broadcastUpdate("user_update"); // Broadcast user update
+      res.json({ 
+        success: true, 
+        message: `${userIds.length} users ${value ? 'blocked' : 'unblocked'} successfully` 
+      });
+    } catch (error) {
+      console.error("Error bulk blocking users:", error);
+      res.status(500).json({ error: "Failed to update user block status" });
+    }
+  });
+  
+  app.post("/api/admin/users/bulk-restrict", isAdmin, async (req, res) => {
+    try {
+      const { userIds, value } = req.body;
+      
+      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: "Valid array of user IDs is required" });
+      }
+      
+      if (typeof value !== 'boolean') {
+        return res.status(400).json({ error: "Restrict value must be a boolean" });
+      }
+      
+      // Restrict/unrestrict each user
+      for (const userId of userIds) {
+        await storage.updateUserStatus(userId, { isRestricted: value });
+      }
+      
+      broadcastUpdate("user_update"); // Broadcast user update
+      res.json({ 
+        success: true, 
+        message: `${userIds.length} users ${value ? 'restricted' : 'unrestricted'} successfully` 
+      });
+    } catch (error) {
+      console.error("Error bulk restricting users:", error);
+      res.status(500).json({ error: "Failed to update user restriction status" });
+    }
+  });
+  
+  app.post("/api/admin/users/bulk-subscription", isAdmin, async (req, res) => {
+    try {
+      const { userIds, planId } = req.body;
+      
+      if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: "Valid array of user IDs is required" });
+      }
+      
+      if (!planId) {
+        return res.status(400).json({ error: "Plan ID is required" });
+      }
+      
+      // Set expiration to 1 year from now for admin-assigned plans
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      
+      // Update each user's subscription
+      for (const userId of userIds) {
+        if (planId === "free") {
+          await storage.updateUserSubscription(userId, {
+            isPremium: false,
+            subscriptionTier: null,
+            subscriptionStatus: "cancelled",
+            subscriptionExpiresAt: new Date(),
+          });
+        } else {
+          // Validate plan exists before applying
+          if (
+            planId !== "basic" &&
+            planId !== "premium" &&
+            planId !== "pro" &&
+            !Object.keys(subscriptionPlans).some(
+              (plan) => subscriptionPlans[plan as SubscriptionTier].id === planId,
+            )
+          ) {
+            continue; // Skip invalid plans
+          }
+          
+          await storage.updateUserSubscription(userId, {
+            isPremium: true,
+            subscriptionTier: planId,
+            subscriptionStatus: "active",
+            subscriptionExpiresAt: expiresAt,
+          });
+        }
+      }
+      
+      broadcastUpdate("user_update"); // Broadcast user update
+      res.json({ 
+        success: true, 
+        message: `Subscription updated for ${userIds.length} users successfully` 
+      });
+    } catch (error) {
+      console.error("Error updating bulk user subscriptions:", error);
+      res.status(500).json({ error: "Failed to update user subscriptions" });
+    }
+  });
+
   // Add new plan management routes before httpServer creation
   app.get("/api/admin/plans", isAdmin, async (req, res) => {
     try {
