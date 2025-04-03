@@ -104,6 +104,8 @@ export default function AdminUserManagement() {
     max?: number;
   }>({});
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 10; // Display 10 users per page
   
   // Setup WebSocket connection when component mounts
   useEffect(() => {
@@ -221,6 +223,12 @@ export default function AdminUserManagement() {
       matchesCharacters
     );
   });
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
   // Add selection handlers
   const handleSelectAll = (checked: boolean) => {
@@ -246,6 +254,7 @@ export default function AdminUserManagement() {
     setLocationFilter([]);
     setLoginFilter("all");
     setCharacterFilter({});
+    setCurrentPage(1); // Reset to first page when filters are cleared
   };
 
   // User action mutations
@@ -420,7 +429,10 @@ export default function AdminUserManagement() {
           <Input
             placeholder="Search by username or email..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1); // Reset to first page when search changes
+            }}
             className="w-[300px]"
           />
           {(statusFilter.length > 0 ||
@@ -611,6 +623,7 @@ export default function AdminUserManagement() {
                                       ? prev.filter((s) => s !== status)
                                       : [...prev, status],
                                   );
+                                  setCurrentPage(1); // Reset to first page when filter changes
                                 }}
                               >
                                 <div
@@ -659,6 +672,7 @@ export default function AdminUserManagement() {
                                     ? prev.filter((s) => s !== sub)
                                     : [...prev, sub],
                                 );
+                                setCurrentPage(1); // Reset to first page when filter changes
                               }}
                             >
                               <div
@@ -703,7 +717,10 @@ export default function AdminUserManagement() {
                           ].map((option) => (
                             <CommandItem
                               key={option.value}
-                              onSelect={() => setLoginFilter(option.value)}
+                              onSelect={() => {
+                                setLoginFilter(option.value);
+                                setCurrentPage(1); // Reset to first page when filter changes
+                              }}
                             >
                               <div className="flex items-center gap-2">
                                 <div
@@ -754,6 +771,7 @@ export default function AdminUserManagement() {
                                     ? prev.filter((s) => s !== location)
                                     : [...prev, location],
                                 );
+                                setCurrentPage(1); // Reset to first page when filter changes
                               }}
                             >
                               <div
@@ -804,6 +822,7 @@ export default function AdminUserManagement() {
                                 min:
                                   value && value >= 0 ? value : undefined,
                               }));
+                              setCurrentPage(1); // Reset to first page when filter changes
                             }}
                             placeholder="Min characters"
                           />
@@ -823,6 +842,7 @@ export default function AdminUserManagement() {
                                 max:
                                   value && value >= 0 ? value : undefined,
                               }));
+                              setCurrentPage(1); // Reset to first page when filter changes
                             }}
                             placeholder="Max characters"
                           />
@@ -837,7 +857,7 @@ export default function AdminUserManagement() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((user: User) => (
+            {currentUsers.map((user: User) => (
               <TableRow
                 key={user.id}
                 className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors"
@@ -1085,6 +1105,52 @@ export default function AdminUserManagement() {
           </TableBody>
         </Table>
       </div>
+      
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {indexOfFirstUser + 1} to {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} users
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+            >
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <span className="mx-2 text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              Last
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
