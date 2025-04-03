@@ -366,46 +366,126 @@ export default function AdminUserManagement() {
   });
 
   return (
-    <Card className="mt-8">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold">User Management</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Manage user accounts, permissions, and subscriptions
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <Input
-              placeholder="Search by username or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-[300px]"
-            />
-            {(statusFilter.length > 0 ||
-              subscriptionFilter.length > 0 ||
-              locationFilter.length > 0 ||
-              loginFilter !== "all" ||
-              characterFilter.min !== undefined ||
-              characterFilter.max !== undefined) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={clearFilters}
-                className="gap-2"
-              >
-                <X className="h-4 w-4" />
-                Clear Filters
-              </Button>
-            )}
-            <div className="flex items-center gap-1">
-              <Users className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {users.length} Users
-              </span>
-            </div>
-          </div>
+    <div className="container mx-auto p-4">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-green-500">User Management</h1>
+        <p className="text-muted-foreground mt-1">Manage user accounts, permissions, and subscriptions</p>
+      </div>
+      
+      <div className="flex items-center space-x-2 mb-4">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            checked={
+              selectedUsers.length > 0 &&
+              selectedUsers.length === filteredUsers.length
+            }
+            onCheckedChange={handleSelectAll}
+            aria-label="Select all users"
+          />
+          <span className="text-sm text-muted-foreground">
+            {selectedUsers.length > 0
+              ? `Selected ${selectedUsers.length} user${selectedUsers.length === 1 ? "" : "s"}`
+              : "Select all"}
+          </span>
         </div>
+        
+        {selectedUsers.length > 0 && (
+          <div className="flex items-center gap-2 ml-4">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                if (window.confirm(`Delete ${selectedUsers.length} selected users?`)) {
+                  bulkDeleteUsers.mutate(selectedUsers);
+                }
+              }}
+              disabled={bulkDeleteUsers.isPending}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                bulkUpdateUsers.mutate({
+                  userIds: selectedUsers,
+                  action: "restrict",
+                  value: true,
+                })
+              }
+              disabled={bulkUpdateUsers.isPending}
+              className="gap-2"
+            >
+              <Lock className="h-4 w-4" />
+              Restrict
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                bulkUpdateUsers.mutate({
+                  userIds: selectedUsers,
+                  action: "block",
+                  value: true,
+                })
+              }
+              disabled={bulkUpdateUsers.isPending}
+              className="gap-2"
+            >
+              Block
+            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  Subscription
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() =>
+                    bulkUpdateSubscription.mutate({
+                      userIds: selectedUsers,
+                      planId: "free",
+                    })
+                  }
+                >
+                  Free Plan
+                </DropdownMenuItem>
+                {plans.map((plan: SubscriptionPlanWithFeatures) => (
+                  <DropdownMenuItem
+                    key={plan.id}
+                    onClick={() =>
+                      bulkUpdateSubscription.mutate({
+                        userIds: selectedUsers,
+                        planId: plan.id,
+                      })
+                    }
+                  >
+                    {plan.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+        
+        <div className="ml-auto">
+          <Input
+            placeholder="Search by username or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-[300px]"
+          />
+        </div>
+      </div>
 
         {/* Bulk actions section */}
         <div className="flex items-center justify-between mb-4 pb-4 border-b">
