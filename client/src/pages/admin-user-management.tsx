@@ -374,111 +374,24 @@ export default function AdminUserManagement() {
         <p className="text-muted-foreground mt-1">Manage user accounts, permissions, and subscriptions</p>
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            checked={
-              selectedUsers.length > 0 &&
-              selectedUsers.length === filteredUsers.length
-            }
-            onCheckedChange={handleSelectAll}
-            aria-label="Select all users"
-          />
-          <span className="text-sm text-muted-foreground">
-            {selectedUsers.length > 0
-              ? `Selected ${selectedUsers.length} user${selectedUsers.length === 1 ? "" : "s"}`
-              : "Select all"}
-          </span>
-        </div>
-
-        {selectedUsers.length > 0 && (
+      <div className="flex items-center justify-between mb-6">
+        <div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => {
-                if (window.confirm(`Delete ${selectedUsers.length} selected users?`)) {
-                  bulkDeleteUsers.mutate(selectedUsers);
-                }
-              }}
-              disabled={bulkDeleteUsers.isPending}
-              className="gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                bulkUpdateUsers.mutate({
-                  userIds: selectedUsers,
-                  action: "restrict",
-                  value: true,
-                })
+            <Checkbox
+              checked={
+                selectedUsers.length > 0 &&
+                selectedUsers.length === filteredUsers.length
               }
-              disabled={bulkUpdateUsers.isPending}
-              className="gap-2"
-            >
-              <Lock className="h-4 w-4" />
-              Restrict
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                bulkUpdateUsers.mutate({
-                  userIds: selectedUsers,
-                  action: "block",
-                  value: true,
-                })
-              }
-              disabled={bulkUpdateUsers.isPending}
-              className="gap-2"
-            >
-              <Ban className="h-4 w-4" />
-              Block
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Crown className="h-4 w-4" />
-                  Subscription
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() =>
-                    bulkUpdateSubscription.mutate({
-                      userIds: selectedUsers,
-                      planId: "free",
-                    })
-                  }
-                >
-                  Free Plan
-                </DropdownMenuItem>
-                {plans.map((plan: SubscriptionPlanWithFeatures) => (
-                  <DropdownMenuItem
-                    key={plan.id}
-                    onClick={() =>
-                      bulkUpdateSubscription.mutate({
-                        userIds: selectedUsers,
-                        planId: plan.id,
-                      })
-                    }
-                  >
-                    {plan.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              onCheckedChange={handleSelectAll}
+              aria-label="Select all users"
+            />
+            <span className="text-sm text-muted-foreground">
+              {selectedUsers.length > 0
+                ? `Selected ${selectedUsers.length} user${selectedUsers.length === 1 ? "" : "s"}`
+                : "Select all"}
+            </span>
           </div>
-        )}
+        </div>
 
         <div className="flex items-center gap-4">
           <Input
@@ -511,6 +424,95 @@ export default function AdminUserManagement() {
           </div>
         </div>
       </div>
+
+      {selectedUsers.length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              if (window.confirm(`Delete ${selectedUsers.length} selected users?`)) {
+                bulkDeleteUsers.mutate(selectedUsers);
+              }
+            }}
+            disabled={bulkDeleteUsers.isPending}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              bulkUpdateUsers.mutate({
+                userIds: selectedUsers,
+                action: "restrict",
+                value: true,
+              })
+            }
+            disabled={bulkUpdateUsers.isPending}
+            className="gap-2"
+          >
+            <Lock className="h-4 w-4" />
+            Restrict
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              bulkUpdateUsers.mutate({
+                userIds: selectedUsers,
+                action: "block",
+                value: true,
+              })
+            }
+            disabled={bulkUpdateUsers.isPending}
+            className="gap-2"
+          >
+            <Ban className="h-4 w-4" />
+            Block
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Crown className="h-4 w-4" />
+                Subscription
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Change Plan</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() =>
+                  bulkUpdateSubscription.mutate({
+                    userIds: selectedUsers,
+                    planId: "free",
+                  })
+                }
+              >
+                Free Plan
+              </DropdownMenuItem>
+              {plans.map((plan: SubscriptionPlanWithFeatures) => (
+                <DropdownMenuItem
+                  key={plan.id}
+                  onClick={() =>
+                    bulkUpdateSubscription.mutate({
+                      userIds: selectedUsers,
+                      planId: plan.id,
+                    })
+                  }
+                >
+                  {plan.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
       
       <div className="overflow-x-auto">
         <Table>
@@ -674,6 +676,53 @@ export default function AdminUserManagement() {
               </TableHead>
               <TableHead className="w-[100px]">
                 <div className="flex items-center gap-2">
+                  Location
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Filter location..." />
+                        <CommandEmpty>No location found.</CommandEmpty>
+                        <CommandGroup>
+                          {getUniqueLocations().map((location: string) => (
+                            <CommandItem
+                              key={location}
+                              onSelect={() => {
+                                setLocationFilter((prev) =>
+                                  prev.includes(location)
+                                    ? prev.filter((s) => s !== location)
+                                    : [...prev, location],
+                                );
+                              }}
+                            >
+                              <div
+                                className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border ${
+                                  locationFilter.includes(location)
+                                    ? "bg-primary"
+                                    : "border-primary"
+                                }`}
+                              >
+                                {locationFilter.includes(location) && "✓"}
+                              </div>
+                              {location}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </TableHead>
+              <TableHead className="w-[100px]">
+                <div className="flex items-center gap-2">
                   Characters
                   <Popover>
                     <PopoverTrigger asChild>
@@ -730,7 +779,6 @@ export default function AdminUserManagement() {
                   </Popover>
                 </div>
               </TableHead>
-              <TableHead className="w-[100px]">Location</TableHead>
               <TableHead className="w-[100px]">Created</TableHead>
               <TableHead className="w-[150px]">Actions</TableHead>
             </TableRow>
@@ -859,7 +907,7 @@ export default function AdminUserManagement() {
                     )}
                   </div>
                 </TableCell>
-                <TableCell>{user.trialCharactersCreated || 0}</TableCell>
+                <TableCell>{user.trialCharactersCreated}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span>
