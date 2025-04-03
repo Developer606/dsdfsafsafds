@@ -70,19 +70,11 @@ export function NotificationPopover() {
   // Mutation for broadcasting to all users
   const broadcastMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest(
+      await apiRequest(
         "POST",
         "/api/admin/notifications/broadcast",
         { title, message, type: notificationType }
       );
-      
-      // Check for error response
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to broadcast notification');
-      }
-      
-      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -94,8 +86,7 @@ export function NotificationPopover() {
       setTitle("");
       setMessage("");
     },
-    onError: (error: any) => {
-      console.error('Broadcast error:', error);
+    onError: (error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to broadcast notification",
