@@ -44,6 +44,7 @@ import {
   Loader2,
   Ban,
   Crown,
+  Search,
 } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -442,9 +443,8 @@ export default function AdminUserManagement() {
         </Button>
       </div>
       
-      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border p-6 mb-6"
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border p-6 mb-6">
       
-
       <div className="flex items-center justify-between mb-6">
         <div>
           <div className="flex items-center gap-2">
@@ -465,15 +465,28 @@ export default function AdminUserManagement() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Input
-            placeholder="Search by username or email..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1); // Reset to first page when search changes
-            }}
-            className="w-[300px]"
-          />
+          <div className="relative w-[300px]">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search by username or email..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1); // Reset to first page when search changes
+              }}
+              className="pl-8 w-full transition-all border-slate-200 focus-visible:ring-green-500"
+            />
+            {searchQuery && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-1 top-1 h-6 w-6 opacity-70 hover:opacity-100"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
           {(statusFilter.length > 0 ||
             subscriptionFilter.length > 0 ||
             locationFilter.length > 0 ||
@@ -1158,7 +1171,7 @@ export default function AdminUserManagement() {
       
       {/* Pagination Controls - enhanced with rows per page selector */}
       {filteredUsers.length > 0 && (
-        <div className="flex justify-between items-center mt-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4 bg-white dark:bg-slate-900 rounded-xl shadow-sm border p-4">
           <div className="flex items-center gap-4">
             <div className="text-sm text-muted-foreground">
               Showing {indexOfFirstUser + 1} to {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} users
