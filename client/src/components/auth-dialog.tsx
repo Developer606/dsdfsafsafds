@@ -35,7 +35,11 @@ const forgotPasswordSchema = z.object({
 const resetPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),
   otp: z.string().length(6, "OTP must be 6 digits"),
-  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  newPassword: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
 });
 
 type AuthStep = "login" | "register" | "verify" | "forgot" | "reset";
@@ -79,8 +83,17 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
     },
   });
 
+  // Extended schema with stronger password validation
+  const registerSchema = insertUserSchema.extend({
+    password: z.string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .regex(/[0-9]/, "Password must contain at least one number")
+      .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character"),
+  });
+
   const registerForm = useForm({
-    resolver: zodResolver(insertUserSchema),
+    resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
       email: "",
@@ -713,6 +726,24 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       {registerForm.formState.errors.password.message}
                     </p>
                   )}
+                  {/* Password requirements display */}
+                  <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                    <p>Password must:</p>
+                    <ul className="space-y-1 list-disc pl-4">
+                      <li className={registerForm.watch("password")?.length >= 8 ? "text-green-500" : ""}>
+                        Be at least 8 characters long
+                      </li>
+                      <li className={/[A-Z]/.test(registerForm.watch("password") || "") ? "text-green-500" : ""}>
+                        Include at least one uppercase letter
+                      </li>
+                      <li className={/[0-9]/.test(registerForm.watch("password") || "") ? "text-green-500" : ""}>
+                        Include at least one number
+                      </li>
+                      <li className={/[^A-Za-z0-9]/.test(registerForm.watch("password") || "") ? "text-green-500" : ""}>
+                        Include at least one special character
+                      </li>
+                    </ul>
+                  </div>
                 </div>
                 <Button
                   type="submit"
@@ -986,6 +1017,24 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                       {resetPasswordForm.formState.errors.newPassword.message}
                     </p>
                   )}
+                  {/* Password requirements display */}
+                  <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                    <p>Password must:</p>
+                    <ul className="space-y-1 list-disc pl-4">
+                      <li className={resetPasswordForm.watch("newPassword")?.length >= 8 ? "text-green-500" : ""}>
+                        Be at least 8 characters long
+                      </li>
+                      <li className={/[A-Z]/.test(resetPasswordForm.watch("newPassword") || "") ? "text-green-500" : ""}>
+                        Include at least one uppercase letter
+                      </li>
+                      <li className={/[0-9]/.test(resetPasswordForm.watch("newPassword") || "") ? "text-green-500" : ""}>
+                        Include at least one number
+                      </li>
+                      <li className={/[^A-Za-z0-9]/.test(resetPasswordForm.watch("newPassword") || "") ? "text-green-500" : ""}>
+                        Include at least one special character
+                      </li>
+                    </ul>
+                  </div>
                 </div>
                 <Button
                   type="submit"

@@ -491,6 +491,21 @@ export const insertFlaggedMessageSchema = createInsertSchema(flaggedMessages).pi
 export type FlaggedMessage = typeof flaggedMessages.$inferSelect;
 export type InsertFlaggedMessage = z.infer<typeof insertFlaggedMessageSchema>;
 
+// Password reset attempts tracking for rate limiting
+export const passwordResetAttempts = sqliteTable(
+  "password_reset_attempts", 
+  {
+    id: integer("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    timestamp: integer("timestamp", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    ip: text("ip"), // IP addresses are sensitive, stored for security audits only
+  }
+);
+
 // Encryption keys table to store user public keys
 export const encryptionKeys = sqliteTable("encryption_keys", {
   id: integer("id").primaryKey(),

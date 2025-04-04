@@ -28,7 +28,8 @@ import {
   type ConversationKey,
   type InsertConversationKey,
   encryptionKeys,
-  conversationKeys
+  conversationKeys,
+  passwordResetAttempts
 } from "@shared/schema";
 import {
   messages,
@@ -117,6 +118,12 @@ export interface IStorage {
   getPendingVerification(
     email: string,
   ): Promise<PendingVerification | undefined>;
+  
+  /**
+   * Count pending verification requests for a given email
+   * Used for rate limiting OTP requests
+   */
+  countPendingVerificationsForEmail(email: string): Promise<number>;
   verifyPendingToken(email: string, token: string): Promise<boolean>;
   deletePendingVerification(email: string): Promise<void>;
   getUserMessageCount(userId: number): Promise<number>;
@@ -216,6 +223,29 @@ export class DatabaseStorage implements IStorage {
     
     // Initialize advertisement tables
     this.initializeAdvertisementTables();
+    
+    // Initialize password reset tracking table
+    this.initializePasswordResetTracking();
+  }
+  
+  /**
+   * Initialize password reset attempts tracking table
+   */
+  private async initializePasswordResetTracking() {
+    try {
+      console.log("Initializing password reset tracking...");
+      
+      // Create indexes for efficient querying
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_password_reset_user_id 
+                       ON password_reset_attempts(user_id)`);
+      
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_password_reset_timestamp 
+                       ON password_reset_attempts(timestamp)`);
+      
+      console.log("Password reset tracking initialized successfully");
+    } catch (error) {
+      console.error("Error initializing password reset tracking:", error);
+    }
   }
   
   /**
@@ -1028,6 +1058,43 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(users.id, userId));
   }
+  // Add methods to track password reset attempts
+  async countRecentPasswordResetRequests(userId: number): Promise<number> {
+    try {
+      // Look for password reset attempts in the last 30 minutes
+      const thirtyMinutesAgo = new Date();
+      thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 30);
+      
+      const result = await db
+        .select({ count: sql`count(*)` })
+        .from(passwordResetAttempts)
+        .where(sql`
+          ${passwordResetAttempts.userId} = ${userId} AND 
+          ${passwordResetAttempts.timestamp} > ${thirtyMinutesAgo.toISOString()}
+        `);
+      
+      return Number(result[0]?.count || 0);
+    } catch (error) {
+      console.error("Error counting recent password reset requests:", error);
+      return 0;
+    }
+  }
+  
+  async logPasswordResetAttempt(userId: number): Promise<void> {
+    try {
+      await db
+        .insert(passwordResetAttempts)
+        .values({
+          userId,
+          timestamp: new Date(),
+          ip: "stored-separately" // IP is stored separately in logs for security
+        });
+    } catch (error) {
+      console.error("Error logging password reset attempt:", error);
+      // Don't throw - this is a non-critical operation
+    }
+  }
+  
   private async initializeAdmin() {
     try {
       // Check if admin already exists
@@ -1132,6 +1199,24 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  /**
+   * Count pending verification requests for a given email
+   * Used for rate limiting OTP requests
+   */
+  async countPendingVerificationsForEmail(email: string): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: sql`count(*)` })
+        .from(pendingVerifications)
+        .where(eq(pendingVerifications.email, email));
+      
+      return Number(result[0]?.count || 0);
+    } catch (error) {
+      console.error("Error counting pending verifications:", error);
+      return 0;
+    }
+  }
+  
   async verifyPendingToken(email: string, token: string): Promise<boolean> {
     try {
       const verification = await this.getPendingVerification(email);
