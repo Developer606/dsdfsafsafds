@@ -321,6 +321,17 @@ export default function LandingPage() {
     const reason = urlParams.get('reason');
     const message = urlParams.get('message');
     const profileComplete = urlParams.get('profileComplete');
+    const profileData = urlParams.get('profileData');
+    
+    // Store profile data in sessionStorage if available
+    if (profileData) {
+      try {
+        const decodedProfileData = JSON.parse(decodeURIComponent(profileData));
+        sessionStorage.setItem('googleProfileData', JSON.stringify(decodedProfileData));
+      } catch (error) {
+        console.error('Error parsing profile data:', error);
+      }
+    }
     
     if (authStatus === 'success') {
       // Clean the URL by removing the query parameters

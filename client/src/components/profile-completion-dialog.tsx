@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -62,7 +62,10 @@ export function ProfileCompletionDialog({
   const [step, setStep] = useState(1);
   const totalSteps = 4;
 
-  // Initialize form
+  // Get profile data from Google, if available
+  const [googleProfileData, setGoogleProfileData] = useState<{fullName?: string} | null>(null);
+  
+  // Initialize form 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -72,6 +75,27 @@ export function ProfileCompletionDialog({
       bio: "",
     },
   });
+  
+  // Load Google profile data from sessionStorage on component mount
+  useEffect(() => {
+    try {
+      const storedData = sessionStorage.getItem('googleProfileData');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        setGoogleProfileData(parsedData);
+        
+        // Clean up sessionStorage after using the data
+        sessionStorage.removeItem('googleProfileData');
+        
+        // Update form values with Google data
+        if (parsedData.fullName) {
+          form.setValue('fullName', parsedData.fullName);
+        }
+      }
+    } catch (error) {
+      console.error('Error retrieving Google profile data:', error);
+    }
+  }, [form]);
 
   // Profile update mutation
   const updateProfileMutation = useMutation({

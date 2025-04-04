@@ -185,7 +185,15 @@ router.get(
         
         // Check if user needs to complete profile
         if (!user.profileCompleted) {
-          return res.redirect('/?auth=success&profileComplete=false');
+          // Pass user data to frontend for profile completion
+          const profileData = {
+            fullName: user.fullName || '',
+            email: user.email || '',
+          };
+          
+          // Encode profile data to pass in URL (safely)
+          const encodedProfileData = encodeURIComponent(JSON.stringify(profileData));
+          return res.redirect(`/?auth=success&profileComplete=false&profileData=${encodedProfileData}`);
         }
         
         return res.redirect('/?auth=success');
