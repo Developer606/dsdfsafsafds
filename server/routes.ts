@@ -1580,7 +1580,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
     
     try {
-      const { fullName, age, gender, bio } = req.body;
+      const { fullName, age, gender, bio, profilePicture } = req.body;
       
       // Validate the input data
       if (!fullName || fullName.trim() === "") {
@@ -1606,6 +1606,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         age: Number(age),
         gender,
         bio,
+        profilePicture,
         profileCompleted: true,
       });
       
@@ -1614,6 +1615,54 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     } catch (error) {
       console.error("Error updating user profile:", error);
       res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+  
+  // Profile picture upload endpoint
+  app.post("/api/user/profile-picture", upload.single('profilePicture'), async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No profile picture uploaded" });
+      }
+      
+      // Get the current user to check if they already have a profile picture
+      const currentUser = await storage.getUser(req.user.id);
+      const oldProfilePicture = currentUser?.profilePicture;
+      
+      // Generate URL for the uploaded file
+      const fileUrl = `/uploads/${req.file.filename}`;
+      
+      // Update user profile with the new profile picture URL
+      const updatedUser = await storage.updateUserProfile(req.user.id, {
+        profilePicture: fileUrl
+      });
+      
+      // If the user had a previous profile picture, delete it to save storage space
+      if (oldProfilePicture && oldProfilePicture !== fileUrl && !oldProfilePicture.startsWith('http')) {
+        try {
+          const oldPicturePath = path.join(process.cwd(), 'uploads', path.basename(oldProfilePicture));
+          if (fs.existsSync(oldPicturePath)) {
+            fs.unlinkSync(oldPicturePath);
+            console.log(`Deleted old profile picture: ${oldPicturePath}`);
+          }
+        } catch (err) {
+          console.error("Error deleting old profile picture:", err);
+          // Continue execution even if deletion fails
+        }
+      }
+      
+      // Return the updated user object
+      res.json({ 
+        profilePicture: fileUrl,
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+      res.status(500).json({ error: "Failed to upload profile picture" });
     }
   });
   

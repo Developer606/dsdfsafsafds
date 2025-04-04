@@ -107,6 +107,7 @@ export interface IStorage {
       age?: number;
       gender?: string;
       bio?: string;
+      profilePicture?: string;
       profileCompleted?: boolean;
     },
   ): Promise<User>;
@@ -1145,6 +1146,7 @@ export class DatabaseStorage implements IStorage {
       age?: number;
       gender?: string;
       bio?: string;
+      profilePicture?: string;
       profileCompleted?: boolean;
     },
   ): Promise<User> {
@@ -1155,6 +1157,7 @@ export class DatabaseStorage implements IStorage {
         age: data.age,
         gender: data.gender,
         bio: data.bio,
+        profilePicture: data.profilePicture,
         profileCompleted: data.profileCompleted ?? true,
       })
       .where(eq(users.id, userId))
