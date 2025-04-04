@@ -77,8 +77,8 @@ export function ProfileEditDialog({
     defaultValues: {
       username: user?.username || "",
       fullName: user?.fullName || "",
-      age: user?.age !== null && user?.age !== undefined ? Number(user?.age) : 18,
-      gender: user?.gender || "prefer-not-to-say", // Default value for gender select
+      age: user?.age || 18,
+      gender: user?.gender || "",
       bio: user?.bio || "",
     },
   });
@@ -87,22 +87,13 @@ export function ProfileEditDialog({
   useEffect(() => {
     if (open && user) {
       console.log("Loading user data:", user);
-      console.log("User profile values:", {
-        username: user.username,
-        fullName: user.fullName,
-        age: user.age,
-        gender: user.gender,
-        bio: user.bio
-      });
       
-      // Reset form with user data - ensure proper handling of null/undefined values
+      // Reset form with user data
       form.reset({
         username: user.username || "",
         fullName: user.fullName || "",
-        // Convert age to a number or use 18 as default if null or undefined
-        age: user.age !== null && user.age !== undefined ? Number(user.age) : 18,
-        // Use 'prefer-not-to-say' as default if gender is null/undefined/empty
-        gender: user.gender || "prefer-not-to-say",
+        age: user.age || 18,
+        gender: user.gender || "",
         bio: user.bio || "",
       });
       
@@ -157,39 +148,25 @@ export function ProfileEditDialog({
   // Update profile mutation
   const updateProfile = useMutation({
     mutationFn: async (data: ProfileFormValues) => {
-      console.log("Submitting form with data:", data);
-      
       // If username changed, verify it's available
       if (data.username !== user.username) {
-        console.log("Username changed, checking availability...");
         const isAvailable = await checkUsername(data.username);
         if (!isAvailable) {
           throw new Error("Username is already taken");
         }
 
         // Update username first
-        console.log("Updating username to:", data.username);
         await apiRequest("POST", "/api/user/username", {
           username: data.username,
         });
       }
 
-      // Ensure age is a number
-      const ageValue = typeof data.age === 'string' ? parseInt(data.age, 10) : data.age;
-      
       // Update other profile fields
-      console.log("Updating profile fields:", {
-        fullName: data.fullName,
-        age: ageValue,
-        gender: data.gender,
-        bio: data.bio,
-      });
-      
       const response = await apiRequest("POST", "/api/user/profile", {
         fullName: data.fullName,
-        age: ageValue,
+        age: data.age,
         gender: data.gender,
-        bio: data.bio || "", // Ensure bio is never undefined
+        bio: data.bio,
       });
 
       return response.json();
@@ -303,7 +280,6 @@ export function ProfileEditDialog({
                   <FormLabel>Gender</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value}
                     defaultValue={field.value}
                   >
                     <FormControl>

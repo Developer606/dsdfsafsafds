@@ -131,27 +131,14 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
       password: string;
       rememberMe?: boolean;
     }) => {
-      console.log("Attempting login with:", {
-        username: data.username,
-        passwordLength: data.password.length,
-        rememberMe: data.rememberMe
-      });
-      
       const res = await apiRequest("POST", "/api/login", data);
-      console.log("Login response status:", res.status);
-      
       if (!res.ok) {
         const error = await res.json();
-        console.error("Login failed:", error);
         throw new Error(error.error || "Login failed");
       }
-      
-      const userData = await res.json();
-      console.log("Login successful, user data received:", userData);
-      return userData;
+      return res.json();
     },
     onSuccess: (user) => {
-      console.log("Setting user data in query cache");
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Success",
@@ -160,7 +147,6 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
       onSuccess(false); // Not a new user
     },
     onError: (error: Error) => {
-      console.error("Login error:", error.message);
       toast({
         variant: "destructive",
         title: "Error",
