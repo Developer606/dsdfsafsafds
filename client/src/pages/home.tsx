@@ -2201,6 +2201,7 @@ export default function Home() {
             age: user.age,
             gender: user.gender,
             bio: user.bio,
+            profilePicture: user.profilePicture
           }}
         />
       )}

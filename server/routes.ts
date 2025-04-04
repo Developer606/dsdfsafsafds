@@ -28,6 +28,7 @@ import { generateCharacterResponse } from "./openai";
 import encryptionRoutes from "./encryption-routes";
 import advertisementRoutes from "./routes/advertisement-routes";
 import uploadRoutes from "./routes/upload";
+import profilePictureRoutes from "./routes/profile-picture";
 import socialAuthRoutes, { initializeGoogleStrategy } from "./routes/social-auth";
 import { errorHandler } from "./middleware/error-handler";
 import {
@@ -3220,6 +3221,10 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Register routes for file uploads
   app.use("/api/upload", uploadRoutes);
   app.use("/api/upload", errorHandler);
+  
+  // Add profile picture routes
+  app.use("/api/profile-picture", profilePictureRoutes);
+  app.use("/api/profile-picture", errorHandler);
 
   return httpServer;
 }
