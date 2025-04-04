@@ -1215,6 +1215,11 @@ export default function Home() {
                         <p className="text-sm text-[#BBBBBB]">
                           {user?.subscriptionStatus || "Basic access"}
                         </p>
+                        {user?.subscriptionExpiresAt && (
+                          <p className="text-xs text-[#BBBBBB] mt-1">
+                            Expires: {new Date(user.subscriptionExpiresAt).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -1422,6 +1427,11 @@ export default function Home() {
                     <DropdownMenuItem disabled>
                       Status: {user?.subscriptionStatus}
                     </DropdownMenuItem>
+                    {user?.subscriptionExpiresAt && (
+                      <DropdownMenuItem disabled>
+                        Expires: {new Date(user.subscriptionExpiresAt).toLocaleDateString()}
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleLogout}
