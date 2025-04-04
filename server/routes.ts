@@ -1595,7 +1595,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       
       // Get current user to check if they already have a full name
       // This ensures we don't overwrite Google-provided names unnecessarily
-      const currentUser = await storage.getUserById(req.user.id);
+      const currentUser = await storage.getUser(req.user.id);
       
       // Update the user profile 
       const updatedUser = await storage.updateUserProfile(req.user.id, {
