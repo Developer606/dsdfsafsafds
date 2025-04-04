@@ -149,6 +149,24 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
       email: string;
       password: string;
     }) => {
+      // First, check if the username and email are available
+      const [usernameCheckRes, emailCheckRes] = await Promise.all([
+        fetch(`/api/auth/check-username/${data.username}`),
+        fetch(`/api/auth/check-email/${data.email}`)
+      ]);
+      
+      const usernameData = await usernameCheckRes.json();
+      const emailData = await emailCheckRes.json();
+      
+      // Validate availability of both username and email
+      if (!usernameData.available) {
+        throw new Error(usernameData.message || "Username is already taken");
+      }
+      
+      if (!emailData.available) {
+        throw new Error(emailData.message || "Email is already registered");
+      }
+      
       // Send OTP along with registration data
       const res = await apiRequest("POST", "/api/verify/send-otp", {
         email: data.email,

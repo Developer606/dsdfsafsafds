@@ -2190,6 +2190,23 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           .json({ error: "Email already registered and verified" });
       }
 
+      // Additional validation for registration data if provided
+      if (registrationData) {
+        const { username, email: regEmail } = registrationData;
+        
+        // Double check username and email availability even though frontend already checked
+        // This is to prevent race conditions or direct API calls
+        const existingUsername = await storage.getUserByUsername(username);
+        if (existingUsername) {
+          return res.status(400).json({ error: "Username already taken" });
+        }
+        
+        // Verify that the email in registration data matches the main email parameter
+        if (regEmail !== email) {
+          return res.status(400).json({ error: "Email mismatch in registration data" });
+        }
+      }
+
       const otp = await generateOTPemail();
       const expiry = new Date();
       expiry.setMinutes(expiry.getMinutes() + 10); // OTP expires in 10 minutes
@@ -2234,6 +2251,26 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       // If we have registration data, create the user
       if (verification.registrationData) {
         const userData = JSON.parse(verification.registrationData);
+        
+        // Final validation check before creating user
+        // Check if username or email was taken during the verification window
+        const existingUsername = await storage.getUserByUsername(userData.username);
+        const existingEmail = await storage.getUserByEmail(userData.email);
+        
+        if (existingUsername) {
+          await storage.deletePendingVerification(email);
+          return res.status(400).json({ 
+            error: "Username has been taken while your verification was pending. Please choose another username." 
+          });
+        }
+        
+        if (existingEmail && existingEmail.isEmailVerified) {
+          await storage.deletePendingVerification(email);
+          return res.status(400).json({ 
+            error: "Email has been registered while your verification was pending." 
+          });
+        }
+        
         // Hash the password before creating user
         const hashedPassword = await hashPassword(userData.password);
         const user = await storage.createUser({
