@@ -7,6 +7,7 @@ import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import NotFound from "@/pages/not-found";
 import LandingPage from "@/pages/landing";
+import ProfilePage from "@/pages/profile";
 import AdminLogin from "@/pages/admin-login";
 import AdminDashboard from "@/pages/admin-dashboard";
 import AdminContentModeration from "@/pages/admin-content-moderation";
@@ -43,6 +44,7 @@ function Router() {
       <ProtectedRoute path="/search" component={UserSearch} />
       <ProtectedRoute path="/messages/:userId" component={UserMessages} />
       <ProtectedRoute path="/conversations" component={Conversations} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/users/search" component={UserSearch} />
       <ProtectedRoute path="/user-messages/search" component={UserSearch} />
       <ProtectedRoute path="/user-messages/:userId" component={UserMessages} />
