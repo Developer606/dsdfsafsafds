@@ -1539,7 +1539,36 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   });
 
   app.get("/api/user", async (req, res) => {
-    res.json(req.user);
+    // Check if the user is authenticated
+    if (!req.isAuthenticated() || !req.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    // Explicitly map database fields to camelCase for client consistency
+    // This ensures proper handling of snake_case database fields
+    res.json({
+      id: req.user.id,
+      email: req.user.email,
+      username: req.user.username,
+      role: req.user.role,
+      fullName: req.user.fullName,
+      age: req.user.age,
+      gender: req.user.gender,
+      bio: req.user.bio,
+      profileCompleted: req.user.profileCompleted,
+      isAdmin: req.user.isAdmin,
+      isPremium: req.user.isPremium,
+      isBlocked: req.user.isBlocked,
+      isRestricted: req.user.isRestricted,
+      isEmailVerified: req.user.isEmailVerified,
+      messageCount: req.user.messageCount,
+      subscriptionTier: req.user.subscriptionTier,
+      subscriptionStatus: req.user.subscriptionStatus,
+      subscriptionExpiresAt: req.user.subscriptionExpiresAt,
+      lastLoginAt: req.user.lastLoginAt,
+      lastLoginIp: req.user.lastLoginIp,
+      createdAt: req.user.createdAt
+    });
   });
   
   // Search users by username endpoint
@@ -1609,8 +1638,31 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         profileCompleted: true,
       });
       
-      // Return the updated user
-      res.json(updatedUser);
+      // Explicitly map the response to ensure consistent camelCase property names for the client
+      res.json({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        username: updatedUser.username,
+        role: updatedUser.role,
+        fullName: updatedUser.fullName,
+        age: updatedUser.age,
+        gender: updatedUser.gender,
+        bio: updatedUser.bio,
+        profileCompleted: updatedUser.profileCompleted,
+        isAdmin: updatedUser.isAdmin,
+        isPremium: updatedUser.isPremium,
+        isBlocked: updatedUser.isBlocked,
+        isRestricted: updatedUser.isRestricted,
+        isEmailVerified: updatedUser.isEmailVerified,
+        messageCount: updatedUser.messageCount,
+        subscriptionTier: updatedUser.subscriptionTier,
+        subscriptionStatus: updatedUser.subscriptionStatus,
+        subscriptionEndDate: updatedUser.subscriptionEndDate,
+        lastLoginTime: updatedUser.lastLoginTime,
+        lastLoginIp: updatedUser.lastLoginIp,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt
+      });
     } catch (error) {
       console.error("Error updating user profile:", error);
       res.status(500).json({ error: "Failed to update profile" });
@@ -1638,8 +1690,29 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       // Update the username
       const updatedUser = await storage.updateUsername(req.user.id, username);
       
-      // Return the updated user
-      res.json(updatedUser);
+      // Explicitly map the response to ensure consistent camelCase property names for the client
+      res.json({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        username: updatedUser.username,
+        role: updatedUser.role,
+        fullName: updatedUser.fullName,
+        age: updatedUser.age,
+        gender: updatedUser.gender,
+        bio: updatedUser.bio,
+        profileCompleted: updatedUser.profileCompleted,
+        isAdmin: updatedUser.isAdmin,
+        isPremium: updatedUser.isPremium,
+        isBlocked: updatedUser.isBlocked,
+        isRestricted: updatedUser.isRestricted,
+        isEmailVerified: updatedUser.isEmailVerified,
+        messageCount: updatedUser.messageCount,
+        subscriptionTier: updatedUser.subscriptionTier,
+        subscriptionStatus: updatedUser.subscriptionStatus,
+        lastLoginAt: updatedUser.lastLoginAt,
+        lastLoginIp: updatedUser.lastLoginIp,
+        createdAt: updatedUser.createdAt
+      });
     } catch (error) {
       console.error("Error updating username:", error);
       if (error.message === "Username already taken") {

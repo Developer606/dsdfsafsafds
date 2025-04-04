@@ -2197,10 +2197,10 @@ export default function Home() {
           user={{
             id: user.id,
             username: user.username,
-            fullName: user.fullName,
+            fullName: user.fullName || "",
             age: user.age,
-            gender: user.gender,
-            bio: user.bio,
+            gender: user.gender || "prefer-not-to-say",
+            bio: user.bio || "",
           }}
         />
       )}

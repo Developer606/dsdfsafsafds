@@ -77,7 +77,7 @@ export function ProfileEditDialog({
     defaultValues: {
       username: user?.username || "",
       fullName: user?.fullName || "",
-      age: user?.age || 18,
+      age: user?.age !== null && user?.age !== undefined ? Number(user?.age) : 18,
       gender: user?.gender || "prefer-not-to-say", // Default value for gender select
       bio: user?.bio || "",
     },
@@ -87,14 +87,21 @@ export function ProfileEditDialog({
   useEffect(() => {
     if (open && user) {
       console.log("Loading user data:", user);
+      console.log("User profile values:", {
+        username: user.username,
+        fullName: user.fullName,
+        age: user.age,
+        gender: user.gender,
+        bio: user.bio
+      });
       
-      // Reset form with user data - ensure proper handling of null values
+      // Reset form with user data - ensure proper handling of null/undefined values
       form.reset({
         username: user.username || "",
         fullName: user.fullName || "",
-        // Convert age to a number or use 18 as default if null
-        age: user.age !== null ? Number(user.age) : 18,
-        // Use 'prefer-not-to-say' as default if gender is null/empty
+        // Convert age to a number or use 18 as default if null or undefined
+        age: user.age !== null && user.age !== undefined ? Number(user.age) : 18,
+        // Use 'prefer-not-to-say' as default if gender is null/undefined/empty
         gender: user.gender || "prefer-not-to-say",
         bio: user.bio || "",
       });
@@ -167,19 +174,22 @@ export function ProfileEditDialog({
         });
       }
 
+      // Ensure age is a number
+      const ageValue = typeof data.age === 'string' ? parseInt(data.age, 10) : data.age;
+      
       // Update other profile fields
       console.log("Updating profile fields:", {
         fullName: data.fullName,
-        age: data.age,
+        age: ageValue,
         gender: data.gender,
         bio: data.bio,
       });
       
       const response = await apiRequest("POST", "/api/user/profile", {
         fullName: data.fullName,
-        age: data.age,
+        age: ageValue,
         gender: data.gender,
-        bio: data.bio,
+        bio: data.bio || "", // Ensure bio is never undefined
       });
 
       return response.json();
