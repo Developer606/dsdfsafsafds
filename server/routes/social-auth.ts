@@ -129,7 +129,11 @@ export async function initializeGoogleStrategy() {
               const hashedPwd = await hashPassword(password);
               
               // Create user in database with all available profile data from Google
-              user = await storage.createUser({
+              // Check if we have enough profile data to mark the profile as completed
+              const hasCompleteProfile = !!gender && !!age && age >= 13;
+              
+              // Create basic user with required fields
+              const userData: any = {
                 username,
                 email,
                 password: hashedPwd,
@@ -137,9 +141,17 @@ export async function initializeGoogleStrategy() {
                 role: 'user',
                 isAdmin: false,
                 isEmailVerified: true, // Auto-verify OAuth users since email is verified by Google
-                profileCompleted: false, // Still set to false because we need age and gender from user
+                profileCompleted: hasCompleteProfile, // Mark profile as completed if we have all required info
                 subscriptionStatus: 'trial'
-              });
+              };
+              
+              // Add optional demographic fields if available
+              if (age && age >= 13) userData.age = age;
+              if (gender) userData.gender = gender;
+              if (profile._json?.tagline) userData.bio = profile._json.tagline;
+              
+              // Create the user with all available data
+              user = await storage.createUser(userData);
               
               return done(null, user);
             }
@@ -232,10 +244,13 @@ router.get(
         
         // Check if user needs to complete profile
         if (!user.profileCompleted) {
-          // Pass user data to frontend for profile completion
+          // Pass all available user data to frontend for profile completion
           const profileData = {
             fullName: user.fullName || '',
             email: user.email || '',
+            age: user.age || undefined,
+            gender: user.gender || undefined,
+            bio: user.bio || undefined
           };
           
           // Encode profile data to pass in URL (safely)

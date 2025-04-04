@@ -824,22 +824,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
+    // Ensure default values are properly set for the new fields
+    const userDataWithDefaults = {
+      ...insertUser,
+      createdAt: new Date(),
+      isPremium: false,
+      trialCharactersCreated: 0,
+      isBlocked: false,
+      isRestricted: false,
+      // Allow email verification to be overridden (for OAuth users)
+      isEmailVerified: insertUser.isEmailVerified || false,
+      // Allow profile completion to be overridden based on data availability
+      profileCompleted: insertUser.profileCompleted || false,
+      verificationToken: null,
+      verificationTokenExpiry: null,
+      lastLoginAt: null,
+      messageCount: 0, // Initialize message count
+      // Optional demographic fields from Google OAuth
+      age: insertUser.age || null,
+      gender: insertUser.gender || null, 
+      bio: insertUser.bio || null
+    };
+    
     const [newUser] = await db
       .insert(users)
-      .values({
-        ...insertUser,
-        createdAt: new Date(),
-        isPremium: false,
-        trialCharactersCreated: 0,
-        isBlocked: false,
-        isRestricted: false,
-        isEmailVerified: false,
-        verificationToken: null,
-        verificationTokenExpiry: null,
-        lastLoginAt: null,
-        messageCount: 0, // Initialize message count
-      })
+      .values(userDataWithDefaults)
       .returning();
+      
     return newUser;
   }
 

@@ -146,6 +146,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   isEmailVerified: true,
   profileCompleted: true,
   subscriptionStatus: true,
+  age: true,
+  gender: true,
+  bio: true,
 });
 
 export const loginSchema = z.object({

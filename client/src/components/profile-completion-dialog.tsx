@@ -63,7 +63,12 @@ export function ProfileCompletionDialog({
   const totalSteps = 4;
 
   // Get profile data from Google, if available
-  const [googleProfileData, setGoogleProfileData] = useState<{fullName?: string} | null>(null);
+  const [googleProfileData, setGoogleProfileData] = useState<{
+    fullName?: string;
+    age?: number;
+    gender?: string;
+    bio?: string;
+  } | null>(null);
   
   // Initialize form 
   const form = useForm<ProfileFormValues>({
@@ -91,6 +96,23 @@ export function ProfileCompletionDialog({
         if (parsedData.fullName) {
           form.setValue('fullName', parsedData.fullName);
         }
+        
+        // Set age if provided by Google
+        if (parsedData.age && parsedData.age >= 13) {
+          form.setValue('age', parsedData.age);
+        }
+        
+        // Set gender if provided by Google
+        if (parsedData.gender) {
+          form.setValue('gender', parsedData.gender);
+        }
+        
+        // Set bio if provided by Google
+        if (parsedData.bio) {
+          form.setValue('bio', parsedData.bio);
+        }
+        
+        console.log('Google profile data loaded:', parsedData);
       }
     } catch (error) {
       console.error('Error retrieving Google profile data:', error);
