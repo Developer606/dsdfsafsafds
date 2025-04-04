@@ -458,10 +458,8 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     variant="outline"
                     className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
-                      toast({
-                        title: "Google Login",
-                        description: "Google login will be implemented soon!",
-                      });
+                      // Redirect to the Google OAuth route
+                      window.location.href = "/api/auth/google";
                     }}
                   >
                     <FaGoogle className="h-5 w-5 text-[#4285F4]" />
@@ -740,10 +738,8 @@ export function AuthDialog({ open, onOpenChange, onSuccess }: AuthDialogProps) {
                     variant="outline"
                     className={`${isMobile ? "bg-gray-900 border-gray-700 hover:bg-gray-800" : "bg-background/50"}`}
                     onClick={() => {
-                      toast({
-                        title: "Google Signup",
-                        description: "Google signup will be implemented soon!",
-                      });
+                      // Redirect to the Google OAuth route for signup
+                      window.location.href = "/api/auth/google";
                     }}
                   >
                     <FaGoogle className="h-5 w-5 text-[#4285F4]" />

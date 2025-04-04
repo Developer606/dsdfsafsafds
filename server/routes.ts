@@ -28,6 +28,7 @@ import { generateCharacterResponse } from "./openai";
 import encryptionRoutes from "./encryption-routes";
 import advertisementRoutes from "./routes/advertisement-routes";
 import uploadRoutes from "./routes/upload";
+import socialAuthRoutes, { initializeGoogleStrategy } from "./routes/social-auth";
 import { errorHandler } from "./middleware/error-handler";
 import {
   insertMessageSchema,
@@ -197,6 +198,12 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Set up authentication routes and middleware
   setupAuth(app);
   app.use(checkBlockedStatus);
+  
+  // Initialize Google OAuth strategy
+  await initializeGoogleStrategy();
+  
+  // Add social authentication routes
+  app.use('/api/auth', socialAuthRoutes);
 
   // Update authentication check middleware
   const authCheck = (

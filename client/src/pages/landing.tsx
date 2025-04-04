@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
 import type { User } from "@shared/schema";
 import {
   FaEnvelope,
@@ -311,6 +312,38 @@ export default function LandingPage() {
 
     return () => clearInterval(interval);
   }, []);
+  
+  // Handle OAuth callback
+  useEffect(() => {
+    // Check for auth query parameters from Google OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const authStatus = urlParams.get('auth');
+    
+    if (authStatus === 'success') {
+      // Clean the URL by removing the query parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      // Refresh user data
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      
+      toast({
+        title: "Login Successful", 
+        description: "You have successfully logged in with Google!",
+      });
+      
+      // Redirect to chat page for verified users
+      setLocation('/chats');
+    } else if (authStatus === 'failed') {
+      // Clean the URL by removing the query parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Google authentication failed. Please try again or use a different method.",
+      });
+    }
+  }, [toast, setLocation]);
 
   return (
     <>

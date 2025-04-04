@@ -142,6 +142,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   role: true,
   isAdmin: true,
+  fullName: true,
+  isEmailVerified: true,
+  profileCompleted: true,
+  subscriptionStatus: true,
 });
 
 export const loginSchema = z.object({
