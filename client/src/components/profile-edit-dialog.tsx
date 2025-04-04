@@ -195,10 +195,10 @@ export function ProfileEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] bg-gray-900 text-white border-gray-700">
+      <DialogContent className="sm:max-w-[425px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white border-gray-200 dark:border-gray-800">
         <DialogHeader>
-          <DialogTitle className="text-xl text-white">Edit Profile</DialogTitle>
-          <DialogDescription className="text-gray-400">
+          <DialogTitle className="text-xl">Edit Profile</DialogTitle>
+          <DialogDescription className="text-gray-500 dark:text-gray-400">
             Update your profile information below.
           </DialogDescription>
         </DialogHeader>
@@ -215,7 +215,7 @@ export function ProfileEditDialog({
                     <div className="relative">
                       <Input
                         {...field}
-                        className="bg-gray-800 border-gray-700"
+                        className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                         onChange={handleUsernameChange}
                       />
                       {usernameChanged && (
@@ -246,7 +246,7 @@ export function ProfileEditDialog({
                 <FormItem>
                   <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input {...field} className="bg-gray-800 border-gray-700" />
+                    <Input {...field} className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -264,7 +264,7 @@ export function ProfileEditDialog({
                       {...field}
                       type="number"
                       min={13}
-                      className="bg-gray-800 border-gray-700"
+                      className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                     />
                   </FormControl>
                   <FormMessage />
@@ -283,11 +283,11 @@ export function ProfileEditDialog({
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="bg-gray-800 border-gray-700">
+                      <SelectTrigger className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                       <SelectItem value="male">Male</SelectItem>
                       <SelectItem value="female">Female</SelectItem>
                       <SelectItem value="non-binary">Non-binary</SelectItem>
@@ -311,7 +311,7 @@ export function ProfileEditDialog({
                   <FormControl>
                     <Textarea
                       {...field}
-                      className="bg-gray-800 border-gray-700 resize-none h-24"
+                      className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 resize-none h-24"
                       placeholder="Tell us about yourself..."
                     />
                   </FormControl>
@@ -325,7 +325,7 @@ export function ProfileEditDialog({
                 type="button"
                 variant="outline"
                 onClick={onClose}
-                className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
+                className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 Cancel
               </Button>
@@ -335,7 +335,7 @@ export function ProfileEditDialog({
                   updateProfile.isPending ||
                   (usernameChanged && !usernameAvailable)
                 }
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {updateProfile.isPending ? (
                   <>
