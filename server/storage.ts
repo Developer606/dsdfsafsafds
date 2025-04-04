@@ -110,6 +110,7 @@ export interface IStorage {
       profileCompleted?: boolean;
     },
   ): Promise<User>;
+  updateUsername(userId: number, username: string): Promise<User>;
 
   // Add new methods for pending verifications
   createPendingVerification(
@@ -1156,6 +1157,29 @@ export class DatabaseStorage implements IStorage {
         bio: data.bio,
         profileCompleted: data.profileCompleted ?? true,
       })
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser;
+  }
+  
+  /**
+   * Update a user's username
+   * @param userId The ID of the user
+   * @param username The new username
+   * @returns The updated user
+   */
+  async updateUsername(userId: number, username: string): Promise<User> {
+    // Check if username is already taken
+    const existingUser = await this.getUserByUsername(username);
+    if (existingUser && existingUser.id !== userId) {
+      throw new Error("Username already taken");
+    }
+    
+    // Update the username
+    const [updatedUser] = await db
+      .update(users)
+      .set({ username })
       .where(eq(users.id, userId))
       .returning();
     

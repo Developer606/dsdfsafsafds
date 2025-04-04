@@ -37,6 +37,7 @@ import {
   Users,
 } from "lucide-react";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
+import { ProfileEditDialog } from "@/components/profile-edit-dialog";
 import { SubscriptionManagement } from "@/components/subscription-management";
 import {
   DropdownMenu,
@@ -295,10 +296,11 @@ export default function Home() {
   >("home");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Complaint dialog states
+  // Dialog states
   const [showComplaintDialog, setShowComplaintDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [showKeyboardShortcutsDialog, setShowKeyboardShortcutsDialog] = useState(false);
+  const [showProfileEditDialog, setShowProfileEditDialog] = useState(false);
   const [complaint, setComplaint] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -1168,6 +1170,7 @@ export default function Home() {
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       className="px-4 py-1.5 rounded-full bg-[#333333] flex items-center text-sm font-medium text-[#BB86FC]"
+                      onClick={() => setShowProfileEditDialog(true)}
                     >
                       <Settings className="h-4 w-4 mr-2" />
                       Edit Profile
@@ -2185,6 +2188,15 @@ export default function Home() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Profile Edit Dialog */}
+      {user && (
+        <ProfileEditDialog
+          open={showProfileEditDialog}
+          onClose={() => setShowProfileEditDialog(false)}
+          user={user}
+        />
+      )}
     </div>
   );
 }

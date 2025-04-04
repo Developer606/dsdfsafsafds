@@ -1616,6 +1616,38 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       res.status(500).json({ error: "Failed to update profile" });
     }
   });
+  
+  // Update username endpoint
+  app.post("/api/user/username", async (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    try {
+      const { username } = req.body;
+      
+      // Validate the input data
+      if (!username || username.trim() === "") {
+        return res.status(400).json({ error: "Username is required" });
+      }
+      
+      if (username.length < 3) {
+        return res.status(400).json({ error: "Username must be at least 3 characters" });
+      }
+      
+      // Update the username
+      const updatedUser = await storage.updateUsername(req.user.id, username);
+      
+      // Return the updated user
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating username:", error);
+      if (error.message === "Username already taken") {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+      res.status(500).json({ error: "Failed to update username" });
+    }
+  });
 
   app.post("/api/custom-characters", async (req, res) => {
     try {
