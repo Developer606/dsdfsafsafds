@@ -1593,9 +1593,14 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         return res.status(400).json({ error: "Gender is required" });
       }
       
-      // Update the user profile
+      // Get current user to check if they already have a full name
+      // This ensures we don't overwrite Google-provided names unnecessarily
+      const currentUser = await storage.getUserById(req.user.id);
+      
+      // Update the user profile 
       const updatedUser = await storage.updateUserProfile(req.user.id, {
-        fullName,
+        // Only update fullName if it's different or not already set
+        fullName: currentUser?.fullName && fullName === currentUser.fullName ? currentUser.fullName : fullName,
         age: Number(age),
         gender,
         bio,

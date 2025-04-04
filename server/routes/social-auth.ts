@@ -53,7 +53,8 @@ export async function initializeGoogleStrategy() {
           clientID: googleConfig.clientId,
           clientSecret: googleConfig.clientSecret,
           callbackURL: googleConfig.callbackURL,
-          scope: ['profile', 'email'],
+          // Request expanded profile information including demographics where available
+          scope: ['profile', 'email', 'https://www.googleapis.com/auth/user.birthday.read', 'https://www.googleapis.com/auth/user.gender.read'],
           // Enable proxy support for proper handling behind Replit's proxy server
           proxy: true,
           // Add passReqToCallback to access the request object in the callback
@@ -61,11 +62,50 @@ export async function initializeGoogleStrategy() {
         },
         async (req: express.Request, accessToken: string, refreshToken: string, profile: any, done: (error: Error | null, user?: any) => void) => {
           try {
-            // Extract profile information
+            console.log('Google profile data received:', JSON.stringify(profile, null, 2));
+            
+            // Extract basic profile information
             const email = profile.emails && profile.emails[0] ? profile.emails[0].value : '';
             const displayName = profile.displayName || '';
             const firstName = profile.name?.givenName || '';
             const lastName = profile.name?.familyName || '';
+            
+            // Extract additional demographic information if available
+            // Note: These fields are only available if the user has shared this data in their Google account
+            // and the app has been granted the appropriate permissions
+            let age = null;
+            let gender = null;
+            
+            // Try to extract birthday to calculate age
+            if (profile._json?.birthday) {
+              try {
+                const birthday = new Date(profile._json.birthday);
+                const today = new Date();
+                age = today.getFullYear() - birthday.getFullYear();
+                // Adjust age if birthday hasn't occurred yet this year
+                if (today.getMonth() < birthday.getMonth() || 
+                    (today.getMonth() === birthday.getMonth() && today.getDate() < birthday.getDate())) {
+                  age--;
+                }
+              } catch (err) {
+                console.warn('Could not parse birthday from Google profile:', err);
+              }
+            }
+            
+            // Try to extract gender information
+            if (profile._json?.gender) {
+              gender = profile._json.gender.toLowerCase();
+              // Map Google's gender format to our application's format
+              if (gender === 'male' || gender === 'female') {
+                // These match our format directly
+              } else if (gender === 'other') {
+                // Map to non-binary or other based on our app's options
+                gender = 'non-binary';
+              } else {
+                // Default to prefer-not-to-say for any other values
+                gender = 'prefer-not-to-say';
+              }
+            }
             
             if (!email) {
               return done(new Error('Could not retrieve email from Google profile'));
@@ -88,7 +128,7 @@ export async function initializeGoogleStrategy() {
               const password = randomBytes(16).toString('hex');
               const hashedPwd = await hashPassword(password);
               
-              // Create user in database
+              // Create user in database with all available profile data from Google
               user = await storage.createUser({
                 username,
                 email,
@@ -97,7 +137,7 @@ export async function initializeGoogleStrategy() {
                 role: 'user',
                 isAdmin: false,
                 isEmailVerified: true, // Auto-verify OAuth users since email is verified by Google
-                profileCompleted: false,
+                profileCompleted: false, // Still set to false because we need age and gender from user
                 subscriptionStatus: 'trial'
               });
               
@@ -121,7 +161,14 @@ export async function initializeGoogleStrategy() {
 // Routes for Google authentication
 router.get(
   '/google',
-  passport.authenticate('google', { scope: ['profile', 'email'] })
+  passport.authenticate('google', { 
+    scope: [
+      'profile', 
+      'email',
+      'https://www.googleapis.com/auth/user.birthday.read',
+      'https://www.googleapis.com/auth/user.gender.read'
+    ] 
+  })
 );
 
 router.get(
