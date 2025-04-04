@@ -47,10 +47,11 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 interface UserProfile {
   id: number;
   username: string;
-  fullName?: string;
-  age?: number;
-  gender?: string;
-  bio?: string;
+  fullName: string | null;
+  age: number | null;
+  gender: string | null;
+  bio: string | null;
+  // Add other fields that might be needed
 }
 
 interface ProfileEditDialogProps {
@@ -85,6 +86,9 @@ export function ProfileEditDialog({
   // Reset form when dialog opens/closes or user changes
   useEffect(() => {
     if (open && user) {
+      console.log("Loading user data:", user);
+      
+      // Reset form with user data
       form.reset({
         username: user.username || "",
         fullName: user.fullName || "",
@@ -92,6 +96,10 @@ export function ProfileEditDialog({
         gender: user.gender || "",
         bio: user.bio || "",
       });
+      
+      // Log the form values after reset
+      console.log("Form values after reset:", form.getValues());
+      
       setUsernameChanged(false);
       setUsernameAvailable(true);
     }

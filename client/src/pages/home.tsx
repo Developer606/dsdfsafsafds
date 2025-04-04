@@ -2194,7 +2194,14 @@ export default function Home() {
         <ProfileEditDialog
           open={showProfileEditDialog}
           onClose={() => setShowProfileEditDialog(false)}
-          user={user}
+          user={{
+            id: user.id,
+            username: user.username,
+            fullName: user.fullName,
+            age: user.age,
+            gender: user.gender,
+            bio: user.bio,
+          }}
         />
       )}
     </div>
