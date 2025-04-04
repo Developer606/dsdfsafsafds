@@ -88,11 +88,12 @@ export function ProfileEditDialog({
     if (open && user) {
       console.log("Loading user data:", user);
       
-      // Reset form with user data
+      // Reset form with user data - ensure proper handling of null values
       form.reset({
-        username: user.username || "",
+        username: user.username,
         fullName: user.fullName || "",
-        age: user.age || 18,
+        // Convert age to a number or use 18 as default if null
+        age: user.age !== null ? Number(user.age) : 18,
         gender: user.gender || "",
         bio: user.bio || "",
       });
@@ -148,20 +149,31 @@ export function ProfileEditDialog({
   // Update profile mutation
   const updateProfile = useMutation({
     mutationFn: async (data: ProfileFormValues) => {
+      console.log("Submitting form with data:", data);
+      
       // If username changed, verify it's available
       if (data.username !== user.username) {
+        console.log("Username changed, checking availability...");
         const isAvailable = await checkUsername(data.username);
         if (!isAvailable) {
           throw new Error("Username is already taken");
         }
 
         // Update username first
+        console.log("Updating username to:", data.username);
         await apiRequest("POST", "/api/user/username", {
           username: data.username,
         });
       }
 
       // Update other profile fields
+      console.log("Updating profile fields:", {
+        fullName: data.fullName,
+        age: data.age,
+        gender: data.gender,
+        bio: data.bio,
+      });
+      
       const response = await apiRequest("POST", "/api/user/profile", {
         fullName: data.fullName,
         age: data.age,
@@ -280,6 +292,7 @@ export function ProfileEditDialog({
                   <FormLabel>Gender</FormLabel>
                   <Select
                     onValueChange={field.onChange}
+                    value={field.value}
                     defaultValue={field.value}
                   >
                     <FormControl>
