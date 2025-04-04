@@ -1,329 +1,354 @@
-import { useState } from "react";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Save, X } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, AlertTriangle } from "lucide-react";
 
-// Define the form schema
-const profileFormSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+// Define form validation schema
+const profileSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  fullName: z.string().min(1, "Full name is required"),
   age: z.coerce.number().min(13, "You must be at least 13 years old"),
-  gender: z.enum(["male", "female", "non-binary", "prefer-not-to-say"], {
-    required_error: "Please select a gender option",
-  }),
-  bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
+  gender: z.string().min(1, "Gender is required"),
+  bio: z.string().optional(),
 });
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type ProfileFormValues = z.infer<typeof profileSchema>;
 
-export interface UserProfile {
+interface UserProfile {
   id: number;
   username: string;
-  email: string;
-  fullName?: string;
-  age?: number;
-  gender?: string;
-  bio?: string;
-  profilePicture?: string;
-  profileCompleted?: boolean;
-  subscriptionTier?: string;
-  subscriptionStatus?: string;
-  subscriptionExpiresAt?: string | Date | null;
-  [key: string]: any; // For other properties
+  fullName: string | null;
+  age: number | null;
+  gender: string | null;
+  bio: string | null;
+  // Add other fields that might be needed
 }
 
 interface ProfileEditDialogProps {
+  open: boolean;
+  onClose: () => void;
   user: UserProfile;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  triggerButton?: React.ReactNode;
 }
 
-export function ProfileEditDialog({ user, open, onOpenChange, triggerButton }: ProfileEditDialogProps) {
-  const [activeTab, setActiveTab] = useState<string>("personal");
+export function ProfileEditDialog({
+  open,
+  onClose,
+  user,
+}: ProfileEditDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [usernameAvailable, setUsernameAvailable] = useState(true);
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameChanged, setUsernameChanged] = useState(false);
 
   // Initialize form with user data
   const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+    resolver: zodResolver(profileSchema),
     defaultValues: {
-      fullName: user.fullName || "",
-      age: user.age || undefined,
-      gender: (user.gender as any) || undefined,
-      bio: user.bio || "",
+      username: user?.username || "",
+      fullName: user?.fullName || "",
+      age: user?.age || 18,
+      gender: user?.gender || "",
+      bio: user?.bio || "",
     },
   });
 
-  // Profile update mutation
+  // Reset form when dialog opens/closes or user changes
+  useEffect(() => {
+    if (open && user) {
+      console.log("Loading user data:", user);
+      
+      // Reset form with user data
+      form.reset({
+        username: user.username || "",
+        fullName: user.fullName || "",
+        age: user.age || 18,
+        gender: user.gender || "",
+        bio: user.bio || "",
+      });
+      
+      // Log the form values after reset
+      console.log("Form values after reset:", form.getValues());
+      
+      setUsernameChanged(false);
+      setUsernameAvailable(true);
+    }
+  }, [open, user, form]);
+
+  // Check if username is available
+  const checkUsername = async (username: string) => {
+    if (username === user.username) {
+      setUsernameAvailable(true);
+      return true;
+    }
+
+    setCheckingUsername(true);
+    try {
+      const response = await fetch(`/api/auth/check-username/${username}`);
+      const data = await response.json();
+      setUsernameAvailable(data.available);
+      setCheckingUsername(false);
+      return data.available;
+    } catch (error) {
+      console.error("Error checking username:", error);
+      setCheckingUsername(false);
+      return false;
+    }
+  };
+
+  // Handle username change
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUsername = e.target.value;
+    form.setValue("username", newUsername);
+    
+    if (newUsername !== user.username) {
+      setUsernameChanged(true);
+      // Debounce username check
+      const timeoutId = setTimeout(() => {
+        checkUsername(newUsername);
+      }, 500);
+      
+      return () => clearTimeout(timeoutId);
+    } else {
+      setUsernameChanged(false);
+      setUsernameAvailable(true);
+    }
+  };
+
+  // Update profile mutation
   const updateProfile = useMutation({
     mutationFn: async (data: ProfileFormValues) => {
-      return apiRequest("POST", "/api/user/profile", data);
+      // If username changed, verify it's available
+      if (data.username !== user.username) {
+        const isAvailable = await checkUsername(data.username);
+        if (!isAvailable) {
+          throw new Error("Username is already taken");
+        }
+
+        // Update username first
+        await apiRequest("POST", "/api/user/username", {
+          username: data.username,
+        });
+      }
+
+      // Update other profile fields
+      const response = await apiRequest("POST", "/api/user/profile", {
+        fullName: data.fullName,
+        age: data.age,
+        gender: data.gender,
+        bio: data.bio,
+      });
+
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       toast({
         title: "Profile updated",
-        description: "Your profile has been successfully updated!",
+        description: "Your profile has been updated successfully.",
       });
-      if (onOpenChange) onOpenChange(false);
+      onClose();
     },
     onError: (error: any) => {
       toast({
+        variant: "destructive",
         title: "Error",
         description: error.message || "Failed to update profile",
-        variant: "destructive",
       });
     },
   });
 
-  // Username update mutation
-  const updateUsername = useMutation({
-    mutationFn: async (username: string) => {
-      return apiRequest("POST", "/api/user/username", { username });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      toast({
-        title: "Username updated",
-        description: "Your username has been successfully updated!",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update username",
-        variant: "destructive",
-      });
-    },
-  });
-
+  // Form submission handler
   const onSubmit = (data: ProfileFormValues) => {
     updateProfile.mutate(data);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {triggerButton && <DialogTrigger asChild>{triggerButton}</DialogTrigger>}
-      
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px] bg-gray-900 text-white border-gray-700">
         <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
-          <DialogDescription>
-            Update your personal information and profile settings.
+          <DialogTitle className="text-xl text-white">Edit Profile</DialogTitle>
+          <DialogDescription className="text-gray-400">
+            Update your profile information below.
           </DialogDescription>
         </DialogHeader>
-        
-        <Tabs defaultValue="personal" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="personal">Personal Info</TabsTrigger>
-            <TabsTrigger value="account">Account Settings</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="personal" className="space-y-4 pt-4">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Your full name" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        This is how we'll address you in the application.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        className="bg-gray-800 border-gray-700"
+                        onChange={handleUsernameChange}
+                      />
+                      {usernameChanged && (
+                        <div className="absolute right-3 top-2.5">
+                          {checkingUsername ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                          ) : !usernameAvailable ? (
+                            <AlertTriangle className="h-4 w-4 text-red-500" />
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
+                  {usernameChanged && !checkingUsername && !usernameAvailable && (
+                    <p className="text-sm text-red-500 mt-1">
+                      This username is already taken
+                    </p>
                   )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="age"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Age</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="Your age" 
-                          {...field} 
-                          onChange={(e) => field.onChange(e.target.value === "" ? undefined : parseInt(e.target.value, 10))}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        You must be at least 13 years old to use this service.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="gender"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel>Gender</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex flex-col space-y-1"
-                        >
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="male" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Male</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="female" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Female</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="non-binary" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Non-binary</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="prefer-not-to-say" />
-                            </FormControl>
-                            <FormLabel className="font-normal">Prefer not to say</FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Tell us a bit about yourself" 
-                          className="resize-none" 
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Your bio will be visible to other users.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => onOpenChange && onOpenChange(false)}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} className="bg-gray-800 border-gray-700" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="age"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Age</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      min={13}
+                      className="bg-gray-800 border-gray-700"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Gender</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
                   >
-                    <X className="mr-2 h-4 w-4" />
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit"
-                    disabled={updateProfile.isPending}
-                  >
-                    {updateProfile.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                      </>
-                    )}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </TabsContent>
-          
-          <TabsContent value="account" className="space-y-4 pt-4">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <div className="flex space-x-2 mt-1">
-                  <Input
-                    id="username"
-                    defaultValue={user.username}
-                    placeholder="Username"
-                  />
-                  <Button 
-                    onClick={() => {
-                      const usernameInput = document.getElementById('username') as HTMLInputElement;
-                      if (usernameInput.value && usernameInput.value !== user.username) {
-                        updateUsername.mutate(usernameInput.value);
-                      }
-                    }}
-                    disabled={updateUsername.isPending}
-                  >
-                    {updateUsername.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Update"
-                    )}
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  This is your public username visible to other users.
-                </p>
-              </div>
-              
-              <div>
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={user.email}
-                  disabled
-                  className="mt-1"
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Your email address is used for login and notifications.
-                </p>
-              </div>
-            </div>
-            
-            <DialogFooter>
+                    <FormControl>
+                      <SelectTrigger className="bg-gray-800 border-gray-700">
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="non-binary">Non-binary</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="prefer-not-to-say">
+                        Prefer not to say
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bio</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      className="bg-gray-800 border-gray-700 resize-none h-24"
+                      placeholder="Tell us about yourself..."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter className="pt-4">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange && onOpenChange(false)}
+                onClick={onClose}
+                className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
               >
-                Close
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={
+                  updateProfile.isPending ||
+                  (usernameChanged && !usernameAvailable)
+                }
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                {updateProfile.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </Button>
             </DialogFooter>
-          </TabsContent>
-        </Tabs>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

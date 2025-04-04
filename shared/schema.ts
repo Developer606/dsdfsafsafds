@@ -41,7 +41,6 @@ export const users = sqliteTable("users", {
   age: integer("age"),
   gender: text("gender"),
   bio: text("bio"),
-  profilePicture: text("profile_picture"),
   profileCompleted: integer("profile_completed", { mode: "boolean" }).default(false),
   isAdmin: integer("is_admin", { mode: "boolean" })
     .notNull()
@@ -150,7 +149,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
   age: true,
   gender: true,
   bio: true,
-  profilePicture: true,
 });
 
 export const loginSchema = z.object({
