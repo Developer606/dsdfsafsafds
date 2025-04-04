@@ -97,10 +97,7 @@ export default function ProfilePage() {
                 className="relative"
               >
                 <Avatar className="h-24 w-24 border-4 border-white/20 shadow-lg">
-                  <AvatarImage 
-                    src={user.profilePicture || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} 
-                    alt={user.username} 
-                  />
+                  <AvatarImage src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} alt={user.username} />
                   <AvatarFallback className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white text-xl">
                     {user.username.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
@@ -421,7 +418,6 @@ export default function ProfilePage() {
             age: user.age,
             gender: user.gender,
             bio: user.bio,
-            profilePicture: user.profilePicture
           }}
         />
       )}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -31,8 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, AlertTriangle, Upload, Camera, Image } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 // Define form validation schema
 const profileSchema = z.object({
@@ -52,7 +51,6 @@ interface UserProfile {
   age: number | null;
   gender: string | null;
   bio: string | null;
-  profilePicture: string | null;
   // Add other fields that might be needed
 }
 
@@ -72,9 +70,6 @@ export function ProfileEditDialog({
   const [usernameAvailable, setUsernameAvailable] = useState(true);
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [usernameChanged, setUsernameChanged] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(user?.profilePicture);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize form with user data
   const form = useForm<ProfileFormValues>({
@@ -102,9 +97,6 @@ export function ProfileEditDialog({
         bio: user.bio || "",
       });
       
-      // Reset profile picture
-      setProfilePictureUrl(user.profilePicture);
-      
       // Log the form values after reset
       console.log("Form values after reset:", form.getValues());
       
@@ -112,112 +104,6 @@ export function ProfileEditDialog({
       setUsernameAvailable(true);
     }
   }, [open, user, form]);
-  
-  // Handle uploading a profile picture
-  const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    
-    const file = e.target.files[0];
-    
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      toast({
-        variant: "destructive",
-        title: "Invalid file",
-        description: "Please upload a valid image file (JPEG, PNG, GIF, or WebP).",
-      });
-      return;
-    }
-    
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      toast({
-        variant: "destructive",
-        title: "File too large",
-        description: "Please upload an image smaller than 5MB.",
-      });
-      return;
-    }
-    
-    setUploading(true);
-    
-    try {
-      const formData = new FormData();
-      formData.append("profilePicture", file);
-      
-      const response = await fetch("/api/profile-picture/upload", {
-        method: "POST",
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to upload profile picture");
-      }
-      
-      const data = await response.json();
-      setProfilePictureUrl(data.url);
-      
-      // Invalidate user query to update the profile picture in the UI
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      
-      toast({
-        title: "Profile picture updated",
-        description: "Your profile picture has been updated successfully.",
-      });
-    } catch (error) {
-      console.error("Error uploading profile picture:", error);
-      toast({
-        variant: "destructive",
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload profile picture.",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-  
-  // Handle profile picture from URL
-  const handleProfilePictureFromUrl = async (url: string) => {
-    if (!url) return;
-    
-    setUploading(true);
-    
-    try {
-      const response = await fetch("/api/profile-picture/from-url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ imageUrl: url }),
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to update profile picture from URL");
-      }
-      
-      const data = await response.json();
-      setProfilePictureUrl(data.url);
-      
-      // Invalidate user query to update the profile picture in the UI
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      
-      toast({
-        title: "Profile picture updated",
-        description: "Your profile picture has been updated successfully.",
-      });
-    } catch (error) {
-      console.error("Error updating profile picture from URL:", error);
-      toast({
-        variant: "destructive",
-        title: "Update failed",
-        description: error instanceof Error ? error.message : "Failed to update profile picture from URL.",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
 
   // Check if username is available
   const checkUsername = async (username: string) => {
@@ -316,65 +202,6 @@ export function ProfileEditDialog({
             Update your profile information below.
           </DialogDescription>
         </DialogHeader>
-
-        {/* Profile Picture Uploader */}
-        <div className="mb-6 flex flex-col items-center">
-          <div className="relative mb-4">
-            <Avatar className="h-24 w-24 border-2 border-gray-700">
-              <AvatarImage 
-                src={profilePictureUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`} 
-                alt={user.username} 
-              />
-              <AvatarFallback className="bg-gradient-to-br from-purple-600 to-indigo-600 text-white text-xl">
-                {user.username.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            
-            {uploading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                <Loader2 className="h-8 w-8 animate-spin text-white" />
-              </div>
-            )}
-          </div>
-          
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
-              disabled={uploading}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload
-            </Button>
-            
-            {/* Input for file upload (hidden) */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleProfilePictureUpload}
-              className="hidden"
-              accept="image/jpeg,image/png,image/gif,image/webp"
-            />
-            
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const url = prompt("Enter image URL");
-                if (url) handleProfilePictureFromUrl(url);
-              }}
-              className="border-gray-600 text-gray-300 hover:bg-gray-800 hover:text-white"
-              disabled={uploading}
-            >
-              <Image className="mr-2 h-4 w-4" />
-              From URL
-            </Button>
-          </div>
-        </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

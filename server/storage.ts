@@ -63,7 +63,6 @@ export interface IStorage {
   searchUsersByUsername(query: string): Promise<User[]>;
   getUser(id: number): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
-  updateUserProfilePicture(userId: number, profilePicture: string): Promise<void>;
   getUserStats(): Promise<{
     totalUsers: number;
     activeUsers: number;
@@ -1162,29 +1161,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedUser;
-  }
-  
-  /**
-   * Update user's profile picture
-   * @param userId User ID
-   * @param profilePicture Profile picture URL or file path
-   */
-  async updateUserProfilePicture(userId: number, profilePicture: string): Promise<void> {
-    console.log(`Updating profile picture for user ${userId} to ${profilePicture}`);
-    
-    try {
-      await db
-        .update(users)
-        .set({
-          profilePicture
-        })
-        .where(eq(users.id, userId));
-      
-      console.log(`Successfully updated profile picture for user ${userId}`);
-    } catch (error) {
-      console.error(`Error updating profile picture for user ${userId}:`, error);
-      throw new Error(`Failed to update profile picture: ${error}`);
-    }
   }
   
   /**
