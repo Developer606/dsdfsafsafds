@@ -78,7 +78,7 @@ export function ProfileEditDialog({
       username: user?.username || "",
       fullName: user?.fullName || "",
       age: user?.age || 18,
-      gender: user?.gender || "",
+      gender: user?.gender || "prefer-not-to-say", // Default value for gender select
       bio: user?.bio || "",
     },
   });
@@ -90,11 +90,12 @@ export function ProfileEditDialog({
       
       // Reset form with user data - ensure proper handling of null values
       form.reset({
-        username: user.username,
+        username: user.username || "",
         fullName: user.fullName || "",
         // Convert age to a number or use 18 as default if null
         age: user.age !== null ? Number(user.age) : 18,
-        gender: user.gender || "",
+        // Use 'prefer-not-to-say' as default if gender is null/empty
+        gender: user.gender || "prefer-not-to-say",
         bio: user.bio || "",
       });
       
