@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { 
@@ -21,11 +21,37 @@ import { type User } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ProfilePage() {
   const [showProfileEditDialog, setShowProfileEditDialog] = useState(false);
+  const [, setLocation] = useLocation();
+
+  // Check if device is mobile and redirect to home if it is
+  useEffect(() => {
+    // Mobile screen width detection (typical breakpoint for mobile is 768px)
+    const isMobileDevice = window.innerWidth < 768;
+    
+    if (isMobileDevice) {
+      // Redirect to home page if on mobile device
+      setLocation("/");
+    }
+    
+    // Add resize listener to handle orientation changes or browser resizing
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setLocation("/");
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [setLocation]);
 
   // Fetch user data from API
   const { data: user, isLoading } = useQuery<User>({
@@ -64,6 +90,15 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-16">
+      {/* Profile Edit Dialog */}
+      {user && showProfileEditDialog && (
+        <ProfileEditDialog
+          open={showProfileEditDialog}
+          onClose={() => setShowProfileEditDialog(false)}
+          user={user}
+        />
+      )}
+      
       {/* Profile Header */}
       <div className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto py-8 px-4">
