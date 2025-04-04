@@ -318,6 +318,9 @@ export default function LandingPage() {
     // Check for auth query parameters from Google OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
     const authStatus = urlParams.get('auth');
+    const reason = urlParams.get('reason');
+    const message = urlParams.get('message');
+    const profileComplete = urlParams.get('profileComplete');
     
     if (authStatus === 'success') {
       // Clean the URL by removing the query parameters
@@ -331,17 +334,31 @@ export default function LandingPage() {
         description: "You have successfully logged in with Google!",
       });
       
-      // Redirect to chat page for verified users
-      setLocation('/chats');
+      // Check if profile needs to be completed
+      if (profileComplete === 'false') {
+        setShowProfileDialog(true);
+      } else {
+        // Redirect to chat page for verified users with completed profiles
+        setLocation('/chats');
+      }
     } else if (authStatus === 'failed') {
       // Clean the URL by removing the query parameters
       window.history.replaceState({}, document.title, window.location.pathname);
       
-      toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Google authentication failed. Please try again or use a different method.",
-      });
+      // Handle specific error reasons
+      if (reason === 'redirect_uri_mismatch') {
+        toast({
+          variant: "destructive",
+          title: "Configuration Error",
+          description: "The application's Google OAuth configuration is incorrect. Please contact support.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: message || "Google authentication failed. Please try again or use a different method.",
+        });
+      }
     }
   }, [toast, setLocation]);
 

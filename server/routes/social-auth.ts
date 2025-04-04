@@ -54,10 +54,12 @@ export async function initializeGoogleStrategy() {
           clientSecret: googleConfig.clientSecret,
           callbackURL: googleConfig.callbackURL,
           scope: ['profile', 'email'],
-          // Add proxy true to handle proxy issues
-          proxy: true
+          // Enable proxy support for proper handling behind Replit's proxy server
+          proxy: true,
+          // Add passReqToCallback to access the request object in the callback
+          passReqToCallback: true
         },
-        async (accessToken: string, refreshToken: string, profile: any, done: (error: Error | null, user?: any) => void) => {
+        async (req: express.Request, accessToken: string, refreshToken: string, profile: any, done: (error: Error | null, user?: any) => void) => {
           try {
             // Extract profile information
             const email = profile.emails && profile.emails[0] ? profile.emails[0].value : '';
@@ -73,8 +75,10 @@ export async function initializeGoogleStrategy() {
             let user = await storage.getUserByEmail(email);
             
             if (user) {
-              // User exists, update last login time
-              await storage.updateLastLogin(user.id);
+              // User exists, update last login time with IP tracking
+              const clientIP = (req.headers['x-forwarded-for'] || req.ip) as string;
+              await storage.updateLastLogin(user.id, clientIP);
+              console.log(`Google OAuth user ${email} logged in from IP: ${clientIP}`);
               return done(null, user);
             } else {
               // Create a new user
@@ -123,19 +127,45 @@ router.get(
 router.get(
   '/google/callback',
   (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    // Log the incoming callback request for debugging
+    // Check for error in query parameters from Google's OAuth server
+    if (req.query.error) {
+      console.error('Google returned an error:', req.query);
+      
+      // Handle specific error types
+      if (req.query.error === 'redirect_uri_mismatch') {
+        console.error('CRITICAL ERROR: Redirect URI mismatch. The callback URL configured in Google Cloud Console does not match the one used by the application.');
+        return res.redirect('/?auth=failed&reason=redirect_uri_mismatch&message=Configuration+error');
+      }
+      
+      return res.redirect(`/?auth=failed&reason=${req.query.error}`);
+    }
+    
+    // Log the incoming callback request for detailed debugging
     console.log('Google callback received:', {
       query: req.query,
       path: req.path,
       baseUrl: req.baseUrl,
-      originalUrl: req.originalUrl
+      originalUrl: req.originalUrl,
+      headers: {
+        host: req.headers.host,
+        referer: req.headers.referer,
+        origin: req.headers.origin
+      }
     });
     
     // Custom callback to handle authentication with better error feedback
     passport.authenticate('google', (err: Error | null, user: any, info: any) => {
       if (err) {
         console.error('Google OAuth error:', err);
-        return res.redirect('/?auth=failed&reason=error');
+        
+        // Look for specific error messages related to redirect_uri_mismatch
+        const errorMsg = err.toString().toLowerCase();
+        if (errorMsg.includes('redirect_uri_mismatch') || errorMsg.includes('redirect uri mismatch')) {
+          console.error('CRITICAL: Redirect URI mismatch error detected.');
+          return res.redirect('/?auth=failed&reason=redirect_uri_mismatch&message=The+Google+OAuth+redirect+URI+does+not+match');
+        }
+        
+        return res.redirect('/?auth=failed&reason=error&message=' + encodeURIComponent(err.message));
       }
       
       if (!user) {
@@ -152,6 +182,12 @@ router.get(
         
         // On success, redirect to the home page with success parameter
         console.log('Google OAuth login successful for user:', user.email);
+        
+        // Check if user needs to complete profile
+        if (!user.profileCompleted) {
+          return res.redirect('/?auth=success&profileComplete=false');
+        }
+        
         return res.redirect('/?auth=success');
       });
     })(req, res, next);

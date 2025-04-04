@@ -32,10 +32,26 @@ export async function getGoogleOAuthCredentials() {
     // Allow for a hard-coded callback URL from environment for easier testing
     const callbackOverride = process.env.GOOGLE_CALLBACK_URL;
     
-    const callbackURL = callbackOverride || (replitDomain 
-      ? `https://${replitDomain}/api/auth/google/callback`
-      : 'http://localhost:5000/api/auth/google/callback');
-      
+    // Production domain handling - for when the app is deployed to a custom domain
+    const productionDomain = process.env.PRODUCTION_DOMAIN;
+    
+    // Determine the appropriate callback URL based on available environment information
+    let callbackURL;
+    
+    if (callbackOverride) {
+      // Use explicitly provided callback URL if available (highest priority)
+      callbackURL = callbackOverride;
+    } else if (productionDomain) {
+      // Use production domain if available
+      callbackURL = `https://${productionDomain}/api/auth/google/callback`;
+    } else if (replitDomain) {
+      // Use Replit domain if available
+      callbackURL = `https://${replitDomain}/api/auth/google/callback`;
+    } else {
+      // Fallback to localhost
+      callbackURL = 'http://localhost:5000/api/auth/google/callback';
+    }
+    
     console.log('Using Google OAuth callback URL:', callbackURL);
     
     return {
