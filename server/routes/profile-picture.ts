@@ -157,6 +157,21 @@ router.post('/from-url', authenticateJWT, async (req: express.Request, res: expr
       return res.status(400).json({ error: 'Invalid URL format' });
     }
     
+    // Find user's previous profile picture files and delete them if they exist
+    // This ensures we clean up disk space even when switching to a URL-based image
+    const previousProfilePictures = fs.readdirSync(profilePicturesDir)
+      .filter(filename => filename.startsWith(`user-${userId}-`));
+    
+    for (const oldPicture of previousProfilePictures) {
+      const oldPicturePath = path.join(profilePicturesDir, oldPicture);
+      try {
+        fs.unlinkSync(oldPicturePath);
+        console.log(`Deleted old profile picture when switching to URL: ${oldPicturePath}`);
+      } catch (error) {
+        console.error(`Failed to delete old profile picture: ${oldPicturePath}`, error);
+      }
+    }
+    
     // Update user's profilePicture in the database
     await storage.updateUserProfilePicture(userId, imageUrl);
     
