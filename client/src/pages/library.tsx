@@ -234,40 +234,40 @@ export default function Library() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col h-screen">
-        {/* Fixed Android Material Design 3 App Bar with dynamic elevation - Smaller height */}
+        {/* Ultra compact Android Material Design 3 App Bar with minimum height */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white flex-shrink-0 z-10 md3-elevation-2">
-          {/* Status bar simulation - reduced height */}
-          <div className="h-4 bg-black/10 w-full"></div>
+          {/* Status bar simulation - minimal height */}
+          <div className="h-2 bg-black/10 w-full"></div>
           
           {isSearching ? (
-            <div className="flex items-center py-1.5 px-2">
+            <div className="flex items-center py-0.5 px-1.5">
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => {
                   setIsSearching(false);
                   setSearchQuery("");
                 }}
-                className="p-1.5 rounded-full mr-1 material-ripple flex items-center justify-center"
+                className="p-1 rounded-full mr-1 material-ripple flex items-center justify-center"
               >
-                <ArrowLeft size={20} />
+                <ArrowLeft size={16} />
               </motion.button>
               <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-full flex items-center overflow-hidden">
-                <Search size={16} className="ml-2 text-white/70" />
+                <Search size={12} className="ml-2 text-white/70" />
                 <input
                   type="text"
                   placeholder="Search library..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent py-1.5 px-2 focus:outline-none placeholder-white/60 text-white text-sm"
+                  className="flex-1 bg-transparent py-1 px-2 focus:outline-none placeholder-white/60 text-white text-xs"
                   autoFocus
                 />
                 {searchQuery && (
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setSearchQuery("")}
-                    className="p-1.5 rounded-full material-ripple flex items-center justify-center"
+                    className="p-1 rounded-full material-ripple flex items-center justify-center"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18"></line>
                       <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
@@ -276,53 +276,53 @@ export default function Library() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between py-1.5 px-2">
+            <div className="flex items-center justify-between py-0.5 px-1.5">
               <div className="flex items-center">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setLocation("/")}
-                  className="p-1.5 -ml-1 rounded-full material-ripple flex items-center justify-center"
+                  className="p-1 -ml-0.5 rounded-full material-ripple flex items-center justify-center"
                 >
-                  <ArrowLeft size={20} />
+                  <ArrowLeft size={16} />
                 </motion.button>
-                <h1 className="text-base font-medium tracking-tight ml-1">Library</h1>
+                <h1 className="text-sm font-medium tracking-tight ml-0.5">Library</h1>
               </div>
               <div className="flex items-center">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsSearching(true)}
-                  className="p-1.5 rounded-full material-ripple flex items-center justify-center"
+                  className="p-1 rounded-full material-ripple flex items-center justify-center"
                 >
-                  <Search size={18} />
+                  <Search size={14} />
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  className="p-1.5 rounded-full material-ripple flex items-center justify-center ml-1"
+                  className="p-1 rounded-full material-ripple flex items-center justify-center ml-0.5"
                 >
-                  <Menu size={18} />
+                  <Menu size={14} />
                 </motion.button>
               </div>
             </div>
           )}
           
-          {/* Material Design 3 Tabs with animated indicator - Smaller height */}
+          {/* Ultra compact Material Design 3 Tabs with minimal height */}
           <div className="flex border-b border-white/20">
             {["manga", "books", "news"].map((tab) => (
               <motion.button
                 key={tab}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-2 px-2 flex flex-col items-center material-ripple relative`}
+                className={`flex-1 py-1 px-1 flex flex-col items-center material-ripple relative`}
               >
-                {tab === "manga" && <Book size={16} className="mb-0.5" />}
+                {tab === "manga" && <Book size={14} className="mb-0" />}
                 {tab === "books" && (
-                  <svg className="w-4 h-4 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg className="w-3.5 h-3.5 mb-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 0M3 12l3 0M3 18l3 0" />
                   </svg>
                 )}
-                {tab === "news" && <Newspaper size={16} className="mb-0.5" />}
-                <span className="text-[10px] font-medium">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+                {tab === "news" && <Newspaper size={14} className="mb-0" />}
+                <span className="text-[8px] font-medium">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
                 
                 {/* Animated indicator */}
                 {activeTab === tab && (
