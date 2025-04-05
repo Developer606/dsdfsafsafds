@@ -3008,6 +3008,48 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
+  // Update a credential
+  app.put("/api/admin/credentials/:service", isAdmin, async (req, res) => {
+    try {
+      const { adminDb, apiKeys } = await import("./admin-db");
+      const { eq } = await import("drizzle-orm");
+      const service = req.params.service;
+      const { key, description } = req.body;
+      
+      if (!key) {
+        return res.status(400).json({ error: "Key is required" });
+      }
+      
+      // Update the API key
+      const result = await adminDb
+        .update(apiKeys)
+        .set({ 
+          key, 
+          description: description || null,
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(apiKeys.service, service))
+        .returning()
+        .get();
+      
+      if (!result) {
+        return res.status(404).json({ error: "Credential not found" });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Credential updated successfully",
+        credential: {
+          ...result,
+          key: result.key // Send the actual key back to the client
+        }
+      });
+    } catch (error: any) {
+      console.error(`Error updating credential for ${req.params.service}:`, error);
+      res.status(500).json({ error: "Failed to update credential" });
+    }
+  });
+  
   // User-to-user messaging endpoints
   app.get("/api/user-messages/conversations", async (req, res) => {
     try {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import {
@@ -62,6 +62,8 @@ import {
   Eye,
   EyeOff,
   Settings,
+  Pencil,
+  Save,
 } from "lucide-react";
 
 // Define types for API responses
@@ -80,8 +82,14 @@ const CredentialManager = () => {
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCredential, setSelectedCredential] = useState<string | null>(null);
+  const [editingCredential, setEditingCredential] = useState({
+    service: "",
+    key: "",
+    description: "",
+  });
   const [newCredential, setNewCredential] = useState({
     service: "",
     key: "",
@@ -207,6 +215,69 @@ const CredentialManager = () => {
       });
     }
   };
+  
+  // Handle editing a credential
+  const handleEditCredential = async () => {
+    if (!editingCredential.service || !editingCredential.key) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Service name and key are required.",
+      });
+      return;
+    }
+
+    try {
+      const response = await apiRequest("PUT", `/api/admin/credentials/${editingCredential.service}`, {
+        key: editingCredential.key,
+        description: editingCredential.description,
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Success",
+          description: "Credential updated successfully!",
+        });
+        setIsEditDialogOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/credentials"] });
+      } else {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update credential");
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to update credential",
+      });
+    }
+  };
+  
+  // Open edit dialog with credential data
+  const openEditDialog = async (service: string) => {
+    try {
+      const response = await apiRequest("GET", `/api/admin/credentials/${service}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEditingCredential({
+          service: data.service,
+          key: data.key,
+          description: data.description || "",
+        });
+        setIsEditDialogOpen(true);
+      } else {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to get credential details");
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to get credential details",
+      });
+    }
+  };
 
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
 
@@ -315,6 +386,62 @@ const CredentialManager = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Edit Credential Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Credential</DialogTitle>
+            <DialogDescription>
+              Update the credential value or description.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-service" className="text-right">
+                Service Name
+              </Label>
+              <Input
+                id="edit-service"
+                className="col-span-3"
+                value={editingCredential.service}
+                disabled
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-key" className="text-right">
+                API Key / Value
+              </Label>
+              <Input
+                id="edit-key"
+                type="text"
+                placeholder="Enter sensitive credential value"
+                className="col-span-3"
+                value={editingCredential.key}
+                onChange={(e) => setEditingCredential({ ...editingCredential, key: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="edit-description"
+                placeholder="Optional description of this credential"
+                className="col-span-3"
+                value={editingCredential.description}
+                onChange={(e) => setEditingCredential({ ...editingCredential, description: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditCredential}>Update Credential</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Credential Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -411,6 +538,14 @@ const CredentialManager = () => {
                                   title="View full value"
                                 >
                                   <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openEditDialog(cred.service)}
+                                  title="Edit credential"
+                                >
+                                  <Pencil className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
