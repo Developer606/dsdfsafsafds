@@ -131,10 +131,11 @@ interface FlaggedMessageStats {
 
 // Flagged Messages Counter Component
 function FlaggedMessagesCounter() {
-  const { data: flaggedStats = { total: 0, unreviewed: 0, byReason: {} } } = useQuery<FlaggedMessageStats>({
-    queryKey: ["/api/admin/flagged-messages/stats"],
-    staleTime: 5000, // Refresh every 5 seconds
-  });
+  const { data: flaggedStats = { total: 0, unreviewed: 0, byReason: {} } } =
+    useQuery<FlaggedMessageStats>({
+      queryKey: ["/api/admin/flagged-messages/stats"],
+      staleTime: 5000, // Refresh every 5 seconds
+    });
 
   if (!flaggedStats || flaggedStats.unreviewed === 0) {
     return null;
@@ -209,17 +210,17 @@ export default function AdminDashboard() {
     max?: number;
   }>({});
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
-  
+
   // Set admin flag in sessionStorage for file uploads
   useEffect(() => {
     // Mark user as admin in session storage
-    sessionStorage.setItem('isAdmin', 'true');
-    console.log('Admin flag set in session storage for file uploads');
-    
+    sessionStorage.setItem("isAdmin", "true");
+    console.log("Admin flag set in session storage for file uploads");
+
     // Clean up when component unmounts
     return () => {
-      sessionStorage.removeItem('isAdmin');
-      console.log('Admin flag removed from session storage');
+      sessionStorage.removeItem("isAdmin");
+      console.log("Admin flag removed from session storage");
     };
   }, []);
 
@@ -313,7 +314,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     const socket = setupWebSocket();
     return () => {
-      if (socket && socket.readyState === 1) { // 1 is equivalent to WebSocket.OPEN
+      if (socket && socket.readyState === 1) {
+        // 1 is equivalent to WebSocket.OPEN
         socket.close();
       }
     };
@@ -367,8 +369,10 @@ export default function AdminDashboard() {
     content: string;
     timestamp: string;
   }
-  
-  const { data: recentMessages = [], isLoading: messagesLoading } = useQuery<RecentMessage[]>({
+
+  const { data: recentMessages = [], isLoading: messagesLoading } = useQuery<
+    RecentMessage[]
+  >({
     queryKey: ["/api/admin/messages/recent"],
     staleTime: 0, // Allow immediate refreshes
   });
@@ -394,7 +398,7 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/complaints"],
     staleTime: Infinity,
   });
-  
+
   // Define type for flagged messages
   interface FlaggedMessage {
     id: number;
@@ -410,10 +414,11 @@ export default function AdminDashboard() {
   }
 
   // Query for flagged messages
-  const { data: flaggedMessages = [], isLoading: flaggedMessagesLoading } = useQuery<FlaggedMessage[]>({
-    queryKey: ["/api/admin/flagged-messages"],
-    staleTime: 10000, // Refresh every 10 seconds
-  });
+  const { data: flaggedMessages = [], isLoading: flaggedMessagesLoading } =
+    useQuery<FlaggedMessage[]>({
+      queryKey: ["/api/admin/flagged-messages"],
+      staleTime: 10000, // Refresh every 10 seconds
+    });
 
   const {
     data: activityData = { hourlyActivity: [] },
@@ -449,8 +454,10 @@ export default function AdminDashboard() {
     parsedFeatures?: string[]; // Optional parsed features for display
     updatedAt: Date;
   }
-  
-  const { data: plans = [], isLoading: plansLoading } = useQuery<SubscriptionPlanWithFeatures[]>({
+
+  const { data: plans = [], isLoading: plansLoading } = useQuery<
+    SubscriptionPlanWithFeatures[]
+  >({
     queryKey: ["/api/admin/plans"],
     staleTime: Infinity,
   });
@@ -858,7 +865,7 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center gap-4">
           <NotificationPopover />
-          
+
           {/* Hamburger Menu */}
           <Sheet>
             <SheetTrigger asChild>
@@ -872,26 +879,38 @@ export default function AdminDashboard() {
               </SheetHeader>
               <div className="mt-6 space-y-4">
                 <Link href="/admin/dashboard" className="w-full">
-                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2 justify-start"
+                  >
                     <Crown className="h-4 w-4" />
                     Dashboard
                   </Button>
                 </Link>
                 <Link href="/admin/characters" className="w-full">
-                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2 justify-start"
+                  >
                     <Palette className="h-4 w-4" />
                     Manage Characters
                   </Button>
                 </Link>
                 <Link href="/admin/content-moderation" className="w-full">
-                  <Button variant="secondary" className="w-full gap-2 justify-start relative">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2 justify-start relative"
+                  >
                     <Shield className="h-4 w-4" />
                     Content Moderation
                     <FlaggedMessagesCounter />
                   </Button>
                 </Link>
                 <Link href="/admin/dashboard/complaints" className="w-full">
-                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2 justify-start"
+                  >
                     <AlertCircle className="h-4 w-4" />
                     View Complaints
                     {complaints?.length ? (
@@ -902,7 +921,10 @@ export default function AdminDashboard() {
                   </Button>
                 </Link>
                 <Link href="/admin/dashboard/feedback" className="w-full">
-                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2 justify-start"
+                  >
                     <MessageCircle className="h-4 w-4" />
                     View Feedback
                     {feedback?.length ? (
@@ -913,20 +935,26 @@ export default function AdminDashboard() {
                   </Button>
                 </Link>
                 <Link href="/admin/advertisements" className="w-full">
-                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2 justify-start"
+                  >
                     <Newspaper className="h-4 w-4" />
                     Advertisements
                   </Button>
                 </Link>
                 <Link href="/admin/users" className="w-full">
-                  <Button variant="secondary" className="w-full gap-2 justify-start">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2 justify-start"
+                  >
                     <Users className="h-4 w-4" />
                     User Management
                   </Button>
                 </Link>
-                <Button 
-                  variant="destructive" 
-                  className="w-full gap-2 justify-start mt-8" 
+                <Button
+                  variant="destructive"
+                  className="w-full gap-2 justify-start mt-8"
                   onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4" />
@@ -1176,43 +1204,6 @@ export default function AdminDashboard() {
 
       <Card className="mt-8">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Recent Messages</h2>
-            <MessageSquare className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Character</TableHead>
-                  <TableHead>Message</TableHead>
-                  <TableHead>Timestamp</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentMessages?.map((message: any) => (
-                  <TableRow key={message.id}>
-                    <TableCell>{message.username}</TableCell>
-                    <TableCell>{message.characterName}</TableCell>
-                    <TableCell className="max-w-md truncate">
-                      {message.content}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(message.timestamp).toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
-      </Card>
-      
-      {/* Flagged Messages Section - Removed from dashboard, accessible via menu */}
-
-      <Card className="mt-8">
-        <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-bold">Subscription Plans</h2>
@@ -1325,65 +1316,6 @@ export default function AdminDashboard() {
                 ))}
               </TableBody>
             </Table>
-          </div>
-        </div>
-      </Card>
-
-      {/* Notification History Section */}
-      <Card className="mt-8">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-xl font-bold">Notification History</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                View all sent notifications
-              </p>
-            </div>
-            <MessageCircle className="h-5 w-5 text-muted-foreground" />
-          </div>
-
-          <div className="space-y-4">
-            {notifications.map((notification) => (
-              <Alert
-                key={notification.id}
-                variant={
-                  notification.type === "update"
-                    ? "default"
-                    : notification.type === "feature"
-                      ? "success"
-                      : "warning"
-                }
-              >
-                <Bell className="h-4 w-4" />
-                <AlertTitle className="flex justify-between">
-                  <span>{notification.title}</span>
-                  <span className="text-sm text-gray-500">
-                    {new Date(notification.createdAt).toLocaleDateString()}
-                  </span>
-                </AlertTitle>
-                <AlertDescription className="mt-2 space-y-2">
-                  <p>{notification.message}</p>
-                  <p className="text-sm text-gray-500">
-                    Sent to: {notification.username} ({notification.userEmail})
-                  </p>
-                  <div className="flex justify-end mt-2">
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteNotification.mutate(notification.id)}
-                      disabled={deleteNotification.isPending}
-                    >
-                      {deleteNotification.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Trash2 className="h-4 w-4 mr-2" />
-                      )}
-                      Delete
-                    </Button>
-                  </div>
-                </AlertDescription>
-              </Alert>
-            ))}
           </div>
         </div>
       </Card>
