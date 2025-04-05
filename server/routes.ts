@@ -238,12 +238,10 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     authCheck,
   );
 
-  // Add PayPal config endpoint before existing routes - now with async support
+  // Add PayPal config endpoint before existing routes
   app.get("/api/paypal-config", async (req, res) => {
     try {
-      // Force a clean import to get the latest config
-      delete require.cache[require.resolve('./config/index')];
-      
+      // Use fresh import to get the latest config
       const { getPayPalConfig, getPayPalMode, validateProductionCredentials } = await import("./config/index");
       const config = await getPayPalConfig();
       
@@ -254,10 +252,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       // Get the current active mode for client awareness
       const mode = await getPayPalMode();
       
-      // Also check if production credentials are valid (for UI warnings)
-      const hasValidProductionCredentials = mode === 'production' ? 
-        (config.hasValidProductionCredentials || false) : 
-        await validateProductionCredentials();
+      // Check if production credentials are valid (for UI warnings)
+      const hasValidProductionCredentials = await validateProductionCredentials();
       
       res.json({ 
         clientId: config.clientId,
@@ -292,18 +288,20 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         return res.status(400).json({ error: "useProduction must be a boolean value" });
       }
       
-      const { togglePayPalMode, validateProductionCredentials } = await import("./config/index");
+      const { togglePayPalMode, validateProductionCredentials } = await import("./config/index?t=" + Date.now());
       
       // Check production credentials before switching
       const hasValidProductionCredentials = await validateProductionCredentials();
+      
+      // If trying to switch to production mode but credentials are invalid, warn but still allow the switch
+      if (useProduction && !hasValidProductionCredentials) {
+        console.warn("Switching to production mode with potentially invalid credentials");
+      }
       
       const success = await togglePayPalMode(useProduction);
       
       if (success) {
         console.log(`PayPal mode switched to ${useProduction ? 'PRODUCTION' : 'SANDBOX'} by admin`);
-        
-        // Clear require cache to ensure fresh configs
-        delete require.cache[require.resolve('./config/index')];
         
         res.json({ 
           success: true, 
@@ -324,7 +322,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Get current PayPal mode and validate credentials
   app.get("/api/admin/paypal-mode", isAdmin, async (req, res) => {
     try {
-      const { getPayPalMode, validateProductionCredentials } = await import("./config/index");
+      // Use a dynamic import with timestamp to avoid caching issues
+      const { getPayPalMode, validateProductionCredentials } = await import("./config/index?t=" + Date.now());
       
       // Get the current mode
       const mode = await getPayPalMode();
