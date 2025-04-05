@@ -1416,33 +1416,32 @@ export default function Home() {
       ) : (
         // Enhanced Desktop UI
         <div className="flex h-[calc(100vh-64px)]">
-          {/* Left Sidebar - Enhanced & Streamlined */}
+          {/* Left Sidebar - Enhanced & Ultra-Streamlined */}
           <motion.div
             variants={container}
             initial="hidden"
             animate="show"
-            className="w-72 border-r border-yellow-200/50 dark:border-amber-800/50 overflow-y-auto bg-gradient-to-b from-white/80 to-white/70 dark:from-slate-900/80 dark:to-slate-800/70 backdrop-blur-sm"
+            className="w-72 overflow-y-auto bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm shadow-xl"
           >
-            {/* Simplified Top Bar */}
-            <div className="px-4 pt-4 pb-2">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-yellow-200/50 dark:border-amber-800/50">
-                {/* Only theme toggle and upgrade button */}
-                <div className="flex items-center gap-2">
+            {/* Premium header bar with anime-inspired design */}
+            <div className="bg-gradient-to-r from-purple-600 to-pink-500 h-2.5"></div>
+            
+            <div className="px-5 py-6">
+              {/* Top controls - ultra minimal */}
+              <div className="flex items-center justify-between mb-6">
+                {/* Theme toggle with improved styling */}
+                <div className="flex items-center">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={toggleTheme}
-                    className="rounded-full h-9 w-9 bg-yellow-50 dark:bg-amber-900/30 shadow-sm hover:bg-yellow-100 dark:hover:bg-amber-800/30"
+                    className="rounded-full h-8 w-8 bg-white/10 hover:bg-white/15 text-white"
                   >
-                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all text-amber-600 dark:-rotate-90 dark:scale-0" />
-                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all text-amber-400 dark:rotate-0 dark:scale-100" />
-                    <span className="sr-only">Toggle theme</span>
+                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                   </Button>
                   
-                  {/* Subscription management preserved but not the user icon/button */}
-                  {user && <SubscriptionManagement user={user} />}
-                  
-                  {/* Hidden dropdown but with functionality preserved */}
+                  {/* Keep dropdown but hidden for functionality */}
                   <DropdownMenu>
                     <DropdownMenuTrigger className="hidden">
                       <span>Account</span>
@@ -1479,43 +1478,56 @@ export default function Home() {
                   </DropdownMenu>
                 </div>
                 
-                {/* Logout button */}
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleLogout}
-                  className="text-xs text-red-500 hover:text-red-600 p-1 h-8"
-                >
-                  <LogOut className="h-3.5 w-3.5 mr-1" />
-                  Logout
-                </Button>
+                {/* Subscription management with improved styling */}
+                <div className="flex items-center gap-3">
+                  {user && <SubscriptionManagement user={user} />}
+                  
+                  {/* Elegant logout button */}
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleLogout}
+                    className="text-xs text-gray-300 hover:text-white hover:bg-red-500/20 p-2 h-8 rounded-full"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
 
-              {/* Create Character Button - Enhanced */}
-              <div className="mb-6">
+              {/* Create Character Button - Ultra Enhanced with anime-style design */}
+              <div className="mb-8">
                 <Button
                   onClick={handleCreateClick}
-                  className="w-full bg-gradient-to-br from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 group border border-yellow-300/30 h-11"
+                  className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group h-12 border-t border-white/20 relative overflow-hidden"
                 >
+                  <div className="absolute inset-0 bg-white/10 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute -bottom-1 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 to-amber-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
                   <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                  <span className="font-medium">Create Character</span>
+                  <span className="font-semibold tracking-wide">Create Character</span>
                 </Button>
               </div>
               
-              {/* Character section header with Messages link */}
-              <div className="mb-4">
+              {/* Character section header with Messages link - Anime-style */}
+              <div className="mb-6">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
-                    <Users className="h-4 w-4 mr-2 text-yellow-600 dark:text-amber-500" />
-                    My Characters
-                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <div className="p-1.5 rounded-lg bg-purple-500/20">
+                      <Users className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-white">
+                      My Characters
+                    </h3>
+                  </div>
                   <Link href="/conversations">
-                    <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-yellow-700 dark:text-amber-400 hover:text-yellow-800 dark:hover:text-amber-300">
+                    <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-medium text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 hover:border-purple-500/50 rounded-full">
                       <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
                       Messages
                     </Button>
                   </Link>
                 </div>
+                
+                {/* Decorative line with anime aesthetic */}
+                <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-purple-500/50 to-transparent mt-3 mb-5"></div>
               </div>
             </div>
               
