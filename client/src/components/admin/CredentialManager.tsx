@@ -208,6 +208,8 @@ const CredentialManager = () => {
     }
   };
 
+  const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
+
   return (
     <>
       {/* Dropdown trigger in top right */}
@@ -224,12 +226,18 @@ const CredentialManager = () => {
             <Plus className="mr-2 h-4 w-4" />
             Add Credential
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => refetch()}>
+          <DropdownMenuItem onClick={() => {
+            refetch();
+            setIsCredentialsDialogOpen(true);
+          }}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh Credentials
           </DropdownMenuItem>
           <DropdownMenuItem 
-            onClick={() => setShowCredentialValues(!showCredentialValues)}
+            onClick={() => {
+              setShowCredentialValues(!showCredentialValues);
+              setIsCredentialsDialogOpen(true);
+            }}
           >
             {showCredentialValues ? (
               <>
@@ -242,6 +250,11 @@ const CredentialManager = () => {
                 Show Credential Values
               </>
             )}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setIsCredentialsDialogOpen(true)}>
+            <Key className="mr-2 h-4 w-4" />
+            Manage All Credentials
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -323,7 +336,7 @@ const CredentialManager = () => {
       </AlertDialog>
 
       {/* Credentials Dialog */}
-      <Dialog>
+      <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Credential Management</DialogTitle>
@@ -386,7 +399,7 @@ const CredentialManager = () => {
                           <TableRow key={cred.id}>
                             <TableCell className="font-medium">{cred.service}</TableCell>
                             <TableCell className="font-mono text-xs">
-                              {showCredentialValues ? cred.key : cred.key}
+                              {showCredentialValues ? cred.key : "••••••••••••••••••••••••"}
                             </TableCell>
                             <TableCell>{cred.description}</TableCell>
                             <TableCell>
