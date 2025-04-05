@@ -89,6 +89,8 @@ const item = {
 export default function Home() {
   const [location, setLocation] = useLocation();
   const [showSubscription, setShowSubscription] = useState(false);
+  const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [characterToDelete, setCharacterToDelete] = useState<string | null>(
@@ -1460,7 +1462,18 @@ export default function Home() {
                       }}
                       className="w-full text-xs h-8 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-md shadow-sm"
                     >
-                      <Zap className="h-3.5 w-3.5 mr-1.5" />
+                      <svg 
+                        className="h-3.5 w-3.5 mr-1.5" 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                      >
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                      </svg>
                       Upgrade to Premium
                     </Button>
                   </div>
