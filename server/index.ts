@@ -9,6 +9,7 @@ import { initializeAdminDb } from "./admin-db";
 import { setupSocketIOServer } from "./socket-io-server";
 import { initializeNotificationSocketService } from "./notification-socket-service";
 import { initializeFlaggedMessagesDb } from "./content-moderation";
+import { initializeEmailTransporter } from "./email";
 import path from "path";
 
 const app = express();
@@ -89,6 +90,14 @@ app.use((req, res, next) => {
     // Initialize flagged messages database
     await initializeFlaggedMessagesDb();
     log("Flagged messages database initialized successfully");
+
+    // Initialize email transporter
+    const emailInitSuccess = await initializeEmailTransporter();
+    if (emailInitSuccess) {
+      log("Email transporter initialized successfully");
+    } else {
+      log("Email transporter initialization failed - emails may not work properly");
+    }
 
     // Start the broadcast scheduler
     startScheduler();

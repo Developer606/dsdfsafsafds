@@ -1,15 +1,9 @@
 import nodemailer from "nodemailer";
 import cryptoRandomString from "crypto-random-string";
+import { getApiKey } from "./admin-db";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: "noreply.animechat@gmail.com",
-    pass: "ibui zkqn zlcg xucg",
-  },
-});
+// Initialize transporter later since we need to fetch credentials from the database
+let transporter: nodemailer.Transporter | null = null;
 
 export async function generateOTP(): Promise<string> {
   return cryptoRandomString({ length: 6, type: "numeric" });
@@ -21,9 +15,56 @@ export function isValidEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
+// Initialize the email transporter with credentials from database
+export async function initializeEmailTransporter(): Promise<boolean> {
+  try {
+    // Get credentials from database
+    const smtpUser = await getApiKey("SMTP_USER") || process.env.SMTP_USER;
+    const smtpPassword = await getApiKey("SMTP_PASSWORD") || process.env.SMTP_PASSWORD;
+    const smtpHost = await getApiKey("SMTP_HOST") || process.env.SMTP_HOST || "smtp.gmail.com";
+    const smtpPort = await getApiKey("SMTP_PORT") || process.env.SMTP_PORT || "587";
+    
+    // Check if we have the required credentials
+    if (!smtpUser || !smtpPassword) {
+      console.error("Missing SMTP credentials. Email functionality will not work.");
+      return false;
+    }
+    
+    // Create the transporter
+    transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: Number(smtpPort),
+      secure: false,
+      auth: {
+        user: smtpUser,
+        pass: smtpPassword,
+      },
+    });
+    
+    // Verify connection
+    await transporter.verify();
+    console.log("Email transporter initialized successfully");
+    return true;
+  } catch (error) {
+    console.error("Failed to initialize email transporter:", error);
+    return false;
+  }
+}
+
 export async function sendVerificationEmail(email: string, otp: string) {
+  // Make sure transporter is initialized
+  if (!transporter) {
+    await initializeEmailTransporter();
+    if (!transporter) {
+      throw new Error("Email service not configured");
+    }
+  }
+  
+  // Get sender email from database
+  const senderEmail = await getApiKey("SMTP_USER") || process.env.SMTP_USER || "noreply@animechat.com";
+  
   const mailOptions = {
-    from: process.env.SMTP_USER,
+    from: senderEmail,
     to: email,
     subject: "Email Verification - Anime Chat App",
     html: `
@@ -48,8 +89,19 @@ export async function sendVerificationEmail(email: string, otp: string) {
 }
 
 export async function sendPasswordResetEmail(email: string, otp: string) {
+  // Make sure transporter is initialized
+  if (!transporter) {
+    await initializeEmailTransporter();
+    if (!transporter) {
+      throw new Error("Email service not configured");
+    }
+  }
+  
+  // Get sender email from database
+  const senderEmail = await getApiKey("SMTP_USER") || process.env.SMTP_USER || "noreply@animechat.com";
+  
   const mailOptions = {
-    from: process.env.SMTP_USER,
+    from: senderEmail,
     to: email,
     subject: "Password Reset - Anime Chat App",
     html: `
@@ -76,6 +128,9 @@ export async function sendPasswordResetEmail(email: string, otp: string) {
 // Initialize and verify email configuration
 export async function verifyEmailConfig() {
   try {
+    if (!transporter) {
+      return await initializeEmailTransporter();
+    }
     await transporter.verify();
     return true;
   } catch (error) {

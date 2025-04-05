@@ -238,10 +238,10 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     authCheck,
   );
 
-  // Add PayPal config endpoint before existing routes
-  app.get("/api/paypal-config", (req, res) => {
+  // Add PayPal config endpoint before existing routes - now with async support
+  app.get("/api/paypal-config", async (req, res) => {
     try {
-      const config = getPayPalConfig();
+      const config = await getPayPalConfig();
       if (!config.clientId) {
         throw new Error("PayPal configuration not found");
       }
@@ -1875,8 +1875,8 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       console.log("Verifying payment with PayPal:", orderID);
       console.log("Using plan:", plan);
 
-      // Get PayPal configuration
-      const paypalConfig = getPayPalConfig();
+      // Get PayPal configuration from database
+      const paypalConfig = await getPayPalConfig();
       if (!paypalConfig.clientId || !paypalConfig.clientSecret) {
         console.error("Missing PayPal credentials in configuration");
         return res
