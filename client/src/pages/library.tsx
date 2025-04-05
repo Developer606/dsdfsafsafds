@@ -4,11 +4,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { NotificationHeader } from "../components/notification-header";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Home, Book, Newspaper, Search, Menu } from "lucide-react";
 
 // Define interfaces for the library content
 interface MangaItem {
@@ -148,33 +149,74 @@ const dummyNews: NewsItem[] = [
 export default function Library() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("manga");
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [, setLocation] = useLocation();
+  
+  // Check for mobile screen size
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkIfMobile();
+    
+    // Listen for window resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
   
   // Simulate fetching data from API
   const mangaQuery = useQuery({
-    queryKey: ['/api/library/manga'],
+    queryKey: ['/api/library/manga', searchQuery],
     enabled: activeTab === "manga",
     // This placeholder would normally fetch from an API
     queryFn: async () => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
+      if (searchQuery) {
+        return dummyManga.filter(manga => 
+          manga.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          manga.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          manga.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
       return dummyManga;
     }
   });
   
   const booksQuery = useQuery({
-    queryKey: ['/api/library/books'],
+    queryKey: ['/api/library/books', searchQuery],
     enabled: activeTab === "books",
     queryFn: async () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
+      if (searchQuery) {
+        return dummyBooks.filter(book => 
+          book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          book.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
       return dummyBooks;
     }
   });
   
   const newsQuery = useQuery({
-    queryKey: ['/api/library/news'],
+    queryKey: ['/api/library/news', searchQuery],
     enabled: activeTab === "news",
     queryFn: async () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
+      if (searchQuery) {
+        return dummyNews.filter(news => 
+          news.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          news.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          news.summary.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
       return dummyNews;
     }
   });
@@ -188,6 +230,379 @@ export default function Library() {
     });
   };
 
+  // Mobile Android-like design
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+        {/* Android-style App Bar with Material Design */}
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md">
+          {isSearching ? (
+            <div className="flex items-center p-2">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setIsSearching(false);
+                  setSearchQuery("");
+                }}
+                className="p-2 rounded-full mr-2"
+              >
+                <ArrowLeft size={24} />
+              </motion.button>
+              <input
+                type="text"
+                placeholder="Search library..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-white/20 backdrop-blur-sm rounded-full py-2 px-4 focus:outline-none placeholder-white/60 text-white"
+                autoFocus
+              />
+              {searchQuery && (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSearchQuery("")}
+                  className="p-2 rounded-full"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </motion.button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-between p-3">
+              <div className="flex items-center">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setLocation("/")}
+                  className="mr-3"
+                >
+                  <ArrowLeft size={24} />
+                </motion.button>
+                <h1 className="text-xl font-medium">Library</h1>
+              </div>
+              <div className="flex items-center space-x-2">
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsSearching(true)}
+                  className="p-2 rounded-full"
+                >
+                  <Search size={22} />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 rounded-full"
+                >
+                  <Menu size={22} />
+                </motion.button>
+              </div>
+            </div>
+          )}
+          
+          {/* Material Design Tabs */}
+          <div className="flex">
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setActiveTab("manga")}
+              className={`flex-1 py-3 px-2 flex flex-col items-center ${activeTab === "manga" ? "border-b-2 border-white" : "opacity-70"}`}
+            >
+              <Book size={20} className="mb-1" />
+              <span className="text-xs font-medium">Manga</span>
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setActiveTab("books")}
+              className={`flex-1 py-3 px-2 flex flex-col items-center ${activeTab === "books" ? "border-b-2 border-white" : "opacity-70"}`}
+            >
+              <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 0M3 12l3 0M3 18l3 0" />
+              </svg>
+              <span className="text-xs font-medium">Books</span>
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setActiveTab("news")}
+              className={`flex-1 py-3 px-2 flex flex-col items-center ${activeTab === "news" ? "border-b-2 border-white" : "opacity-70"}`}
+            >
+              <Newspaper size={20} className="mb-1" />
+              <span className="text-xs font-medium">News</span>
+            </motion.button>
+          </div>
+        </div>
+        
+        {/* Content Area */}
+        <div className="flex-1 overflow-auto">
+          {activeTab === "manga" && (
+            <div className="p-3">
+              {mangaQuery.isLoading ? (
+                // Android-style skeleton loaders
+                <div className="space-y-4">
+                  {Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
+                      <Skeleton className="w-full h-44" />
+                      <div className="p-3 space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : mangaQuery.data?.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  <div className="bg-purple-100 dark:bg-purple-900/30 p-4 rounded-full mb-4">
+                    <Search className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No results found</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    We couldn't find any manga matching your search.
+                  </p>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSearchQuery("")}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-medium"
+                  >
+                    Clear search
+                  </motion.button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {mangaQuery.data?.map((manga) => (
+                    <motion.div
+                      key={manga.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm"
+                    >
+                      <div className="relative">
+                        <img 
+                          src={manga.cover} 
+                          alt={manga.title}
+                          className="w-full h-44 object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <h3 className="text-white font-bold">{manga.title}</h3>
+                          <div className="flex items-center text-white/80 text-xs">
+                            <span>{manga.author}</span>
+                            <span className="mx-1">•</span>
+                            <span>{manga.chapters} chapters</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 mb-3">
+                          {manga.description}
+                        </p>
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {manga.tags.map(tag => (
+                            <span 
+                              key={tag} 
+                              className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleReadMore(manga.id, "manga")}
+                          className="w-full py-2 bg-purple-600 text-white rounded-full text-sm font-medium flex items-center justify-center"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Read Now
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {activeTab === "books" && (
+            <div className="p-3">
+              {booksQuery.isLoading ? (
+                // Android-style skeleton loaders
+                <div className="space-y-4">
+                  {Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
+                      <Skeleton className="w-full h-44" />
+                      <div className="p-3 space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : booksQuery.data?.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full mb-4">
+                    <Search className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No results found</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    We couldn't find any books matching your search.
+                  </p>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSearchQuery("")}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium"
+                  >
+                    Clear search
+                  </motion.button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {booksQuery.data?.map((book) => (
+                    <motion.div
+                      key={book.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm"
+                    >
+                      <div className="relative">
+                        <img 
+                          src={book.cover} 
+                          alt={book.title}
+                          className="w-full h-44 object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <h3 className="text-white font-bold">{book.title}</h3>
+                          <div className="flex items-center text-white/80 text-xs">
+                            <span>{book.author}</span>
+                            <span className="mx-1">•</span>
+                            <span>{book.pages} pages</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 mb-3">
+                          {book.description}
+                        </p>
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {book.tags.map(tag => (
+                            <span 
+                              key={tag} 
+                              className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleReadMore(book.id, "book")}
+                          className="w-full py-2 bg-blue-600 text-white rounded-full text-sm font-medium flex items-center justify-center"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Read Now
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {activeTab === "news" && (
+            <div className="p-3">
+              {newsQuery.isLoading ? (
+                // Android-style skeleton loaders
+                <div className="space-y-4">
+                  {Array(3).fill(0).map((_, index) => (
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
+                      <Skeleton className="w-full h-36" />
+                      <div className="p-3 space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : newsQuery.data?.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  <div className="bg-green-100 dark:bg-green-900/30 p-4 rounded-full mb-4">
+                    <Search className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-2">No results found</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    We couldn't find any news matching your search.
+                  </p>
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSearchQuery("")}
+                    className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium"
+                  >
+                    Clear search
+                  </motion.button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {newsQuery.data?.map((news) => (
+                    <motion.div
+                      key={news.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm"
+                    >
+                      <div className="relative">
+                        <img 
+                          src={news.image} 
+                          alt={news.title}
+                          className="w-full h-36 object-cover"
+                        />
+                        <div className="absolute top-0 right-0 m-2 px-2 py-1 bg-black/50 text-white text-xs rounded-full">
+                          {news.source}
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <div className="flex justify-between items-center mb-1">
+                          <h3 className="text-base font-bold line-clamp-1">{news.title}</h3>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{news.date}</span>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 mb-3">
+                          {news.summary}
+                        </p>
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {news.tags.map(tag => (
+                            <span 
+                              key={tag} 
+                              className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleReadMore(news.id, "news article")}
+                          className="w-full py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-full text-sm font-medium flex items-center justify-center"
+                        >
+                          Read Full Article
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop UI remains the same
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-slate-900">
       <NotificationHeader />
@@ -373,7 +788,7 @@ export default function Library() {
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {book.tags.map(tag => (
-                              <Badge key={tag} variant="outline" className="bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800">
+                              <Badge key={tag} variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
                                 {tag}
                               </Badge>
                             ))}
@@ -382,7 +797,7 @@ export default function Library() {
                         <CardFooter>
                           <Button 
                             onClick={() => handleReadMore(book.id, "book")}
-                            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                            className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
                           >
                             Read Now
                           </Button>
@@ -396,24 +811,26 @@ export default function Library() {
             
             {/* News Tab Content */}
             <TabsContent value="news" className="focus:outline-none">
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {newsQuery.isLoading ? (
                   // Skeleton loaders while fetching
                   Array(3).fill(0).map((_, index) => (
-                    <Card key={index} className="overflow-hidden">
-                      <div className="md:flex">
-                        <Skeleton className="w-full md:w-64 h-48" />
-                        <div className="p-4 flex-1 space-y-3">
-                          <Skeleton className="h-6 w-3/4" />
-                          <Skeleton className="h-4 w-1/3" />
-                          <Skeleton className="h-16 w-full" />
-                          <div className="flex gap-2">
-                            <Skeleton className="h-5 w-16" />
-                            <Skeleton className="h-5 w-16" />
-                          </div>
-                          <Skeleton className="h-9 w-32" />
+                    <Card key={index} className="overflow-hidden h-[400px]">
+                      <CardHeader className="p-0 pb-3">
+                        <Skeleton className="w-full h-40" />
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-20 w-full" />
+                        <div className="flex gap-2">
+                          <Skeleton className="h-5 w-16" />
+                          <Skeleton className="h-5 w-16" />
                         </div>
-                      </div>
+                      </CardContent>
+                      <CardFooter>
+                        <Skeleton className="h-9 w-full" />
+                      </CardFooter>
                     </Card>
                   ))
                 ) : (
@@ -424,41 +841,45 @@ export default function Library() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <Card className="overflow-hidden border border-purple-100 dark:border-purple-900 transition-all hover:shadow-md dark:hover:shadow-purple-900/20">
-                        <div className="md:flex">
-                          <div className="md:w-64 h-48 overflow-hidden">
-                            <img 
-                              src={news.image} 
-                              alt={news.title}
-                              className="w-full h-full object-cover transition-transform hover:scale-105"
-                            />
-                          </div>
-                          <div className="p-6 flex-1">
-                            <div className="flex justify-between items-start mb-2">
-                              <h3 className="text-xl font-bold text-purple-800 dark:text-purple-300">{news.title}</h3>
-                              <span className="text-xs text-gray-500">{news.date}</span>
-                            </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                              {news.source} • by {news.author}
-                            </div>
-                            <p className="text-gray-700 dark:text-gray-300 my-3">
-                              {news.summary}
-                            </p>
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              {news.tags.map(tag => (
-                                <Badge key={tag} variant="outline" className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                            <Button 
-                              onClick={() => handleReadMore(news.id, "news article")}
-                              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
-                            >
-                              Read Full Article
-                            </Button>
+                      <Card className="overflow-hidden h-full border border-purple-100 dark:border-purple-900 transition-all hover:shadow-md dark:hover:shadow-purple-900/20">
+                        <div className="relative h-40 overflow-hidden">
+                          <img 
+                            src={news.image} 
+                            alt={news.title}
+                            className="w-full h-full object-cover transition-transform hover:scale-105"
+                          />
+                          <div className="absolute top-0 right-0 m-3">
+                            <Badge className="bg-black/70 hover:bg-black/80 text-white border-transparent">
+                              {news.source}
+                            </Badge>
                           </div>
                         </div>
+                        <CardHeader>
+                          <CardTitle className="text-xl text-purple-800 dark:text-purple-300">{news.title}</CardTitle>
+                          <CardDescription>
+                            {news.author} • {new Date(news.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm line-clamp-3 mb-3">
+                            {news.summary}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {news.tags.map(tag => (
+                              <Badge key={tag} variant="outline" className="bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </CardContent>
+                        <CardFooter>
+                          <Button 
+                            onClick={() => handleReadMore(news.id, "news article")}
+                            className="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white"
+                          >
+                            Read Full Article
+                          </Button>
+                        </CardFooter>
                       </Card>
                     </motion.div>
                   ))
