@@ -22,6 +22,7 @@ import { FeedbackSection } from "@/components/feedback-section";
 import { NotificationSocketProvider } from "@/components/notification-socket-provider";
 import { ProtectedRoute } from "./lib/protected-route";
 import { ThemeProvider } from "./lib/theme-context";
+import { UICustomizationProvider } from "./lib/ui-customization-context";
 
 function Router() {
   return (
@@ -101,8 +102,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <NotificationSocketProvider>
-          <Router />
-          <Toaster />
+          <UICustomizationProvider>
+            <Router />
+            <Toaster />
+          </UICustomizationProvider>
         </NotificationSocketProvider>
       </ThemeProvider>
     </QueryClientProvider>
