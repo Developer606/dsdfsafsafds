@@ -300,15 +300,21 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
-  // Get current PayPal mode
+  // Get current PayPal mode and validate credentials
   app.get("/api/admin/paypal-mode", isAdmin, async (req, res) => {
     try {
-      const { getPayPalMode } = await import("./config/index");
+      const { getPayPalMode, validateProductionCredentials } = await import("./config/index");
+      
+      // Get the current mode
       const mode = await getPayPalMode();
+      
+      // Check if production credentials are valid - use the utility function
+      const hasValidProductionCredentials = await validateProductionCredentials();
       
       res.json({ 
         mode,
-        isProduction: mode === 'production'
+        isProduction: mode === 'production',
+        hasValidProductionCredentials: hasValidProductionCredentials
       });
     } catch (error) {
       console.error("Error getting PayPal mode:", error);

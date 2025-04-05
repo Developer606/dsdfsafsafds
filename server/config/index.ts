@@ -14,6 +14,31 @@ interface PayPalConfig {
 // Settings management
 let forceProductionMode = false;
 
+// Helper function to validate if credentials look like placeholders or invalid data
+const validateCredentials = (clientId: string, clientSecret: string): boolean => {
+  return !(!clientId || 
+          clientId.length < 10 || 
+          clientId.includes("sddfasf") || 
+          clientId.includes("placeholder") ||
+          !clientSecret ||
+          clientSecret.length < 10 ||
+          clientSecret.includes("sdrwfasf") ||
+          clientSecret.includes("placeholder"));
+};
+
+// Check the validity of production credentials
+export const validateProductionCredentials = async (): Promise<boolean> => {
+  try {
+    const clientId = await getApiKey("PAYPAL_PRODUCTION_CLIENT_ID") || "";
+    const clientSecret = await getApiKey("PAYPAL_PRODUCTION_CLIENT_SECRET") || "";
+    
+    return validateCredentials(clientId, clientSecret);
+  } catch (error) {
+    console.error("Error validating production credentials:", error);
+    return false;
+  }
+};
+
 // Function to toggle between sandbox and production mode
 export const togglePayPalMode = async (useProduction: boolean): Promise<boolean> => {
   try {
@@ -58,7 +83,9 @@ export const getPayPalConfig = async () => {
       const clientSecret = await getApiKey("PAYPAL_PRODUCTION_CLIENT_SECRET") || "";
       
       // Validate production credentials - if they look like placeholder data, fall back to sandbox
-      if (!clientId || clientId.length < 10 || clientId.includes("sddfasf") || clientId.includes("placeholder")) {
+      const hasValidProductionCredentials = validateCredentials(clientId, clientSecret);
+
+      if (!hasValidProductionCredentials) {
         console.warn("Production PayPal credentials appear to be invalid, falling back to Sandbox mode");
         
         // Fall back to sandbox credentials
@@ -66,28 +93,35 @@ export const getPayPalConfig = async () => {
         const sandboxClientSecret = await getApiKey("PAYPAL_SANDBOX_CLIENT_SECRET") || "";
         
         // Temporarily set mode back to sandbox to avoid payment processing issues
-        forceProductionMode = false;
+        // Don't update the stored mode, just use sandbox credentials
         
         return {
           clientId: sandboxClientId,
           clientSecret: sandboxClientSecret,
-          usingFallback: true
+          usingFallback: true,
+          hasValidProductionCredentials: false
         };
       }
       
       return {
         clientId,
         clientSecret,
-        usingFallback: false
+        usingFallback: false,
+        hasValidProductionCredentials: true
       };
     } else {
       const clientId = await getApiKey("PAYPAL_SANDBOX_CLIENT_ID") || "";
       const clientSecret = await getApiKey("PAYPAL_SANDBOX_CLIENT_SECRET") || "";
       
+      // Check if production credentials are valid even when in sandbox mode
+      // This is useful for the UI to show warnings
+      const hasValidProductionCredentials = await validateProductionCredentials();
+      
       return {
         clientId,
         clientSecret,
-        usingFallback: false
+        usingFallback: false,
+        hasValidProductionCredentials: hasValidProductionCredentials
       };
     }
   } catch (error) {
@@ -97,13 +131,15 @@ export const getPayPalConfig = async () => {
       return {
         clientId: process.env.PAYPAL_CLIENT_ID || "",
         clientSecret: process.env.PAYPAL_SECRET || "",
-        usingFallback: true
+        usingFallback: true,
+        hasValidProductionCredentials: false
       };
     } else {
       return {
         clientId: process.env.PAYPAL_CLIENT_ID || "",
         clientSecret: process.env.PAYPAL_SECRET || "",
-        usingFallback: true
+        usingFallback: true,
+        hasValidProductionCredentials: false
       };
     }
   }

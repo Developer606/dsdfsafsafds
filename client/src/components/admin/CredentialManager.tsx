@@ -88,6 +88,11 @@ const PayPalModeSwitch = ({ onComplete }: { onComplete: () => void }) => {
     onSuccess: (data) => {
       console.log("PayPal mode data received:", data);
       setUseProduction(data.isProduction);
+      
+      // Get credentials validity from API response
+      if (data.hasValidProductionCredentials !== undefined) {
+        setHasValidProductionCredentials(data.hasValidProductionCredentials);
+      }
     },
     onError: (error) => {
       console.error("Failed to fetch PayPal mode:", error);
@@ -95,32 +100,14 @@ const PayPalModeSwitch = ({ onComplete }: { onComplete: () => void }) => {
     retry: 1,
   });
   
-  // Get current PayPal credentials state
+  // Getting hasValidProductionCredentials from the API instead of trying to validate it here
+  const [hasValidProductionCredentials, setHasValidProductionCredentials] = useState<boolean>(false);
+  
+  // Get current PayPal credentials state for other UI features
   const { data: credentials = [], isLoading: isCredentialsLoading } = useQuery<Credential[]>({
     queryKey: ["/api/admin/credentials"],
     staleTime: 60000, // 1 minute
   });
-
-  // Check if we have valid production credentials
-  const hasValidProductionCredentials = React.useMemo(() => {
-    const productionClientId = credentials.find(c => c.service === "PAYPAL_PRODUCTION_CLIENT_ID");
-    const productionClientSecret = credentials.find(c => c.service === "PAYPAL_PRODUCTION_CLIENT_SECRET");
-    
-    // Check if credentials exist and don't look like placeholders
-    const isClientIdValid = productionClientId && 
-      productionClientId.key && 
-      productionClientId.key.length > 10 && 
-      !productionClientId.key.includes("sddfasf") &&
-      !productionClientId.key.includes("placeholder");
-      
-    const isClientSecretValid = productionClientSecret && 
-      productionClientSecret.key && 
-      productionClientSecret.key.length > 10 && 
-      !productionClientSecret.key.includes("sdrwfasf") &&
-      !productionClientSecret.key.includes("placeholder");
-    
-    return isClientIdValid && isClientSecretValid;
-  }, [credentials]);
 
   // Toggle the PayPal mode
   const togglePayPalMode = async () => {
@@ -258,6 +245,7 @@ interface Credential {
 interface PayPalMode {
   mode: 'sandbox' | 'production';
   isProduction: boolean;
+  hasValidProductionCredentials?: boolean;
 }
 
 const CredentialManager = () => {
