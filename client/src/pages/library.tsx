@@ -233,9 +233,9 @@ export default function Library() {
   // Mobile Android-like design
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-        {/* Android-style App Bar with Material Design */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col h-screen">
+        {/* Fixed Android-style App Bar with Material Design */}
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md flex-shrink-0">
           {isSearching ? (
             <div className="flex items-center p-2">
               <motion.button
@@ -244,7 +244,7 @@ export default function Library() {
                   setIsSearching(false);
                   setSearchQuery("");
                 }}
-                className="p-2 rounded-full mr-2"
+                className="p-2 rounded-full mr-2 material-ripple"
               >
                 <ArrowLeft size={24} />
               </motion.button>
@@ -258,9 +258,9 @@ export default function Library() {
               />
               {searchQuery && (
                 <motion.button
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => setSearchQuery("")}
-                  className="p-2 rounded-full"
+                  className="p-2 rounded-full material-ripple"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -273,9 +273,9 @@ export default function Library() {
             <div className="flex items-center justify-between p-3">
               <div className="flex items-center">
                 <motion.button
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => setLocation("/")}
-                  className="mr-3"
+                  className="mr-3 material-ripple"
                 >
                   <ArrowLeft size={24} />
                 </motion.button>
@@ -283,15 +283,15 @@ export default function Library() {
               </div>
               <div className="flex items-center space-x-2">
                 <motion.button
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => setIsSearching(true)}
-                  className="p-2 rounded-full"
+                  className="p-2 rounded-full material-ripple"
                 >
                   <Search size={22} />
                 </motion.button>
                 <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2 rounded-full"
+                  whileTap={{ scale: 0.97 }}
+                  className="p-2 rounded-full material-ripple"
                 >
                   <Menu size={22} />
                 </motion.button>
@@ -299,12 +299,12 @@ export default function Library() {
             </div>
           )}
           
-          {/* Material Design Tabs */}
+          {/* Material Design Tabs - Fixed with Header */}
           <div className="flex">
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => setActiveTab("manga")}
-              className={`flex-1 py-3 px-2 flex flex-col items-center ${activeTab === "manga" ? "border-b-2 border-white" : "opacity-70"}`}
+              className={`flex-1 py-3 px-2 flex flex-col items-center material-ripple ${activeTab === "manga" ? "border-b-2 border-white" : "opacity-70"}`}
             >
               <Book size={20} className="mb-1" />
               <span className="text-xs font-medium">Manga</span>
@@ -312,7 +312,7 @@ export default function Library() {
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => setActiveTab("books")}
-              className={`flex-1 py-3 px-2 flex flex-col items-center ${activeTab === "books" ? "border-b-2 border-white" : "opacity-70"}`}
+              className={`flex-1 py-3 px-2 flex flex-col items-center material-ripple ${activeTab === "books" ? "border-b-2 border-white" : "opacity-70"}`}
             >
               <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -323,7 +323,7 @@ export default function Library() {
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={() => setActiveTab("news")}
-              className={`flex-1 py-3 px-2 flex flex-col items-center ${activeTab === "news" ? "border-b-2 border-white" : "opacity-70"}`}
+              className={`flex-1 py-3 px-2 flex flex-col items-center material-ripple ${activeTab === "news" ? "border-b-2 border-white" : "opacity-70"}`}
             >
               <Newspaper size={20} className="mb-1" />
               <span className="text-xs font-medium">News</span>
@@ -331,10 +331,10 @@ export default function Library() {
           </div>
         </div>
         
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto">
+        {/* Content Area - Android-style scrolling with fixed header above */}
+        <div className="flex-1 overflow-auto overscroll-contain android-scrollbar">
           {activeTab === "manga" && (
-            <div className="p-3">
+            <div className="p-3 pb-16">
               {mangaQuery.isLoading ? (
                 // Android-style skeleton loaders
                 <div className="space-y-4">
@@ -359,9 +359,9 @@ export default function Library() {
                     We couldn't find any manga matching your search.
                   </p>
                   <motion.button
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => setSearchQuery("")}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-medium"
+                    className="px-4 py-2 bg-purple-600 text-white rounded-full text-sm font-medium material-ripple"
                   >
                     Clear search
                   </motion.button>
@@ -406,9 +406,9 @@ export default function Library() {
                           ))}
                         </div>
                         <motion.button
-                          whileTap={{ scale: 0.95 }}
+                          whileTap={{ scale: 0.97 }}
                           onClick={() => handleReadMore(manga.id, "manga")}
-                          className="w-full py-2 bg-purple-600 text-white rounded-full text-sm font-medium flex items-center justify-center"
+                          className="w-full py-2 bg-purple-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
                         >
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -424,7 +424,7 @@ export default function Library() {
           )}
           
           {activeTab === "books" && (
-            <div className="p-3">
+            <div className="p-3 pb-16">
               {booksQuery.isLoading ? (
                 // Android-style skeleton loaders
                 <div className="space-y-4">
@@ -449,9 +449,9 @@ export default function Library() {
                     We couldn't find any books matching your search.
                   </p>
                   <motion.button
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => setSearchQuery("")}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium material-ripple"
                   >
                     Clear search
                   </motion.button>
@@ -496,9 +496,9 @@ export default function Library() {
                           ))}
                         </div>
                         <motion.button
-                          whileTap={{ scale: 0.95 }}
+                          whileTap={{ scale: 0.97 }}
                           onClick={() => handleReadMore(book.id, "book")}
-                          className="w-full py-2 bg-blue-600 text-white rounded-full text-sm font-medium flex items-center justify-center"
+                          className="w-full py-2 bg-blue-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
                         >
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -514,7 +514,7 @@ export default function Library() {
           )}
           
           {activeTab === "news" && (
-            <div className="p-3">
+            <div className="p-3 pb-16">
               {newsQuery.isLoading ? (
                 // Android-style skeleton loaders
                 <div className="space-y-4">
@@ -539,9 +539,9 @@ export default function Library() {
                     We couldn't find any news matching your search.
                   </p>
                   <motion.button
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => setSearchQuery("")}
-                    className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium"
+                    className="px-4 py-2 bg-green-600 text-white rounded-full text-sm font-medium material-ripple"
                   >
                     Clear search
                   </motion.button>
@@ -584,9 +584,9 @@ export default function Library() {
                           ))}
                         </div>
                         <motion.button
-                          whileTap={{ scale: 0.95 }}
+                          whileTap={{ scale: 0.97 }}
                           onClick={() => handleReadMore(news.id, "news article")}
-                          className="w-full py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-full text-sm font-medium flex items-center justify-center"
+                          className="w-full py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
                         >
                           Read Full Article
                         </motion.button>
