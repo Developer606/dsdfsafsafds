@@ -9,8 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Bookmark, Home, Book, Newspaper, Search, Menu } from "lucide-react";
-import { BookmarkButton } from "@/components/bookmark-button";
+import { ArrowLeft, Home, Book, Newspaper, Search, Menu } from "lucide-react";
 
 // Define interfaces for the library content
 interface MangaItem {
@@ -235,40 +234,40 @@ export default function Library() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col h-screen">
-        {/* Fixed Android Material Design 3 App Bar with dynamic elevation - Smaller height */}
+        {/* Fixed Android Material Design 3 App Bar with dynamic elevation */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white flex-shrink-0 z-10 md3-elevation-2">
-          {/* Status bar simulation - Reduced height */}
-          <div className="h-4 bg-black/10 w-full"></div>
+          {/* Status bar simulation */}
+          <div className="h-6 bg-black/10 w-full"></div>
           
           {isSearching ? (
-            <div className="flex items-center py-1.5 px-2">
+            <div className="flex items-center p-3">
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => {
                   setIsSearching(false);
                   setSearchQuery("");
                 }}
-                className="p-1.5 rounded-full mr-1 material-ripple flex items-center justify-center"
+                className="p-2 rounded-full mr-2 material-ripple flex items-center justify-center"
               >
-                <ArrowLeft size={20} />
+                <ArrowLeft size={24} />
               </motion.button>
               <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-full flex items-center overflow-hidden">
-                <Search size={16} className="ml-2 text-white/70" />
+                <Search size={18} className="ml-3 text-white/70" />
                 <input
                   type="text"
                   placeholder="Search library..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 bg-transparent py-1.5 px-2 focus:outline-none placeholder-white/60 text-white text-sm"
+                  className="flex-1 bg-transparent py-2 px-3 focus:outline-none placeholder-white/60 text-white text-base"
                   autoFocus
                 />
                 {searchQuery && (
                   <motion.button
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setSearchQuery("")}
-                    className="p-1.5 rounded-full material-ripple flex items-center justify-center"
+                    className="p-2 rounded-full material-ripple flex items-center justify-center"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18"></line>
                       <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
@@ -277,30 +276,30 @@ export default function Library() {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between py-1.5 px-2">
+            <div className="flex items-center justify-between p-3">
               <div className="flex items-center">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setLocation("/")}
-                  className="p-1.5 -ml-1 rounded-full material-ripple flex items-center justify-center"
+                  className="p-2 -ml-2 rounded-full material-ripple flex items-center justify-center"
                 >
-                  <ArrowLeft size={20} />
+                  <ArrowLeft size={24} />
                 </motion.button>
-                <h1 className="text-base font-medium tracking-tight ml-1">Library</h1>
+                <h1 className="text-xl font-medium tracking-tight ml-1">Library</h1>
               </div>
               <div className="flex items-center">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => setIsSearching(true)}
-                  className="p-1.5 rounded-full material-ripple flex items-center justify-center"
+                  className="p-2 rounded-full material-ripple flex items-center justify-center"
                 >
-                  <Search size={18} />
+                  <Search size={22} />
                 </motion.button>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  className="p-1.5 rounded-full material-ripple flex items-center justify-center ml-1"
+                  className="p-2 rounded-full material-ripple flex items-center justify-center ml-1"
                 >
-                  <Menu size={18} />
+                  <Menu size={22} />
                 </motion.button>
               </div>
             </div>
@@ -785,22 +784,13 @@ export default function Library() {
                             ))}
                           </div>
                         </CardContent>
-                        <CardFooter className="flex justify-between gap-2">
+                        <CardFooter>
                           <Button 
                             onClick={() => handleReadMore(manga.id, "manga")}
-                            className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                           >
                             Read Now
                           </Button>
-                          <BookmarkButton
-                            contentType="manga"
-                            contentId={manga.id}
-                            title={manga.title}
-                            description={manga.description}
-                            thumbnailUrl={manga.cover}
-                            variant="outline"
-                            size="md"
-                          />
                         </CardFooter>
                       </Card>
                     </motion.div>
@@ -868,22 +858,13 @@ export default function Library() {
                             ))}
                           </div>
                         </CardContent>
-                        <CardFooter className="flex justify-between gap-2">
+                        <CardFooter>
                           <Button 
                             onClick={() => handleReadMore(book.id, "book")}
-                            className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
+                            className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
                           >
                             Read Now
                           </Button>
-                          <BookmarkButton
-                            contentType="book"
-                            contentId={book.id}
-                            title={book.title}
-                            description={book.description}
-                            thumbnailUrl={book.cover}
-                            variant="outline"
-                            size="md"
-                          />
                         </CardFooter>
                       </Card>
                     </motion.div>
@@ -955,22 +936,13 @@ export default function Library() {
                             ))}
                           </div>
                         </CardContent>
-                        <CardFooter className="flex justify-between gap-2">
+                        <CardFooter>
                           <Button 
                             onClick={() => handleReadMore(news.id, "news article")}
-                            className="flex-1 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white"
+                            className="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white"
                           >
                             Read Full Article
                           </Button>
-                          <BookmarkButton
-                            contentType="news"
-                            contentId={news.id}
-                            title={news.title}
-                            description={news.summary}
-                            thumbnailUrl={news.image}
-                            variant="outline"
-                            size="md"
-                          />
                         </CardFooter>
                       </Card>
                     </motion.div>
