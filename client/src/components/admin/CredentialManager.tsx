@@ -95,8 +95,46 @@ const PayPalModeSwitch = ({ onComplete }: { onComplete: () => void }) => {
     retry: 1,
   });
   
+  // Get current PayPal credentials state
+  const { data: credentials = [], isLoading: isCredentialsLoading } = useQuery<Credential[]>({
+    queryKey: ["/api/admin/credentials"],
+    staleTime: 60000, // 1 minute
+  });
+
+  // Check if we have valid production credentials
+  const hasValidProductionCredentials = React.useMemo(() => {
+    const productionClientId = credentials.find(c => c.service === "PAYPAL_PRODUCTION_CLIENT_ID");
+    const productionClientSecret = credentials.find(c => c.service === "PAYPAL_PRODUCTION_CLIENT_SECRET");
+    
+    // Check if credentials exist and don't look like placeholders
+    const isClientIdValid = productionClientId && 
+      productionClientId.key && 
+      productionClientId.key.length > 10 && 
+      !productionClientId.key.includes("sddfasf") &&
+      !productionClientId.key.includes("placeholder");
+      
+    const isClientSecretValid = productionClientSecret && 
+      productionClientSecret.key && 
+      productionClientSecret.key.length > 10 && 
+      !productionClientSecret.key.includes("sdrwfasf") &&
+      !productionClientSecret.key.includes("placeholder");
+    
+    return isClientIdValid && isClientSecretValid;
+  }, [credentials]);
+
   // Toggle the PayPal mode
   const togglePayPalMode = async () => {
+    // If trying to switch to production but credentials look invalid, show warning
+    if (!useProduction && !hasValidProductionCredentials) {
+      const confirmed = window.confirm(
+        "Warning: Your PayPal production credentials appear to be placeholder values or invalid. " +
+        "Switching to production mode may cause payment processing to fall back to sandbox mode. " +
+        "Are you sure you want to continue?"
+      );
+      
+      if (!confirmed) return;
+    }
+    
     setIsLoading(true);
     console.log("Attempting to toggle PayPal mode to:", !useProduction ? "PRODUCTION" : "SANDBOX");
     
@@ -157,6 +195,16 @@ const PayPalModeSwitch = ({ onComplete }: { onComplete: () => void }) => {
             : " Test credentials are being used and no real charges will occur."}
         </AlertDescription>
       </Alert>
+      
+      {useProduction && !hasValidProductionCredentials && (
+        <Alert variant="destructive" className="mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Warning: Your PayPal production credentials appear to be invalid or using placeholder values.
+            Payment processing may fall back to sandbox mode or fail completely. Please update your production credentials.
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="flex items-center justify-between mt-6">
         <div className="space-y-1">

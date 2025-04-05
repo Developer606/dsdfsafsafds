@@ -48,16 +48,37 @@ export const getPayPalMode = async (): Promise<string> => {
 export const getPayPalConfig = async () => {
   try {
     // First check if we have a stored mode preference
-    await getPayPalMode();
+    const mode = await getPayPalMode();
+    console.log(`Getting PayPal config for mode: ${mode}`);
     
     // Use the current mode setting to determine which credentials to return
     if (forceProductionMode) {
+      // Try to get production credentials
       const clientId = await getApiKey("PAYPAL_PRODUCTION_CLIENT_ID") || "";
       const clientSecret = await getApiKey("PAYPAL_PRODUCTION_CLIENT_SECRET") || "";
       
+      // Validate production credentials - if they look like placeholder data, fall back to sandbox
+      if (!clientId || clientId.length < 10 || clientId.includes("sddfasf") || clientId.includes("placeholder")) {
+        console.warn("Production PayPal credentials appear to be invalid, falling back to Sandbox mode");
+        
+        // Fall back to sandbox credentials
+        const sandboxClientId = await getApiKey("PAYPAL_SANDBOX_CLIENT_ID") || "";
+        const sandboxClientSecret = await getApiKey("PAYPAL_SANDBOX_CLIENT_SECRET") || "";
+        
+        // Temporarily set mode back to sandbox to avoid payment processing issues
+        forceProductionMode = false;
+        
+        return {
+          clientId: sandboxClientId,
+          clientSecret: sandboxClientSecret,
+          usingFallback: true
+        };
+      }
+      
       return {
         clientId,
-        clientSecret
+        clientSecret,
+        usingFallback: false
       };
     } else {
       const clientId = await getApiKey("PAYPAL_SANDBOX_CLIENT_ID") || "";
@@ -65,7 +86,8 @@ export const getPayPalConfig = async () => {
       
       return {
         clientId,
-        clientSecret
+        clientSecret,
+        usingFallback: false
       };
     }
   } catch (error) {
@@ -74,12 +96,14 @@ export const getPayPalConfig = async () => {
     if (forceProductionMode) {
       return {
         clientId: process.env.PAYPAL_CLIENT_ID || "",
-        clientSecret: process.env.PAYPAL_SECRET || ""
+        clientSecret: process.env.PAYPAL_SECRET || "",
+        usingFallback: true
       };
     } else {
       return {
         clientId: process.env.PAYPAL_CLIENT_ID || "",
-        clientSecret: process.env.PAYPAL_SECRET || ""
+        clientSecret: process.env.PAYPAL_SECRET || "",
+        usingFallback: true
       };
     }
   }

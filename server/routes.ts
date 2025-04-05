@@ -245,7 +245,16 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       if (!config.clientId) {
         throw new Error("PayPal configuration not found");
       }
-      res.json({ clientId: config.clientId });
+      
+      // Get the current active mode for client awareness
+      const { getPayPalMode } = await import("./config/index");
+      const mode = await getPayPalMode();
+      
+      res.json({ 
+        clientId: config.clientId,
+        mode: mode,
+        usingFallback: config.usingFallback || false
+      });
     } catch (error) {
       console.error("Error serving PayPal config:", error);
       res.status(500).json({ error: "Failed to load PayPal configuration" });
