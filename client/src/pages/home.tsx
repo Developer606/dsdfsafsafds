@@ -1605,122 +1605,23 @@ export default function Home() {
                     world to life
                   </p>
 
-                  {/* Quick Shortcuts Panel - Anime-Inspired Design */}
-                  <div className="grid grid-cols-2 gap-6 mb-8">
+                  {/* Quick Shortcuts Panel */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
                     <motion.div
                       whileHover={{ scale: 1.02 }}
-                      className="bg-gradient-to-br from-slate-900/95 to-indigo-900/90 p-5 rounded-xl shadow-lg border border-purple-500/20 overflow-hidden relative group"
+                      className="bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 p-5 rounded-xl shadow-md border border-purple-200 dark:border-purple-800"
                     >
-                      {/* Decorative anime-style elements */}
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500"></div>
-                      <div className="absolute -top-24 -right-24 w-40 h-40 bg-purple-500/10 rounded-full blur-xl"></div>
-                      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-pink-500/10 rounded-full blur-xl"></div>
-                      
-                      <h3 className="text-xl font-bold mb-4 text-white flex items-center">
-                        <span className="p-1.5 mr-2 rounded-md bg-purple-500/20 text-purple-300">
-                          <svg
-                            className="w-5 h-5"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                          </svg>
-                        </span>
+                      <h3 className="text-lg font-bold mb-2 text-purple-700 dark:text-purple-300">
                         Quick Shortcuts
                       </h3>
-                      
                       <div className="grid grid-cols-2 gap-3">
                         <Link href="/profile">
                           <motion.div
-                            whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="flex flex-col items-center justify-center py-3 px-2 bg-gradient-to-br from-purple-900/50 to-indigo-900/50 rounded-xl border border-purple-500/30 hover:border-purple-400/50 shadow-md hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer"
+                            className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
                           >
-                            <div className="p-2 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 mb-2">
-                              <svg
-                                className="w-5 h-5 text-purple-300"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M18 20a6 6 0 0 0-12 0"></path>
-                                <circle cx="12" cy="10" r="4"></circle>
-                                <circle cx="12" cy="12" r="10"></circle>
-                              </svg>
-                            </div>
-                            <span className="text-xs font-medium text-white">Profile</span>
-                          </motion.div>
-                        </Link>
-                        
-                        <Link href="/conversations">
-                          <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="flex flex-col items-center justify-center py-3 px-2 bg-gradient-to-br from-purple-900/50 to-indigo-900/50 rounded-xl border border-purple-500/30 hover:border-purple-400/50 shadow-md hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer"
-                          >
-                            <div className="p-2 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 mb-2">
-                              <svg
-                                className="w-5 h-5 text-purple-300"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                              </svg>
-                            </div>
-                            <span className="text-xs font-medium text-white">Messages</span>
-                          </motion.div>
-                        </Link>
-                        
-                        <Link href="/library">
-                          <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="flex flex-col items-center justify-center py-3 px-2 bg-gradient-to-br from-purple-900/50 to-indigo-900/50 rounded-xl border border-purple-500/30 hover:border-purple-400/50 shadow-md hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer"
-                          >
-                            <div className="p-2 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 mb-2">
-                              <svg
-                                className="w-5 h-5 text-purple-300"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                              </svg>
-                            </div>
-                            <span className="text-xs font-medium text-white">Library</span>
-                          </motion.div>
-                        </Link>
-                        
-                        <motion.div
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => {
-                            setShowSettingsDialog(true);
-                          }}
-                          className="flex flex-col items-center justify-center py-3 px-2 bg-gradient-to-br from-purple-900/50 to-indigo-900/50 rounded-xl border border-purple-500/30 hover:border-purple-400/50 shadow-md hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer"
-                        >
-                          <div className="p-2 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 mb-2">
                             <svg
-                              className="w-5 h-5 text-purple-300"
+                              className="w-4 h-4 mr-2 text-purple-500"
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
                               fill="none"
@@ -1729,11 +1630,75 @@ export default function Home() {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                             >
-                              <circle cx="12" cy="12" r="3"></circle>
-                              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                              <path d="M18 20a6 6 0 0 0-12 0"></path>
+                              <circle cx="12" cy="10" r="4"></circle>
+                              <circle cx="12" cy="12" r="10"></circle>
                             </svg>
-                          </div>
-                          <span className="text-xs font-medium text-white">Settings</span>
+                            My Profile
+                          </motion.div>
+                        </Link>
+                        <Link href="/conversations">
+                          <motion.div
+                            whileTap={{ scale: 0.95 }}
+                            className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
+                          >
+                            <svg
+                              className="w-4 h-4 mr-2 text-purple-500"
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            Messages
+                          </motion.div>
+                        </Link>
+                        <Link href="/library">
+                          <motion.div
+                            whileTap={{ scale: 0.95 }}
+                            className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
+                          >
+                            <svg
+                              className="w-4 h-4 mr-2 text-purple-500"
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                              <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Library
+                          </motion.div>
+                        </Link>
+                        <motion.div
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            setShowSettingsDialog(true);
+                          }}
+                          className="flex items-center text-sm bg-white/70 dark:bg-slate-800/70 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors shadow-sm cursor-pointer"
+                        >
+                          <svg
+                            className="w-4 h-4 mr-2 text-purple-500"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                          </svg>
+                          Settings
                         </motion.div>
                       </div>
                     </motion.div>
