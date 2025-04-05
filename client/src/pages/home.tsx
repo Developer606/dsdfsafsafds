@@ -1421,7 +1421,7 @@ export default function Home() {
             variants={container}
             initial="hidden"
             animate="show"
-            className="w-72 overflow-y-auto bg-gradient-to-br from-slate-900/95 to-slate-800/95 dark:from-slate-900/95 dark:to-slate-800/95 backdrop-blur-sm shadow-xl"
+            className="w-72 overflow-y-auto bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm shadow-xl"
           >
             {/* Premium header bar with anime-inspired design */}
             <div className="bg-gradient-to-r from-purple-600 to-pink-500 h-2.5"></div>
@@ -1435,11 +1435,10 @@ export default function Home() {
                     variant="ghost"
                     size="icon"
                     onClick={toggleTheme}
-                    className="rounded-full h-8 w-8 bg-white/10 hover:bg-white/15 text-white/90"
+                    className="rounded-full h-8 w-8 bg-white/10 hover:bg-white/15 text-white"
                   >
-                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all text-yellow-400 dark:-rotate-90 dark:scale-0" />
-                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all text-blue-300 dark:rotate-0 dark:scale-100" />
-                    <span className="sr-only">Toggle theme</span>
+                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                   </Button>
                   
                   {/* Keep dropdown but hidden for functionality */}
