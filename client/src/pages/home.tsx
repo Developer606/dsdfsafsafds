@@ -11,8 +11,6 @@ import { NotificationHeader } from "@/components/notification-header";
 import { BackgroundSlideshow } from "@/components/background-slideshow";
 import { FeaturedSection } from "@/components/advertisement/featured-section";
 import { useNotificationSocket } from "@/components/notification-socket-provider";
-import { CustomizationToolbar } from "@/components/customization/customization-toolbar";
-import { CustomizableComponent } from "@/components/customization/customizable-component";
 import {
   Dialog,
   DialogContent,
@@ -346,9 +344,6 @@ export default function Home() {
       )}
 
       {!isMobile && <NotificationHeader />}
-      
-      {/* UI Customization Toolbar */}
-      <CustomizationToolbar />
 
       {isMobile ? (
         // Combined UI design from both references
@@ -380,23 +375,10 @@ export default function Home() {
               </motion.div>
 
               <div className="flex items-center">
-                <CustomizableComponent
-                  id="app_title_mobile"
-                  type="text"
-                  defaultContent={
-                    <h1 className="text-lg font-semibold text-white">
-                      <span className="font-bold">Anime</span>
-                      <span>Chat</span>
-                    </h1>
-                  }
-                  initialStyle={{
-                    fontSize: 18,
-                    textColor: '#ffffff',
-                    fontWeight: 600,
-                    animation: 'pulse'
-                  }}
-                  actionKeys={['click']}
-                />
+                <h1 className="text-lg font-semibold text-white">
+                  <span className="font-bold">Anime</span>
+                  <span>Chat</span>
+                </h1>
               </div>
 
               <div className="flex items-center space-x-1">
@@ -770,21 +752,7 @@ export default function Home() {
 
                 {/* Featured Section for Mobile UI */}
                 <div className="px-4 pt-5">
-                  <CustomizableComponent
-                    id="featured_section_mobile"
-                    type="container"
-                    initialStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      borderRadius: 12,
-                      padding: 16,
-                      shadow: 'lg'
-                    }}
-                    className="mb-6"
-                    isResizable={true}
-                    actionKeys={['click']}
-                  >
-                    <FeaturedSection className="rounded-xl overflow-hidden" />
-                  </CustomizableComponent>
+                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
                 </div>
 
                 {/* Top Rated section - Material Design Carousel */}
@@ -1760,21 +1728,7 @@ export default function Home() {
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                 >
-                  <CustomizableComponent
-                    id="featured_section_desktop"
-                    type="container"
-                    initialStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                      borderRadius: 12,
-                      padding: 16,
-                      shadow: 'lg'
-                    }}
-                    className="mb-6"
-                    isResizable={true}
-                    actionKeys={['click']}
-                  >
-                    <FeaturedSection className="rounded-xl overflow-hidden" />
-                  </CustomizableComponent>
+                  <FeaturedSection className="mb-6 rounded-xl overflow-hidden" />
 
                   {/* Trending Characters Panel */}
                   <motion.div
