@@ -1421,7 +1421,7 @@ export default function Home() {
             variants={container}
             initial="hidden"
             animate="show"
-            className="w-72 overflow-y-auto bg-gradient-to-br from-white/95 to-slate-100/95 dark:from-slate-900/95 dark:to-slate-800/95 backdrop-blur-sm shadow-xl"
+            className="w-72 overflow-y-auto bg-gradient-to-br from-white/70 to-slate-100/70 dark:from-slate-900/70 dark:to-slate-800/70 backdrop-blur-md shadow-xl"
           >
             {/* Premium header bar with anime-inspired design */}
             <div className="bg-gradient-to-r from-purple-600 to-pink-500 h-2.5"></div>
@@ -1543,7 +1543,7 @@ export default function Home() {
                   >
                     <Link href={`/chat/${character.id}`}>
                       <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-100/95 to-white/95 dark:from-slate-800/95 dark:to-slate-900/95 shadow-md hover:shadow-lg border border-purple-200 dark:border-indigo-500/20 hover:border-purple-300 dark:hover:border-indigo-500/40 p-3">
+                        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-100/70 to-white/70 dark:from-slate-800/70 dark:to-slate-900/70 shadow-md hover:shadow-lg border border-purple-200 dark:border-indigo-500/20 hover:border-purple-300 dark:hover:border-indigo-500/40 p-3 backdrop-blur-sm">
                           <div className="absolute inset-0 bg-gradient-to-br from-purple-200/30 to-indigo-200/20 dark:from-purple-500/10 dark:to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           <div className="flex items-center gap-3">
                             <div className="relative">
