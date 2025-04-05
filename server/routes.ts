@@ -238,30 +238,14 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     authCheck,
   );
 
-  // Add PayPal config endpoint before existing routes
+  // Add PayPal config endpoint before existing routes - now with async support
   app.get("/api/paypal-config", async (req, res) => {
     try {
-      // Use fresh import to get the latest config
-      const { getPayPalConfig, getPayPalMode, validateProductionCredentials } = await import("./config/index");
       const config = await getPayPalConfig();
-      
       if (!config.clientId) {
         throw new Error("PayPal configuration not found");
       }
-      
-      // Get the current active mode for client awareness
-      const mode = await getPayPalMode();
-      
-      // Check if production credentials are valid (for UI warnings)
-      const hasValidProductionCredentials = await validateProductionCredentials();
-      
-      res.json({ 
-        clientId: config.clientId,
-        mode: mode,
-        isProduction: mode === 'production',
-        usingFallback: config.usingFallback || false,
-        hasValidProductionCredentials: hasValidProductionCredentials
-      });
+      res.json({ clientId: config.clientId });
     } catch (error) {
       console.error("Error serving PayPal config:", error);
       res.status(500).json({ error: "Failed to load PayPal configuration" });
@@ -276,69 +260,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     } catch (error) {
       console.error("Error fetching background images:", error);
       res.status(500).json({ error: "Failed to load background images" });
-    }
-  });
-  
-  // PayPal mode toggle endpoint (for switching between sandbox and production)
-  app.post("/api/admin/paypal-mode", isAdmin, async (req, res) => {
-    try {
-      const { useProduction } = req.body;
-      
-      if (typeof useProduction !== 'boolean') {
-        return res.status(400).json({ error: "useProduction must be a boolean value" });
-      }
-      
-      const { togglePayPalMode, validateProductionCredentials } = await import("./config/index?t=" + Date.now());
-      
-      // Check production credentials before switching
-      const hasValidProductionCredentials = await validateProductionCredentials();
-      
-      // If trying to switch to production mode but credentials are invalid, warn but still allow the switch
-      if (useProduction && !hasValidProductionCredentials) {
-        console.warn("Switching to production mode with potentially invalid credentials");
-      }
-      
-      const success = await togglePayPalMode(useProduction);
-      
-      if (success) {
-        console.log(`PayPal mode switched to ${useProduction ? 'PRODUCTION' : 'SANDBOX'} by admin`);
-        
-        res.json({ 
-          success: true, 
-          mode: useProduction ? 'production' : 'sandbox',
-          isProduction: useProduction,
-          hasValidProductionCredentials: useProduction ? hasValidProductionCredentials : true,
-          message: `PayPal mode switched to ${useProduction ? 'PRODUCTION' : 'SANDBOX'} mode`
-        });
-      } else {
-        res.status(500).json({ error: "Failed to toggle PayPal mode" });
-      }
-    } catch (error) {
-      console.error("Error toggling PayPal mode:", error);
-      res.status(500).json({ error: "Failed to toggle PayPal mode" });
-    }
-  });
-  
-  // Get current PayPal mode and validate credentials
-  app.get("/api/admin/paypal-mode", isAdmin, async (req, res) => {
-    try {
-      // Use a dynamic import with timestamp to avoid caching issues
-      const { getPayPalMode, validateProductionCredentials } = await import("./config/index?t=" + Date.now());
-      
-      // Get the current mode
-      const mode = await getPayPalMode();
-      
-      // Check if production credentials are valid - use the utility function
-      const hasValidProductionCredentials = await validateProductionCredentials();
-      
-      res.json({ 
-        mode,
-        isProduction: mode === 'production',
-        hasValidProductionCredentials: hasValidProductionCredentials
-      });
-    } catch (error) {
-      console.error("Error getting PayPal mode:", error);
-      res.status(500).json({ error: "Failed to get PayPal mode" });
     }
   });
 
@@ -1970,20 +1891,10 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const auth = Buffer.from(
         `${paypalConfig.clientId}:${paypalConfig.clientSecret}`,
       ).toString("base64");
-      
-      // Get the current PayPal mode to determine the correct API URL
-      const { getPayPalMode } = await import("./config/index");
-      const currentMode = await getPayPalMode();
-      
-      // Set the appropriate API base URL based on the current mode
-      const apiBaseUrl = currentMode === 'production' 
-        ? "https://api-m.paypal.com" 
-        : "https://api-m.sandbox.paypal.com";
-      
-      console.log(`Making PayPal API request for order: ${orderID} in ${currentMode.toUpperCase()} mode`);
+      console.log("Making PayPal API request for order:", orderID);
 
       const paypalResponse = await fetch(
-        `${apiBaseUrl}/v2/checkout/orders/${orderID}`,
+        `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}`,
         {
           method: "GET",
           headers: {
