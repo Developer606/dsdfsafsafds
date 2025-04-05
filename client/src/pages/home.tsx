@@ -1423,33 +1423,29 @@ export default function Home() {
             animate="show"
             className="w-72 border-r border-yellow-200/50 dark:border-amber-800/50 overflow-y-auto bg-gradient-to-b from-white/80 to-white/70 dark:from-slate-900/80 dark:to-slate-800/70 backdrop-blur-sm"
           >
-            {/* User Profile and Settings Section - Redesigned */}
+            {/* Simplified Top Bar */}
             <div className="px-4 pt-4 pb-2">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-yellow-200/50 dark:border-amber-800/50">
-                {/* User profile info */}
-                <div className="flex items-center gap-3">
+                {/* Only theme toggle and upgrade button */}
+                <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={toggleTheme}
-                    className="rounded-full h-9 w-9 bg-gradient-to-br from-yellow-100 to-amber-200 dark:from-amber-900/20 dark:to-yellow-900/20 shadow-sm"
+                    className="rounded-full h-9 w-9 bg-yellow-50 dark:bg-amber-900/30 shadow-sm hover:bg-yellow-100 dark:hover:bg-amber-800/30"
                   >
                     <Sun className="h-4 w-4 rotate-0 scale-100 transition-all text-amber-600 dark:-rotate-90 dark:scale-0" />
                     <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all text-amber-400 dark:rotate-0 dark:scale-100" />
                     <span className="sr-only">Toggle theme</span>
                   </Button>
                   
-                  {/* User info with dropdown - preserved functionality but improved UI */}
+                  {/* Subscription management preserved but not the user icon/button */}
+                  {user && <SubscriptionManagement user={user} />}
+                  
+                  {/* Hidden dropdown but with functionality preserved */}
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full h-9 px-3 flex items-center gap-2 bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-slate-800 dark:to-slate-700 border-yellow-200 dark:border-amber-700 hover:border-yellow-300 dark:hover:border-amber-600 shadow-sm"
-                      >
-                        <UserIcon className="h-4 w-4 text-yellow-600 dark:text-amber-500" />
-                        <span className="text-xs font-medium truncate max-w-[80px]">{user?.username || 'User'}</span>
-                      </Button>
+                    <DropdownMenuTrigger className="hidden">
+                      <span>Account</span>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
@@ -1481,10 +1477,18 @@ export default function Home() {
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  
-                  {/* Subscription management preserved */}
-                  {user && <SubscriptionManagement user={user} />}
                 </div>
+                
+                {/* Logout button */}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-xs text-red-500 hover:text-red-600 p-1 h-8"
+                >
+                  <LogOut className="h-3.5 w-3.5 mr-1" />
+                  Logout
+                </Button>
               </div>
 
               {/* Create Character Button - Enhanced */}
@@ -1526,20 +1530,23 @@ export default function Home() {
                     className="relative group mb-3"
                   >
                     <Link href={`/chat/${character.id}`}>
-                      <div className="transform transition-all duration-300">
-                        <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-md hover:shadow-lg border border-yellow-500/20 dark:border-amber-500/20 hover:border-yellow-500/40 dark:hover:border-amber-500/40 p-3">
-                          <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="transform transition-all duration-300 hover:scale-[1.02]">
+                        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-800/95 to-slate-900/95 dark:from-slate-800/95 dark:to-slate-900/95 shadow-md hover:shadow-lg border border-purple-500/20 dark:border-indigo-500/20 hover:border-purple-500/40 dark:hover:border-indigo-500/40 p-3">
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           <div className="flex items-center gap-3">
-                            <img
-                              src={character.avatar}
-                              alt={character.name}
-                              className="w-12 h-12 rounded-full object-cover"
-                            />
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full blur-[1px]"></div>
+                              <img
+                                src={character.avatar}
+                                alt={character.name}
+                                className="w-12 h-12 rounded-full object-cover relative border-2 border-yellow-400/50"
+                              />
+                            </div>
                             <div>
-                              <h3 className="font-medium text-sm">
+                              <h3 className="font-medium text-sm text-white">
                                 {character.name}
                               </h3>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
+                              <p className="text-xs text-gray-300 dark:text-gray-300 line-clamp-1">
                                 {character.description}
                               </p>
                             </div>
