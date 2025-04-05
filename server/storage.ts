@@ -29,7 +29,10 @@ import {
   type InsertConversationKey,
   encryptionKeys,
   conversationKeys,
-  passwordResetAttempts
+  passwordResetAttempts,
+  type Bookmark,
+  type InsertBookmark,
+  bookmarks
 } from "@shared/schema";
 import {
   messages,
@@ -199,6 +202,14 @@ export interface IStorage {
     advertisementId?: number;
   }>;
   incrementAdvertisementStat(advertisementId: number, stat: 'impressions' | 'clicks'): Promise<void>;
+  
+  // Bookmark management methods
+  createBookmark(data: InsertBookmark): Promise<Bookmark>;
+  deleteBookmark(id: number): Promise<void>;
+  getBookmarksByUser(userId: number): Promise<Bookmark[]>;
+  getBookmarksByType(userId: number, contentType: string): Promise<Bookmark[]>;
+  getBookmarkById(id: number): Promise<Bookmark | undefined>;
+  isContentBookmarked(userId: number, contentType: string, contentId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -227,6 +238,30 @@ export class DatabaseStorage implements IStorage {
     
     // Initialize password reset tracking table
     this.initializePasswordResetTracking();
+    
+    // Initialize bookmark table
+    this.initializeBookmarkTable();
+  }
+  
+  // Initialize bookmark table
+  private async initializeBookmarkTable() {
+    try {
+      console.log("Initializing bookmark table...");
+      
+      // Create indexes for efficient querying of bookmarks
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id
+                       ON bookmarks(user_id)`);
+      
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_bookmarks_content_type
+                       ON bookmarks(content_type)`);
+                       
+      await db.run(sql`CREATE INDEX IF NOT EXISTS idx_bookmarks_content_id
+                       ON bookmarks(content_id)`);
+      
+      console.log("Bookmark table initialized successfully");
+    } catch (error) {
+      console.error("Error initializing bookmark table:", error);
+    }
   }
   
   /**
@@ -1647,6 +1682,126 @@ export class DatabaseStorage implements IStorage {
     // Use the advertisement database implementation
     const { incrementAdvertisementStatInDb } = await import('./advertisement-db');
     await incrementAdvertisementStatInDb(advertisementId, stat);
+  }
+  
+  // Bookmark management methods
+  
+  /**
+   * Create a new bookmark for a user
+   * @param data The bookmark data to create
+   * @returns The created bookmark
+   */
+  async createBookmark(data: InsertBookmark): Promise<Bookmark> {
+    try {
+      const [newBookmark] = await db
+        .insert(bookmarks)
+        .values({
+          ...data,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      return newBookmark;
+    } catch (error) {
+      console.error("Error creating bookmark:", error);
+      throw new Error("Failed to create bookmark");
+    }
+  }
+  
+  /**
+   * Delete a bookmark by ID
+   * @param id The bookmark ID to delete
+   */
+  async deleteBookmark(id: number): Promise<void> {
+    try {
+      await db
+        .delete(bookmarks)
+        .where(eq(bookmarks.id, id));
+    } catch (error) {
+      console.error(`Error deleting bookmark ${id}:`, error);
+      throw new Error("Failed to delete bookmark");
+    }
+  }
+  
+  /**
+   * Get all bookmarks for a user
+   * @param userId The user ID to get bookmarks for
+   * @returns Array of bookmarks
+   */
+  async getBookmarksByUser(userId: number): Promise<Bookmark[]> {
+    try {
+      return await db
+        .select()
+        .from(bookmarks)
+        .where(eq(bookmarks.userId, userId))
+        .orderBy(sql`${bookmarks.createdAt} DESC`);
+    } catch (error) {
+      console.error(`Error getting bookmarks for user ${userId}:`, error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get bookmarks by content type for a user
+   * @param userId The user ID to get bookmarks for
+   * @param contentType The content type to filter by (manga, book, news)
+   * @returns Array of bookmarks
+   */
+  async getBookmarksByType(userId: number, contentType: string): Promise<Bookmark[]> {
+    try {
+      return await db
+        .select()
+        .from(bookmarks)
+        .where(
+          sql`${bookmarks.userId} = ${userId} AND ${bookmarks.contentType} = ${contentType}`
+        )
+        .orderBy(sql`${bookmarks.createdAt} DESC`);
+    } catch (error) {
+      console.error(`Error getting ${contentType} bookmarks for user ${userId}:`, error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get a bookmark by ID
+   * @param id The bookmark ID to get
+   * @returns The bookmark or undefined if not found
+   */
+  async getBookmarkById(id: number): Promise<Bookmark | undefined> {
+    try {
+      const [bookmark] = await db
+        .select()
+        .from(bookmarks)
+        .where(eq(bookmarks.id, id));
+      
+      return bookmark;
+    } catch (error) {
+      console.error(`Error getting bookmark ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  /**
+   * Check if content is already bookmarked by user
+   * @param userId The user ID
+   * @param contentType The content type
+   * @param contentId The content ID
+   * @returns True if the content is already bookmarked
+   */
+  async isContentBookmarked(userId: number, contentType: string, contentId: string): Promise<boolean> {
+    try {
+      const [bookmark] = await db
+        .select()
+        .from(bookmarks)
+        .where(
+          sql`${bookmarks.userId} = ${userId} AND ${bookmarks.contentType} = ${contentType} AND ${bookmarks.contentId} = ${contentId}`
+        );
+      
+      return !!bookmark;
+    } catch (error) {
+      console.error(`Error checking if content is bookmarked:`, error);
+      return false;
+    }
   }
 }
 

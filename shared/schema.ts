@@ -288,6 +288,32 @@ export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema
 export type SubscriptionTier = keyof typeof subscriptionPlans;
 export type SubscriptionStatus = "trial" | "active" | "cancelled" | "expired";
 
+// Library bookmarks table for user saved content
+export const bookmarks = sqliteTable("bookmarks", {
+  id: integer("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  contentType: text("content_type").notNull(), // "manga", "book", "news"
+  contentId: text("content_id").notNull(),
+  title: text("title").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Bookmark schemas
+export const insertBookmarkSchema = createInsertSchema(bookmarks).pick({
+  userId: true,
+  contentType: true,
+  contentId: true,
+  title: true,
+});
+
+// Bookmark types
+export type Bookmark = typeof bookmarks.$inferSelect;
+export type InsertBookmark = z.infer<typeof insertBookmarkSchema>;
+
 // Add supported languages
 export const supportedLanguages = [
   { id: "english", name: "English" },

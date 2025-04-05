@@ -3268,6 +3268,135 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     }
   });
   
+  // Bookmark API Routes
+  
+  // Get all bookmarks for a user
+  app.get("/api/bookmarks", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const bookmarks = await storage.getBookmarksByUser(userId);
+      return res.json(bookmarks);
+    } catch (error) {
+      console.error("Error fetching bookmarks:", error);
+      return res.status(500).json({ error: "Failed to fetch bookmarks" });
+    }
+  });
+  
+  // Get bookmarks by content type (manga, book, news)
+  app.get("/api/bookmarks/:contentType", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { contentType } = req.params;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      if (!["manga", "book", "news"].includes(contentType)) {
+        return res.status(400).json({ error: "Invalid content type" });
+      }
+      
+      const bookmarks = await storage.getBookmarksByType(userId, contentType);
+      return res.json(bookmarks);
+    } catch (error) {
+      console.error(`Error fetching ${req.params.contentType} bookmarks:`, error);
+      return res.status(500).json({ error: "Failed to fetch bookmarks" });
+    }
+  });
+  
+  // Create a new bookmark
+  app.post("/api/bookmarks", isAuthenticated, rateLimiter(20, 60000), async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { contentType, contentId, title, description, thumbnailUrl } = req.body;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      if (!contentType || !contentId || !title) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+      
+      // Check if already bookmarked
+      const isBookmarked = await storage.isContentBookmarked(userId, contentType, contentId);
+      
+      if (isBookmarked) {
+        return res.status(409).json({ error: "Content already bookmarked" });
+      }
+      
+      const newBookmark = await storage.createBookmark({
+        userId,
+        contentType,
+        contentId,
+        title,
+        description,
+        thumbnailUrl
+      });
+      
+      return res.status(201).json(newBookmark);
+    } catch (error) {
+      console.error("Error creating bookmark:", error);
+      return res.status(500).json({ error: "Failed to create bookmark" });
+    }
+  });
+  
+  // Delete a bookmark
+  app.delete("/api/bookmarks/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const bookmarkId = parseInt(req.params.id);
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      if (isNaN(bookmarkId)) {
+        return res.status(400).json({ error: "Invalid bookmark ID" });
+      }
+      
+      // Get the bookmark to verify ownership
+      const bookmark = await storage.getBookmarkById(bookmarkId);
+      
+      if (!bookmark) {
+        return res.status(404).json({ error: "Bookmark not found" });
+      }
+      
+      if (bookmark.userId !== userId) {
+        return res.status(403).json({ error: "Forbidden - You do not own this bookmark" });
+      }
+      
+      await storage.deleteBookmark(bookmarkId);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting bookmark:", error);
+      return res.status(500).json({ error: "Failed to delete bookmark" });
+    }
+  });
+  
+  // Check if content is bookmarked
+  app.get("/api/bookmarks/check/:contentType/:contentId", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { contentType, contentId } = req.params;
+      
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+      
+      const isBookmarked = await storage.isContentBookmarked(userId, contentType, contentId);
+      return res.json({ isBookmarked });
+    } catch (error) {
+      console.error("Error checking bookmark status:", error);
+      return res.status(500).json({ error: "Failed to check bookmark status" });
+    }
+  });
+  
   // Get conversation status between users
   app.get("/api/conversations/:userId/status", async (req, res) => {
     try {
