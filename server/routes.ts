@@ -241,19 +241,30 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Add PayPal config endpoint before existing routes - now with async support
   app.get("/api/paypal-config", async (req, res) => {
     try {
+      // Force a clean import to get the latest config
+      delete require.cache[require.resolve('./config/index')];
+      
+      const { getPayPalConfig, getPayPalMode, validateProductionCredentials } = await import("./config/index");
       const config = await getPayPalConfig();
+      
       if (!config.clientId) {
         throw new Error("PayPal configuration not found");
       }
       
       // Get the current active mode for client awareness
-      const { getPayPalMode } = await import("./config/index");
       const mode = await getPayPalMode();
+      
+      // Also check if production credentials are valid (for UI warnings)
+      const hasValidProductionCredentials = mode === 'production' ? 
+        (config.hasValidProductionCredentials || false) : 
+        await validateProductionCredentials();
       
       res.json({ 
         clientId: config.clientId,
         mode: mode,
-        usingFallback: config.usingFallback || false
+        isProduction: mode === 'production',
+        usingFallback: config.usingFallback || false,
+        hasValidProductionCredentials: hasValidProductionCredentials
       });
     } catch (error) {
       console.error("Error serving PayPal config:", error);
@@ -281,14 +292,24 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         return res.status(400).json({ error: "useProduction must be a boolean value" });
       }
       
-      const { togglePayPalMode } = await import("./config/index");
+      const { togglePayPalMode, validateProductionCredentials } = await import("./config/index");
+      
+      // Check production credentials before switching
+      const hasValidProductionCredentials = await validateProductionCredentials();
+      
       const success = await togglePayPalMode(useProduction);
       
       if (success) {
         console.log(`PayPal mode switched to ${useProduction ? 'PRODUCTION' : 'SANDBOX'} by admin`);
+        
+        // Clear require cache to ensure fresh configs
+        delete require.cache[require.resolve('./config/index')];
+        
         res.json({ 
           success: true, 
           mode: useProduction ? 'production' : 'sandbox',
+          isProduction: useProduction,
+          hasValidProductionCredentials: useProduction ? hasValidProductionCredentials : true,
           message: `PayPal mode switched to ${useProduction ? 'PRODUCTION' : 'SANDBOX'} mode`
         });
       } else {

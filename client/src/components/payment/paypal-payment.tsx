@@ -16,7 +16,9 @@ interface PayPalPaymentProps {
 interface PayPalConfigResponse {
   clientId: string;
   mode: 'sandbox' | 'production';
+  isProduction: boolean;
   usingFallback: boolean;
+  hasValidProductionCredentials: boolean;
 }
 
 // Get PayPal client ID from configuration
@@ -47,6 +49,7 @@ export function PayPalPayment({
 
   const [paypalMode, setPaypalMode] = useState<string>('sandbox');
   const [usingFallback, setUsingFallback] = useState<boolean>(false);
+  const [hasValidProductionCredentials, setHasValidProductionCredentials] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchClientId = async () => {
@@ -55,9 +58,14 @@ export function PayPalPayment({
         setClientId(config.clientId);
         setPaypalMode(config.mode);
         setUsingFallback(config.usingFallback);
+        setHasValidProductionCredentials(config.hasValidProductionCredentials);
         
         if (config.usingFallback) {
           console.warn("Using fallback PayPal configuration due to invalid credentials");
+        }
+        
+        if (!config.hasValidProductionCredentials && config.isProduction) {
+          console.warn("Production credentials appear to be invalid, transactions may fail");
         }
       }
     };
@@ -172,6 +180,17 @@ export function PayPalPayment({
             <AlertDescription className="text-amber-800">
               The system is currently using sandbox mode for payments due to configuration issues. 
               Your payment will be processed as a test transaction.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* Show warning if in production mode but credentials are invalid */}
+        {!usingFallback && paypalMode === 'production' && !hasValidProductionCredentials && (
+          <Alert className="mb-4 bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-800">
+              Warning: There may be issues with the payment system configuration.
+              If your payment fails, please contact support.
             </AlertDescription>
           </Alert>
         )}
