@@ -12,36 +12,25 @@
     scrollbar-width: none;  /* Firefox */
   }
   
-  /* Android-style scrolling behavior */
+  /* Material Design 3 Android-style scrolling behavior */
   .android-scrollbar {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+    scrollbar-width: none; /* Hide scrollbar for Firefox */
+    overscroll-behavior: contain; /* Native Android overscroll effect */
+    scroll-padding: 16px; /* Material Design 3 spacing */
   }
   
   .android-scrollbar::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    display: none; /* Hide scrollbar for WebKit browsers */
   }
   
-  .android-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .android-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 20px;
-  }
-  
-  .dark .android-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, 0.2);
-  }
-  
-  /* Material ripple effect */
+  /* Material Design 3 ripple effect - more pronounced and faster */
   .material-ripple {
     position: relative;
     overflow: hidden;
+    transform: translate3d(0, 0, 0); /* Force hardware acceleration */
+    -webkit-tap-highlight-color: transparent; /* Remove default mobile tap highlight */
   }
   
   .material-ripple::after {
@@ -53,18 +42,49 @@
     top: 0;
     left: 0;
     pointer-events: none;
-    background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.7) 10%, transparent 10.01%);
     background-repeat: no-repeat;
     background-position: 50%;
     transform: scale(10, 10);
     opacity: 0;
-    transition: transform 0.4s, opacity 0.5s;
+    transition: transform 0.3s, opacity 0.4s;
   }
   
   .material-ripple:active::after {
     transform: scale(0, 0);
     opacity: 0.3;
     transition: 0s;
+  }
+  
+  /* Dark mode ripple adjustment */
+  .dark .material-ripple::after {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.4) 10%, transparent 10.01%);
+  }
+  
+  /* Material Design 3 elevation levels */
+  .md3-elevation-1 {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .md3-elevation-2 {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.12);
+  }
+  
+  .md3-elevation-3 {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.12);
+  }
+  
+  /* Dark mode elevation adjustments */
+  .dark .md3-elevation-1 {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  .dark .md3-elevation-2 {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.4);
+  }
+  
+  .dark .md3-elevation-3 {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 4px 6px rgba(0, 0, 0, 0.45);
   }
 }
 

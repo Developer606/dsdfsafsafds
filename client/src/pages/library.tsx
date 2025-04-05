@@ -230,68 +230,74 @@ export default function Library() {
     });
   };
 
-  // Mobile Android-like design
+  // Modern Android Material Design 3 mobile UI
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col h-screen">
-        {/* Fixed Android-style App Bar with Material Design */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md flex-shrink-0">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col h-screen">
+        {/* Fixed Android Material Design 3 App Bar with dynamic elevation */}
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white flex-shrink-0 z-10 md3-elevation-2">
+          {/* Status bar simulation */}
+          <div className="h-6 bg-black/10 w-full"></div>
+          
           {isSearching ? (
-            <div className="flex items-center p-2">
+            <div className="flex items-center p-3">
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => {
                   setIsSearching(false);
                   setSearchQuery("");
                 }}
-                className="p-2 rounded-full mr-2 material-ripple"
+                className="p-2 rounded-full mr-2 material-ripple flex items-center justify-center"
               >
                 <ArrowLeft size={24} />
               </motion.button>
-              <input
-                type="text"
-                placeholder="Search library..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-white/20 backdrop-blur-sm rounded-full py-2 px-4 focus:outline-none placeholder-white/60 text-white"
-                autoFocus
-              />
-              {searchQuery && (
-                <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setSearchQuery("")}
-                  className="p-2 rounded-full material-ripple"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </motion.button>
-              )}
+              <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-full flex items-center overflow-hidden">
+                <Search size={18} className="ml-3 text-white/70" />
+                <input
+                  type="text"
+                  placeholder="Search library..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent py-2 px-3 focus:outline-none placeholder-white/60 text-white text-base"
+                  autoFocus
+                />
+                {searchQuery && (
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setSearchQuery("")}
+                    className="p-2 rounded-full material-ripple flex items-center justify-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </motion.button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-between p-3">
               <div className="flex items-center">
                 <motion.button
-                  whileTap={{ scale: 0.97 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => setLocation("/")}
-                  className="mr-3 material-ripple"
+                  className="p-2 -ml-2 rounded-full material-ripple flex items-center justify-center"
                 >
                   <ArrowLeft size={24} />
                 </motion.button>
-                <h1 className="text-xl font-medium">Library</h1>
+                <h1 className="text-xl font-medium tracking-tight ml-1">Library</h1>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center">
                 <motion.button
-                  whileTap={{ scale: 0.97 }}
+                  whileTap={{ scale: 0.9 }}
                   onClick={() => setIsSearching(true)}
-                  className="p-2 rounded-full material-ripple"
+                  className="p-2 rounded-full material-ripple flex items-center justify-center"
                 >
                   <Search size={22} />
                 </motion.button>
                 <motion.button
-                  whileTap={{ scale: 0.97 }}
-                  className="p-2 rounded-full material-ripple"
+                  whileTap={{ scale: 0.9 }}
+                  className="p-2 rounded-full material-ripple flex items-center justify-center ml-1"
                 >
                   <Menu size={22} />
                 </motion.button>
@@ -299,52 +305,58 @@ export default function Library() {
             </div>
           )}
           
-          {/* Material Design Tabs - Fixed with Header */}
-          <div className="flex">
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setActiveTab("manga")}
-              className={`flex-1 py-3 px-2 flex flex-col items-center material-ripple ${activeTab === "manga" ? "border-b-2 border-white" : "opacity-70"}`}
-            >
-              <Book size={20} className="mb-1" />
-              <span className="text-xs font-medium">Manga</span>
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setActiveTab("books")}
-              className={`flex-1 py-3 px-2 flex flex-col items-center material-ripple ${activeTab === "books" ? "border-b-2 border-white" : "opacity-70"}`}
-            >
-              <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 0M3 12l3 0M3 18l3 0" />
-              </svg>
-              <span className="text-xs font-medium">Books</span>
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setActiveTab("news")}
-              className={`flex-1 py-3 px-2 flex flex-col items-center material-ripple ${activeTab === "news" ? "border-b-2 border-white" : "opacity-70"}`}
-            >
-              <Newspaper size={20} className="mb-1" />
-              <span className="text-xs font-medium">News</span>
-            </motion.button>
+          {/* Material Design 3 Tabs with animated indicator */}
+          <div className="flex border-b border-white/20">
+            {["manga", "books", "news"].map((tab) => (
+              <motion.button
+                key={tab}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 py-3 px-2 flex flex-col items-center material-ripple relative`}
+              >
+                {tab === "manga" && <Book size={20} className="mb-1" />}
+                {tab === "books" && (
+                  <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 0M3 12l3 0M3 18l3 0" />
+                  </svg>
+                )}
+                {tab === "news" && <Newspaper size={20} className="mb-1" />}
+                <span className="text-xs font-medium">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+                
+                {/* Animated indicator */}
+                {activeTab === tab && (
+                  <motion.div 
+                    layoutId="activeTabIndicator"
+                    className="absolute bottom-0 left-0 right-0 h-1 bg-white rounded-t-full"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                )}
+              </motion.button>
+            ))}
           </div>
         </div>
         
-        {/* Content Area - Android-style scrolling with fixed header above */}
+        {/* Content Area - Android Material Design 3 scrolling with fixed header */}
         <div className="flex-1 overflow-auto overscroll-contain android-scrollbar">
           {activeTab === "manga" && (
             <div className="p-3 pb-16">
               {mangaQuery.isLoading ? (
-                // Android-style skeleton loaders
+                // Material Design 3 skeleton loaders
                 <div className="space-y-4">
                   {Array(3).fill(0).map((_, index) => (
-                    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
-                      <Skeleton className="w-full h-44" />
-                      <div className="p-3 space-y-2">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-16 w-full" />
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden md3-elevation-1 border border-gray-100 dark:border-gray-700">
+                      <Skeleton className="w-full h-44 rounded-t-2xl" />
+                      <div className="p-4 space-y-3">
+                        <Skeleton className="h-6 w-3/4 rounded-full" />
+                        <Skeleton className="h-4 w-1/2 rounded-full" />
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                        <div className="flex justify-between space-x-2 pt-2">
+                          <Skeleton className="h-10 w-4/5 rounded-full" />
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -373,7 +385,8 @@ export default function Library() {
                       key={manga.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm"
+                      className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden md3-elevation-1 border border-gray-100 dark:border-gray-700"
+                      whileHover={{ y: -2, transition: { duration: 0.2 } }}
                     >
                       <div className="relative">
                         <img 
@@ -381,40 +394,52 @@ export default function Library() {
                           alt={manga.title}
                           className="w-full h-44 object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div className="absolute bottom-0 left-0 right-0 p-3">
-                          <h3 className="text-white font-bold">{manga.title}</h3>
-                          <div className="flex items-center text-white/80 text-xs">
-                            <span>{manga.author}</span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/0"></div>
+                        <div className="absolute top-3 right-3">
+                          <div className="bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
+                            {manga.chapters} chapters
+                          </div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <h3 className="text-white font-bold text-lg">{manga.title}</h3>
+                          <div className="flex items-center text-white/90 text-xs mt-1">
+                            <span className="font-medium">{manga.author}</span>
                             <span className="mx-1">•</span>
-                            <span>{manga.chapters} chapters</span>
+                            <span>{manga.releaseDate}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="p-3">
+                      <div className="p-4">
                         <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 mb-3">
                           {manga.description}
                         </p>
-                        <div className="flex flex-wrap gap-1 mb-3">
+                        <div className="flex flex-wrap gap-1 mb-4">
                           {manga.tags.map(tag => (
                             <span 
                               key={tag} 
-                              className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 rounded-full"
+                              className="text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full"
                             >
                               {tag}
                             </span>
                           ))}
                         </div>
-                        <motion.button
-                          whileTap={{ scale: 0.97 }}
-                          onClick={() => handleReadMore(manga.id, "manga")}
-                          className="w-full py-2 bg-purple-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
-                        >
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                          Read Now
-                        </motion.button>
+                        <div className="flex space-x-2">
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleReadMore(manga.id, "manga")}
+                            className="flex-1 py-2.5 bg-purple-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
+                          >
+                            Read Now
+                          </motion.button>
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="p-2.5 bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center material-ripple"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                          </motion.button>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -426,15 +451,19 @@ export default function Library() {
           {activeTab === "books" && (
             <div className="p-3 pb-16">
               {booksQuery.isLoading ? (
-                // Android-style skeleton loaders
+                // Material Design 3 skeleton loaders
                 <div className="space-y-4">
                   {Array(3).fill(0).map((_, index) => (
-                    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
-                      <Skeleton className="w-full h-44" />
-                      <div className="p-3 space-y-2">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-16 w-full" />
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden md3-elevation-1 border border-gray-100 dark:border-gray-700">
+                      <Skeleton className="w-full h-44 rounded-t-2xl" />
+                      <div className="p-4 space-y-3">
+                        <Skeleton className="h-6 w-3/4 rounded-full" />
+                        <Skeleton className="h-4 w-1/2 rounded-full" />
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                        <div className="flex justify-between space-x-2 pt-2">
+                          <Skeleton className="h-10 w-4/5 rounded-full" />
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -463,7 +492,8 @@ export default function Library() {
                       key={book.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm"
+                      className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden md3-elevation-1 border border-gray-100 dark:border-gray-700"
+                      whileHover={{ y: -2, transition: { duration: 0.2 } }}
                     >
                       <div className="relative">
                         <img 
@@ -471,40 +501,52 @@ export default function Library() {
                           alt={book.title}
                           className="w-full h-44 object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                        <div className="absolute bottom-0 left-0 right-0 p-3">
-                          <h3 className="text-white font-bold">{book.title}</h3>
-                          <div className="flex items-center text-white/80 text-xs">
-                            <span>{book.author}</span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/0"></div>
+                        <div className="absolute top-3 right-3">
+                          <div className="bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
+                            {book.pages} pages
+                          </div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <h3 className="text-white font-bold text-lg">{book.title}</h3>
+                          <div className="flex items-center text-white/90 text-xs mt-1">
+                            <span className="font-medium">{book.author}</span>
                             <span className="mx-1">•</span>
-                            <span>{book.pages} pages</span>
+                            <span>{book.releaseDate}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="p-3">
+                      <div className="p-4">
                         <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2 mb-3">
                           {book.description}
                         </p>
-                        <div className="flex flex-wrap gap-1 mb-3">
+                        <div className="flex flex-wrap gap-1 mb-4">
                           {book.tags.map(tag => (
                             <span 
                               key={tag} 
-                              className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 rounded-full"
+                              className="text-xs px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
                             >
                               {tag}
                             </span>
                           ))}
                         </div>
-                        <motion.button
-                          whileTap={{ scale: 0.97 }}
-                          onClick={() => handleReadMore(book.id, "book")}
-                          className="w-full py-2 bg-blue-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
-                        >
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                          Read Now
-                        </motion.button>
+                        <div className="flex space-x-2">
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleReadMore(book.id, "book")}
+                            className="flex-1 py-2.5 bg-blue-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
+                          >
+                            Read Now
+                          </motion.button>
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="p-2.5 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center material-ripple"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                          </motion.button>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -516,15 +558,19 @@ export default function Library() {
           {activeTab === "news" && (
             <div className="p-3 pb-16">
               {newsQuery.isLoading ? (
-                // Android-style skeleton loaders
+                // Material Design 3 skeleton loaders
                 <div className="space-y-4">
                   {Array(3).fill(0).map((_, index) => (
-                    <div key={index} className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm">
-                      <Skeleton className="w-full h-36" />
-                      <div className="p-3 space-y-2">
-                        <Skeleton className="h-5 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-16 w-full" />
+                    <div key={index} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden md3-elevation-1 border border-gray-100 dark:border-gray-700">
+                      <Skeleton className="w-full h-40 rounded-t-2xl" />
+                      <div className="p-4 space-y-3">
+                        <Skeleton className="h-6 w-3/4 rounded-full" />
+                        <Skeleton className="h-4 w-1/2 rounded-full" />
+                        <Skeleton className="h-16 w-full rounded-lg" />
+                        <div className="flex justify-between space-x-2 pt-2">
+                          <Skeleton className="h-10 w-4/5 rounded-full" />
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -553,43 +599,61 @@ export default function Library() {
                       key={news.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-sm"
+                      className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden md3-elevation-1 border border-gray-100 dark:border-gray-700"
+                      whileHover={{ y: -2, transition: { duration: 0.2 } }}
                     >
                       <div className="relative">
                         <img 
                           src={news.image} 
                           alt={news.title}
-                          className="w-full h-36 object-cover"
+                          className="w-full h-40 object-cover"
                         />
-                        <div className="absolute top-0 right-0 m-2 px-2 py-1 bg-black/50 text-white text-xs rounded-full">
-                          {news.source}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/0"></div>
+                        <div className="absolute top-3 right-3">
+                          <div className="bg-black/50 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
+                            {news.source}
+                          </div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                          <h3 className="text-white font-bold text-lg line-clamp-2">{news.title}</h3>
+                          <div className="flex items-center text-white/90 text-xs mt-1">
+                            <span className="font-medium">{news.author}</span>
+                            <span className="mx-1">•</span>
+                            <span>{news.date}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="p-3">
-                        <div className="flex justify-between items-center mb-1">
-                          <h3 className="text-base font-bold line-clamp-1">{news.title}</h3>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">{news.date}</span>
-                        </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 mb-3">
+                      <div className="p-4">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 mb-4">
                           {news.summary}
                         </p>
-                        <div className="flex flex-wrap gap-1 mb-3">
+                        <div className="flex flex-wrap gap-1 mb-4">
                           {news.tags.map(tag => (
                             <span 
                               key={tag} 
-                              className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 rounded-full"
+                              className="text-xs px-2 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full"
                             >
                               {tag}
                             </span>
                           ))}
                         </div>
-                        <motion.button
-                          whileTap={{ scale: 0.97 }}
-                          onClick={() => handleReadMore(news.id, "news article")}
-                          className="w-full py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
-                        >
-                          Read Full Article
-                        </motion.button>
+                        <div className="flex space-x-2">
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleReadMore(news.id, "news article")}
+                            className="flex-1 py-2.5 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
+                          >
+                            Read Full Article
+                          </motion.button>
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            className="p-2.5 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center material-ripple"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z"></path>
+                            </svg>
+                          </motion.button>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
