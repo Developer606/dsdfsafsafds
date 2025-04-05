@@ -1416,101 +1416,113 @@ export default function Home() {
       ) : (
         // Enhanced Desktop UI
         <div className="flex h-[calc(100vh-64px)]">
-          {/* Left Sidebar - Enhanced & Streamlined */}
+          {/* Left Sidebar - Simple and User-Friendly */}
           <motion.div
             variants={container}
             initial="hidden"
             animate="show"
-            className="w-72 border-r border-yellow-200/50 dark:border-amber-800/50 overflow-y-auto bg-gradient-to-b from-white/80 to-white/70 dark:from-slate-900/80 dark:to-slate-800/70 backdrop-blur-sm"
+            className="w-72 border-r border-purple-200/50 dark:border-purple-800/50 overflow-y-auto bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm"
           >
-            {/* Simplified Top Bar */}
+            {/* Top Section - Very Simple */}
             <div className="px-4 pt-4 pb-2">
-              <div className="flex items-center justify-between mb-4 pb-3 border-b border-yellow-200/50 dark:border-amber-800/50">
-                {/* Only theme toggle and upgrade button */}
-                <div className="flex items-center gap-2">
+              <div className="mb-4">
+                {/* Simple top row with theme and logout */}
+                <div className="flex items-center justify-between mb-3">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={toggleTheme}
-                    className="rounded-full h-9 w-9 bg-yellow-50 dark:bg-amber-900/30 shadow-sm hover:bg-yellow-100 dark:hover:bg-amber-800/30"
+                    className="rounded-full h-8 w-8"
                   >
-                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all text-amber-600 dark:-rotate-90 dark:scale-0" />
-                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all text-amber-400 dark:rotate-0 dark:scale-100" />
+                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                     <span className="sr-only">Toggle theme</span>
                   </Button>
                   
-                  {/* Subscription management preserved but not the user icon/button */}
-                  {user && <SubscriptionManagement user={user} />}
-                  
-                  {/* Hidden dropdown but with functionality preserved */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="hidden">
-                      <span>Account</span>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem disabled>
-                        Email: {user?.email}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem disabled>
-                        Username: {user?.username}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem disabled>
-                        Status: {user?.subscriptionStatus}
-                      </DropdownMenuItem>
-                      {user?.subscriptionExpiresAt && (
-                        <DropdownMenuItem disabled>
-                          Expires:{" "}
-                          {new Date(
-                            user.subscriptionExpiresAt,
-                          ).toLocaleDateString()}
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={handleLogout}
-                        className="text-red-600"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleLogout}
+                    className="text-xs h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <LogOut className="h-3.5 w-3.5 mr-1.5" />
+                    Logout
+                  </Button>
                 </div>
                 
-                {/* Logout button */}
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleLogout}
-                  className="text-xs text-red-500 hover:text-red-600 p-1 h-8"
-                >
-                  <LogOut className="h-3.5 w-3.5 mr-1" />
-                  Logout
-                </Button>
+                {/* Upgrade button when needed */}
+                {user && user.subscriptionStatus !== "premium" && (
+                  <div className="mb-3">
+                    <Button
+                      onClick={() => {
+                        setSelectedPlan("premium");
+                        setShowSubscriptionDialog(true);
+                      }}
+                      className="w-full text-xs h-8 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-md shadow-sm"
+                    >
+                      <Zap className="h-3.5 w-3.5 mr-1.5" />
+                      Upgrade to Premium
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Hidden menu for account functionality */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="hidden">
+                    <span>Account</span>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem disabled>
+                      Email: {user?.email}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>
+                      Username: {user?.username}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>
+                      Status: {user?.subscriptionStatus}
+                    </DropdownMenuItem>
+                    {user?.subscriptionExpiresAt && (
+                      <DropdownMenuItem disabled>
+                        Expires:{" "}
+                        {new Date(
+                          user.subscriptionExpiresAt,
+                        ).toLocaleDateString()}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-red-600"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
-              {/* Create Character Button - Enhanced */}
-              <div className="mb-6">
+              {/* Create Character Button - Simple */}
+              <div className="mb-5">
                 <Button
                   onClick={handleCreateClick}
-                  className="w-full bg-gradient-to-br from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 group border border-yellow-300/30 h-11"
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-white rounded-lg h-10"
                 >
-                  <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                  <span className="font-medium">Create Character</span>
+                  <Plus className="h-5 w-5 mr-2" />
+                  Create Character
                 </Button>
               </div>
               
-              {/* Character section header with Messages link */}
-              <div className="mb-4">
+              {/* Character section with Messages link */}
+              <div className="mb-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
-                    <Users className="h-4 w-4 mr-2 text-yellow-600 dark:text-amber-500" />
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <Users className="h-4 w-4 mr-2" />
                     My Characters
                   </h3>
                   <Link href="/conversations">
-                    <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-yellow-700 dark:text-amber-400 hover:text-yellow-800 dark:hover:text-amber-300">
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-xs">
                       <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
                       Messages
                     </Button>
@@ -1530,23 +1542,19 @@ export default function Home() {
                     className="relative group mb-3"
                   >
                     <Link href={`/chat/${character.id}`}>
-                      <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-800/95 to-slate-900/95 dark:from-slate-800/95 dark:to-slate-900/95 shadow-md hover:shadow-lg border border-purple-500/20 dark:border-indigo-500/20 hover:border-purple-500/40 dark:hover:border-indigo-500/40 p-3">
-                          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="mb-1">
+                        <div className="relative rounded-lg bg-gray-100 dark:bg-gray-800 p-3 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                           <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full blur-[1px]"></div>
-                              <img
-                                src={character.avatar}
-                                alt={character.name}
-                                className="w-12 h-12 rounded-full object-cover relative border-2 border-yellow-400/50"
-                              />
-                            </div>
+                            <img
+                              src={character.avatar}
+                              alt={character.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
                             <div>
-                              <h3 className="font-medium text-sm text-white">
+                              <h3 className="font-medium text-sm">
                                 {character.name}
                               </h3>
-                              <p className="text-xs text-gray-300 dark:text-gray-300 line-clamp-1">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
                                 {character.description}
                               </p>
                             </div>
