@@ -1416,12 +1416,12 @@ export default function Home() {
       ) : (
         // Enhanced Desktop UI
         <div className="flex h-[calc(100vh-64px)]">
-          {/* Left Sidebar - Enhanced & Ultra-Streamlined */}
+          {/* Left Sidebar - Enhanced & Ultra-Streamlined - Theme Responsive */}
           <motion.div
             variants={container}
             initial="hidden"
             animate="show"
-            className="w-72 overflow-y-auto bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm shadow-xl"
+            className="w-72 overflow-y-auto bg-gradient-to-br from-white/95 to-slate-100/95 dark:from-slate-900/95 dark:to-slate-800/95 backdrop-blur-sm shadow-xl"
           >
             {/* Premium header bar with anime-inspired design */}
             <div className="bg-gradient-to-r from-purple-600 to-pink-500 h-2.5"></div>
@@ -1429,13 +1429,13 @@ export default function Home() {
             <div className="px-5 py-6">
               {/* Top controls - ultra minimal */}
               <div className="flex items-center justify-between mb-6">
-                {/* Theme toggle with improved styling */}
+                {/* Theme toggle with improved styling - Theme Responsive */}
                 <div className="flex items-center">
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={toggleTheme}
-                    className="rounded-full h-8 w-8 bg-white/10 hover:bg-white/15 text-white"
+                    className="rounded-full h-8 w-8 bg-slate-200/50 hover:bg-slate-200/80 dark:bg-white/10 dark:hover:bg-white/15 text-slate-700 dark:text-white"
                   >
                     <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                     <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -1482,12 +1482,12 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   {user && <SubscriptionManagement user={user} />}
                   
-                  {/* Elegant logout button */}
+                  {/* Elegant logout button - Theme responsive */}
                   <Button 
                     variant="ghost" 
                     size="sm"
                     onClick={handleLogout}
-                    className="text-xs text-gray-300 hover:text-white hover:bg-red-500/20 p-2 h-8 rounded-full"
+                    className="text-xs text-slate-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-white hover:bg-red-100/30 dark:hover:bg-red-500/20 p-2 h-8 rounded-full"
                   >
                     <LogOut className="h-3.5 w-3.5" />
                   </Button>
@@ -1512,14 +1512,14 @@ export default function Home() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="p-1.5 rounded-lg bg-purple-500/20">
-                      <Users className="h-4 w-4 text-purple-400" />
+                      <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <h3 className="text-sm font-semibold text-white">
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-white">
                       My Characters
                     </h3>
                   </div>
                   <Link href="/conversations">
-                    <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-medium text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 hover:border-purple-500/50 rounded-full">
+                    <Button variant="outline" size="sm" className="h-8 px-3 text-xs font-medium text-purple-600 dark:text-purple-300 bg-purple-100/50 dark:bg-purple-500/10 hover:bg-purple-100/80 dark:hover:bg-purple-500/20 border-purple-300/50 dark:border-purple-500/30 hover:border-purple-400/70 dark:hover:border-purple-500/50 rounded-full">
                       <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
                       Messages
                     </Button>
@@ -1543,8 +1543,8 @@ export default function Home() {
                   >
                     <Link href={`/chat/${character.id}`}>
                       <div className="transform transition-all duration-300 hover:scale-[1.02]">
-                        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-800/95 to-slate-900/95 dark:from-slate-800/95 dark:to-slate-900/95 shadow-md hover:shadow-lg border border-purple-500/20 dark:border-indigo-500/20 hover:border-purple-500/40 dark:hover:border-indigo-500/40 p-3">
-                          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-100/95 to-white/95 dark:from-slate-800/95 dark:to-slate-900/95 shadow-md hover:shadow-lg border border-purple-200 dark:border-indigo-500/20 hover:border-purple-300 dark:hover:border-indigo-500/40 p-3">
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-200/30 to-indigo-200/20 dark:from-purple-500/10 dark:to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                           <div className="flex items-center gap-3">
                             <div className="relative">
                               <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full blur-[1px]"></div>
@@ -1555,10 +1555,10 @@ export default function Home() {
                               />
                             </div>
                             <div>
-                              <h3 className="font-medium text-sm text-white">
+                              <h3 className="font-medium text-sm text-slate-800 dark:text-white">
                                 {character.name}
                               </h3>
-                              <p className="text-xs text-gray-300 dark:text-gray-300 line-clamp-1">
+                              <p className="text-xs text-slate-600 dark:text-gray-300 line-clamp-1">
                                 {character.description}
                               </p>
                             </div>
