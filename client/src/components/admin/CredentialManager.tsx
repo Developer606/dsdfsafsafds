@@ -83,26 +83,35 @@ const PayPalModeSwitch = ({ onComplete }: { onComplete: () => void }) => {
   const [useProduction, setUseProduction] = useState(false);
   
   // Fetch current PayPal mode
-  const { data: modeData, isLoading: isModeLoading } = useQuery<PayPalMode>({
+  const { data: modeData, isLoading: isModeLoading, refetch: refetchMode } = useQuery<PayPalMode>({
     queryKey: ["/api/admin/paypal-mode"],
     onSuccess: (data) => {
+      console.log("PayPal mode data received:", data);
       setUseProduction(data.isProduction);
     },
+    onError: (error) => {
+      console.error("Failed to fetch PayPal mode:", error);
+    },
+    retry: 1,
   });
   
   // Toggle the PayPal mode
   const togglePayPalMode = async () => {
     setIsLoading(true);
+    console.log("Attempting to toggle PayPal mode to:", !useProduction ? "PRODUCTION" : "SANDBOX");
     
     try {
-      const response = await apiRequest(
-        "POST",
-        "/api/admin/paypal-mode",
-        { useProduction: !useProduction }
-      );
+      // Make sure we have proper credentials when making the request
+      const response = await fetch("/api/admin/paypal-mode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useProduction: !useProduction }),
+        credentials: "include" // Important for sending cookies for authentication
+      });
       
       if (response.ok) {
         const data = await response.json();
+        console.log("PayPal mode toggle response:", data);
         setUseProduction(data.mode === 'production');
         
         toast({
@@ -114,14 +123,19 @@ const PayPalModeSwitch = ({ onComplete }: { onComplete: () => void }) => {
         queryClient.invalidateQueries({ queryKey: ["/api/admin/paypal-mode"] });
         queryClient.invalidateQueries({ queryKey: ["/api/payment/client-id"] });
         
+        // After a successful toggle, refetch the mode to ensure UI is in sync
+        refetchMode();
+        
         if (onComplete) {
           onComplete();
         }
       } else {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to toggle PayPal mode");
+        const errorText = await response.text();
+        console.error("Error toggling PayPal mode:", response.status, errorText);
+        throw new Error(errorText || `Failed to toggle PayPal mode (Status: ${response.status})`);
       }
     } catch (error: any) {
+      console.error("Exception in togglePayPalMode:", error);
       toast({
         variant: "destructive",
         title: "Error",

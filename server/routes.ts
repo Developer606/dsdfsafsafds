@@ -1935,10 +1935,20 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const auth = Buffer.from(
         `${paypalConfig.clientId}:${paypalConfig.clientSecret}`,
       ).toString("base64");
-      console.log("Making PayPal API request for order:", orderID);
+      
+      // Get the current PayPal mode to determine the correct API URL
+      const { getPayPalMode } = await import("./config/index");
+      const currentMode = await getPayPalMode();
+      
+      // Set the appropriate API base URL based on the current mode
+      const apiBaseUrl = currentMode === 'production' 
+        ? "https://api-m.paypal.com" 
+        : "https://api-m.sandbox.paypal.com";
+      
+      console.log(`Making PayPal API request for order: ${orderID} in ${currentMode.toUpperCase()} mode`);
 
       const paypalResponse = await fetch(
-        `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderID}`,
+        `${apiBaseUrl}/v2/checkout/orders/${orderID}`,
         {
           method: "GET",
           headers: {
