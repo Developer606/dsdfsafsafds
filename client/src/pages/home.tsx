@@ -1416,146 +1416,156 @@ export default function Home() {
       ) : (
         // Enhanced Desktop UI
         <div className="flex h-[calc(100vh-64px)]">
-          {/* Left Sidebar - Streamlined */}
+          {/* Left Sidebar - Enhanced & Streamlined */}
           <motion.div
             variants={container}
             initial="hidden"
             animate="show"
-            className="w-72 border-r border-yellow-200 dark:border-amber-800 overflow-y-auto p-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm"
+            className="w-72 border-r border-yellow-200/50 dark:border-amber-800/50 overflow-y-auto bg-gradient-to-b from-white/80 to-white/70 dark:from-slate-900/80 dark:to-slate-800/70 backdrop-blur-sm"
           >
-            {/* User Profile and Settings Section */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-yellow-200 dark:border-amber-800">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleTheme}
-                  className="rounded-full h-8 w-8"
-                >
-                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                  <span className="sr-only">Toggle theme</span>
-                </Button>
-                {user && <SubscriptionManagement user={user} />}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-full h-8 w-8 bg-yellow-500/10 hover:bg-yellow-500/20 dark:bg-amber-500/10 dark:hover:bg-amber-500/20"
-                    >
-                      <UserIcon className="h-4 w-4 text-yellow-600 dark:text-amber-500" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem disabled>
-                      Email: {user?.email}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      Username: {user?.username}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      Status: {user?.subscriptionStatus}
-                    </DropdownMenuItem>
-                    {user?.subscriptionExpiresAt && (
+            {/* User Profile and Settings Section - Redesigned */}
+            <div className="px-4 pt-4 pb-2">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-yellow-200/50 dark:border-amber-800/50">
+                {/* User profile info */}
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleTheme}
+                    className="rounded-full h-9 w-9 bg-gradient-to-br from-yellow-100 to-amber-200 dark:from-amber-900/20 dark:to-yellow-900/20 shadow-sm"
+                  >
+                    <Sun className="h-4 w-4 rotate-0 scale-100 transition-all text-amber-600 dark:-rotate-90 dark:scale-0" />
+                    <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all text-amber-400 dark:rotate-0 dark:scale-100" />
+                    <span className="sr-only">Toggle theme</span>
+                  </Button>
+                  
+                  {/* User info with dropdown - preserved functionality but improved UI */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full h-9 px-3 flex items-center gap-2 bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-slate-800 dark:to-slate-700 border-yellow-200 dark:border-amber-700 hover:border-yellow-300 dark:hover:border-amber-600 shadow-sm"
+                      >
+                        <UserIcon className="h-4 w-4 text-yellow-600 dark:text-amber-500" />
+                        <span className="text-xs font-medium truncate max-w-[80px]">{user?.username || 'User'}</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem disabled>
-                        Expires:{" "}
-                        {new Date(
-                          user.subscriptionExpiresAt,
-                        ).toLocaleDateString()}
+                        Email: {user?.email}
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      className="text-red-600"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      <DropdownMenuItem disabled>
+                        Username: {user?.username}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled>
+                        Status: {user?.subscriptionStatus}
+                      </DropdownMenuItem>
+                      {user?.subscriptionExpiresAt && (
+                        <DropdownMenuItem disabled>
+                          Expires:{" "}
+                          {new Date(
+                            user.subscriptionExpiresAt,
+                          ).toLocaleDateString()}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleLogout}
+                        className="text-red-600"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Logout
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  {/* Subscription management preserved */}
+                  {user && <SubscriptionManagement user={user} />}
+                </div>
+              </div>
+
+              {/* Create Character Button - Enhanced */}
+              <div className="mb-6">
+                <Button
+                  onClick={handleCreateClick}
+                  className="w-full bg-gradient-to-br from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 group border border-yellow-300/30 h-11"
+                >
+                  <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                  <span className="font-medium">Create Character</span>
+                </Button>
+              </div>
+              
+              {/* Character section header with Messages link */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-yellow-600 dark:text-amber-500" />
+                    My Characters
+                  </h3>
+                  <Link href="/conversations">
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-yellow-700 dark:text-amber-400 hover:text-yellow-800 dark:hover:text-amber-300">
+                      <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                      Messages
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
-
-            <div className="mb-4">
-              <Button
-                onClick={handleCreateClick}
-                className="w-full bg-gradient-to-br from-yellow-400/90 to-amber-500/90 hover:from-yellow-400 hover:to-amber-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-              >
-                <Plus className="h-5 w-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                Create Character
-              </Button>
-            </div>
-
-            <div className="mb-4">
-              <Link href="/search">
-                <Button className="w-full bg-gradient-to-br from-purple-400/90 to-pink-500/90 hover:from-purple-400 hover:to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
-                  <MessageSquare className="h-5 w-5 mr-2" />
-                  Chat
-                </Button>
-              </Link>
-            </div>
-
-            <div className="mb-4">
-              <Link href="/conversations">
-                <Button className="w-full bg-gradient-to-br from-blue-400/90 to-indigo-500/90 hover:from-blue-400 hover:to-indigo-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group">
-                  <Users className="h-5 w-5 mr-2" />
-                  Messages
-                </Button>
-              </Link>
-            </div>
-
-            <AnimatePresence>
-              {sortedCharacters?.map((character) => (
-                <motion.div
-                  key={character.id}
-                  variants={item}
-                  layoutId={character.id}
-                  className="relative group mb-3"
-                >
-                  <Link href={`/chat/${character.id}`}>
-                    <div className="transform transition-all duration-300">
-                      <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-md hover:shadow-lg border border-yellow-500/20 dark:border-amber-500/20 hover:border-yellow-500/40 dark:hover:border-amber-500/40 p-3">
-                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={character.avatar}
-                            alt={character.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                          <div>
-                            <h3 className="font-medium text-sm">
-                              {character.name}
-                            </h3>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
-                              {character.description}
-                            </p>
+              
+            {/* Character list container */}
+            <div className="px-4 pb-4">
+              <AnimatePresence>
+                {sortedCharacters?.map((character) => (
+                  <motion.div
+                    key={character.id}
+                    variants={item}
+                    layoutId={character.id}
+                    className="relative group mb-3"
+                  >
+                    <Link href={`/chat/${character.id}`}>
+                      <div className="transform transition-all duration-300">
+                        <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-md hover:shadow-lg border border-yellow-500/20 dark:border-amber-500/20 hover:border-yellow-500/40 dark:hover:border-amber-500/40 p-3">
+                          <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={character.avatar}
+                              alt={character.name}
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                            <div>
+                              <h3 className="font-medium text-sm">
+                                {character.name}
+                              </h3>
+                              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
+                                {character.description}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                  {character.id.startsWith("custom_") && (
-                    <motion.button
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute top-2 right-2 p-1.5 bg-red-500/90 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleDeleteCharacter(character.id);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </motion.button>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                    </Link>
+                    {character.id.startsWith("custom_") && (
+                      <motion.button
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500/90 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteCharacter(character.id);
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </motion.button>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
           </motion.div>
 
           {/* Main Content Area - Redesigned with two columns */}
