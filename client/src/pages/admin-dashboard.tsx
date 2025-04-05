@@ -72,6 +72,7 @@ import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationPopover } from "@/components/admin/notification-popover";
+import CredentialManager from "@/components/admin/CredentialManager";
 import {
   BarChart,
   Bar,
@@ -864,6 +865,7 @@ export default function AdminDashboard() {
           </h1>
         </div>
         <div className="flex items-center gap-4">
+          <CredentialManager />
           <NotificationPopover />
 
           {/* Hamburger Menu */}

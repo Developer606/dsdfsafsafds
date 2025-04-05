@@ -2913,6 +2913,101 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     },
   );
   
+  // Credential Management API Endpoints
+  app.get("/api/admin/credentials", isAdmin, async (req, res) => {
+    try {
+      const { getAllApiKeys } = await import("./admin-db");
+      const credentials = await getAllApiKeys();
+      
+      // Mask sensitive values in the response
+      const maskedCredentials = credentials.map(cred => {
+        const key = cred.key;
+        let maskedKey = key;
+        
+        // Apply masking to protect sensitive information
+        if (key && key.length > 8) {
+          maskedKey = key.substring(0, 4) + '*'.repeat(key.length - 8) + key.substring(key.length - 4);
+        } else if (key) {
+          maskedKey = '*'.repeat(key.length);
+        }
+        
+        return {
+          ...cred,
+          key: maskedKey,
+          actualValueHidden: true
+        };
+      });
+      
+      res.json(maskedCredentials);
+    } catch (error: any) {
+      console.error("Error fetching credentials:", error);
+      res.status(500).json({ error: "Failed to fetch credentials" });
+    }
+  });
+  
+  app.get("/api/admin/credentials/:service", isAdmin, async (req, res) => {
+    try {
+      const { getApiKey } = await import("./admin-db");
+      const service = req.params.service;
+      const key = await getApiKey(service);
+      
+      if (!key) {
+        return res.status(404).json({ error: "Credential not found" });
+      }
+      
+      res.json({ service, key });
+    } catch (error: any) {
+      console.error(`Error fetching credential for ${req.params.service}:`, error);
+      res.status(500).json({ error: "Failed to fetch credential" });
+    }
+  });
+  
+  app.post("/api/admin/credentials", isAdmin, async (req, res) => {
+    try {
+      const { setApiKey } = await import("./admin-db");
+      const { service, key, description } = req.body;
+      
+      if (!service || !key) {
+        return res.status(400).json({ error: "Service name and key are required" });
+      }
+      
+      const success = await setApiKey(service, key, description);
+      
+      if (success) {
+        res.status(201).json({ success: true, message: "Credential saved successfully" });
+      } else {
+        res.status(500).json({ error: "Failed to save credential" });
+      }
+    } catch (error: any) {
+      console.error("Error saving credential:", error);
+      res.status(500).json({ error: "Failed to save credential" });
+    }
+  });
+  
+  app.delete("/api/admin/credentials/:service", isAdmin, async (req, res) => {
+    try {
+      const { adminDb, apiKeys } = await import("./admin-db");
+      const { eq } = await import("drizzle-orm");
+      const service = req.params.service;
+      
+      // Delete the API key
+      const result = await adminDb
+        .delete(apiKeys)
+        .where(eq(apiKeys.service, service))
+        .returning()
+        .get();
+      
+      if (!result) {
+        return res.status(404).json({ error: "Credential not found" });
+      }
+      
+      res.json({ success: true, message: "Credential deleted successfully" });
+    } catch (error: any) {
+      console.error(`Error deleting credential for ${req.params.service}:`, error);
+      res.status(500).json({ error: "Failed to delete credential" });
+    }
+  });
+  
   // User-to-user messaging endpoints
   app.get("/api/user-messages/conversations", async (req, res) => {
     try {
