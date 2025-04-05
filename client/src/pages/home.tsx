@@ -1609,7 +1609,7 @@ export default function Home() {
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <motion.div
                       whileHover={{ scale: 1.02 }}
-                      className="bg-gradient-to-br from-purple-100/60 to-pink-100/60 dark:from-purple-900/30 dark:to-pink-900/30 p-5 rounded-xl shadow-md border border-purple-200 dark:border-purple-800 backdrop-blur-md"
+                      className="bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 p-5 rounded-xl shadow-md border border-purple-200 dark:border-purple-800"
                     >
                       <h3 className="text-lg font-bold mb-2 text-purple-700 dark:text-purple-300">
                         Quick Shortcuts
@@ -1706,7 +1706,7 @@ export default function Home() {
                     {/* Tips & Help Panel */}
                     <motion.div
                       whileHover={{ scale: 1.02 }}
-                      className="bg-gradient-to-br from-amber-100/60 to-yellow-100/60 dark:from-amber-900/30 dark:to-yellow-900/30 p-5 rounded-xl shadow-md border border-amber-200 dark:border-amber-800 backdrop-blur-md"
+                      className="bg-gradient-to-br from-amber-100 to-yellow-100 dark:from-amber-900/30 dark:to-yellow-900/30 p-5 rounded-xl shadow-md border border-amber-200 dark:border-amber-800"
                     >
                       <h3 className="text-lg font-bold mb-2 text-amber-700 dark:text-amber-300">
                         Tips & Help
