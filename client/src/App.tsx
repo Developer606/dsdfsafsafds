@@ -17,6 +17,7 @@ import AdminUserManagement from "@/pages/admin-user-management";
 import UserSearch from "@/pages/user-search";
 import UserMessages from "@/pages/user-messages";
 import Conversations from "@/pages/conversations";
+import LibraryPage from "@/pages/library";
 import { ComplaintsSection } from "@/components/complaints-section";
 import { FeedbackSection } from "@/components/feedback-section";
 import { NotificationSocketProvider } from "@/components/notification-socket-provider";
@@ -48,6 +49,7 @@ function Router() {
       <ProtectedRoute path="/users/search" component={UserSearch} />
       <ProtectedRoute path="/user-messages/search" component={UserSearch} />
       <ProtectedRoute path="/user-messages/:userId" component={UserMessages} />
+      <ProtectedRoute path="/library" component={LibraryPage} />
 
       {/* Admin-only routes */}
       <ProtectedRoute
