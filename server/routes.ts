@@ -262,6 +262,50 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       res.status(500).json({ error: "Failed to load background images" });
     }
   });
+  
+  // PayPal mode toggle endpoint (for switching between sandbox and production)
+  app.post("/api/admin/paypal-mode", isAdmin, async (req, res) => {
+    try {
+      const { useProduction } = req.body;
+      
+      if (typeof useProduction !== 'boolean') {
+        return res.status(400).json({ error: "useProduction must be a boolean value" });
+      }
+      
+      const { togglePayPalMode } = await import("./config/index");
+      const success = await togglePayPalMode(useProduction);
+      
+      if (success) {
+        console.log(`PayPal mode switched to ${useProduction ? 'PRODUCTION' : 'SANDBOX'} by admin`);
+        res.json({ 
+          success: true, 
+          mode: useProduction ? 'production' : 'sandbox',
+          message: `PayPal mode switched to ${useProduction ? 'PRODUCTION' : 'SANDBOX'} mode`
+        });
+      } else {
+        res.status(500).json({ error: "Failed to toggle PayPal mode" });
+      }
+    } catch (error) {
+      console.error("Error toggling PayPal mode:", error);
+      res.status(500).json({ error: "Failed to toggle PayPal mode" });
+    }
+  });
+  
+  // Get current PayPal mode
+  app.get("/api/admin/paypal-mode", isAdmin, async (req, res) => {
+    try {
+      const { getPayPalMode } = await import("./config/index");
+      const mode = await getPayPalMode();
+      
+      res.json({ 
+        mode,
+        isProduction: mode === 'production'
+      });
+    } catch (error) {
+      console.error("Error getting PayPal mode:", error);
+      res.status(500).json({ error: "Failed to get PayPal mode" });
+    }
+  });
 
   // Notification Routes
   app.get("/api/notifications", async (req, res) => {

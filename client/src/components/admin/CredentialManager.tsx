@@ -64,7 +64,123 @@ import {
   Settings,
   Pencil,
   Save,
+  CreditCard,
+  AlertCircle,
 } from "lucide-react";
+import {
+  Alert,
+  AlertDescription,
+} from "@/components/ui/alert";
+import {
+  Switch,
+} from "@/components/ui/switch";
+
+// PayPal Mode Switch Component
+const PayPalModeSwitch = ({ onComplete }: { onComplete: () => void }) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false);
+  const [useProduction, setUseProduction] = useState(false);
+  
+  // Fetch current PayPal mode
+  const { data: modeData, isLoading: isModeLoading } = useQuery<PayPalMode>({
+    queryKey: ["/api/admin/paypal-mode"],
+    onSuccess: (data) => {
+      setUseProduction(data.isProduction);
+    },
+  });
+  
+  // Toggle the PayPal mode
+  const togglePayPalMode = async () => {
+    setIsLoading(true);
+    
+    try {
+      const response = await apiRequest(
+        "POST",
+        "/api/admin/paypal-mode",
+        { useProduction: !useProduction }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUseProduction(data.mode === 'production');
+        
+        toast({
+          title: "PayPal Mode Changed",
+          description: `PayPal is now in ${data.mode.toUpperCase()} mode`,
+        });
+        
+        // Invalidate any queries that might depend on PayPal config
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/paypal-mode"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/payment/client-id"] });
+        
+        if (onComplete) {
+          onComplete();
+        }
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to toggle PayPal mode");
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to toggle PayPal mode",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  return (
+    <div className="py-6">
+      <Alert className={useProduction ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"}>
+        <AlertCircle className={useProduction ? "text-amber-500" : "text-emerald-500"} />
+        <AlertDescription className="ml-2">
+          PayPal is currently in <strong>{useProduction ? "PRODUCTION" : "SANDBOX"}</strong> mode.
+          {useProduction 
+            ? " Real payments will be processed."
+            : " Test credentials are being used and no real charges will occur."}
+        </AlertDescription>
+      </Alert>
+      
+      <div className="flex items-center justify-between mt-6">
+        <div className="space-y-1">
+          <p className="font-medium">Toggle PayPal Mode</p>
+          <p className="text-sm text-muted-foreground">
+            Switch between testing and production environments.
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <span className={!useProduction ? "font-semibold" : "text-muted-foreground"}>
+            Sandbox
+          </span>
+          <Switch 
+            checked={useProduction} 
+            onCheckedChange={togglePayPalMode}
+            disabled={isLoading || isModeLoading}
+          />
+          <span className={useProduction ? "font-semibold" : "text-muted-foreground"}>
+            Production
+          </span>
+        </div>
+      </div>
+      
+      <div className="flex justify-between mt-8">
+        <Button variant="outline" onClick={onComplete}>
+          Close
+        </Button>
+        <Button 
+          variant={useProduction ? "default" : "outline"}
+          onClick={togglePayPalMode}
+          disabled={isLoading || isModeLoading}
+        >
+          {isLoading ? "Switching..." : useProduction ? "Switch to Sandbox" : "Switch to Production"}
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 // Define types for API responses
 interface Credential {
@@ -77,12 +193,18 @@ interface Credential {
   actualValueHidden: boolean;
 }
 
+interface PayPalMode {
+  mode: 'sandbox' | 'production';
+  isProduction: boolean;
+}
+
 const CredentialManager = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPayPalModeDialogOpen, setIsPayPalModeDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCredential, setSelectedCredential] = useState<string | null>(null);
   const [editingCredential, setEditingCredential] = useState({
@@ -96,6 +218,7 @@ const CredentialManager = () => {
     description: "",
   });
   const [showCredentialValues, setShowCredentialValues] = useState(false);
+  const [isChangingPayPalMode, setIsChangingPayPalMode] = useState(false);
 
   // Fetch credentials
   const { data: credentials = [], isLoading, isError, refetch } = useQuery<Credential[]>({
@@ -323,6 +446,11 @@ const CredentialManager = () => {
             )}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setIsPayPalModeDialogOpen(true)}>
+            <CreditCard className="mr-2 h-4 w-4" />
+            PayPal Mode Settings
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setIsCredentialsDialogOpen(true)}>
             <Key className="mr-2 h-4 w-4" />
             Manage All Credentials
@@ -461,6 +589,21 @@ const CredentialManager = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Credentials Dialog */}
+      {/* PayPal Mode Toggle Dialog */}
+      <Dialog open={isPayPalModeDialogOpen} onOpenChange={setIsPayPalModeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>PayPal Mode Settings</DialogTitle>
+            <DialogDescription>
+              Switch between PayPal Sandbox and Production modes.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <PayPalModeSwitch onComplete={() => setIsPayPalModeDialogOpen(false)} />
+        </DialogContent>
+      </Dialog>
 
       {/* Credentials Dialog */}
       <Dialog open={isCredentialsDialogOpen} onOpenChange={setIsCredentialsDialogOpen}>
