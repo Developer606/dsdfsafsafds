@@ -39,6 +39,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -96,6 +97,7 @@ const mangaSchema = z.object({
   chapters: z.coerce.number().int().positive("Chapters must be a positive number"),
   tags: z.string().min(1, "Tags are required"),
   release_date: z.string().min(1, "Release date is required"),
+  content_url: z.string().url("Must be a valid URL").optional(),
 });
 
 const bookSchema = z.object({
@@ -107,6 +109,7 @@ const bookSchema = z.object({
   pages: z.coerce.number().int().positive("Pages must be a positive number"),
   tags: z.string().min(1, "Tags are required"),
   release_date: z.string().min(1, "Release date is required"),
+  content_url: z.string().url("Must be a valid URL").optional(),
 });
 
 const newsSchema = z.object({
@@ -118,6 +121,7 @@ const newsSchema = z.object({
   date: z.string().min(1, "Date is required"),
   tags: z.string().min(1, "Tags are required"),
   source: z.string().min(1, "Source is required"),
+  content_url: z.string().url("Must be a valid URL").optional(),
 });
 
 export default function AdminLibrary() {
@@ -143,6 +147,7 @@ export default function AdminLibrary() {
       chapters: 0,
       tags: "",
       release_date: "",
+      content_url: "",
     },
   });
 
@@ -157,6 +162,7 @@ export default function AdminLibrary() {
       pages: 0,
       tags: "",
       release_date: "",
+      content_url: "",
     },
   });
 
@@ -171,6 +177,7 @@ export default function AdminLibrary() {
       date: "",
       tags: "",
       source: "",
+      content_url: "",
     },
   });
 
@@ -475,6 +482,7 @@ export default function AdminLibrary() {
           ? JSON.parse(manga.tags).join(', ')
           : manga.tags,
       release_date: manga.release_date,
+      content_url: manga.content_url || "",
     });
     setMangaDialogOpen(true);
   };
@@ -494,6 +502,7 @@ export default function AdminLibrary() {
           ? JSON.parse(book.tags).join(', ')
           : book.tags,
       release_date: book.release_date,
+      content_url: book.content_url || "",
     });
     setBookDialogOpen(true);
   };
@@ -513,6 +522,7 @@ export default function AdminLibrary() {
           ? JSON.parse(news.tags).join(', ')
           : news.tags,
       source: news.source,
+      content_url: news.content_url || "",
     });
     setNewsDialogOpen(true);
   };

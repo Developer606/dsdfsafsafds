@@ -149,7 +149,8 @@ export async function initializeLibraryDatabase() {
         tags TEXT NOT NULL,
         release_date TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        content_url TEXT
       )
     `);
 
@@ -164,7 +165,8 @@ export async function initializeLibraryDatabase() {
         tags TEXT NOT NULL,
         release_date TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        content_url TEXT
       )
     `);
 
@@ -179,7 +181,8 @@ export async function initializeLibraryDatabase() {
         tags TEXT NOT NULL,
         source TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+        updated_at TEXT NOT NULL,
+        content_url TEXT
       )
     `);
 
