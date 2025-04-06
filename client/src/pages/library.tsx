@@ -52,120 +52,7 @@ interface NewsItem {
   source: string;
 }
 
-// Placeholder data for the initial UI
-const dummyManga: MangaItem[] = [
-  {
-    id: "one-piece",
-    title: "One Piece",
-    cover:
-      "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx30013-oT7YguhEK1TE.jpg",
-    description:
-      "Gol D. Roger, a man referred to as the 'Pirate King,' is set to be executed by the World Government. But just before his death, he confirms the existence of a great treasure, One Piece, located somewhere within the vast ocean known as the Grand Line.",
-    author: "Eiichiro Oda",
-    chapters: 1037,
-    tags: ["Adventure", "Fantasy", "Action"],
-    releaseDate: "1997-07-22",
-  },
-  {
-    id: "attack-on-titan",
-    title: "Attack on Titan",
-    cover:
-      "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx53390-1RsuABC34p9u.jpg",
-    description:
-      "Several hundred years ago, humans were nearly exterminated by giants. Giants are typically several stories tall, seem to have no intelligence, and devour human beings.",
-    author: "Hajime Isayama",
-    chapters: 139,
-    tags: ["Action", "Drama", "Horror"],
-    releaseDate: "2009-09-09",
-  },
-  {
-    id: "demon-slayer",
-    title: "Demon Slayer",
-    cover:
-      "https://s4.anilist.co/file/anilistcdn/media/manga/cover/large/bx87216-c9bSNVD10UuD.png",
-    description:
-      "It is the Taisho Period in Japan. Tanjiro, a kindhearted boy who sells charcoal for a living, finds his family slaughtered by a demon. To make matters worse, his younger sister Nezuko, the sole survivor, has been transformed into a demon herself.",
-    author: "Koyoharu Gotouge",
-    chapters: 205,
-    tags: ["Action", "Supernatural", "Historical"],
-    releaseDate: "2016-02-15",
-  },
-];
-
-const dummyBooks: BookItem[] = [
-  {
-    id: "brave-new-world",
-    title: "Brave New World",
-    cover:
-      "https://images-na.ssl-images-amazon.com/images/I/41le8ej-fiL._SX325_BO1,204,203,200_.jpg",
-    description:
-      "Set in a dystopian future, the novel anticipates developments in reproductive technology, sleep-learning, psychological manipulation, and classical conditioning that combine to change society.",
-    author: "Aldous Huxley",
-    pages: 288,
-    tags: ["Science Fiction", "Dystopian", "Classic"],
-    releaseDate: "1932-01-01",
-  },
-  {
-    id: "1984",
-    title: "1984",
-    cover:
-      "https://images-na.ssl-images-amazon.com/images/I/41aM4xOZxaL._SX277_BO1,204,203,200_.jpg",
-    description:
-      "The novel is set in Airstrip One, a province of the superstate Oceania in a world of perpetual war, omnipresent government surveillance, and public manipulation.",
-    author: "George Orwell",
-    pages: 328,
-    tags: ["Dystopian", "Political", "Classic"],
-    releaseDate: "1949-06-08",
-  },
-  {
-    id: "harry-potter",
-    title: "Harry Potter and the Philosopher's Stone",
-    cover:
-      "https://images-na.ssl-images-amazon.com/images/I/51UoqRAxwEL._SX331_BO1,204,203,200_.jpg",
-    description:
-      "Harry Potter has never even heard of Hogwarts when the letters start dropping on the doormat at number four, Privet Drive.",
-    author: "J.K. Rowling",
-    pages: 320,
-    tags: ["Fantasy", "Magic", "Adventure"],
-    releaseDate: "1997-06-26",
-  },
-];
-
-const dummyNews: NewsItem[] = [
-  {
-    id: "anime-expo-2025",
-    title: "Anime Expo 2025 Announces Major Studio Appearances",
-    image: "https://images.unsplash.com/photo-1518051870910-a46e30d9db16",
-    summary:
-      "Anime Expo organizers have announced an impressive lineup of Japanese animation studios that will be attending next year's event, including MAPPA, Ufotable, and Kyoto Animation.",
-    author: "Anime News Network",
-    date: "2025-03-15",
-    tags: ["Event", "Industry", "Convention"],
-    source: "AnimeNewsNetwork",
-  },
-  {
-    id: "manga-sales-2025",
-    title: "Manga Sales Continue to Break Records in Global Markets",
-    image: "https://images.unsplash.com/photo-1588497859490-85d1c17db96d",
-    summary:
-      "Sales figures for the first quarter of 2025 show manga continuing to outsell traditional comics in North America and Europe by significant margins, with digital sales growing fastest among younger readers.",
-    author: "Japan Times",
-    date: "2025-04-02",
-    tags: ["Industry", "Sales", "Global"],
-    source: "JapanTimes",
-  },
-  {
-    id: "anime-streaming-platform",
-    title: "New AI-Enhanced Anime Streaming Platform Launches Next Month",
-    image: "https://images.unsplash.com/photo-1601513445506-2ae0d022d6e9",
-    summary:
-      "A revolutionary new streaming service dedicated to anime will launch next month featuring AI-enhanced upscaling of classic anime series and personalized recommendations based on viewing habits.",
-    author: "Tech Anime Journal",
-    date: "2025-03-28",
-    tags: ["Technology", "Streaming", "AI"],
-    source: "TechAnimeJournal",
-  },
-];
+// Data now comes from the API endpoints instead of placeholder data
 
 // Main Library component
 export default function Library() {
@@ -192,57 +79,51 @@ export default function Library() {
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  // Simulate fetching data from API
+  // Fetch manga data from the API
   const mangaQuery = useQuery({
     queryKey: ["/api/library/manga", searchQuery],
     enabled: activeTab === "manga",
-    // This placeholder would normally fetch from an API
     queryFn: async () => {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (searchQuery) {
-        return dummyManga.filter(
-          (manga) =>
-            manga.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            manga.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            manga.description.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+      const url = searchQuery 
+        ? `/api/library/manga?q=${encodeURIComponent(searchQuery)}`
+        : "/api/library/manga";
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch manga data");
       }
-      return dummyManga;
+      return await response.json();
     },
   });
 
+  // Fetch books data from the API
   const booksQuery = useQuery({
     queryKey: ["/api/library/books", searchQuery],
     enabled: activeTab === "books",
     queryFn: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (searchQuery) {
-        return dummyBooks.filter(
-          (book) =>
-            book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            book.description.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+      const url = searchQuery 
+        ? `/api/library/books?q=${encodeURIComponent(searchQuery)}`
+        : "/api/library/books";
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch books data");
       }
-      return dummyBooks;
+      return await response.json();
     },
   });
 
+  // Fetch news data from the API
   const newsQuery = useQuery({
     queryKey: ["/api/library/news", searchQuery],
     enabled: activeTab === "news",
     queryFn: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (searchQuery) {
-        return dummyNews.filter(
-          (news) =>
-            news.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            news.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            news.summary.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+      const url = searchQuery 
+        ? `/api/library/news?q=${encodeURIComponent(searchQuery)}`
+        : "/api/library/news";
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch news data");
       }
-      return dummyNews;
+      return await response.json();
     },
   });
 

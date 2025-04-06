@@ -1,6 +1,7 @@
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import express from "express";
+import * as libraryDb from "./library-db";
 import session from "express-session";
 import passport from "passport";
 import multer from "multer";
@@ -3357,6 +3358,153 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Register routes for file uploads
   app.use("/api/upload", uploadRoutes);
   app.use("/api/upload", errorHandler);
+
+  // Initialize library database
+  try {
+    await libraryDb.initializeLibraryDatabase();
+    console.log("Library database initialized successfully");
+  } catch (error) {
+    console.error("Error initializing library database:", error);
+  }
+
+  // Library API Routes
+  // Manga routes
+  app.get('/api/library/manga', async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      let manga;
+      
+      if (query) {
+        manga = await libraryDb.searchManga(query);
+      } else {
+        manga = await libraryDb.getAllManga();
+      }
+      
+      // Parse JSON string arrays back to JavaScript arrays
+      const formattedManga = manga.map(item => ({
+        ...item,
+        tags: JSON.parse(item.tags)
+      }));
+      
+      res.json(formattedManga);
+    } catch (error) {
+      console.error("Error fetching manga:", error);
+      res.status(500).json({ error: "Failed to fetch manga" });
+    }
+  });
+
+  app.get('/api/library/manga/:id', async (req, res) => {
+    try {
+      const manga = await libraryDb.getMangaById(req.params.id);
+      
+      if (!manga) {
+        return res.status(404).json({ error: "Manga not found" });
+      }
+      
+      // Parse JSON string arrays back to JavaScript arrays
+      const formattedManga = {
+        ...manga,
+        tags: JSON.parse(manga.tags)
+      };
+      
+      res.json(formattedManga);
+    } catch (error) {
+      console.error(`Error fetching manga ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch manga" });
+    }
+  });
+
+  // Books routes
+  app.get('/api/library/books', async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      let books;
+      
+      if (query) {
+        books = await libraryDb.searchBooks(query);
+      } else {
+        books = await libraryDb.getAllBooks();
+      }
+      
+      // Parse JSON string arrays back to JavaScript arrays
+      const formattedBooks = books.map(item => ({
+        ...item,
+        tags: JSON.parse(item.tags)
+      }));
+      
+      res.json(formattedBooks);
+    } catch (error) {
+      console.error("Error fetching books:", error);
+      res.status(500).json({ error: "Failed to fetch books" });
+    }
+  });
+
+  app.get('/api/library/books/:id', async (req, res) => {
+    try {
+      const book = await libraryDb.getBookById(req.params.id);
+      
+      if (!book) {
+        return res.status(404).json({ error: "Book not found" });
+      }
+      
+      // Parse JSON string arrays back to JavaScript arrays
+      const formattedBook = {
+        ...book,
+        tags: JSON.parse(book.tags)
+      };
+      
+      res.json(formattedBook);
+    } catch (error) {
+      console.error(`Error fetching book ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch book" });
+    }
+  });
+
+  // News routes
+  app.get('/api/library/news', async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      let news;
+      
+      if (query) {
+        news = await libraryDb.searchNews(query);
+      } else {
+        news = await libraryDb.getAllNews();
+      }
+      
+      // Parse JSON string arrays back to JavaScript arrays
+      const formattedNews = news.map(item => ({
+        ...item,
+        tags: JSON.parse(item.tags)
+      }));
+      
+      res.json(formattedNews);
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      res.status(500).json({ error: "Failed to fetch news" });
+    }
+  });
+
+  app.get('/api/library/news/:id', async (req, res) => {
+    try {
+      const news = await libraryDb.getNewsById(req.params.id);
+      
+      if (!news) {
+        return res.status(404).json({ error: "News article not found" });
+      }
+      
+      // Parse JSON string arrays back to JavaScript arrays
+      const formattedNews = {
+        ...news,
+        tags: JSON.parse(news.tags)
+      };
+      
+      res.json(formattedNews);
+    } catch (error) {
+      console.error(`Error fetching news ${req.params.id}:`, error);
+      res.status(500).json({ error: "Failed to fetch news article" });
+    }
+  });
 
   return httpServer;
 }

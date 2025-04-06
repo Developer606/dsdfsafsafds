@@ -629,3 +629,70 @@ export type Advertisement = typeof advertisements.$inferSelect;
 export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
 export type AdvertisementMetric = typeof advertisementMetrics.$inferSelect;
 export type InsertAdvertisementMetric = z.infer<typeof insertAdvertisementMetricSchema>;
+
+// Library tables for manga, books, and news
+export const manga = sqliteTable("manga", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  cover: text("cover").notNull(),
+  description: text("description").notNull(),
+  author: text("author").notNull(),
+  chapters: integer("chapters").notNull(),
+  tags: text("tags").notNull(), // JSON string array
+  release_date: text("release_date").notNull(),
+  created_at: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updated_at: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const books = sqliteTable("books", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  cover: text("cover").notNull(),
+  description: text("description").notNull(),
+  author: text("author").notNull(),
+  pages: integer("pages").notNull(),
+  tags: text("tags").notNull(), // JSON string array
+  release_date: text("release_date").notNull(),
+  created_at: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updated_at: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const news = sqliteTable("news", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  image: text("image").notNull(),
+  summary: text("summary").notNull(),
+  author: text("author").notNull(),
+  date: text("date").notNull(),
+  tags: text("tags").notNull(), // JSON string array 
+  source: text("source").notNull(),
+  created_at: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updated_at: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Library insert schemas
+export const insertMangaSchema = createInsertSchema(manga);
+
+export const insertBookSchema = createInsertSchema(books);
+
+export const insertNewsSchema = createInsertSchema(news);
+
+// Library types
+export type Manga = typeof manga.$inferSelect;
+export type InsertManga = z.infer<typeof insertMangaSchema>;
+export type Book = typeof books.$inferSelect;
+export type InsertBook = z.infer<typeof insertBookSchema>;
+export type News = typeof news.$inferSelect;
+export type InsertNews = z.infer<typeof insertNewsSchema>;
