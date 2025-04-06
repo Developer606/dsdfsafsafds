@@ -148,6 +148,7 @@ export async function initializeLibraryDatabase() {
         chapters INTEGER NOT NULL,
         tags TEXT NOT NULL,
         release_date TEXT NOT NULL,
+        read_url TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -163,6 +164,7 @@ export async function initializeLibraryDatabase() {
         pages INTEGER NOT NULL,
         tags TEXT NOT NULL,
         release_date TEXT NOT NULL,
+        read_url TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -178,6 +180,7 @@ export async function initializeLibraryDatabase() {
         date TEXT NOT NULL,
         tags TEXT NOT NULL,
         source TEXT NOT NULL,
+        article_url TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
