@@ -28,6 +28,7 @@ interface MangaItem {
   chapters: number;
   tags: string[];
   releaseDate: string;
+  read_url?: string;
 }
 
 interface BookItem {
@@ -39,6 +40,7 @@ interface BookItem {
   pages: number;
   tags: string[];
   releaseDate: string;
+  read_url?: string;
 }
 
 interface NewsItem {
@@ -50,6 +52,7 @@ interface NewsItem {
   date: string;
   tags: string[];
   source: string;
+  article_url?: string;
 }
 
 // Data now comes from the API endpoints instead of placeholder data
