@@ -29,7 +29,6 @@ import encryptionRoutes from "./encryption-routes";
 import advertisementRoutes from "./routes/advertisement-routes";
 import uploadRoutes from "./routes/upload";
 import socialAuthRoutes, { initializeGoogleStrategy } from "./routes/social-auth";
-import libraryRoutes from "./library-routes";
 import { errorHandler } from "./middleware/error-handler";
 import {
   insertMessageSchema,
@@ -3354,10 +3353,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Register advertisement routes
   app.use("/api/advertisements", advertisementRoutes);
   app.use("/api/advertisements", errorHandler);
-  
-  // Register library routes
-  app.use("/api/library", libraryRoutes);
-  app.use("/api/library", errorHandler);
   
   // Register routes for file uploads
   app.use("/api/upload", uploadRoutes);
