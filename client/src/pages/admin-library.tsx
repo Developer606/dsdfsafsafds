@@ -853,6 +853,12 @@ export default function AdminLibrary() {
                                       if (target.files && target.files.length > 0) {
                                         const file = target.files[0];
                                         
+                                        // Show loading toast
+                                        toast({
+                                          title: "Uploading file...",
+                                          description: "Please wait while we upload your file",
+                                        });
+                                        
                                         // Create FormData
                                         const formData = new FormData();
                                         formData.append('file', file);
@@ -870,16 +876,18 @@ export default function AdminLibrary() {
                                           const data = await response.json();
                                           
                                           // Set the URL in the form
-                                          form.setValue('content_url', data.url);
+                                          mangaForm.setValue('content_url', data.url);
                                           
                                           toast({
                                             title: 'Upload successful',
-                                            description: 'File URL has been added to the form',
+                                            description: `File "${file.name}" uploaded and URL added to form`,
+                                            variant: 'default',
                                           });
                                         } catch (error) {
+                                          console.error("Upload error:", error);
                                           toast({
                                             title: 'Upload failed',
-                                            description: error instanceof Error ? error.message : 'An error occurred',
+                                            description: error instanceof Error ? error.message : 'An error occurred during upload',
                                             variant: 'destructive',
                                           });
                                         }
@@ -1228,6 +1236,12 @@ export default function AdminLibrary() {
                                         const formData = new FormData();
                                         formData.append('file', file);
                                         
+                                        // Show loading toast
+                                        toast({
+                                          title: "Uploading file...",
+                                          description: "Please wait while we upload your file",
+                                        });
+                                          
                                         try {
                                           const response = await fetch('/api/upload/admin?type=book', {
                                             method: 'POST',
@@ -1245,12 +1259,14 @@ export default function AdminLibrary() {
                                           
                                           toast({
                                             title: 'Upload successful',
-                                            description: 'File URL has been added to the form',
+                                            description: `File "${file.name}" uploaded and URL added to form`,
+                                            variant: 'default',
                                           });
                                         } catch (error) {
+                                          console.error("Upload error:", error);
                                           toast({
                                             title: 'Upload failed',
-                                            description: error instanceof Error ? error.message : 'An error occurred',
+                                            description: error instanceof Error ? error.message : 'An error occurred during upload',
                                             variant: 'destructive',
                                           });
                                         }
