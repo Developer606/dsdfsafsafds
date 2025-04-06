@@ -97,7 +97,7 @@ const mangaSchema = z.object({
   chapters: z.coerce.number().int().positive("Chapters must be a positive number"),
   tags: z.string().min(1, "Tags are required"),
   release_date: z.string().min(1, "Release date is required"),
-  content_url: z.string().url("Must be a valid URL").optional(),
+  content_url: z.string().optional(),
 });
 
 const bookSchema = z.object({
@@ -109,7 +109,7 @@ const bookSchema = z.object({
   pages: z.coerce.number().int().positive("Pages must be a positive number"),
   tags: z.string().min(1, "Tags are required"),
   release_date: z.string().min(1, "Release date is required"),
-  content_url: z.string().url("Must be a valid URL").optional(),
+  content_url: z.string().optional(),
 });
 
 const newsSchema = z.object({
@@ -121,7 +121,7 @@ const newsSchema = z.object({
   date: z.string().min(1, "Date is required"),
   tags: z.string().min(1, "Tags are required"),
   source: z.string().min(1, "Source is required"),
-  content_url: z.string().url("Must be a valid URL").optional(),
+  content_url: z.string().optional(),
 });
 
 export default function AdminLibrary() {
