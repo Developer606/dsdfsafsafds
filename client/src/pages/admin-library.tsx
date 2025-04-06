@@ -809,6 +809,23 @@ export default function AdminLibrary() {
                           )}
                         />
                       </div>
+                      <FormField
+                        control={mangaForm.control}
+                        name="content_url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Content URL (for "Read Now" button)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://example.com/manga/read/my-manga" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to show "Coming Soon" message, or enter a URL to make the button functional
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
                       <DialogFooter>
                         <Button 
                           type="button" 
@@ -844,6 +861,7 @@ export default function AdminLibrary() {
                       <TableHead>Chapters</TableHead>
                       <TableHead>Tags</TableHead>
                       <TableHead>Release Date</TableHead>
+                      <TableHead>Content URL</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -880,6 +898,20 @@ export default function AdminLibrary() {
                             </div>
                           </TableCell>
                           <TableCell>{manga.release_date}</TableCell>
+                          <TableCell className="truncate max-w-[150px]">
+                            {manga.content_url ? (
+                              <a 
+                                href={manga.content_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-500 hover:underline truncate block"
+                              >
+                                {manga.content_url}
+                              </a>
+                            ) : (
+                              <span className="text-gray-400 italic">None</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
@@ -1078,6 +1110,22 @@ export default function AdminLibrary() {
                           )}
                         />
                       </div>
+                      <FormField
+                        control={bookForm.control}
+                        name="content_url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Content URL (for "Read Now" button)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://example.com/books/read/brave-new-world" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to show "Coming Soon" message, or enter a URL to make the button functional
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <DialogFooter>
                         <Button 
                           type="button" 
@@ -1113,6 +1161,7 @@ export default function AdminLibrary() {
                       <TableHead>Pages</TableHead>
                       <TableHead>Tags</TableHead>
                       <TableHead>Release Date</TableHead>
+                      <TableHead>Content URL</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1149,6 +1198,20 @@ export default function AdminLibrary() {
                             </div>
                           </TableCell>
                           <TableCell>{book.release_date}</TableCell>
+                          <TableCell className="truncate max-w-[150px]">
+                            {book.content_url ? (
+                              <a 
+                                href={book.content_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-500 hover:underline truncate block"
+                              >
+                                {book.content_url}
+                              </a>
+                            ) : (
+                              <span className="text-gray-400 italic">None</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
@@ -1343,6 +1406,22 @@ export default function AdminLibrary() {
                           )}
                         />
                       </div>
+                      <FormField
+                        control={newsForm.control}
+                        name="content_url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Content URL (for "Read Full Article" button)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://example.com/news/article/anime-expo-2025" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Leave empty to show "Coming Soon" message, or enter a URL to make the button functional
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                       <DialogFooter>
                         <Button 
                           type="button" 
@@ -1378,6 +1457,7 @@ export default function AdminLibrary() {
                       <TableHead>Date</TableHead>
                       <TableHead>Tags</TableHead>
                       <TableHead>Source</TableHead>
+                      <TableHead>Content URL</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1416,6 +1496,20 @@ export default function AdminLibrary() {
                             </div>
                           </TableCell>
                           <TableCell>{news.source}</TableCell>
+                          <TableCell className="truncate max-w-[150px]">
+                            {news.content_url ? (
+                              <a 
+                                href={news.content_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-500 hover:underline truncate block"
+                              >
+                                {news.content_url}
+                              </a>
+                            ) : (
+                              <span className="text-gray-400 italic">None</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button

@@ -28,6 +28,7 @@ interface MangaItem {
   chapters: number;
   tags: string[];
   releaseDate: string;
+  content_url?: string;
 }
 
 interface BookItem {
@@ -39,6 +40,7 @@ interface BookItem {
   pages: number;
   tags: string[];
   releaseDate: string;
+  content_url?: string;
 }
 
 interface NewsItem {
@@ -50,6 +52,7 @@ interface NewsItem {
   date: string;
   tags: string[];
   source: string;
+  content_url?: string;
 }
 
 // Data now comes from the API endpoints instead of placeholder data
@@ -127,13 +130,18 @@ export default function Library() {
     },
   });
 
-  const handleReadMore = (id: string, type: string) => {
-    // This would normally navigate to a detailed view
-    toast({
-      title: "Coming Soon",
-      description: `Reading ${type} content will be available in a future update!`,
-      variant: "default",
-    });
+  const handleReadMore = (id: string, type: string, contentUrl?: string) => {
+    if (contentUrl) {
+      // If content URL is provided, navigate to it
+      window.open(contentUrl, '_blank');
+    } else {
+      // Otherwise show toast message
+      toast({
+        title: "Coming Soon",
+        description: `Reading ${type} content will be available in a future update!`,
+        variant: "default",
+      });
+    }
   };
 
   // Modern Android Material Design 3 mobile UI
@@ -369,7 +377,7 @@ export default function Library() {
                         <div className="flex space-x-2">
                           <motion.button
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => handleReadMore(manga.id, "manga")}
+                            onClick={() => handleReadMore(manga.id, "manga", manga.content_url)}
                             className="flex-1 py-2.5 bg-purple-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
                           >
                             Read Now
@@ -493,7 +501,7 @@ export default function Library() {
                         <div className="flex space-x-2">
                           <motion.button
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => handleReadMore(book.id, "book")}
+                            onClick={() => handleReadMore(book.id, "book", book.content_url)}
                             className="flex-1 py-2.5 bg-blue-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
                           >
                             Read Now
@@ -618,7 +626,7 @@ export default function Library() {
                           <motion.button
                             whileTap={{ scale: 0.95 }}
                             onClick={() =>
-                              handleReadMore(news.id, "news article")
+                              handleReadMore(news.id, "news article", news.content_url)
                             }
                             className="flex-1 py-2.5 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
                           >
@@ -829,7 +837,7 @@ export default function Library() {
                           </CardContent>
                           <CardFooter>
                             <Button
-                              onClick={() => handleReadMore(manga.id, "manga")}
+                              onClick={() => handleReadMore(manga.id, "manga", manga.content_url)}
                               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                             >
                               Read Now
@@ -914,7 +922,7 @@ export default function Library() {
                           </CardContent>
                           <CardFooter>
                             <Button
-                              onClick={() => handleReadMore(book.id, "book")}
+                              onClick={() => handleReadMore(book.id, "book", book.content_url)}
                               className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
                             >
                               Read Now
@@ -1004,7 +1012,7 @@ export default function Library() {
                           <CardFooter>
                             <Button
                               onClick={() =>
-                                handleReadMore(news.id, "news article")
+                                handleReadMore(news.id, "news article", news.content_url)
                               }
                               className="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white"
                             >
