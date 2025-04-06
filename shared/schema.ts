@@ -640,7 +640,6 @@ export const manga = sqliteTable("manga", {
   chapters: integer("chapters").notNull(),
   tags: text("tags").notNull(), // JSON string array
   release_date: text("release_date").notNull(),
-  read_url: text("read_url"), // URL for "Read Now" button
   created_at: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -658,7 +657,6 @@ export const books = sqliteTable("books", {
   pages: integer("pages").notNull(),
   tags: text("tags").notNull(), // JSON string array
   release_date: text("release_date").notNull(),
-  read_url: text("read_url"), // URL for "Read Now" button
   created_at: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -676,7 +674,6 @@ export const news = sqliteTable("news", {
   date: text("date").notNull(),
   tags: text("tags").notNull(), // JSON string array 
   source: text("source").notNull(),
-  article_url: text("article_url"), // URL for "Read Full Article" button
   created_at: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
