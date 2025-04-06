@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Home, Book, Newspaper, Search, Menu } from "lucide-react";
+import { ContentReader } from "../components/content-reader";
 
 // Define interfaces for the library content
 interface MangaItem {
@@ -130,12 +131,32 @@ export default function Library() {
     },
   });
 
-  const handleReadMore = (id: string, type: string, contentUrl?: string) => {
+  // State for content reader
+  const [readerOpen, setReaderOpen] = useState(false);
+  const [currentContent, setCurrentContent] = useState<{ 
+    id: string;
+    title: string;
+    type: "manga" | "book"; 
+    url: string;
+  } | null>(null);
+
+  const handleReadMore = (id: string, type: string, contentUrl?: string, title?: string) => {
     if (contentUrl) {
-      // If content URL is provided, navigate to it
-      window.open(contentUrl, '_blank');
+      if (type === "manga" || type === "book") {
+        // For manga and books, open in the in-app reader
+        setCurrentContent({
+          id,
+          title: title || id,
+          type: type as "manga" | "book",
+          url: contentUrl
+        });
+        setReaderOpen(true);
+      } else {
+        // For news or other types, open in a new tab
+        window.open(contentUrl, '_blank');
+      }
     } else {
-      // Otherwise show toast message
+      // If no content URL, show toast message
       toast({
         title: "Coming Soon",
         description: `Reading ${type} content will be available in a future update!`,
@@ -377,7 +398,7 @@ export default function Library() {
                         <div className="flex space-x-2">
                           <motion.button
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => handleReadMore(manga.id, "manga", manga.content_url)}
+                            onClick={() => handleReadMore(manga.id, "manga", manga.content_url, manga.title)}
                             className="flex-1 py-2.5 bg-purple-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
                           >
                             Read Now
@@ -501,7 +522,7 @@ export default function Library() {
                         <div className="flex space-x-2">
                           <motion.button
                             whileTap={{ scale: 0.95 }}
-                            onClick={() => handleReadMore(book.id, "book", book.content_url)}
+                            onClick={() => handleReadMore(book.id, "book", book.content_url, book.title)}
                             className="flex-1 py-2.5 bg-blue-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
                           >
                             Read Now
@@ -626,7 +647,7 @@ export default function Library() {
                           <motion.button
                             whileTap={{ scale: 0.95 }}
                             onClick={() =>
-                              handleReadMore(news.id, "news article", news.content_url)
+                              handleReadMore(news.id, "news article", news.content_url, news.title)
                             }
                             className="flex-1 py-2.5 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-full text-sm font-medium flex items-center justify-center material-ripple"
                           >
@@ -659,6 +680,17 @@ export default function Library() {
             </div>
           )}
         </div>
+        
+        {/* Content Reader Dialog (Mobile) */}
+        {currentContent && (
+          <ContentReader
+            isOpen={readerOpen}
+            onClose={() => setReaderOpen(false)}
+            contentUrl={currentContent.url}
+            title={currentContent.title}
+            type={currentContent.type}
+          />
+        )}
       </div>
     );
   }
@@ -837,7 +869,7 @@ export default function Library() {
                           </CardContent>
                           <CardFooter>
                             <Button
-                              onClick={() => handleReadMore(manga.id, "manga", manga.content_url)}
+                              onClick={() => handleReadMore(manga.id, "manga", manga.content_url, manga.title)}
                               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
                             >
                               Read Now
@@ -922,7 +954,7 @@ export default function Library() {
                           </CardContent>
                           <CardFooter>
                             <Button
-                              onClick={() => handleReadMore(book.id, "book", book.content_url)}
+                              onClick={() => handleReadMore(book.id, "book", book.content_url, book.title)}
                               className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white"
                             >
                               Read Now
@@ -1012,7 +1044,7 @@ export default function Library() {
                           <CardFooter>
                             <Button
                               onClick={() =>
-                                handleReadMore(news.id, "news article", news.content_url)
+                                handleReadMore(news.id, "news article", news.content_url, news.title)
                               }
                               className="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white"
                             >
@@ -1027,6 +1059,17 @@ export default function Library() {
           </Tabs>
         </div>
       </div>
+      
+      {/* Content Reader Dialog (Desktop) */}
+      {currentContent && (
+        <ContentReader
+          isOpen={readerOpen}
+          onClose={() => setReaderOpen(false)}
+          contentUrl={currentContent.url}
+          title={currentContent.title}
+          type={currentContent.type}
+        />
+      )}
     </div>
   );
 }
