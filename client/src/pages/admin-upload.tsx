@@ -268,7 +268,7 @@ export default function AdminUpload() {
                       <SelectValue placeholder="Select a manga..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">None (Manual URL Copy)</SelectItem>
+                      <SelectItem value="none">Don't associate with any manga</SelectItem>
                       {mangaQuery.isLoading ? (
                         <SelectItem value="loading" disabled>Loading manga...</SelectItem>
                       ) : mangaQuery.isError ? (
@@ -293,7 +293,8 @@ export default function AdminUpload() {
                 
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 mb-4">
                   <Upload className="w-10 h-10 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500 mb-4">Click to browse or drag and drop</p>
+                  <p className="text-sm text-gray-500 mb-2">Upload manga content files</p>
+                  <p className="text-xs text-blue-600 mb-4">Supported: PDF, JPG, PNG, GIF (Max size: 30MB)</p>
                   <input
                     type="file"
                     className="hidden"
@@ -404,7 +405,8 @@ export default function AdminUpload() {
                           </div>
                         ) : (
                           <p className="text-sm text-gray-500 mt-2">
-                            Copy this URL and paste it into the Manga content_url field in the admin panel
+                            File uploaded successfully! URL is shown above. 
+                            <br />Select a manga from the dropdown to associate it with this file.
                           </p>
                         )}
                       </>
@@ -449,7 +451,7 @@ export default function AdminUpload() {
                       <SelectValue placeholder="Select a book..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">None (Manual URL Copy)</SelectItem>
+                      <SelectItem value="none">Don't associate with any book</SelectItem>
                       {booksQuery.isLoading ? (
                         <SelectItem value="loading" disabled>Loading books...</SelectItem>
                       ) : booksQuery.isError ? (
@@ -474,7 +476,8 @@ export default function AdminUpload() {
                 
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 mb-4">
                   <Upload className="w-10 h-10 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500 mb-4">Click to browse or drag and drop</p>
+                  <p className="text-sm text-gray-500 mb-2">Upload book content files</p>
+                  <p className="text-xs text-blue-600 mb-4">Supported: PDF, EPUB, MOBI, AZW (Max size: 30MB)</p>
                   <input
                     type="file"
                     className="hidden"
@@ -584,7 +587,8 @@ export default function AdminUpload() {
                           </div>
                         ) : (
                           <p className="text-sm text-gray-500 mt-2">
-                            Copy this URL and paste it into the Book content_url field in the admin panel
+                            File uploaded successfully! URL is shown above. 
+                            <br />Select a book from the dropdown to associate it with this file.
                           </p>
                         )}
                       </>
