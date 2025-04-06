@@ -67,6 +67,7 @@ import {
   Newspaper,
   ShoppingBag,
   Megaphone,
+  Library,
 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -943,6 +944,15 @@ export default function AdminDashboard() {
                   >
                     <Newspaper className="h-4 w-4" />
                     Advertisements
+                  </Button>
+                </Link>
+                <Link href="/admin/library" className="w-full">
+                  <Button
+                    variant="secondary"
+                    className="w-full gap-2 justify-start"
+                  >
+                    <Library className="h-4 w-4" />
+                    Library Management
                   </Button>
                 </Link>
                 <Link href="/admin/users" className="w-full">

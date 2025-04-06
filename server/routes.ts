@@ -31,6 +31,7 @@ import advertisementRoutes from "./routes/advertisement-routes";
 import uploadRoutes from "./routes/upload";
 import socialAuthRoutes, { initializeGoogleStrategy } from "./routes/social-auth";
 import { errorHandler } from "./middleware/error-handler";
+import { isAdmin } from "./middleware/auth";
 import {
   insertMessageSchema,
   insertCustomCharacterSchema,
@@ -41,7 +42,7 @@ import {
   insertNotificationSchema,
   notifications,
 } from "@shared/schema";
-import { setupAuth, isAdmin } from "./auth";
+import { setupAuth } from "./auth";
 import { generateOTP, hashPassword } from "./auth";
 import { authenticateJWT } from "./middleware/jwt-auth";
 import { rateLimiter, messageRateLimiter, authRateLimiter } from "./middleware/rate-limiter";
@@ -3503,6 +3504,121 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     } catch (error) {
       console.error(`Error fetching news ${req.params.id}:`, error);
       res.status(500).json({ error: "Failed to fetch news article" });
+    }
+  });
+
+  // Admin Library Management Endpoints
+  // Manga management
+  app.post('/api/admin/library/manga', isAdmin, async (req, res) => {
+    try {
+      const mangaData = req.body;
+      const result = await libraryDb.createManga(mangaData);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error creating manga:", error);
+      res.status(500).json({ error: "Failed to create manga" });
+    }
+  });
+
+  app.put('/api/admin/library/manga/:id', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const mangaData = req.body;
+      const result = await libraryDb.updateManga(id, mangaData);
+      if (!result) {
+        return res.status(404).json({ error: "Manga not found" });
+      }
+      res.json(result);
+    } catch (error) {
+      console.error("Error updating manga:", error);
+      res.status(500).json({ error: "Failed to update manga" });
+    }
+  });
+
+  app.delete('/api/admin/library/manga/:id', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await libraryDb.deleteManga(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting manga:", error);
+      res.status(500).json({ error: "Failed to delete manga" });
+    }
+  });
+
+  // Book management
+  app.post('/api/admin/library/books', isAdmin, async (req, res) => {
+    try {
+      const bookData = req.body;
+      const result = await libraryDb.createBook(bookData);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error creating book:", error);
+      res.status(500).json({ error: "Failed to create book" });
+    }
+  });
+
+  app.put('/api/admin/library/books/:id', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const bookData = req.body;
+      const result = await libraryDb.updateBook(id, bookData);
+      if (!result) {
+        return res.status(404).json({ error: "Book not found" });
+      }
+      res.json(result);
+    } catch (error) {
+      console.error("Error updating book:", error);
+      res.status(500).json({ error: "Failed to update book" });
+    }
+  });
+
+  app.delete('/api/admin/library/books/:id', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await libraryDb.deleteBook(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting book:", error);
+      res.status(500).json({ error: "Failed to delete book" });
+    }
+  });
+
+  // News management
+  app.post('/api/admin/library/news', isAdmin, async (req, res) => {
+    try {
+      const newsData = req.body;
+      const result = await libraryDb.createNews(newsData);
+      res.status(201).json(result);
+    } catch (error) {
+      console.error("Error creating news:", error);
+      res.status(500).json({ error: "Failed to create news" });
+    }
+  });
+
+  app.put('/api/admin/library/news/:id', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const newsData = req.body;
+      const result = await libraryDb.updateNews(id, newsData);
+      if (!result) {
+        return res.status(404).json({ error: "News not found" });
+      }
+      res.json(result);
+    } catch (error) {
+      console.error("Error updating news:", error);
+      res.status(500).json({ error: "Failed to update news" });
+    }
+  });
+
+  app.delete('/api/admin/library/news/:id', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await libraryDb.deleteNews(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting news:", error);
+      res.status(500).json({ error: "Failed to delete news" });
     }
   });
 

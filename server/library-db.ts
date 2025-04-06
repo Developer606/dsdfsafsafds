@@ -219,7 +219,15 @@ export async function createManga(data: InsertManga): Promise<Manga> {
 }
 
 export async function updateManga(id: string, data: Partial<InsertManga>): Promise<Manga | undefined> {
-  await libraryDb.update(manga).set(data).where(eq(manga.id, id)).run();
+  // Create a sanitized copy of the data without id (since it's in the where clause)
+  const { id: _, ...updateData } = data;
+  
+  // Update the record
+  await libraryDb.update(manga).set({
+    ...updateData,
+    updated_at: new Date()
+  }).where(eq(manga.id, id)).run();
+  
   return getMangaById(id);
 }
 
@@ -253,7 +261,15 @@ export async function createBook(data: InsertBook): Promise<Book> {
 }
 
 export async function updateBook(id: string, data: Partial<InsertBook>): Promise<Book | undefined> {
-  await libraryDb.update(books).set(data).where(eq(books.id, id)).run();
+  // Create a sanitized copy of the data without id (since it's in the where clause)
+  const { id: _, ...updateData } = data;
+  
+  // Update the record
+  await libraryDb.update(books).set({
+    ...updateData,
+    updated_at: new Date()
+  }).where(eq(books.id, id)).run();
+  
   return getBookById(id);
 }
 
@@ -287,7 +303,15 @@ export async function createNews(data: InsertNews): Promise<News> {
 }
 
 export async function updateNews(id: string, data: Partial<InsertNews>): Promise<News | undefined> {
-  await libraryDb.update(news).set(data).where(eq(news.id, id)).run();
+  // Create a sanitized copy of the data without id (since it's in the where clause)
+  const { id: _, ...updateData } = data;
+  
+  // Update the record
+  await libraryDb.update(news).set({
+    ...updateData,
+    updated_at: new Date()
+  }).where(eq(news.id, id)).run();
+  
   return getNewsById(id);
 }
 
