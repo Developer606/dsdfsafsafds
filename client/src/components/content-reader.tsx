@@ -89,6 +89,27 @@ export function ContentReader({ isOpen, onClose, contentUrl, title, type }: Cont
       title: "Content Loading Error",
       description: "Unable to display the content in-app. Click the download button to open externally.",
     });
+    
+    // Add fallback error display in the content area
+    const contentElement = document.querySelector(".content-reader-area");
+    if (contentElement) {
+      contentElement.innerHTML = `
+        <div class="p-8 text-center">
+          <div class="mb-4 text-red-500">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-red-700 mb-2">Content cannot be displayed</h3>
+          <p class="text-gray-600 mb-4">There was an error loading this content in the viewer.</p>
+          <button onclick="window.open('${contentUrl}', '_blank')" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            Open in New Tab
+          </button>
+        </div>
+      `;
+    }
   };
 
   return (
@@ -100,6 +121,10 @@ export function ContentReader({ isOpen, onClose, contentUrl, title, type }: Cont
             <span className="text-sm text-muted-foreground">({type === "manga" ? "Manga" : "Book"})</span>
           </div>
           <div className="flex items-center gap-1">
+            <div className="hidden sm:flex items-center bg-blue-50 text-blue-700 text-xs rounded-md px-2 py-1 mr-2">
+              <span className="font-medium">Tip:</span>
+              <span className="ml-1">Use controls to zoom, fullscreen, or download</span>
+            </div>
             <Button variant="outline" size="icon" onClick={handleZoomOut} title="Zoom Out">
               <ZoomOut className="h-4 w-4" />
             </Button>
@@ -123,7 +148,7 @@ export function ContentReader({ isOpen, onClose, contentUrl, title, type }: Cont
         
         <ScrollArea className="w-full h-[calc(100%-57px)]">
           <div 
-            className="w-full min-h-full flex items-center justify-center p-4"
+            className="content-reader-area w-full min-h-full flex items-center justify-center p-4"
             style={{ transform: `scale(${zoom / 100})`, transformOrigin: "top center", transition: "transform 0.2s" }}
           >
             {isLoading ? (

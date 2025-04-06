@@ -844,9 +844,10 @@ export default function AdminLibrary() {
                               </div>
                             </div>
                             <FormDescription>
-                              Enter a URL to PDF, image file, or embed link. Content will open directly in-app.
-                              Supports PDF files, image files (JPG, PNG), and Amazon Kindle embeds.
-                              Leave empty to show "Coming Soon" message.
+                              <p>Enter a URL to PDF, image file, or embed link. Content will open directly in-app.</p>
+                              <p className="mt-1">Supports PDF files, image files (JPG, PNG), and Amazon Kindle embeds.</p>
+                              <p className="mt-1 text-blue-600 font-medium">NEW: You can now select manga directly in the Upload File page to automatically update this field!</p>
+                              <p className="mt-1">Leave empty to show "Coming Soon" message.</p>
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -1162,9 +1163,10 @@ export default function AdminLibrary() {
                               </div>
                             </div>
                             <FormDescription>
-                              Enter a URL to PDF, image file, or embed link. Content will open directly in-app.
-                              Supports PDF files, Kindle previews, or embedded document readers.
-                              Leave empty to show "Coming Soon" message.
+                              <p>Enter a URL to PDF, image file, or embed link. Content will open directly in-app.</p>
+                              <p className="mt-1">Supports PDF files, Kindle previews, or embedded document readers.</p>
+                              <p className="mt-1 text-blue-600 font-medium">NEW: You can now select books directly in the Upload File page to automatically update this field!</p>
+                              <p className="mt-1">Leave empty to show "Coming Soon" message.</p>
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -1460,7 +1462,9 @@ export default function AdminLibrary() {
                               <Input placeholder="https://example.com/news/article/anime-expo-2025" {...field} />
                             </FormControl>
                             <FormDescription>
-                              Leave empty to show "Coming Soon" message, or enter a URL to make the button functional
+                              <p>Enter a valid URL to external site where the full article can be read.</p>
+                              <p className="mt-1">Unlike manga and books, news content opens in external browser.</p>
+                              <p className="mt-1">Leave empty to show "Coming Soon" message.</p>
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

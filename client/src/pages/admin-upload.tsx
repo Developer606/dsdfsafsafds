@@ -1,15 +1,30 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, Copy, ArrowLeft, CheckCircle } from "lucide-react";
-import { Link } from "wouter";
+import { Loader2, Upload, Copy, ArrowLeft, CheckCircle, RefreshCw } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+
+interface LibraryItem {
+  id: string;
+  title: string;
+}
 
 export default function AdminUpload() {
   const { toast } = useToast();
+  const [location, navigate] = useLocation();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -22,7 +37,82 @@ export default function AdminUpload() {
     "application/vnd.amazon.ebook"
   ]);
   const [activeTab, setActiveTab] = useState<string>("manga");
+  const [selectedItemId, setSelectedItemId] = useState<string>("");
+  const [isUpdatingContentUrl, setIsUpdatingContentUrl] = useState(false);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Fetch manga list for selection dropdown
+  const mangaQuery = useQuery({
+    queryKey: ["/api/library/manga"],
+    enabled: activeTab === "manga",
+    queryFn: async () => {
+      const response = await fetch("/api/library/manga");
+      if (!response.ok) {
+        throw new Error("Failed to fetch manga data");
+      }
+      return await response.json();
+    },
+  });
+
+  // Fetch books list for selection dropdown
+  const booksQuery = useQuery({
+    queryKey: ["/api/library/books"],
+    enabled: activeTab === "books",
+    queryFn: async () => {
+      const response = await fetch("/api/library/books");
+      if (!response.ok) {
+        throw new Error("Failed to fetch books data");
+      }
+      return await response.json();
+    },
+  });
+
+  // Update content_url mutation
+  const updateContentUrlMutation = useMutation({
+    mutationFn: async ({ id, url, type }: { id: string, url: string, type: string }) => {
+      const response = await fetch(`/api/admin/library/${type}/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content_url: url }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update content URL: ${response.statusText}`);
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: [`/api/library/${activeTab}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/library/${activeTab}/${selectedItemId}`] });
+      
+      setUpdateSuccess(true);
+      toast({
+        title: "Content URL updated",
+        description: `The content URL has been automatically updated for the selected item`,
+        variant: "default",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update failed",
+        description: error instanceof Error ? error.message : "Failed to update content URL",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reset selection when tab changes
+  useEffect(() => {
+    setSelectedItemId("");
+    setUploadedUrl(null);
+    setUploadedFile(null);
+    setUpdateSuccess(false);
+  }, [activeTab]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -33,6 +123,7 @@ export default function AdminUpload() {
       // Reset previous upload
       setUploadedUrl(null);
       setUploadProgress(0);
+      setUpdateSuccess(false);
     }
   };
   
@@ -84,6 +175,15 @@ export default function AdminUpload() {
         description: "File has been uploaded and is ready to use",
         variant: "default",
       });
+
+      // If an item was selected, automatically update its content_url
+      if (selectedItemId) {
+        updateContentUrlMutation.mutate({
+          id: selectedItemId,
+          url: data.url,
+          type: activeTab === "manga" ? "manga" : "books"
+        });
+      }
     } catch (error) {
       console.error("Upload error:", error);
       toast({
@@ -105,6 +205,16 @@ export default function AdminUpload() {
         variant: "default",
       });
     }
+  };
+
+  const updateItemContentUrl = () => {
+    if (!uploadedUrl || !selectedItemId) return;
+    
+    updateContentUrlMutation.mutate({
+      id: selectedItemId,
+      url: uploadedUrl,
+      type: activeTab === "manga" ? "manga" : "books"
+    });
   };
   
   return (
@@ -129,9 +239,10 @@ export default function AdminUpload() {
           <Card>
             <CardHeader>
               <CardTitle>Upload Manga Content</CardTitle>
-              <CardDescription>
-                Upload PDF files or image collections for manga content.
-                The uploaded file URL can be used in the Manga content_url field.
+              <CardDescription className="space-y-1">
+                <p>Upload PDF files or image collections for manga content.</p>
+                <p><span className="font-semibold text-blue-600">NEW:</span> Select a manga from the dropdown below to automatically update its content URL!</p>
+                <p>No need to manually copy-paste URLs anymore.</p>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -143,6 +254,42 @@ export default function AdminUpload() {
                     Max file size: 30MB.
                   </AlertDescription>
                 </Alert>
+                
+                {/* Select manga for automatic update */}
+                <div className="flex flex-col space-y-2 mb-4">
+                  <label htmlFor="manga-select" className="text-sm font-medium">
+                    Select Manga to Update (Optional)
+                  </label>
+                  <Select
+                    value={selectedItemId}
+                    onValueChange={setSelectedItemId}
+                  >
+                    <SelectTrigger id="manga-select" className="w-full">
+                      <SelectValue placeholder="Select a manga..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None (Manual URL Copy)</SelectItem>
+                      {mangaQuery.isLoading ? (
+                        <SelectItem value="" disabled>Loading manga...</SelectItem>
+                      ) : mangaQuery.isError ? (
+                        <SelectItem value="" disabled>Error loading manga</SelectItem>
+                      ) : mangaQuery.data && mangaQuery.data.length > 0 ? (
+                        mangaQuery.data.map((manga: LibraryItem) => (
+                          <SelectItem key={manga.id} value={manga.id}>
+                            {manga.title}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>No manga available</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {selectedItemId && (
+                    <p className="text-xs text-green-600">
+                      Selected manga's content_url will be automatically updated after upload
+                    </p>
+                  )}
+                </div>
                 
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 mb-4">
                   <Upload className="w-10 h-10 text-gray-400 mb-2" />
@@ -211,9 +358,57 @@ export default function AdminUpload() {
                         <Copy className="w-4 h-4" />
                       </Button>
                     </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Copy this URL and paste it into the Manga content_url field in the admin panel
-                    </p>
+                    
+                    {updateSuccess ? (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded flex items-start">
+                        <CheckCircle className="w-5 h-5 text-blue-500 mr-2 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-blue-700">Manga content URL updated!</p>
+                          <p className="text-sm text-blue-600 mt-1">
+                            The selected manga has been updated with this content URL
+                          </p>
+                          <div className="mt-3">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => navigate('/admin-library')}
+                            >
+                              Back to Library Management
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {selectedItemId ? (
+                          <div className="mt-2 flex items-center">
+                            <Button 
+                              variant="default" 
+                              size="sm" 
+                              onClick={updateItemContentUrl}
+                              disabled={updateContentUrlMutation.isPending}
+                              className="mr-2"
+                            >
+                              {updateContentUrlMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                  Updating...
+                                </>
+                              ) : (
+                                <>Update Manga Content URL</>
+                              )}
+                            </Button>
+                            <p className="text-xs text-gray-500">
+                              Click to update the selected manga's content URL
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 mt-2">
+                            Copy this URL and paste it into the Manga content_url field in the admin panel
+                          </p>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -225,9 +420,10 @@ export default function AdminUpload() {
           <Card>
             <CardHeader>
               <CardTitle>Upload Book Content</CardTitle>
-              <CardDescription>
-                Upload PDF files or e-book formats for book content.
-                The uploaded file URL can be used in the Book content_url field.
+              <CardDescription className="space-y-1">
+                <p>Upload PDF files or e-book formats for book content.</p>
+                <p><span className="font-semibold text-blue-600">NEW:</span> Select a book from the dropdown below to automatically update its content URL!</p>
+                <p>No need to manually copy-paste URLs anymore.</p>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -239,6 +435,42 @@ export default function AdminUpload() {
                     Max file size: 30MB.
                   </AlertDescription>
                 </Alert>
+                
+                {/* Select book for automatic update */}
+                <div className="flex flex-col space-y-2 mb-4">
+                  <label htmlFor="book-select" className="text-sm font-medium">
+                    Select Book to Update (Optional)
+                  </label>
+                  <Select
+                    value={selectedItemId}
+                    onValueChange={setSelectedItemId}
+                  >
+                    <SelectTrigger id="book-select" className="w-full">
+                      <SelectValue placeholder="Select a book..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None (Manual URL Copy)</SelectItem>
+                      {booksQuery.isLoading ? (
+                        <SelectItem value="" disabled>Loading books...</SelectItem>
+                      ) : booksQuery.isError ? (
+                        <SelectItem value="" disabled>Error loading books</SelectItem>
+                      ) : booksQuery.data && booksQuery.data.length > 0 ? (
+                        booksQuery.data.map((book: LibraryItem) => (
+                          <SelectItem key={book.id} value={book.id}>
+                            {book.title}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>No books available</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {selectedItemId && (
+                    <p className="text-xs text-green-600">
+                      Selected book's content_url will be automatically updated after upload
+                    </p>
+                  )}
+                </div>
                 
                 <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 mb-4">
                   <Upload className="w-10 h-10 text-gray-400 mb-2" />
@@ -307,9 +539,56 @@ export default function AdminUpload() {
                         <Copy className="w-4 h-4" />
                       </Button>
                     </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Copy this URL and paste it into the Book content_url field in the admin panel
-                    </p>
+                    {updateSuccess ? (
+                      <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded flex items-start">
+                        <CheckCircle className="w-5 h-5 text-blue-500 mr-2 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-blue-700">Book content URL updated!</p>
+                          <p className="text-sm text-blue-600 mt-1">
+                            The selected book has been updated with this content URL
+                          </p>
+                          <div className="mt-3">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => navigate('/admin-library')}
+                            >
+                              Back to Library Management
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {selectedItemId ? (
+                          <div className="mt-2 flex items-center">
+                            <Button 
+                              variant="default" 
+                              size="sm" 
+                              onClick={updateItemContentUrl}
+                              disabled={updateContentUrlMutation.isPending}
+                              className="mr-2"
+                            >
+                              {updateContentUrlMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                  Updating...
+                                </>
+                              ) : (
+                                <>Update Book Content URL</>
+                              )}
+                            </Button>
+                            <p className="text-xs text-gray-500">
+                              Click to update the selected book's content URL
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 mt-2">
+                            Copy this URL and paste it into the Book content_url field in the admin panel
+                          </p>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
