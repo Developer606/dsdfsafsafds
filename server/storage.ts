@@ -29,7 +29,17 @@ import {
   type InsertConversationKey,
   encryptionKeys,
   conversationKeys,
-  passwordResetAttempts
+  passwordResetAttempts,
+  // Library types
+  type MangaLibraryItem,
+  type InsertMangaLibraryItem,
+  type BookLibraryItem,
+  type InsertBookLibraryItem,
+  type NewsLibraryItem,
+  type InsertNewsLibraryItem,
+  mangaLibrary,
+  bookLibrary,
+  newsLibrary
 } from "@shared/schema";
 import {
   messages,
@@ -198,6 +208,30 @@ export interface IStorage {
     ctr: number;
     advertisementId?: number;
   }>;
+  
+  // Library methods - Manga
+  getAllMangaItems(): Promise<MangaLibraryItem[]>;
+  getMangaItemById(id: string): Promise<MangaLibraryItem | undefined>;
+  createMangaItem(manga: InsertMangaLibraryItem): Promise<MangaLibraryItem>;
+  updateMangaItem(id: string, manga: Partial<InsertMangaLibraryItem>): Promise<MangaLibraryItem>;
+  deleteMangaItem(id: string): Promise<void>;
+  searchMangaItems(query: string): Promise<MangaLibraryItem[]>;
+  
+  // Library methods - Books
+  getAllBookItems(): Promise<BookLibraryItem[]>;
+  getBookItemById(id: string): Promise<BookLibraryItem | undefined>;
+  createBookItem(book: InsertBookLibraryItem): Promise<BookLibraryItem>;
+  updateBookItem(id: string, book: Partial<InsertBookLibraryItem>): Promise<BookLibraryItem>;
+  deleteBookItem(id: string): Promise<void>;
+  searchBookItems(query: string): Promise<BookLibraryItem[]>;
+  
+  // Library methods - News
+  getAllNewsItems(): Promise<NewsLibraryItem[]>;
+  getNewsItemById(id: string): Promise<NewsLibraryItem | undefined>;
+  createNewsItem(news: InsertNewsLibraryItem): Promise<NewsLibraryItem>;
+  updateNewsItem(id: string, news: Partial<InsertNewsLibraryItem>): Promise<NewsLibraryItem>;
+  deleteNewsItem(id: string): Promise<void>;
+  searchNewsItems(query: string): Promise<NewsLibraryItem[]>;
   incrementAdvertisementStat(advertisementId: number, stat: 'impressions' | 'clicks'): Promise<void>;
 }
 
@@ -227,6 +261,9 @@ export class DatabaseStorage implements IStorage {
     
     // Initialize password reset tracking table
     this.initializePasswordResetTracking();
+    
+    // Initialize library database
+    this.initializeLibraryDatabase();
   }
   
   /**
@@ -1647,6 +1684,330 @@ export class DatabaseStorage implements IStorage {
     // Use the advertisement database implementation
     const { incrementAdvertisementStatInDb } = await import('./advertisement-db');
     await incrementAdvertisementStatInDb(advertisementId, stat);
+  }
+
+  /**
+   * Initialize library database tables and indexes
+   */
+  private async initializeLibraryDatabase() {
+    try {
+      console.log("Initializing library database...");
+
+      // Import library database
+      const { libraryDb } = await import("./library-db");
+
+      // Create indexes for library tables for efficient querying
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_manga_title ON manga_library(title)`);
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_manga_author ON manga_library(author)`);
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_manga_genre ON manga_library(genre)`);
+      
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_book_title ON book_library(title)`);
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_book_author ON book_library(author)`);
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_book_genre ON book_library(genre)`);
+      
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_news_title ON news_library(title)`);
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_news_author ON news_library(author)`);
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_news_category ON news_library(category)`);
+      await libraryDb.run(sql`CREATE INDEX IF NOT EXISTS idx_news_date ON news_library(date)`);
+
+      console.log("Library database initialized successfully");
+    } catch (error) {
+      console.error("Error initializing library database:", error);
+    }
+  }
+  
+  // ================== Manga Library Methods ==================
+  
+  async getAllMangaItems(): Promise<MangaLibraryItem[]> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      return await libraryDb
+        .select()
+        .from(mangaLibrary)
+        .orderBy(sql`${mangaLibrary.title} ASC`);
+    } catch (error) {
+      console.error("Error getting all manga items:", error);
+      return [];
+    }
+  }
+  
+  async getMangaItemById(id: string): Promise<MangaLibraryItem | undefined> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      const [manga] = await libraryDb
+        .select()
+        .from(mangaLibrary)
+        .where(eq(mangaLibrary.id, id));
+      return manga;
+    } catch (error) {
+      console.error(`Error getting manga item by id ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  async createMangaItem(manga: InsertMangaLibraryItem): Promise<MangaLibraryItem> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      const [newManga] = await libraryDb
+        .insert(mangaLibrary)
+        .values({
+          ...manga,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      return newManga;
+    } catch (error) {
+      console.error("Error creating manga item:", error);
+      throw error;
+    }
+  }
+  
+  async updateMangaItem(id: string, manga: Partial<InsertMangaLibraryItem>): Promise<MangaLibraryItem> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      const [updatedManga] = await libraryDb
+        .update(mangaLibrary)
+        .set({
+          ...manga,
+          updatedAt: new Date()
+        })
+        .where(eq(mangaLibrary.id, id))
+        .returning();
+      return updatedManga;
+    } catch (error) {
+      console.error(`Error updating manga item ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteMangaItem(id: string): Promise<void> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      await libraryDb
+        .delete(mangaLibrary)
+        .where(eq(mangaLibrary.id, id));
+    } catch (error) {
+      console.error(`Error deleting manga item ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async searchMangaItems(query: string): Promise<MangaLibraryItem[]> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      // Search by title, author, or genre
+      return await libraryDb
+        .select()
+        .from(mangaLibrary)
+        .where(
+          sql`LOWER(${mangaLibrary.title}) LIKE LOWER('%${query}%') OR 
+              LOWER(${mangaLibrary.author}) LIKE LOWER('%${query}%') OR 
+              LOWER(${mangaLibrary.genre}) LIKE LOWER('%${query}%') OR 
+              LOWER(${mangaLibrary.tags}) LIKE LOWER('%${query}%')`
+        )
+        .orderBy(sql`${mangaLibrary.title} ASC`);
+    } catch (error) {
+      console.error(`Error searching manga items with query "${query}":`, error);
+      return [];
+    }
+  }
+
+  // ================== Book Library Methods ==================
+  
+  async getAllBookItems(): Promise<BookLibraryItem[]> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      return await libraryDb
+        .select()
+        .from(bookLibrary)
+        .orderBy(sql`${bookLibrary.title} ASC`);
+    } catch (error) {
+      console.error("Error getting all book items:", error);
+      return [];
+    }
+  }
+  
+  async getBookItemById(id: string): Promise<BookLibraryItem | undefined> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      const [book] = await libraryDb
+        .select()
+        .from(bookLibrary)
+        .where(eq(bookLibrary.id, id));
+      return book;
+    } catch (error) {
+      console.error(`Error getting book item by id ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  async createBookItem(book: InsertBookLibraryItem): Promise<BookLibraryItem> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      const [newBook] = await libraryDb
+        .insert(bookLibrary)
+        .values({
+          ...book,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      return newBook;
+    } catch (error) {
+      console.error("Error creating book item:", error);
+      throw error;
+    }
+  }
+  
+  async updateBookItem(id: string, book: Partial<InsertBookLibraryItem>): Promise<BookLibraryItem> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      const [updatedBook] = await libraryDb
+        .update(bookLibrary)
+        .set({
+          ...book,
+          updatedAt: new Date()
+        })
+        .where(eq(bookLibrary.id, id))
+        .returning();
+      return updatedBook;
+    } catch (error) {
+      console.error(`Error updating book item ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteBookItem(id: string): Promise<void> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      await libraryDb
+        .delete(bookLibrary)
+        .where(eq(bookLibrary.id, id));
+    } catch (error) {
+      console.error(`Error deleting book item ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async searchBookItems(query: string): Promise<BookLibraryItem[]> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      // Search by title, author, or genre
+      return await libraryDb
+        .select()
+        .from(bookLibrary)
+        .where(
+          sql`LOWER(${bookLibrary.title}) LIKE LOWER('%${query}%') OR 
+              LOWER(${bookLibrary.author}) LIKE LOWER('%${query}%') OR 
+              LOWER(${bookLibrary.genre}) LIKE LOWER('%${query}%') OR 
+              LOWER(${bookLibrary.publisher}) LIKE LOWER('%${query}%') OR 
+              LOWER(${bookLibrary.tags}) LIKE LOWER('%${query}%')`
+        )
+        .orderBy(sql`${bookLibrary.title} ASC`);
+    } catch (error) {
+      console.error(`Error searching book items with query "${query}":`, error);
+      return [];
+    }
+  }
+
+  // ================== News Library Methods ==================
+  
+  async getAllNewsItems(): Promise<NewsLibraryItem[]> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      return await libraryDb
+        .select()
+        .from(newsLibrary)
+        .orderBy(sql`${newsLibrary.date} DESC`);
+    } catch (error) {
+      console.error("Error getting all news items:", error);
+      return [];
+    }
+  }
+  
+  async getNewsItemById(id: string): Promise<NewsLibraryItem | undefined> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      const [news] = await libraryDb
+        .select()
+        .from(newsLibrary)
+        .where(eq(newsLibrary.id, id));
+      return news;
+    } catch (error) {
+      console.error(`Error getting news item by id ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  async createNewsItem(news: InsertNewsLibraryItem): Promise<NewsLibraryItem> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      const [newNews] = await libraryDb
+        .insert(newsLibrary)
+        .values({
+          ...news,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+      return newNews;
+    } catch (error) {
+      console.error("Error creating news item:", error);
+      throw error;
+    }
+  }
+  
+  async updateNewsItem(id: string, news: Partial<InsertNewsLibraryItem>): Promise<NewsLibraryItem> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      const [updatedNews] = await libraryDb
+        .update(newsLibrary)
+        .set({
+          ...news,
+          updatedAt: new Date()
+        })
+        .where(eq(newsLibrary.id, id))
+        .returning();
+      return updatedNews;
+    } catch (error) {
+      console.error(`Error updating news item ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async deleteNewsItem(id: string): Promise<void> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      await libraryDb
+        .delete(newsLibrary)
+        .where(eq(newsLibrary.id, id));
+    } catch (error) {
+      console.error(`Error deleting news item ${id}:`, error);
+      throw error;
+    }
+  }
+  
+  async searchNewsItems(query: string): Promise<NewsLibraryItem[]> {
+    try {
+      const { libraryDb } = await import("./library-db");
+      // Search by title, author, source, or content
+      return await libraryDb
+        .select()
+        .from(newsLibrary)
+        .where(
+          sql`LOWER(${newsLibrary.title}) LIKE LOWER('%${query}%') OR 
+              LOWER(${newsLibrary.author}) LIKE LOWER('%${query}%') OR 
+              LOWER(${newsLibrary.source}) LIKE LOWER('%${query}%') OR 
+              LOWER(${newsLibrary.content}) LIKE LOWER('%${query}%') OR 
+              LOWER(${newsLibrary.category}) LIKE LOWER('%${query}%') OR 
+              LOWER(${newsLibrary.tags}) LIKE LOWER('%${query}%')`
+        )
+        .orderBy(sql`${newsLibrary.date} DESC`);
+    } catch (error) {
+      console.error(`Error searching news items with query "${query}":`, error);
+      return [];
+    }
   }
 }
 

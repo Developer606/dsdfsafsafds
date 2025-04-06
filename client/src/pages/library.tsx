@@ -192,58 +192,68 @@ export default function Library() {
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  // Simulate fetching data from API
+  // Fetch data from API
   const mangaQuery = useQuery({
     queryKey: ["/api/library/manga", searchQuery],
     enabled: activeTab === "manga",
-    // This placeholder would normally fetch from an API
     queryFn: async () => {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (searchQuery) {
-        return dummyManga.filter(
-          (manga) =>
-            manga.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            manga.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            manga.description.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+      if (searchQuery && searchQuery.length >= 2) {
+        const response = await fetch(`/api/library/manga/search/${encodeURIComponent(searchQuery)}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch manga search results");
+        }
+        return await response.json();
+      } else {
+        const response = await fetch("/api/library/manga");
+        if (!response.ok) {
+          throw new Error("Failed to fetch manga items");
+        }
+        return await response.json();
       }
-      return dummyManga;
     },
+    placeholderData: dummyManga // Fallback data while loading
   });
 
   const booksQuery = useQuery({
     queryKey: ["/api/library/books", searchQuery],
     enabled: activeTab === "books",
     queryFn: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (searchQuery) {
-        return dummyBooks.filter(
-          (book) =>
-            book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            book.description.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+      if (searchQuery && searchQuery.length >= 2) {
+        const response = await fetch(`/api/library/books/search/${encodeURIComponent(searchQuery)}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch book search results");
+        }
+        return await response.json();
+      } else {
+        const response = await fetch("/api/library/books");
+        if (!response.ok) {
+          throw new Error("Failed to fetch book items");
+        }
+        return await response.json();
       }
-      return dummyBooks;
     },
+    placeholderData: dummyBooks // Fallback data while loading
   });
 
   const newsQuery = useQuery({
     queryKey: ["/api/library/news", searchQuery],
     enabled: activeTab === "news",
     queryFn: async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (searchQuery) {
-        return dummyNews.filter(
-          (news) =>
-            news.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            news.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            news.summary.toLowerCase().includes(searchQuery.toLowerCase()),
-        );
+      if (searchQuery && searchQuery.length >= 2) {
+        const response = await fetch(`/api/library/news/search/${encodeURIComponent(searchQuery)}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch news search results");
+        }
+        return await response.json();
+      } else {
+        const response = await fetch("/api/library/news");
+        if (!response.ok) {
+          throw new Error("Failed to fetch news items");
+        }
+        return await response.json();
       }
-      return dummyNews;
     },
+    placeholderData: dummyNews // Fallback data while loading
   });
 
   const handleReadMore = (id: string, type: string) => {
@@ -476,7 +486,10 @@ export default function Library() {
                           {manga.description}
                         </p>
                         <div className="flex flex-wrap gap-1 mb-4">
-                          {manga.tags.map((tag) => (
+                          {(typeof manga.tags === 'string' 
+                            ? JSON.parse(manga.tags) 
+                            : manga.tags
+                          ).map((tag: string) => (
                             <span
                               key={tag}
                               className="text-xs px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full"
@@ -600,7 +613,10 @@ export default function Library() {
                           {book.description}
                         </p>
                         <div className="flex flex-wrap gap-1 mb-4">
-                          {book.tags.map((tag) => (
+                          {(typeof book.tags === 'string' 
+                            ? JSON.parse(book.tags) 
+                            : book.tags
+                          ).map((tag: string) => (
                             <span
                               key={tag}
                               className="text-xs px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full"
@@ -724,7 +740,10 @@ export default function Library() {
                           {news.summary}
                         </p>
                         <div className="flex flex-wrap gap-1 mb-4">
-                          {news.tags.map((tag) => (
+                          {(typeof news.tags === 'string' 
+                            ? JSON.parse(news.tags) 
+                            : news.tags
+                          ).map((tag: string) => (
                             <span
                               key={tag}
                               className="text-xs px-2 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full"
@@ -935,7 +954,10 @@ export default function Library() {
                               {manga.description}
                             </p>
                             <div className="flex flex-wrap gap-2">
-                              {manga.tags.map((tag) => (
+                              {(typeof manga.tags === 'string' 
+                                ? JSON.parse(manga.tags) 
+                                : manga.tags
+                              ).map((tag: string) => (
                                 <Badge
                                   key={tag}
                                   variant="outline"
@@ -1020,7 +1042,10 @@ export default function Library() {
                               {book.description}
                             </p>
                             <div className="flex flex-wrap gap-2">
-                              {book.tags.map((tag) => (
+                              {(typeof book.tags === 'string' 
+                                ? JSON.parse(book.tags) 
+                                : book.tags
+                              ).map((tag: string) => (
                                 <Badge
                                   key={tag}
                                   variant="outline"
@@ -1109,7 +1134,10 @@ export default function Library() {
                               {news.summary}
                             </p>
                             <div className="flex flex-wrap gap-2">
-                              {news.tags.map((tag) => (
+                              {(typeof news.tags === 'string' 
+                                ? JSON.parse(news.tags) 
+                                : news.tags
+                              ).map((tag: string) => (
                                 <Badge
                                   key={tag}
                                   variant="outline"

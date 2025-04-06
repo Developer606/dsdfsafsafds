@@ -629,3 +629,96 @@ export type Advertisement = typeof advertisements.$inferSelect;
 export type InsertAdvertisement = z.infer<typeof insertAdvertisementSchema>;
 export type AdvertisementMetric = typeof advertisementMetrics.$inferSelect;
 export type InsertAdvertisementMetric = z.infer<typeof insertAdvertisementMetricSchema>;
+
+// Library tables for manga, books, and news
+export const mangaLibrary = sqliteTable("manga_library", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  cover: text("cover").notNull(),
+  description: text("description").notNull(),
+  author: text("author").notNull(),
+  chapters: integer("chapters").notNull().default(0),
+  status: text("status").default("ongoing"), // "ongoing", "completed", "hiatus"
+  genre: text("genre").notNull(),
+  publisher: text("publisher"),
+  rating: text("rating"), // Age rating
+  tags: text("tags").notNull(), // JSON array string
+  releaseDate: text("release_date").notNull(),
+  language: text("language").default("english"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const bookLibrary = sqliteTable("book_library", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  cover: text("cover").notNull(),
+  description: text("description").notNull(),
+  author: text("author").notNull(),
+  pages: integer("pages").notNull().default(0),
+  isbn: text("isbn"),
+  publisher: text("publisher"),
+  format: text("format").default("paperback"), // paperback, hardcover, ebook, audiobook
+  genre: text("genre").notNull(),
+  tags: text("tags").notNull(), // JSON array string
+  releaseDate: text("release_date").notNull(),
+  language: text("language").default("english"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const newsLibrary = sqliteTable("news_library", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  image: text("image").notNull(),
+  summary: text("summary").notNull(),
+  content: text("content").notNull(), // Full article content
+  author: text("author").notNull(),
+  date: text("date").notNull(),
+  source: text("source").notNull(), // Where the news comes from
+  sourceUrl: text("source_url"), // Link to original article
+  category: text("category").notNull(), // Main category (industry news, release, etc)
+  isHighlighted: integer("is_highlighted", { mode: "boolean" }).default(false),
+  tags: text("tags").notNull(), // JSON array string
+  language: text("language").default("english"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
+// Library schemas
+export const insertMangaSchema = createInsertSchema(mangaLibrary).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBookSchema = createInsertSchema(bookLibrary).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertNewsSchema = createInsertSchema(newsLibrary).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Library types
+export type MangaLibraryItem = typeof mangaLibrary.$inferSelect;
+export type InsertMangaLibraryItem = z.infer<typeof insertMangaSchema>;
+
+export type BookLibraryItem = typeof bookLibrary.$inferSelect;
+export type InsertBookLibraryItem = z.infer<typeof insertBookSchema>;
+
+export type NewsLibraryItem = typeof newsLibrary.$inferSelect;
+export type InsertNewsLibraryItem = z.infer<typeof insertNewsSchema>;
