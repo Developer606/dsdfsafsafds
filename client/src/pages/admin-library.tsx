@@ -835,18 +835,70 @@ export default function AdminLibrary() {
                                   variant="outline" 
                                   className="text-xs"
                                   onClick={() => {
-                                    window.open('/admin/upload', '_blank');
+                                    // Create a file input element
+                                    const fileInput = document.createElement('input');
+                                    fileInput.type = 'file';
+                                    fileInput.accept = '.pdf,.jpg,.jpeg,.png,.gif';
+                                    fileInput.style.display = 'none';
+                                    
+                                    // Add it to the body
+                                    document.body.appendChild(fileInput);
+                                    
+                                    // Trigger click
+                                    fileInput.click();
+                                    
+                                    // Handle file selection
+                                    fileInput.onchange = async (e) => {
+                                      const target = e.target as HTMLInputElement;
+                                      if (target.files && target.files.length > 0) {
+                                        const file = target.files[0];
+                                        
+                                        // Create FormData
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        
+                                        try {
+                                          const response = await fetch('/api/upload/admin?type=manga', {
+                                            method: 'POST',
+                                            body: formData,
+                                          });
+                                          
+                                          if (!response.ok) {
+                                            throw new Error('Upload failed');
+                                          }
+                                          
+                                          const data = await response.json();
+                                          
+                                          // Set the URL in the form
+                                          form.setValue('content_url', data.url);
+                                          
+                                          toast({
+                                            title: 'Upload successful',
+                                            description: 'File URL has been added to the form',
+                                          });
+                                        } catch (error) {
+                                          toast({
+                                            title: 'Upload failed',
+                                            description: error instanceof Error ? error.message : 'An error occurred',
+                                            variant: 'destructive',
+                                          });
+                                        }
+                                      }
+                                      
+                                      // Remove the input
+                                      document.body.removeChild(fileInput);
+                                    };
                                   }}
                                 >
                                   Upload File
                                 </Button>
-                                <p className="text-xs text-muted-foreground">Click to upload manga content</p>
+                                <p className="text-xs text-muted-foreground">Upload file directly</p>
                               </div>
                             </div>
                             <FormDescription>
                               <p>Enter a URL to PDF, image file, or embed link. Content will open directly in-app.</p>
                               <p className="mt-1">Supports PDF files, image files (JPG, PNG), and Amazon Kindle embeds.</p>
-                              <p className="mt-1 text-blue-600 font-medium">NEW: Select this manga in the Upload page to automatically update this URL!</p>
+                              <p className="mt-1 text-blue-600 font-medium">NEW: Click "Upload File" to attach content directly to this manga!</p>
                               <p className="mt-1">Leave empty to show "Coming Soon" message.</p>
                             </FormDescription>
                             <FormMessage />
@@ -1154,18 +1206,70 @@ export default function AdminLibrary() {
                                   variant="outline" 
                                   className="text-xs"
                                   onClick={() => {
-                                    window.open('/admin/upload', '_blank');
+                                    // Create a file input element
+                                    const fileInput = document.createElement('input');
+                                    fileInput.type = 'file';
+                                    fileInput.accept = '.pdf,.epub,.mobi,.azw,.azw3';
+                                    fileInput.style.display = 'none';
+                                    
+                                    // Add it to the body
+                                    document.body.appendChild(fileInput);
+                                    
+                                    // Trigger click
+                                    fileInput.click();
+                                    
+                                    // Handle file selection
+                                    fileInput.onchange = async (e) => {
+                                      const target = e.target as HTMLInputElement;
+                                      if (target.files && target.files.length > 0) {
+                                        const file = target.files[0];
+                                        
+                                        // Create FormData
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+                                        
+                                        try {
+                                          const response = await fetch('/api/upload/admin?type=book', {
+                                            method: 'POST',
+                                            body: formData,
+                                          });
+                                          
+                                          if (!response.ok) {
+                                            throw new Error('Upload failed');
+                                          }
+                                          
+                                          const data = await response.json();
+                                          
+                                          // Set the URL in the form
+                                          bookForm.setValue('content_url', data.url);
+                                          
+                                          toast({
+                                            title: 'Upload successful',
+                                            description: 'File URL has been added to the form',
+                                          });
+                                        } catch (error) {
+                                          toast({
+                                            title: 'Upload failed',
+                                            description: error instanceof Error ? error.message : 'An error occurred',
+                                            variant: 'destructive',
+                                          });
+                                        }
+                                      }
+                                      
+                                      // Remove the input
+                                      document.body.removeChild(fileInput);
+                                    };
                                   }}
                                 >
                                   Upload File
                                 </Button>
-                                <p className="text-xs text-muted-foreground">Click to upload book content</p>
+                                <p className="text-xs text-muted-foreground">Upload file directly</p>
                               </div>
                             </div>
                             <FormDescription>
                               <p>Enter a URL to PDF, image file, or embed link. Content will open directly in-app.</p>
                               <p className="mt-1">Supports PDF files, Kindle previews, or embedded document readers.</p>
-                              <p className="mt-1 text-blue-600 font-medium">NEW: Select this book in the Upload page to automatically update this URL!</p>
+                              <p className="mt-1 text-blue-600 font-medium">NEW: Click "Upload File" to attach content directly to this book!</p>
                               <p className="mt-1">Leave empty to show "Coming Soon" message.</p>
                             </FormDescription>
                             <FormMessage />
