@@ -268,7 +268,7 @@ export default function AdminUpload() {
                       <SelectValue placeholder="Select a manga..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Don't associate with any manga</SelectItem>
+                      <SelectItem value="none">Choose this to upload without linking to a manga</SelectItem>
                       {mangaQuery.isLoading ? (
                         <SelectItem value="loading" disabled>Loading manga...</SelectItem>
                       ) : mangaQuery.isError ? (
@@ -451,7 +451,7 @@ export default function AdminUpload() {
                       <SelectValue placeholder="Select a book..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Don't associate with any book</SelectItem>
+                      <SelectItem value="none">Choose this to upload without linking to a book</SelectItem>
                       {booksQuery.isLoading ? (
                         <SelectItem value="loading" disabled>Loading books...</SelectItem>
                       ) : booksQuery.isError ? (

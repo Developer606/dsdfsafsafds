@@ -840,13 +840,13 @@ export default function AdminLibrary() {
                                 >
                                   Upload File
                                 </Button>
-                                <p className="text-xs text-muted-foreground">Upload files to get a URL</p>
+                                <p className="text-xs text-muted-foreground">Click to upload manga content</p>
                               </div>
                             </div>
                             <FormDescription>
                               <p>Enter a URL to PDF, image file, or embed link. Content will open directly in-app.</p>
                               <p className="mt-1">Supports PDF files, image files (JPG, PNG), and Amazon Kindle embeds.</p>
-                              <p className="mt-1 text-blue-600 font-medium">NEW: You can now select manga directly in the Upload File page to automatically update this field!</p>
+                              <p className="mt-1 text-blue-600 font-medium">NEW: Select this manga in the Upload page to automatically update this URL!</p>
                               <p className="mt-1">Leave empty to show "Coming Soon" message.</p>
                             </FormDescription>
                             <FormMessage />
@@ -1159,13 +1159,13 @@ export default function AdminLibrary() {
                                 >
                                   Upload File
                                 </Button>
-                                <p className="text-xs text-muted-foreground">Upload files to get a URL</p>
+                                <p className="text-xs text-muted-foreground">Click to upload book content</p>
                               </div>
                             </div>
                             <FormDescription>
                               <p>Enter a URL to PDF, image file, or embed link. Content will open directly in-app.</p>
                               <p className="mt-1">Supports PDF files, Kindle previews, or embedded document readers.</p>
-                              <p className="mt-1 text-blue-600 font-medium">NEW: You can now select books directly in the Upload File page to automatically update this field!</p>
+                              <p className="mt-1 text-blue-600 font-medium">NEW: Select this book in the Upload page to automatically update this URL!</p>
                               <p className="mt-1">Leave empty to show "Coming Soon" message.</p>
                             </FormDescription>
                             <FormMessage />
