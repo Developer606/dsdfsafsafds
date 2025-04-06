@@ -825,11 +825,28 @@ export default function AdminLibrary() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Content URL (for "Read Now" button)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://example.com/manga/read/my-manga" {...field} />
-                            </FormControl>
+                            <div className="grid grid-cols-1 gap-2">
+                              <FormControl>
+                                <Input placeholder="https://example.com/manga/read/my-manga" {...field} />
+                              </FormControl>
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  type="button" 
+                                  variant="outline" 
+                                  className="text-xs"
+                                  onClick={() => {
+                                    window.open('/admin/upload', '_blank');
+                                  }}
+                                >
+                                  Upload File
+                                </Button>
+                                <p className="text-xs text-muted-foreground">Upload files to get a URL</p>
+                              </div>
+                            </div>
                             <FormDescription>
-                              Leave empty to show "Coming Soon" message, or enter a URL to make the button functional
+                              Enter a URL to PDF, image file, or embed link. Content will open directly in-app.
+                              Supports PDF files, image files (JPG, PNG), and Amazon Kindle embeds.
+                              Leave empty to show "Coming Soon" message.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -1126,11 +1143,28 @@ export default function AdminLibrary() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Content URL (for "Read Now" button)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="https://example.com/books/read/brave-new-world" {...field} />
-                            </FormControl>
+                            <div className="grid grid-cols-1 gap-2">
+                              <FormControl>
+                                <Input placeholder="https://example.com/books/read/brave-new-world" {...field} />
+                              </FormControl>
+                              <div className="flex items-center gap-2">
+                                <Button 
+                                  type="button" 
+                                  variant="outline" 
+                                  className="text-xs"
+                                  onClick={() => {
+                                    window.open('/admin/upload', '_blank');
+                                  }}
+                                >
+                                  Upload File
+                                </Button>
+                                <p className="text-xs text-muted-foreground">Upload files to get a URL</p>
+                              </div>
+                            </div>
                             <FormDescription>
-                              Leave empty to show "Coming Soon" message, or enter a URL to make the button functional
+                              Enter a URL to PDF, image file, or embed link. Content will open directly in-app.
+                              Supports PDF files, Kindle previews, or embedded document readers.
+                              Leave empty to show "Coming Soon" message.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
