@@ -177,7 +177,7 @@ export default function AdminUpload() {
       });
 
       // If an item was selected, automatically update its content_url
-      if (selectedItemId) {
+      if (selectedItemId && selectedItemId !== 'none') {
         updateContentUrlMutation.mutate({
           id: selectedItemId,
           url: data.url,
@@ -208,7 +208,7 @@ export default function AdminUpload() {
   };
 
   const updateItemContentUrl = () => {
-    if (!uploadedUrl || !selectedItemId) return;
+    if (!uploadedUrl || !selectedItemId || selectedItemId === 'none') return;
     
     updateContentUrlMutation.mutate({
       id: selectedItemId,
@@ -268,11 +268,11 @@ export default function AdminUpload() {
                       <SelectValue placeholder="Select a manga..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None (Manual URL Copy)</SelectItem>
+                      <SelectItem value="none">None (Manual URL Copy)</SelectItem>
                       {mangaQuery.isLoading ? (
-                        <SelectItem value="" disabled>Loading manga...</SelectItem>
+                        <SelectItem value="loading" disabled>Loading manga...</SelectItem>
                       ) : mangaQuery.isError ? (
-                        <SelectItem value="" disabled>Error loading manga</SelectItem>
+                        <SelectItem value="error" disabled>Error loading manga</SelectItem>
                       ) : mangaQuery.data && mangaQuery.data.length > 0 ? (
                         mangaQuery.data.map((manga: LibraryItem) => (
                           <SelectItem key={manga.id} value={manga.id}>
@@ -280,11 +280,11 @@ export default function AdminUpload() {
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>No manga available</SelectItem>
+                        <SelectItem value="no-manga" disabled>No manga available</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
-                  {selectedItemId && (
+                  {selectedItemId && selectedItemId !== 'none' && (
                     <p className="text-xs text-green-600">
                       Selected manga's content_url will be automatically updated after upload
                     </p>
@@ -380,7 +380,7 @@ export default function AdminUpload() {
                       </div>
                     ) : (
                       <>
-                        {selectedItemId ? (
+                        {selectedItemId && selectedItemId !== 'none' ? (
                           <div className="mt-2 flex items-center">
                             <Button 
                               variant="default" 
@@ -449,11 +449,11 @@ export default function AdminUpload() {
                       <SelectValue placeholder="Select a book..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None (Manual URL Copy)</SelectItem>
+                      <SelectItem value="none">None (Manual URL Copy)</SelectItem>
                       {booksQuery.isLoading ? (
-                        <SelectItem value="" disabled>Loading books...</SelectItem>
+                        <SelectItem value="loading" disabled>Loading books...</SelectItem>
                       ) : booksQuery.isError ? (
-                        <SelectItem value="" disabled>Error loading books</SelectItem>
+                        <SelectItem value="error" disabled>Error loading books</SelectItem>
                       ) : booksQuery.data && booksQuery.data.length > 0 ? (
                         booksQuery.data.map((book: LibraryItem) => (
                           <SelectItem key={book.id} value={book.id}>
@@ -461,11 +461,11 @@ export default function AdminUpload() {
                           </SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>No books available</SelectItem>
+                        <SelectItem value="no-books" disabled>No books available</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
-                  {selectedItemId && (
+                  {selectedItemId && selectedItemId !== 'none' && (
                     <p className="text-xs text-green-600">
                       Selected book's content_url will be automatically updated after upload
                     </p>
@@ -560,7 +560,7 @@ export default function AdminUpload() {
                       </div>
                     ) : (
                       <>
-                        {selectedItemId ? (
+                        {selectedItemId && selectedItemId !== 'none' ? (
                           <div className="mt-2 flex items-center">
                             <Button 
                               variant="default" 
