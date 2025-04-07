@@ -350,6 +350,28 @@ Your responses must feel like authentic anime character dialogue - brief, emotiv
             generatedText = generatedText.replace(/\*.*?holds.*?out.*?hand.*?\*/i, '✋');
           }
           
+          // Special case for "smiles widely" as seen in Naruto example
+          if (generatedText.match(/\*.*?smiles widely.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?smiles widely.*?\*/i, '😄');
+          }
+          
+          // Special cases from the Naruto screenshot examples
+          if (generatedText.match(/\*.*?scrunches up face.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?scrunches up face.*?\*/i, '😕');
+          }
+          
+          if (generatedText.match(/\*.*?looks around.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?looks around.*?\*/i, '👀');
+          }
+          
+          if (generatedText.match(/\*.*?looks confused.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?looks confused.*?\*/i, '😕');
+          }
+          
+          if (generatedText.match(/\*.*?holds out.*?hand.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?holds out.*?hand.*?\*/i, '✋');
+          }
+          
           // If still has asterisks content, preserve it
           // Otherwise, remove any standalone asterisks
           if (!generatedText.match(/\*[^*]+\*/)) {
@@ -572,6 +594,27 @@ Guidelines:
         // Special case for "holds out hand" expressions
         if (generatedText.match(/\*.*?holds.*?out.*?hand.*?\*/i)) {
           generatedText = generatedText.replace(/\*.*?holds.*?out.*?hand.*?\*/i, '✋');
+        }
+        
+        // Special cases from the Naruto screenshot examples
+        if (generatedText.match(/\*.*?scrunches up face.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?scrunches up face.*?\*/i, '😕');
+        }
+        
+        if (generatedText.match(/\*.*?looks around.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?looks around.*?\*/i, '👀');
+        }
+        
+        if (generatedText.match(/\*.*?looks confused.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?looks confused.*?\*/i, '😕');
+        }
+        
+        if (generatedText.match(/\*.*?holds out.*?hand.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?holds out.*?hand.*?\*/i, '✋');
+        }
+        
+        if (generatedText.match(/\*.*?smiles widely.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?smiles widely.*?\*/i, '😄');
         }
         
         // Preserve any remaining asterisks content, or remove standalone asterisks
