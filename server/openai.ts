@@ -309,10 +309,46 @@ Your responses must feel like authentic anime character dialogue - brief, emotiv
           };
           
           // Apply emoji replacements for common emotional expressions in asterisks
+          // First pass: Try to match specific emotions in the text within asterisks
           Object.entries(textToEmojiMap).forEach(([text, emoji]) => {
-            const pattern = new RegExp(`\\*(.*?)(${text})(.*?)\\*`, 'gi');
-            generatedText = generatedText.replace(pattern, `${emoji} $1$3`);
+            // Match the exact emotion term within asterisks, preserving other parts
+            const exactPattern = new RegExp(`\\*(.*?)(${text})(.*?)\\*`, 'gi');
+            generatedText = generatedText.replace(exactPattern, `${emoji} $1$3`);
+            
+            // Match emotion as part of a phrase inside asterisks (e.g., "*scrunches up face*")
+            const partialPattern = new RegExp(`\\*(.*?${text}.*?)\\*`, 'gi');
+            generatedText = generatedText.replace(partialPattern, `${emoji}`);
           });
+          
+          // Special case for "confused" expressions like *scrunches up face in confusion*
+          if (generatedText.match(/\*.*?confused.*?\*/i) || 
+              generatedText.match(/\*.*?confusion.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?confus(ed|ion).*?\*/i, '😕');
+          }
+          
+          // Special case for "looks around", "looks confused", etc.
+          if (generatedText.match(/\*.*?looks.*?\*/i)) {
+            if (generatedText.match(/\*.*?looks around.*?\*/i)) {
+              generatedText = generatedText.replace(/\*.*?looks around.*?\*/i, '👀');
+            } else if (generatedText.match(/\*.*?looks confused.*?\*/i)) {
+              generatedText = generatedText.replace(/\*.*?looks confused.*?\*/i, '😕');
+            } else if (generatedText.match(/\*.*?looks.*?away.*?\*/i)) {
+              generatedText = generatedText.replace(/\*.*?looks.*?away.*?\*/i, '😒');
+            } else {
+              // Generic "looks" expression
+              generatedText = generatedText.replace(/\*.*?looks.*?\*/i, '👀');
+            }
+          }
+          
+          // Special case for "scratches head" and similar expressions
+          if (generatedText.match(/\*.*?scratch.*?head.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?scratch.*?head.*?\*/i, '🤔');
+          }
+          
+          // Special case for "holds out hand" expressions
+          if (generatedText.match(/\*.*?holds.*?out.*?hand.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?holds.*?out.*?hand.*?\*/i, '✋');
+          }
           
           // If still has asterisks content, preserve it
           // Otherwise, remove any standalone asterisks
@@ -497,10 +533,46 @@ Guidelines:
         };
         
         // Apply emoji replacements for common emotional expressions in asterisks
+        // First pass: Try to match specific emotions in the text within asterisks
         Object.entries(textToEmojiMap).forEach(([text, emoji]) => {
-          const pattern = new RegExp(`\\*(.*?)(${text})(.*?)\\*`, 'gi');
-          generatedText = generatedText.replace(pattern, `${emoji} $1$3`);
+          // Match the exact emotion term within asterisks, preserving other parts
+          const exactPattern = new RegExp(`\\*(.*?)(${text})(.*?)\\*`, 'gi');
+          generatedText = generatedText.replace(exactPattern, `${emoji} $1$3`);
+          
+          // Match emotion as part of a phrase inside asterisks (e.g., "*scrunches up face*")
+          const partialPattern = new RegExp(`\\*(.*?${text}.*?)\\*`, 'gi');
+          generatedText = generatedText.replace(partialPattern, `${emoji}`);
         });
+        
+        // Special case for "confused" expressions like *scrunches up face in confusion*
+        if (generatedText.match(/\*.*?confused.*?\*/i) || 
+            generatedText.match(/\*.*?confusion.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?confus(ed|ion).*?\*/i, '😕');
+        }
+        
+        // Special case for "looks around", "looks confused", etc.
+        if (generatedText.match(/\*.*?looks.*?\*/i)) {
+          if (generatedText.match(/\*.*?looks around.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?looks around.*?\*/i, '👀');
+          } else if (generatedText.match(/\*.*?looks confused.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?looks confused.*?\*/i, '😕');
+          } else if (generatedText.match(/\*.*?looks.*?away.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?looks.*?away.*?\*/i, '😒');
+          } else {
+            // Generic "looks" expression
+            generatedText = generatedText.replace(/\*.*?looks.*?\*/i, '👀');
+          }
+        }
+        
+        // Special case for "scratches head" and similar expressions
+        if (generatedText.match(/\*.*?scratch.*?head.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?scratch.*?head.*?\*/i, '🤔');
+        }
+        
+        // Special case for "holds out hand" expressions
+        if (generatedText.match(/\*.*?holds.*?out.*?hand.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?holds.*?out.*?hand.*?\*/i, '✋');
+        }
         
         // Preserve any remaining asterisks content, or remove standalone asterisks
         if (!generatedText.match(/\*[^*]+\*/)) {
