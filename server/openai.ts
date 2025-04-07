@@ -230,18 +230,92 @@ Your responses must feel like authentic anime character dialogue - brief, emotiv
           generatedText = generatedText.replace(/\*[^*]+\*/g, "").trim();
           
           // If the response doesn't contain any emojis but should, add a simple one
-          const hasEmoji = /[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(generatedText);
+          // Use a basic approach to detect common emoji characters
+          const hasEmoji = /[😀😃😄😁😆😅😂🤣☺️😊😇🙂😉😌😍🥰😘😗😙😚😋]/g.test(generatedText);
           if (!hasEmoji) {
             // Add a simple happy emoji if none exists
             generatedText += " 😊";
           }
         } else {
-          // Normal message processing
-          // Convert parenthetical text to anime-style emoticons
+          // Normal message processing for non-emoji messages
+          
+          // First convert parenthetical text to anime-style emoticons
           generatedText = generatedText.replace(/\((.*?)\)/g, "*$1*");
           
-          // Preserve emotive expressions surrounded by asterisks
-          // but remove any standalone asterisks
+          // Then replace common text emoticons with actual emoji equivalents
+          const textToEmojiMap = {
+            "waves": "👋",
+            "smile": "😊",
+            "smiles": "😊",
+            "grin": "😁",
+            "grins": "😁",
+            "laugh": "😄",
+            "laughs": "😄",
+            "wink": "😉",
+            "winks": "😉",
+            "blush": "😊",
+            "blushes": "😊",
+            "nod": "🙂",
+            "nods": "🙂",
+            "thumbs up": "👍",
+            "thumbs down": "👎",
+            "sigh": "😮‍💨",
+            "sighs": "😮‍💨",
+            "shrug": "🤷",
+            "shrugs": "🤷",
+            "shock": "😲",
+            "shocked": "😲",
+            "frown": "😟",
+            "frowns": "😟",
+            "sad": "😔",
+            "sadly": "😔",
+            "angry": "😠",
+            "angrily": "😠",
+            "yawn": "🥱",
+            "yawns": "🥱",
+            "sleepy": "😴",
+            "confused": "😕",
+            "surprise": "😮",
+            "surprised": "😮",
+            "cries": "😢",
+            "cry": "😢",
+            "tears": "😢",
+            "happy": "😄",
+            "happily": "😄",
+            "excited": "😃",
+            "excitedly": "😃",
+            "wave": "👋",
+            "hello": "👋",
+            "eyes widen": "👀",
+            "heart": "❤️",
+            "hearts": "❤️",
+            "nervous": "😅",
+            "nervously": "😅",
+            "thinking": "🤔",
+            "thinks": "🤔",
+            "thoughtful": "🤔",
+            "annoyed": "😒",
+            "groan": "😫",
+            "groans": "😫",
+            "rolls eyes": "🙄",
+            "eye roll": "🙄",
+            "glare": "😠",
+            "glares": "😠",
+            "worry": "😟",
+            "worried": "😟",
+            "pout": "😡",
+            "pouts": "😡",
+            "peace": "✌️"
+          };
+          
+          // Apply emoji replacements for common emotional expressions in asterisks
+          Object.entries(textToEmojiMap).forEach(([text, emoji]) => {
+            const pattern = new RegExp(`\\*(.*?)(${text})(.*?)\\*`, 'gi');
+            generatedText = generatedText.replace(pattern, `${emoji} $1$3`);
+          });
+          
+          // If still has asterisks content, preserve it
+          // Otherwise, remove any standalone asterisks
           if (!generatedText.match(/\*[^*]+\*/)) {
             generatedText = generatedText.replace(/\*/g, "");
           }
@@ -353,11 +427,82 @@ Guidelines:
         generatedText = generatedText.replace(/^(Assistant|Character|AI|ChatGPT|As\s+|I'm\s+|This\s+is\s+|[^:]+):\s*/i, "");
         generatedText = generatedText.replace(/^['"]|['"]$/g, "");
         
-        // Convert parenthetical text to anime-style emoticons
+        // First convert parenthetical text to anime-style emoticons
         generatedText = generatedText.replace(/\((.*?)\)/g, "*$1*");
         
-        // Preserve emotive expressions surrounded by asterisks
-        // but remove any standalone asterisks
+        // Create a dictionary of common text emotions to emojis
+        const textToEmojiMap = {
+          "waves": "👋",
+          "smile": "😊",
+          "smiles": "😊",
+          "grin": "😁",
+          "grins": "😁",
+          "laugh": "😄",
+          "laughs": "😄",
+          "wink": "😉",
+          "winks": "😉",
+          "blush": "😊",
+          "blushes": "😊",
+          "nod": "🙂",
+          "nods": "🙂",
+          "thumbs up": "👍",
+          "thumbs down": "👎",
+          "sigh": "😮‍💨",
+          "sighs": "😮‍💨",
+          "shrug": "🤷",
+          "shrugs": "🤷",
+          "shock": "😲",
+          "shocked": "😲",
+          "frown": "😟",
+          "frowns": "😟",
+          "sad": "😔",
+          "sadly": "😔",
+          "angry": "😠",
+          "angrily": "😠",
+          "yawn": "🥱",
+          "yawns": "🥱",
+          "sleepy": "😴",
+          "confused": "😕",
+          "surprise": "😮",
+          "surprised": "😮",
+          "cries": "😢",
+          "cry": "😢",
+          "tears": "😢",
+          "happy": "😄",
+          "happily": "😄",
+          "excited": "😃",
+          "excitedly": "😃",
+          "wave": "👋",
+          "hello": "👋",
+          "eyes widen": "👀",
+          "heart": "❤️",
+          "hearts": "❤️",
+          "nervous": "😅",
+          "nervously": "😅",
+          "thinking": "🤔",
+          "thinks": "🤔",
+          "thoughtful": "🤔",
+          "annoyed": "😒",
+          "groan": "😫",
+          "groans": "😫",
+          "rolls eyes": "🙄",
+          "eye roll": "🙄",
+          "glare": "😠",
+          "glares": "😠",
+          "worry": "😟",
+          "worried": "😟",
+          "pout": "😡",
+          "pouts": "😡",
+          "peace": "✌️"
+        };
+        
+        // Apply emoji replacements for common emotional expressions in asterisks
+        Object.entries(textToEmojiMap).forEach(([text, emoji]) => {
+          const pattern = new RegExp(`\\*(.*?)(${text})(.*?)\\*`, 'gi');
+          generatedText = generatedText.replace(pattern, `${emoji} $1$3`);
+        });
+        
+        // Preserve any remaining asterisks content, or remove standalone asterisks
         if (!generatedText.match(/\*[^*]+\*/)) {
           generatedText = generatedText.replace(/\*/g, "");
         }
