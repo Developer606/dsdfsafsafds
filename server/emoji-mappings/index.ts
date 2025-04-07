@@ -40,9 +40,10 @@ export const textToEmojiMap: Record<string, string> = {
 /**
  * Function to convert text expressions in asterisks to emoji
  * Uses a two-pass approach to handle both exact matches and partial matches
+ * Always removes asterisks and their content if no emoji match is found
  * 
  * @param text The text containing expressions in asterisks
- * @returns Text with expressions converted to emojis
+ * @returns Text with expressions converted to emojis or asterisks removed
  */
 export function convertTextExpressionsToEmoji(text: string): string {
   if (!text) return text;
@@ -57,6 +58,12 @@ export function convertTextExpressionsToEmoji(text: string): string {
   for (const match of matches) {
     const fullMatch = match[0]; // The entire match including asterisks
     const expression = match[1]; // Just the content inside asterisks
+    
+    // Skip empty asterisks
+    if (!expression.trim()) {
+      processedText = processedText.replace(fullMatch, "");
+      continue;
+    }
     
     // First check for direct matches in our map
     const directEmoji = textToEmojiMap[expression.toLowerCase()];
@@ -102,14 +109,15 @@ export function convertTextExpressionsToEmoji(text: string): string {
         processedText = processedText.replace(fullMatch, '😃👍');
       } else if (/laughs.*nervously/i.test(expression)) {
         processedText = processedText.replace(fullMatch, '😅');
+      } else {
+        // If we couldn't find a match, just remove the asterisks and text within them
+        processedText = processedText.replace(fullMatch, "");
       }
     }
   }
   
-  // If all expressions were replaced, remove any standalone asterisks
-  if (!processedText.match(/\*[^*]+\*/)) {
-    processedText = processedText.replace(/\*/g, "");
-  }
+  // Remove any standalone asterisks that might remain
+  processedText = processedText.replace(/\*/g, "");
   
   return processedText;
 }
