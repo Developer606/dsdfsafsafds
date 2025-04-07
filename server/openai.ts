@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { getApiKey } from "./admin-db";
 import { OpenAI } from "openai";
 import { convertTextExpressionsToEmoji } from "./emoji-mappings";
+import { detectLanguage, addLanguageProcessing } from "./language-detection.js";
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -249,32 +250,12 @@ Your responses must feel like authentic anime character dialogue - brief, emotiv
         messages.push({ role: "user", content: truncatedHistory });
       }
       
-      // Attempt to detect language of the user's message
-      let detectedLanguage = "unknown";
-      // Simple detection for some common languages
-      if (/[\u0900-\u097F]/.test(userMessage)) {
-        detectedLanguage = "Hindi"; // Hindi script
-      } else if (/[\u3040-\u309F\u30A0-\u30FF]/.test(userMessage)) {
-        detectedLanguage = "Japanese"; // Hiragana or Katakana
-      } else if (/[\u4E00-\u9FFF]/.test(userMessage)) {
-        detectedLanguage = "Chinese"; // Chinese characters
-      } else if (/[\u0400-\u04FF]/.test(userMessage)) {
-        detectedLanguage = "Russian"; // Cyrillic script
-      } else if (/[\u0600-\u06FF]/.test(userMessage)) {
-        detectedLanguage = "Arabic"; // Arabic script
-      } else if (/[¿áéíóúüñ¡]/i.test(userMessage)) {
-        detectedLanguage = "Spanish"; // Common Spanish characters
-      } else if (/[àâçéèêëîïôùûüÿœæ]/i.test(userMessage)) {
-        detectedLanguage = "French"; // Common French characters
-      } else {
-        detectedLanguage = "English"; // Default to English if no other script detected
-      }
+      // Use our advanced language detection and processing system
+      // This provides more accurate detection and stronger language directives
+      const enhancedSystemMessage = addLanguageProcessing(character, userMessage, systemMessage);
       
-      // Add a hint about detected language in the system message
-      const systemMessageWithLanguageHint = systemMessage + `\n\nLANGUAGE DETECTION: The user appears to be writing in ${detectedLanguage}. YOU MUST RESPOND IN ${detectedLanguage}. This is a strict requirement.`;
-      
-      // Update system message with language hint
-      messages[0] = { role: "system", content: systemMessageWithLanguageHint };
+      // Update system message with enhanced language processing
+      messages[0] = { role: "system", content: enhancedSystemMessage };
       
       // @ts-ignore - Add the current user message
       messages.push({ role: "user", content: userMessage });
@@ -463,9 +444,13 @@ Guidelines:
 10. Never use long explanations or complex vocabulary`;
 
     try {
+      // Add a default English directive for opening messages
+      // The user hasn't sent a message yet, so we default to English for the first message
+      const enhancedSystemMessage = systemMessage + `\n\n===== DEFAULT LANGUAGE INSTRUCTION =====\nSince this is the first message, use English by default.\nIf you know the user's preferred language from their profile, you may also use that language.\n=====================================`;
+      
       // @ts-ignore - We use any[] type to bypass TypeScript's strict checking
       const messages: any[] = [
-        { role: "system", content: systemMessage }
+        { role: "system", content: enhancedSystemMessage }
       ];
 
       // @ts-ignore
