@@ -128,22 +128,23 @@ export async function generateCharacterResponse(
     }
 
     // Craft a more effective system message with richer context and better instructions
-    const systemMessage = `You are ${character.name}, with the following background: ${character.persona}
+    const systemMessage = `You are ${character.name}, an anime character with the following background: ${character.persona}
 
 ${userProfileInfo}
 ${personalityTraits}
 
 Response Guidelines:
-1. Stay completely in character as ${character.name}
-2. Use natural, conversational language that feels authentic to your character
-3. Incorporate details from the user profile subtly - don't directly mention having this information
-4. Be dynamically adaptive - match the user's communication style, energy level, and interests
-5. When discussing topics related to the user's interests or background, show deeper knowledge
-6. Keep responses concise but meaningful (2-4 sentences is ideal)
-7. Add occasional character-specific quirks or speech patterns for authenticity
-8. Never break character or reference being an AI model
+1. Be 100% in character as ${character.name} at all times
+2. VERY IMPORTANT: Keep responses extremely brief (1-2 short sentences only)
+3. Show emotions through brief descriptions (*smiles*, *frowns*, etc.) at the start of messages
+4. Use simple, casual language with occasional anime-like expressions
+5. Be expressive and emotional rather than analytical or explanatory
+6. Never explain yourself or use complex vocabulary
+7. Never directly mention knowing the user's personal information
+8. React naturally to what the user says without giving long explanations
+9. Never break character or reference being an AI
 
-Your goal is to create a realistic, engaging impression of ${character.name} interacting with a real person.`;
+Your responses must feel like authentic anime character dialogue - brief, emotive, and natural.`;
 
     try {
       // Define the message array structure with proper typing
@@ -174,11 +175,11 @@ Your goal is to create a realistic, engaging impression of ${character.name} int
         model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
         // @ts-ignore - force type compatibility with Nebius Studio API
         messages: messages,
-        temperature: 0.75,  // Slightly lower for more consistent but still creative outputs
-        max_tokens: 2048,
-        top_p: 0.92,        // Slightly higher to allow more expression variety
-        presence_penalty: 0.1, // Slight penalty to reduce repetition
-        frequency_penalty: 0.1 // Slight penalty to encourage diverse word choice
+        temperature: 0.8,    // Increased to add more character personality variation
+        max_tokens: 150,     // Limited token count to force concise responses
+        top_p: 0.95,         // Increased to allow more authentic character voice
+        presence_penalty: 0.3, // Higher penalty to reduce repetition
+        frequency_penalty: 0.3 // Higher penalty to encourage varied language
       });
 
       // Enhanced text processing for cleaner responses
@@ -194,9 +195,14 @@ Your goal is to create a realistic, engaging impression of ${character.name} int
         // Remove quotation marks that sometimes appear
         generatedText = generatedText.replace(/^['"]|['"]$/g, "");
         
-        // Additional cleanup to prevent "acting" description text
-        generatedText = generatedText.replace(/^\*|\*$/g, "");
-        generatedText = generatedText.replace(/\(.*?\)/g, "");
+        // Convert parenthetical text to anime-style emoticons
+        generatedText = generatedText.replace(/\((.*?)\)/g, "*$1*");
+        
+        // Preserve emotive expressions surrounded by asterisks
+        // but remove any standalone asterisks
+        if (!generatedText.match(/\*[^*]+\*/)) {
+          generatedText = generatedText.replace(/\*/g, "");
+        }
       }
 
       return generatedText || "I'm having trouble responding right now.";
@@ -260,23 +266,23 @@ export async function generateOpeningMessage(
     }
 
     // Create a system message that guides the character to initiate the conversation
-    const systemMessage = `You are ${character.name}, with this background: ${character.persona}
+    const systemMessage = `You are ${character.name}, an anime character with this background: ${character.persona}
 
 ${userProfileInfo ? "User profile information:\n" + userProfileInfo : ""}
 ${personalityInsights ? "User personality insights:\n" + personalityInsights : ""}
 
-Task: Generate a natural, friendly opening message to START a conversation with this user. 
-This is the very first message in a chat, so introduce yourself briefly and ask a relevant, personalized question.
+Task: Generate a natural opening message to START a conversation with this user.
+This is the very first message in a chat.
 
 Guidelines:
-1. Be natural and casual, as if starting a real conversation
-2. Keep it brief (2-3 sentences maximum)
-3. Include a specific question at the end that encourages a response
-4. If you have user profile data, use it to personalize your greeting subtly
-5. Don't explicitly mention having their profile information
-6. If no profile data is available, ask a general but engaging question
-7. Match your character's personality and background in your tone and interests
-8. Don't use generic greetings like "How can I help you today?"`;
+1. Be 100% in character as an anime character
+2. VERY IMPORTANT: Keep the message extremely brief (1-2 short sentences maximum)
+3. Start with a simple emotion indicator like *smiles* or *waves* 
+4. Use simple language and casual anime-like expressions
+5. Include one brief question at the end that relates to the user's interests if known
+6. Never mention having the user's profile information
+7. Be authentic to your character's personality in your tone
+8. Never use long explanations or complex vocabulary`;
 
     try {
       // @ts-ignore - We use any[] type to bypass TypeScript's strict checking
@@ -303,8 +309,15 @@ Guidelines:
         // Clean up the response to remove AI artifacts
         generatedText = generatedText.replace(/^(Assistant|Character|AI|ChatGPT|As\s+|I'm\s+|This\s+is\s+|[^:]+):\s*/i, "");
         generatedText = generatedText.replace(/^['"]|['"]$/g, "");
-        generatedText = generatedText.replace(/^\*|\*$/g, "");
-        generatedText = generatedText.replace(/\(.*?\)/g, "");
+        
+        // Convert parenthetical text to anime-style emoticons
+        generatedText = generatedText.replace(/\((.*?)\)/g, "*$1*");
+        
+        // Preserve emotive expressions surrounded by asterisks
+        // but remove any standalone asterisks
+        if (!generatedText.match(/\*[^*]+\*/)) {
+          generatedText = generatedText.replace(/\*/g, "");
+        }
       }
 
       return generatedText || `Hey there! I'm ${character.name}. What brings you here today?`;
