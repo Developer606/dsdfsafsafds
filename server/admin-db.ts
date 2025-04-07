@@ -84,46 +84,83 @@ async function initializeDefaultAdmin() {
   }
 }
 
-// Transfer GitHub token to admin database
+// Transfer Nebius API key to admin database
 async function transferGithubToken() {
-  const token = process.env.GITHUB_TOKEN;
+  // Keep for backward compatibility - check both tokens
+  const nebiusToken = process.env.NEBIUS_API_KEY;
+  const githubToken = process.env.GITHUB_TOKEN;
 
-  if (!token) {
-    console.log("No GITHUB_TOKEN found in environment variables");
+  if (!nebiusToken && !githubToken) {
+    console.log("No NEBIUS_API_KEY or GITHUB_TOKEN found in environment variables");
     return;
   }
 
   try {
-    // Check if GitHub token already exists in the database
-    const existingKey = await adminDb
-      .select()
-      .from(apiKeys)
-      .where(eq(apiKeys.service, "GITHUB_TOKEN"))
-      .get();
+    // First priority - transfer NEBIUS_API_KEY if available
+    if (nebiusToken) {
+      // Check if Nebius token already exists in the database
+      const existingNebiusKey = await adminDb
+        .select()
+        .from(apiKeys)
+        .where(eq(apiKeys.service, "NEBIUS_API_KEY"))
+        .get();
 
-    if (!existingKey) {
-      // Add the token to the database
-      await adminDb.insert(apiKeys).values({
-        service: "GITHUB_TOKEN",
-        key: token,
-        description: "GitHub token used for Azure AI services authentication",
-      });
-      console.log("GitHub token transferred to admin database");
-    } else {
-      // Update if token has changed
-      if (existingKey.key !== token) {
-        await adminDb
-          .update(apiKeys)
-          .set({
-            key: token,
-            updatedAt: new Date(),
-          })
-          .where(eq(apiKeys.service, "GITHUB_TOKEN"));
-        console.log("GitHub token updated in admin database");
+      if (!existingNebiusKey) {
+        // Add the token to the database
+        await adminDb.insert(apiKeys).values({
+          service: "NEBIUS_API_KEY",
+          key: nebiusToken,
+          description: "Nebius API key used for Nebius Studio LLM services",
+        });
+        console.log("Nebius API key transferred to admin database");
+      } else {
+        // Update if token has changed
+        if (existingNebiusKey.key !== nebiusToken) {
+          await adminDb
+            .update(apiKeys)
+            .set({
+              key: nebiusToken,
+              updatedAt: new Date(),
+            })
+            .where(eq(apiKeys.service, "NEBIUS_API_KEY"));
+          console.log("Nebius API key updated in admin database");
+        }
+      }
+    }
+    
+    // For backward compatibility - also handle GITHUB_TOKEN
+    if (githubToken) {
+      // Check if GitHub token already exists in the database
+      const existingKey = await adminDb
+        .select()
+        .from(apiKeys)
+        .where(eq(apiKeys.service, "GITHUB_TOKEN"))
+        .get();
+
+      if (!existingKey) {
+        // Add the token to the database
+        await adminDb.insert(apiKeys).values({
+          service: "GITHUB_TOKEN",
+          key: githubToken,
+          description: "Legacy token used for AI services authentication",
+        });
+        console.log("GitHub token transferred to admin database");
+      } else {
+        // Update if token has changed
+        if (existingKey.key !== githubToken) {
+          await adminDb
+            .update(apiKeys)
+            .set({
+              key: githubToken,
+              updatedAt: new Date(),
+            })
+            .where(eq(apiKeys.service, "GITHUB_TOKEN"));
+          console.log("GitHub token updated in admin database");
+        }
       }
     }
   } catch (error) {
-    console.error("Error transferring GitHub token to admin database:", error);
+    console.error("Error transferring API tokens to admin database:", error);
   }
 }
 

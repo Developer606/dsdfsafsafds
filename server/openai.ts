@@ -1,10 +1,9 @@
-import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
-import { AzureKeyCredential } from "@azure/core-auth";
 import { type Character } from "@shared/characters";
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { getApiKey } from "./admin-db";
+import fetch from "node-fetch";
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -34,16 +33,16 @@ async function initializeToken(): Promise<string | null> {
 
   try {
     // Get token from admin database
-    token = await getApiKey("GITHUB_TOKEN");
+    token = await getApiKey("NEBIUS_API_KEY");
 
     // Fallback to environment variable if not in database
     if (!token) {
-      token = process.env["GITHUB_TOKEN"] || null;
+      token = process.env["NEBIUS_API_KEY"] || null;
     }
 
     if (!token) {
       console.warn(
-        "Missing GITHUB_TOKEN. API responses will use fallback messages.",
+        "Missing NEBIUS_API_KEY. API responses will use fallback messages.",
       );
     }
 
@@ -73,10 +72,7 @@ export async function generateCharacterResponse(
       return "I'm having trouble connecting to my brain right now. Could we chat a bit later?";
     }
 
-    const client = ModelClient(
-      "https://models.inference.ai.azure.com",
-      new AzureKeyCredential(currentToken),
-    );
+    const NEBIUS_API_URL = "https://llm.api.nebius.cloud/v1/chat/completions";
 
     const scriptInstruction =
       language === "hindi" && script === "latin"
@@ -100,42 +96,72 @@ export async function generateCharacterResponse(
       languageInstructions[language as keyof typeof languageInstructions] ||
       languageInstructions.english;
 
-    const prompt = `<s> [INST] You are ${character.name}, with this background:
+    // Define message type for the API
+    type MessageRole = "system" | "user" | "assistant";
+    
+    interface ChatMessage {
+      role: MessageRole;
+      content: string;
+    }
 
-${character.persona}
-
+    // Format the system message with character details
+    const systemMessage = `You are ${character.name}, with this background: ${character.persona}
 Instructions:
 1. ${languageInstruction}
 2. ${scriptInstruction}
 3. Stay in character
 4. Be concise (2-3 sentences)
-5. Match conversation tone
+5. Match conversation tone`;
 
-Chat history:
-${chatHistory}
+    // Build messages array with chat history if available
+    const messages: ChatMessage[] = [
+      { role: "system", content: systemMessage },
+    ];
+    
+    // Add chat history if available
+    if (chatHistory && chatHistory.trim() !== "") {
+      // Parse chat history if it's in a specific format, or just add as context
+      // This implementation might need to be adjusted based on your chat history format
+      messages.push({ role: "user", content: chatHistory });
+    }
+    
+    // Add the current user message
+    messages.push({ role: "user", content: userMessage });
 
-User: ${userMessage}
-[/INST]
-
-Assistant (${character.name}): `;
-
-    const response = await client.path("/chat/completions").post({
-      body: {
-        messages: [{ role: "user", content: prompt }],
-        model: "mistral-small-2503",
+    // Make API call to Nebius Studio
+    const response = await fetch(NEBIUS_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Api-Key ${currentToken}`,
+      },
+      body: JSON.stringify({
+        model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
+        messages: messages,
         temperature: 0.8,
         max_tokens: 2048,
         top_p: 0.1,
-      },
+      }),
     });
 
-    if (isUnexpected(response)) {
-      throw response.body.error;
+    if (!response.ok) {
+      const errorDetails = await response.text();
+      throw new Error(`Nebius API error: ${response.status} - ${errorDetails}`);
     }
 
+    // Define the response structure
+    interface NebiusResponse {
+      choices?: Array<{
+        message?: {
+          content?: string;
+        };
+      }>;
+    }
+
+    const responseData = await response.json() as NebiusResponse;
+
     // Safely extract text content with fallback
-    let generatedText =
-      response.body.choices?.[0]?.message?.content?.trim() || "";
+    let generatedText = responseData.choices?.[0]?.message?.content?.trim() || "";
 
     if (generatedText) {
       generatedText = generatedText.replace(
@@ -178,4 +204,7 @@ export async function main() {
   console.log("Model Response:", response);
 }
 
-main().catch((err) => console.error("Error:", err));
+// Only run main if this file is executed directly
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => console.error("Error:", err));
+}
