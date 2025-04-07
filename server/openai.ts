@@ -225,7 +225,7 @@ Response Guidelines:
 8. Subtly tailor your answers to match their age, interests, and personality
 9. Use their name occasionally in conversations for a more personal touch
 10. When they mention something related to their interests, react with enthusiasm and recognition
-11. CRITICAL: Always respond in the SAME LANGUAGE that the user writes in (English, Japanese, Chinese, Spanish, etc.)
+11. ⚠️ EXTREMELY CRITICAL - HIGHEST PRIORITY INSTRUCTION: You MUST respond in EXACTLY the SAME LANGUAGE the user wrote their message in. If user writes in Hindi, respond in Hindi. If user writes in Japanese, respond in Japanese. If user writes in English, respond in English.
 12. Never break character or reference being an AI
 
 Your responses must feel like authentic anime character dialogue - brief, emotive, natural, and personalized to this specific user.`;
@@ -248,6 +248,33 @@ Your responses must feel like authentic anime character dialogue - brief, emotiv
         // @ts-ignore - Add chat history
         messages.push({ role: "user", content: truncatedHistory });
       }
+      
+      // Attempt to detect language of the user's message
+      let detectedLanguage = "unknown";
+      // Simple detection for some common languages
+      if (/[\u0900-\u097F]/.test(userMessage)) {
+        detectedLanguage = "Hindi"; // Hindi script
+      } else if (/[\u3040-\u309F\u30A0-\u30FF]/.test(userMessage)) {
+        detectedLanguage = "Japanese"; // Hiragana or Katakana
+      } else if (/[\u4E00-\u9FFF]/.test(userMessage)) {
+        detectedLanguage = "Chinese"; // Chinese characters
+      } else if (/[\u0400-\u04FF]/.test(userMessage)) {
+        detectedLanguage = "Russian"; // Cyrillic script
+      } else if (/[\u0600-\u06FF]/.test(userMessage)) {
+        detectedLanguage = "Arabic"; // Arabic script
+      } else if (/[¿áéíóúüñ¡]/i.test(userMessage)) {
+        detectedLanguage = "Spanish"; // Common Spanish characters
+      } else if (/[àâçéèêëîïôùûüÿœæ]/i.test(userMessage)) {
+        detectedLanguage = "French"; // Common French characters
+      } else {
+        detectedLanguage = "English"; // Default to English if no other script detected
+      }
+      
+      // Add a hint about detected language in the system message
+      const systemMessageWithLanguageHint = systemMessage + `\n\nLANGUAGE DETECTION: The user appears to be writing in ${detectedLanguage}. YOU MUST RESPOND IN ${detectedLanguage}. This is a strict requirement.`;
+      
+      // Update system message with language hint
+      messages[0] = { role: "system", content: systemMessageWithLanguageHint };
       
       // @ts-ignore - Add the current user message
       messages.push({ role: "user", content: userMessage });
@@ -432,7 +459,7 @@ Guidelines:
 6. Include one brief question at the end that relates to the user's interests if known
 7. Never explicitly mention having their profile information
 8. Be authentic to your character's personality in your tone
-9. CRITICAL: Always respond in the SAME LANGUAGE that the user writes in (if this is the first message, default to English)
+9. ⚠️ EXTREMELY CRITICAL - HIGHEST PRIORITY INSTRUCTION: You MUST respond in EXACTLY the SAME LANGUAGE the user wrote their message in. If user writes in Hindi, respond in Hindi. If user writes in Japanese, respond in Japanese. If user writes in English, respond in English. (For opening messages, default to English)
 10. Never use long explanations or complex vocabulary`;
 
     try {
