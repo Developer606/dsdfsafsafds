@@ -75,6 +75,7 @@ export async function generateCharacterResponse(
     age?: number;
     gender?: string;
     bio?: string;
+    profileCompleted?: boolean;
   }
 ): Promise<string> {
   try {
@@ -105,6 +106,7 @@ export async function generateCharacterResponse(
     // Enhanced user profile processing for deeper personalization
     let userProfileInfo = "";
     let personalityTraits = "";
+    let customizationGuidelines = "";
     
     if (userProfile) {
       // Format core profile info
@@ -114,31 +116,80 @@ export async function generateCharacterResponse(
       if (userProfile.age) userProfileInfo += `- Age: ${userProfile.age}\n`;
       if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
       
+      // Advanced customization guidelines 
+      customizationGuidelines = "Conversation customization guidelines:\n";
+      
+      // Name-based personalization
+      if (userProfile.fullName) {
+        const firstName = userProfile.fullName.split(' ')[0];
+        customizationGuidelines += `- Occasionally use their first name (${firstName}) in your responses to create rapport\n`;
+        customizationGuidelines += `- Address them by name especially when greeting or asking questions\n`;
+      }
+      
+      // Gender-based personalization with sensitivity
+      if (userProfile.gender) {
+        if (userProfile.gender.toLowerCase() === 'female') {
+          customizationGuidelines += `- Maintain respectful interactions that avoid gender stereotypes\n`;
+        } else if (userProfile.gender.toLowerCase() === 'male') {
+          customizationGuidelines += `- Maintain respectful interactions that avoid gender stereotypes\n`;
+        } else {
+          customizationGuidelines += `- Use gender-neutral language and respect their gender identity\n`;
+        }
+      }
+      
       // Extract personality traits from bio if available
       if (userProfile.bio) {
         personalityTraits = "Personality insights based on user bio:\n";
         
-        // Check for interests in bio
-        const interestsMatch = userProfile.bio.match(/(?:like|love|enjoy|passion|hobby|interest|into)s?\s+([^,.]+)/gi);
+        // Check for interests in bio with expanded patterns
+        const interestsMatch = userProfile.bio.match(/(?:like|love|enjoy|passion|hobby|interest|into|fan of|favorite|fond of)s?\s+([^,.]+)/gi);
         if (interestsMatch) {
-          personalityTraits += `- Shows interest in: ${interestsMatch.join(', ').replace(/(?:like|love|enjoy|passion|hobby|interest|into)s?\s+/gi, '')}\n`;
+          personalityTraits += `- Shows interest in: ${interestsMatch.join(', ').replace(/(?:like|love|enjoy|passion|hobby|interest|into|fan of|favorite|fond of)s?\s+/gi, '')}\n`;
+          customizationGuidelines += `- Reference their interests naturally in conversation when relevant\n`;
         }
         
-        // Check for personality indicators
-        if (userProfile.bio.match(/introvert|quiet|shy|reserved|calm|peaceful|reflective/i)) {
+        // Check for personality indicators with expanded patterns
+        if (userProfile.bio.match(/introvert|quiet|shy|reserved|calm|peaceful|reflective|thoughtful|deep|thinker|alone|solitude/i)) {
           personalityTraits += "- Likely introverted or reflective\n";
+          customizationGuidelines += `- Use a more gentle, thoughtful conversation style\n`;
+          customizationGuidelines += `- Avoid being too energetic or overwhelming in responses\n`;
         }
-        if (userProfile.bio.match(/extrovert|outgoing|social|energetic|enthusiastic|loves people/i)) {
+        if (userProfile.bio.match(/extrovert|outgoing|social|energetic|enthusiastic|loves people|party|friends|group|crowd|active|exciting/i)) {
           personalityTraits += "- Likely extroverted or outgoing\n";
+          customizationGuidelines += `- Use a more energetic, engaging conversation style\n`;
+          customizationGuidelines += `- Be more expressive and enthusiastic in your responses\n`;
         }
         
-        // Add age-specific adaptations
-        if (userProfile.age) {
-          if (userProfile.age < 18) {
-            personalityTraits += "- Use simpler language appropriate for younger users\n";
-          } else if (userProfile.age > 60) {
-            personalityTraits += "- Show respect for life experience\n";
-          }
+        // Check for emotion-related words
+        if (userProfile.bio.match(/happy|cheerful|optimistic|positive|upbeat|joyful/i)) {
+          personalityTraits += "- Generally positive and cheerful personality\n";
+          customizationGuidelines += `- Match their positive energy and optimism\n`;
+        }
+        if (userProfile.bio.match(/serious|focused|determined|ambitious|goal|achieve|success/i)) {
+          personalityTraits += "- Shows ambition and goal-oriented personality\n";
+          customizationGuidelines += `- Be supportive of their aspirations and goals\n`;
+        }
+      }
+      
+      // Add age-specific adaptations
+      if (userProfile.age) {
+        if (userProfile.age < 18) {
+          personalityTraits += "- Younger user (under 18)\n";
+          customizationGuidelines += `- Use simpler language appropriate for younger users\n`;
+          customizationGuidelines += `- Be encouraging and supportive, avoid complex topics\n`;
+        } else if (userProfile.age >= 18 && userProfile.age <= 25) {
+          personalityTraits += "- Young adult user\n";
+          customizationGuidelines += `- Use contemporary references and casual language\n`;
+        } else if (userProfile.age > 25 && userProfile.age <= 40) {
+          personalityTraits += "- Adult user\n";
+          customizationGuidelines += `- Balance between casual and mature conversation style\n`;
+        } else if (userProfile.age > 40 && userProfile.age <= 60) {
+          personalityTraits += "- Mature adult user\n";
+          customizationGuidelines += `- Use a more measured and thoughtful conversation style\n`;
+        } else if (userProfile.age > 60) {
+          personalityTraits += "- Senior user\n";
+          customizationGuidelines += `- Show respect for life experience and wisdom\n`;
+          customizationGuidelines += `- Use a slightly more formal but warm conversation style\n`;
         }
       }
     }
@@ -160,6 +211,7 @@ Special Emoji Handling:
 
 ${userProfileInfo}
 ${personalityTraits}
+${customizationGuidelines}
 ${emojiGuidelines}
 
 Response Guidelines:
@@ -169,11 +221,13 @@ Response Guidelines:
 4. Use simple, casual language with occasional anime-like expressions
 5. Be expressive and emotional rather than analytical or explanatory
 6. Never explain yourself or use complex vocabulary
-7. Never directly mention knowing the user's personal information
-8. React naturally to what the user says without giving long explanations
-9. Never break character or reference being an AI
+7. IMPORTANT: Personalize your responses based on the user's profile information, but never explicitly mention that you know their personal details
+8. Subtly tailor your answers to match their age, interests, and personality
+9. Use their name occasionally in conversations for a more personal touch
+10. When they mention something related to their interests, react with enthusiasm and recognition
+11. Never break character or reference being an AI
 
-Your responses must feel like authentic anime character dialogue - brief, emotive, and natural.`;
+Your responses must feel like authentic anime character dialogue - brief, emotive, natural, and personalized to this specific user.`;
 
     try {
       // Define the message array structure with proper typing
@@ -283,6 +337,7 @@ export async function generateOpeningMessage(
     age?: number;
     gender?: string;
     bio?: string;
+    profileCompleted?: boolean;
   }
 ): Promise<string> {
   try {
@@ -295,21 +350,61 @@ export async function generateOpeningMessage(
       return `Hello there! I'm ${character.name}. How are you doing today?`;
     }
     
-    // Extract user profile information
+    // Enhanced user profile processing for deeper personalization
     let userProfileInfo = "";
-    let personalityInsights = "";
+    let personalityTraits = "";
+    let customizationGuidelines = "";
     
     if (userProfile) {
-      if (userProfile.fullName) userProfileInfo += `- User's name: ${userProfile.fullName}\n`;
+      // Format core profile info
+      userProfileInfo = "User profile information:\n";
+      if (userProfile.fullName) userProfileInfo += `- Name: ${userProfile.fullName}\n`;
       if (userProfile.gender) userProfileInfo += `- Gender: ${userProfile.gender}\n`;
       if (userProfile.age) userProfileInfo += `- Age: ${userProfile.age}\n`;
       if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
       
-      // Extract interests and personality traits if bio is available
+      // Advanced customization guidelines 
+      customizationGuidelines = "Opening message customization guidelines:\n";
+      
+      // Name-based personalization
+      if (userProfile.fullName) {
+        const firstName = userProfile.fullName.split(' ')[0];
+        customizationGuidelines += `- Consider greeting them by name (${firstName}) to create immediate rapport\n`;
+      }
+      
+      // Extract personality traits from bio if available
       if (userProfile.bio) {
-        const interestsMatch = userProfile.bio.match(/(?:like|love|enjoy|passion|hobby|interest|into)s?\s+([^,.]+)/gi);
+        personalityTraits = "Personality insights based on user bio:\n";
+        
+        // Check for interests in bio with expanded patterns
+        const interestsMatch = userProfile.bio.match(/(?:like|love|enjoy|passion|hobby|interest|into|fan of|favorite|fond of)s?\s+([^,.]+)/gi);
         if (interestsMatch) {
-          personalityInsights += `- User appears interested in: ${interestsMatch.join(', ').replace(/(?:like|love|enjoy|passion|hobby|interest|into)s?\s+/gi, '')}\n`;
+          personalityTraits += `- Shows interest in: ${interestsMatch.join(', ').replace(/(?:like|love|enjoy|passion|hobby|interest|into|fan of|favorite|fond of)s?\s+/gi, '')}\n`;
+          customizationGuidelines += `- Try asking a very brief question related to one of their interests\n`;
+        }
+        
+        // Check for personality indicators with expanded patterns
+        if (userProfile.bio.match(/introvert|quiet|shy|reserved|calm|peaceful|reflective|thoughtful|deep|thinker|alone|solitude/i)) {
+          personalityTraits += "- Likely introverted or reflective\n";
+          customizationGuidelines += `- Use a gentle, non-aggressive greeting appropriate for introverts\n`;
+        }
+        if (userProfile.bio.match(/extrovert|outgoing|social|energetic|enthusiastic|loves people|party|friends|group|crowd|active|exciting/i)) {
+          personalityTraits += "- Likely extroverted or outgoing\n";
+          customizationGuidelines += `- Use an energetic, enthusiastic greeting style\n`;
+        }
+      }
+      
+      // Add age-specific adaptations
+      if (userProfile.age) {
+        if (userProfile.age < 18) {
+          personalityTraits += "- Younger user (under 18)\n";
+          customizationGuidelines += `- Use very simple language and an encouraging tone\n`;
+        } else if (userProfile.age >= 18 && userProfile.age <= 25) {
+          personalityTraits += "- Young adult user\n";
+          customizationGuidelines += `- Use more contemporary, casual greeting style\n`;
+        } else if (userProfile.age > 60) {
+          personalityTraits += "- Senior user\n";
+          customizationGuidelines += `- Use a respectful but friendly greeting style\n`;
         }
       }
     }
@@ -317,10 +412,11 @@ export async function generateOpeningMessage(
     // Create a system message that guides the character to initiate the conversation
     const systemMessage = `You are ${character.name}, an anime character with this background: ${character.persona}
 
-${userProfileInfo ? "User profile information:\n" + userProfileInfo : ""}
-${personalityInsights ? "User personality insights:\n" + personalityInsights : ""}
+${userProfileInfo ? userProfileInfo : ""}
+${personalityTraits ? personalityTraits : ""}
+${customizationGuidelines ? customizationGuidelines : ""}
 
-Task: Generate a natural opening message to START a conversation with this user.
+Task: Generate a personalized opening message to START a conversation with this specific user.
 This is the very first message in a chat.
 
 Guidelines:
@@ -328,10 +424,14 @@ Guidelines:
 2. VERY IMPORTANT: Keep the message extremely brief (1-2 short sentences maximum)
 3. Start with a simple emotion indicator like *smiles* or *waves* 
 4. Use simple language and casual anime-like expressions
-5. Include one brief question at the end that relates to the user's interests if known
-6. Never mention having the user's profile information
-7. Be authentic to your character's personality in your tone
-8. Never use long explanations or complex vocabulary`;
+5. IMPORTANT: Personalize your greeting based on what you know about the user
+   - If you know their name, consider using it naturally in your greeting
+   - If you know their interests, subtly reference something they might like
+   - Adjust your tone based on their age and personality traits
+6. Include one brief question at the end that relates to the user's interests if known
+7. Never explicitly mention having their profile information
+8. Be authentic to your character's personality in your tone
+9. Never use long explanations or complex vocabulary`;
 
     try {
       // @ts-ignore - We use any[] type to bypass TypeScript's strict checking
