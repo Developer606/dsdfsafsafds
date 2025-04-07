@@ -1835,9 +1835,27 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           const messages = await storage.getMessagesByCharacter(
             data.characterId,
           );
-          const chatHistory = messages
-            .map((m) => `${m.isUser ? "User" : character.name}: ${m.content}`)
-            .join("\n");
+
+          // Function to check if a string consists of only emojis
+          const isOnlyEmojis = (str) => {
+            // This regex matches emoji characters
+            const emojiRegex = /[\p{Emoji}]/gu;
+            const strWithoutEmojis = str.replace(emojiRegex, '').trim();
+            return strWithoutEmojis.length === 0 && emojiRegex.test(str);
+          };
+
+          // Function to format message content, preserving emojis
+          const formatMessageContent = (message) => {
+            if (message.isUser && isOnlyEmojis(message.content)) {
+              // If the user message is only emojis, preserve it exactly as is
+              return `${message.isUser ? "User" : character.name}: ${message.content}`;
+            } else {
+              // Normal processing for non-emoji or mixed messages
+              return `${message.isUser ? "User" : character.name}: ${message.content}`;
+            }
+          };
+
+          const chatHistory = messages.map(formatMessageContent).join("\n");
           
           // Fetch user profile data for personalization using the dedicated module
           const { getUserProfileData } = await import("./character-personalization.js");

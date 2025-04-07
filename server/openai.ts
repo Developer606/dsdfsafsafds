@@ -85,6 +85,21 @@ export async function generateCharacterResponse(
       console.warn("No API client available for LLM service");
       return "I'm having trouble connecting to my brain right now. Could we chat a bit later?";
     }
+
+    // Function to check if a string is likely to be an emoji message
+    // Using a very simplified approach
+    const isOnlyEmojis = (str: string): boolean => {
+      // Check if the message is very short and contains no alphanumeric characters
+      // This is a simplified approach that works for most emoji messages
+      const hasNoAlphanumeric = !/[a-zA-Z0-9]/.test(str);
+      const isShort = str.length <= 5; // Most emoji messages are short
+      
+      // If message is short and has no alphanumeric chars, it's likely an emoji
+      return isShort && hasNoAlphanumeric;
+    };
+    
+    // Check if the user message is just emojis
+    const isEmojiMessage = isOnlyEmojis(userMessage);
     
     // Enhanced user profile processing for deeper personalization
     let userProfileInfo = "";
@@ -128,10 +143,22 @@ export async function generateCharacterResponse(
     }
 
     // Craft a more effective system message with richer context and better instructions
+    // Add special instructions for emoji messages
+    const emojiGuidelines = isEmojiMessage ? `
+Special Emoji Handling:
+1. The user has sent ONLY emojis to you
+2. Respond to these emojis naturally without describing them as "emoji"
+3. Use matching or related emojis in your brief response
+4. Keep your response extremely short and playful
+5. Never analyze or describe what the emoji means - just react to it naturally
+6. It's ok to respond with just an emotion and 1-2 emojis if appropriate
+` : '';
+
     const systemMessage = `You are ${character.name}, an anime character with the following background: ${character.persona}
 
 ${userProfileInfo}
 ${personalityTraits}
+${emojiGuidelines}
 
 Response Guidelines:
 1. Be 100% in character as ${character.name} at all times
