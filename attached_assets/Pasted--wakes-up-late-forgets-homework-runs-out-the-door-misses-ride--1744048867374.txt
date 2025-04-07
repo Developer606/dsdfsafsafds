@@ -1,0 +1,124 @@
+"wakes up late" → ⏰🛌  
+"forgets homework" → 😱📚  
+"runs out the door" → 🏃🚪  
+"misses ride" → 🚗💨  
+"begs for a ride" → 🙏🚙  
+"takes wrong bus" → 🚌😬  
+"gets dropped off" → 👋🚘  
+"walks in late" → 😳🚶‍♂️  
+"gets stared at" → 👀😐  
+"pretends nothing happened" → 😎  
+"trips over bag" → 🎒💥  
+"spills books" → 📚🌀  
+"papers fly everywhere" → 📝💨  
+"teacher sighs" → 😔👩‍🏫  
+"takes deep breath" → 😮‍💨  
+"finally sits down" → 😩🪑  
+"chair squeaks" → 😬🪑  
+"everyone looks" → 👀👥  
+"melts in seat" → 🫠🪑  
+"tries to focus" → 🧠👓  
+"fails instantly" → 😵‍💫  
+"doodles in notebook" → 🖊️🎨  
+"zones out" → 🌌👁️  
+"gets called on" → 🧍‍♂️🔊  
+"panics" → 😰💦  
+"answers wrong" → ❌😓  
+"everyone laughs" → 😂😬  
+"sinks into floor" → 🫠🕳️  
+"bell rings" → 🔔🏃  
+"rushes out" → 🏃‍♀️💨  
+"forgets bag" → 😩🎒  
+"runs back" → 🏃↩️  
+"bumped into someone" → 🤝💥  
+"apologizes" → 🙇  
+"walks away fast" → 🚶‍♂️💨  
+"lunch line is long" → 🍔📈  
+"forgets wallet" → 💸❌  
+"asks friend to cover" → 🙏💳  
+"gets weird food" → 🥦😐  
+"sits with new people" → 🧍‍♂️👥  
+"awkward silence" → 😶🥄  
+"laughs too loud" → 🤣🔊  
+"spills drink" → 🥤💦  
+"food falls off tray" → 🍝💥  
+"cleans mess" → 🧽😞  
+"leaves early" → 🏃‍♂️🕑  
+"hides in bathroom" → 🚽😶  
+"scrolls on phone" → 📱🌀  
+"misses next class" → ⏰❌  
+"realizes mistake" → 😳🤦  
+"runs to hallway" → 🏃‍♂️🏫  
+"door is locked" → 🚪🔒  
+"knocks awkwardly" → 🚪👊  
+"class stares" → 👀😐  
+"teacher opens door" → 😑🚪  
+"sits in back" → 🙃🪑  
+"tries to disappear" → 🫥  
+"gets random partner" → 👤🤝  
+"partner does nothing" → 😴🧍  
+"does all the work" → 🧠💻  
+"submits last minute" → 🕛📩  
+"gets surprise quiz" → 😱📝  
+"forgets everything" → 🤯❓  
+"copies silently" → 👀✏️  
+"finishes early" → ⏳😎  
+"double checks answers" → 🔍🧠  
+"hands in paper" → 📝🙌  
+"bell rings again" → 🔔📚  
+"heads outside" → 🌤️🚶‍♂️  
+"sun is too bright" → 😵🌞  
+"shades on" → 🕶️😎  
+"sees crush" → 😳❤️  
+"panics internally" → 🫣🧠  
+"fixes hair" → 💇‍♂️✨  
+"waves awkwardly" → 👋😅  
+"gets ignored" → 😐🧊  
+"pretends to text" → 📱🙄  
+"walks faster" → 🏃‍♂️💔  
+"enters last class" → 🧑‍🏫📘  
+"finds seat in corner" → 🧍‍♂️📐  
+"teacher starts video" → 📺🎉  
+"lights turn off" → 💡🔻  
+"tries to nap" → 😪🛌  
+"friend pokes" → 👈😠  
+"watches in silence" → 👁️📽️  
+"video glitches" → 📺💥  
+"everyone groans" → 😩📢  
+"teacher gives worksheet" → 📄🖊️  
+"class collectively sighs" → 😮‍💨👥  
+"finishes fast" → 💨🧠  
+"waits for bell" → ⏰👀  
+"stares at clock" → 🕒👁️  
+"time slows down" → 🐌🕰️  
+"finally rings" → 🔔🎉  
+"sprints out" → 🏃‍♀️💨  
+"meets friend outside" → 👫😌  
+"talks about day" → 🗣️📅  
+"laughs at chaos" → 😂💬  
+"walks to bus" → 🚶‍♂️🚌  
+"rides home" → 🚌🎧  
+"watches outside window" → 🌆👀  
+"daydreams again" → ☁️🧠  
+"gets home" → 🏠🔓  
+"throws bag down" → 🎒💥  
+"grabs snack" → 🍪🧃  
+"flops on couch" → 🛋️😩  
+"opens laptop" → 💻🔛  
+"plays music" → 🎶🎧  
+"scrolls aimlessly" → 📱🌀  
+"forgets homework again" → 😨📚  
+"panics last minute" → 🕛😵  
+"rereads notes" → 📓👀  
+"none of it makes sense" → 🤯🔤  
+"googles everything" → 🔍💻  
+"gets distracted" → 🧠🛫  
+"ends up watching videos" → 📹😆  
+"gets nothing done" → 🫠📚  
+"decides to sleep" → 🛏️😴  
+"sets 6 alarms" → ⏰⏰⏰⏰⏰⏰  
+"immediately passes out" → 😪💤  
+"dreams of chaos" → 💤🎢  
+"wakes up confused" → 😵🛌  
+"checks time" → ⏰😱  
+"rushes to do it all again" → 🔁🏃‍♂️☕
