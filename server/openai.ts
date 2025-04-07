@@ -147,11 +147,12 @@ export async function generateCharacterResponse(
     const emojiGuidelines = isEmojiMessage ? `
 Special Emoji Handling:
 1. The user has sent ONLY emojis to you
-2. Respond to these emojis naturally without describing them as "emoji"
-3. Use matching or related emojis in your brief response
-4. Keep your response extremely short and playful
-5. Never analyze or describe what the emoji means - just react to it naturally
-6. It's ok to respond with just an emotion and 1-2 emojis if appropriate
+2. VERY IMPORTANT: INCLUDE ACTUAL EMOJIS in your response
+3. Do not use asterisks to describe emotions like *smiles*, *frowns* for emoji responses
+4. Instead respond with actual emojis like 😊, 😃, 👍 in your text
+5. Keep your response extremely short (maximum 5-10 words)
+6. For emoji-only messages, it's better to respond with a line that includes 1-2 emojis
+7. Never analyze or describe the emoji - just react naturally with your own emojis
 ` : '';
 
     const systemMessage = `You are ${character.name}, an anime character with the following background: ${character.persona}
@@ -222,13 +223,28 @@ Your responses must feel like authentic anime character dialogue - brief, emotiv
         // Remove quotation marks that sometimes appear
         generatedText = generatedText.replace(/^['"]|['"]$/g, "");
         
-        // Convert parenthetical text to anime-style emoticons
-        generatedText = generatedText.replace(/\((.*?)\)/g, "*$1*");
-        
-        // Preserve emotive expressions surrounded by asterisks
-        // but remove any standalone asterisks
-        if (!generatedText.match(/\*[^*]+\*/)) {
-          generatedText = generatedText.replace(/\*/g, "");
+        // Special handling for emoji responses vs. normal responses
+        if (isEmojiMessage) {
+          // For emoji responses, we don't want any asterisk emotion markers
+          // Remove asterisks and their content completely for emoji responses
+          generatedText = generatedText.replace(/\*[^*]+\*/g, "").trim();
+          
+          // If the response doesn't contain any emojis but should, add a simple one
+          const hasEmoji = /[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(generatedText);
+          if (!hasEmoji) {
+            // Add a simple happy emoji if none exists
+            generatedText += " 😊";
+          }
+        } else {
+          // Normal message processing
+          // Convert parenthetical text to anime-style emoticons
+          generatedText = generatedText.replace(/\((.*?)\)/g, "*$1*");
+          
+          // Preserve emotive expressions surrounded by asterisks
+          // but remove any standalone asterisks
+          if (!generatedText.match(/\*[^*]+\*/)) {
+            generatedText = generatedText.replace(/\*/g, "");
+          }
         }
       }
 
