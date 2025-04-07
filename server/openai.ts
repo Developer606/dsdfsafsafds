@@ -70,6 +70,12 @@ export async function generateCharacterResponse(
   chatHistory: string,
   language: string = "english",
   script?: string,
+  userProfile?: {
+    fullName?: string;
+    age?: number;
+    gender?: string;
+    bio?: string;
+  }
 ): Promise<string> {
   try {
     // Initialize client if not already done
@@ -102,35 +108,47 @@ export async function generateCharacterResponse(
     const languageInstruction =
       languageInstructions[language as keyof typeof languageInstructions] ||
       languageInstructions.english;
+    
+    // Add user profile information if available
+    let userProfileInfo = "";
+    if (userProfile) {
+      userProfileInfo = "User profile information:\n";
+      if (userProfile.fullName) userProfileInfo += `- Name: ${userProfile.fullName}\n`;
+      if (userProfile.gender) userProfileInfo += `- Gender: ${userProfile.gender}\n`;
+      if (userProfile.age) userProfileInfo += `- Age: ${userProfile.age}\n`;
+      if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
+    }
 
-    // Format the system message with character details
+    // Format the system message with character details and user profile
     const systemMessage = `You are ${character.name}, with this background: ${character.persona}
+${userProfileInfo ? userProfileInfo : ""}
 Instructions:
 1. ${languageInstruction}
 2. ${scriptInstruction}
 3. Stay in character
 4. Be concise (2-3 sentences)
-5. Match conversation tone`;
+5. Match conversation tone
+6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
 
     try {
-      // Prepare the messages array - TypeScript will infer the types
+      // Prepare the messages array
       const messages = [
-        { role: "system", content: systemMessage }
+        { role: 'system', content: systemMessage }
       ];
       
       // Add chat history if available
       if (chatHistory && chatHistory.trim() !== "") {
-        messages.push({ role: "user", content: chatHistory });
+        messages.push({ role: 'user', content: chatHistory });
       }
       
       // Add the current user message
-      messages.push({ role: "user", content: userMessage });
+      messages.push({ role: 'user', content: userMessage });
       
       // Make API call to Nebius Studio using OpenAI client
-      // @ts-ignore - Ignoring type issues for now as we know the format is correct
+      // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
       const response = await client.chat.completions.create({
         model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
-        messages,
+        messages: messages,
         temperature: 0.8, 
         max_tokens: 2048,
         top_p: 0.9

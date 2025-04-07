@@ -1779,12 +1779,28 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           const chatHistory = messages
             .map((m) => `${m.isUser ? "User" : character.name}: ${m.content}`)
             .join("\n");
+          
+          // Fetch user profile data to personalize responses
+          const userProfile = await storage.getUser(user.id);
+          
+          // Extract only profile fields
+          const userProfileData = userProfile ? {
+            fullName: userProfile.fullName,
+            age: userProfile.age,
+            gender: userProfile.gender,
+            bio: userProfile.bio
+          } : undefined;
+          
+          console.log(`Generating AI response for ${character.name} with user profile data:`, 
+                      userProfileData ? 'Profile data available' : 'No profile data');
 
           const aiResponse = await generateCharacterResponse(
             character,
             data.content,
             chatHistory,
             data.language,
+            data.script,
+            userProfileData
           );
 
           const aiMessage = await storage.createMessage({
