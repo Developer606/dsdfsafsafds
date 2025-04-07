@@ -76,6 +76,23 @@ export interface IStorage {
   getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
   getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
   deleteCustomCharacter(id: number, userId: number): Promise<void>;
+  
+  // Added for character proactive messaging
+  getUserProfileData(userId: number): Promise<{
+    fullName?: string;
+    age?: number;
+    gender?: string;
+    bio?: string;
+    profileCompleted?: boolean;
+  } | undefined>;
+  
+  getCharacterById(characterId: string): Promise<{
+    id: string;
+    name: string;
+    avatar: string;
+    description: string;
+    persona: string;
+  } | undefined>;
   updateUserSubscription(
     userId: number,
     data: {
@@ -443,6 +460,84 @@ export class DatabaseStorage implements IStorage {
     }
     
     return totalUnread;
+  }
+  
+  /**
+   * Get user profile data for personalization
+   * @param userId User ID
+   * @returns User profile data or undefined if user not found
+   */
+  async getUserProfileData(userId: number): Promise<{
+    fullName?: string;
+    age?: number;
+    gender?: string;
+    bio?: string;
+    profileCompleted?: boolean;
+  } | undefined> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) {
+        return undefined;
+      }
+      
+      return {
+        fullName: user.fullName || undefined,
+        age: user.age || undefined,
+        gender: user.gender || undefined,
+        bio: user.bio || undefined,
+        profileCompleted: user.profileCompleted || false
+      };
+    } catch (error) {
+      console.error("Error getting user profile data for personalization:", error);
+      return undefined;
+    }
+  }
+  
+  /**
+   * Get character by ID (works with both predefined and custom characters)
+   * @param characterId Character ID
+   * @returns Character data or undefined if not found
+   */
+  async getCharacterById(characterId: string): Promise<{
+    id: string;
+    name: string;
+    avatar: string;
+    description: string;
+    persona: string;
+  } | undefined> {
+    try {
+      // First check if it's a predefined character
+      const predefinedChar = await this.getPredefinedCharacterById(characterId);
+      if (predefinedChar) {
+        return {
+          id: predefinedChar.id,
+          name: predefinedChar.name,
+          avatar: predefinedChar.avatar,
+          description: predefinedChar.description,
+          persona: predefinedChar.persona
+        };
+      }
+      
+      // If not predefined, check if it's a number (custom character)
+      const customCharId = parseInt(characterId);
+      if (!isNaN(customCharId)) {
+        const customChar = await this.getCustomCharacterById(customCharId);
+        if (customChar) {
+          return {
+            id: customChar.id.toString(),
+            name: customChar.name,
+            avatar: customChar.avatar,
+            description: customChar.description,
+            persona: customChar.persona
+          };
+        }
+      }
+      
+      return undefined;
+    } catch (error) {
+      console.error("Error getting character by ID:", error);
+      return undefined;
+    }
   }
   
   async createConversation(user1Id: number, user2Id: number): Promise<UserConversation> {

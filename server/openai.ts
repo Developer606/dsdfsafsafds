@@ -217,6 +217,107 @@ Your goal is to create a realistic, engaging impression of ${character.name} int
 }
 
 // Entry point
+/**
+ * Generates a personalized opening message from a character based on user profile data
+ * This is used when a user starts a new conversation with a character
+ */
+export async function generateOpeningMessage(
+  character: Character,
+  userProfile?: {
+    fullName?: string;
+    age?: number;
+    gender?: string;
+    bio?: string;
+  }
+): Promise<string> {
+  try {
+    // Initialize client if not already done
+    const client = await initializeClient();
+
+    // If no client available, return a generic greeting
+    if (!client) {
+      console.warn("No API client available for LLM service");
+      return `Hello there! I'm ${character.name}. How are you doing today?`;
+    }
+    
+    // Extract user profile information
+    let userProfileInfo = "";
+    let personalityInsights = "";
+    
+    if (userProfile) {
+      if (userProfile.fullName) userProfileInfo += `- User's name: ${userProfile.fullName}\n`;
+      if (userProfile.gender) userProfileInfo += `- Gender: ${userProfile.gender}\n`;
+      if (userProfile.age) userProfileInfo += `- Age: ${userProfile.age}\n`;
+      if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
+      
+      // Extract interests and personality traits if bio is available
+      if (userProfile.bio) {
+        const interestsMatch = userProfile.bio.match(/(?:like|love|enjoy|passion|hobby|interest|into)s?\s+([^,.]+)/gi);
+        if (interestsMatch) {
+          personalityInsights += `- User appears interested in: ${interestsMatch.join(', ').replace(/(?:like|love|enjoy|passion|hobby|interest|into)s?\s+/gi, '')}\n`;
+        }
+      }
+    }
+
+    // Create a system message that guides the character to initiate the conversation
+    const systemMessage = `You are ${character.name}, with this background: ${character.persona}
+
+${userProfileInfo ? "User profile information:\n" + userProfileInfo : ""}
+${personalityInsights ? "User personality insights:\n" + personalityInsights : ""}
+
+Task: Generate a natural, friendly opening message to START a conversation with this user. 
+This is the very first message in a chat, so introduce yourself briefly and ask a relevant, personalized question.
+
+Guidelines:
+1. Be natural and casual, as if starting a real conversation
+2. Keep it brief (2-3 sentences maximum)
+3. Include a specific question at the end that encourages a response
+4. If you have user profile data, use it to personalize your greeting subtly
+5. Don't explicitly mention having their profile information
+6. If no profile data is available, ask a general but engaging question
+7. Match your character's personality and background in your tone and interests
+8. Don't use generic greetings like "How can I help you today?"`;
+
+    try {
+      // @ts-ignore - We use any[] type to bypass TypeScript's strict checking
+      const messages: any[] = [
+        { role: "system", content: systemMessage }
+      ];
+
+      // @ts-ignore
+      const response = await client.chat.completions.create({
+        model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
+        // @ts-ignore
+        messages: messages,
+        temperature: 0.8,  // Slightly higher temperature for more creative greetings
+        max_tokens: 150,   // Keep it concise
+        top_p: 0.9,
+        presence_penalty: 0.2, // Higher penalty to avoid generic responses
+        frequency_penalty: 0.3 // Higher penalty for more unique word choice
+      });
+
+      // Process the response
+      let generatedText = response.choices[0]?.message?.content?.trim() || "";
+
+      if (generatedText) {
+        // Clean up the response to remove AI artifacts
+        generatedText = generatedText.replace(/^(Assistant|Character|AI|ChatGPT|As\s+|I'm\s+|This\s+is\s+|[^:]+):\s*/i, "");
+        generatedText = generatedText.replace(/^['"]|['"]$/g, "");
+        generatedText = generatedText.replace(/^\*|\*$/g, "");
+        generatedText = generatedText.replace(/\(.*?\)/g, "");
+      }
+
+      return generatedText || `Hey there! I'm ${character.name}. What brings you here today?`;
+    } catch (error) {
+      console.error("Error generating opening message:", error);
+      return `Hello! I'm ${character.name}. ${character.description} How are you doing today?`;
+    }
+  } catch (error) {
+    console.error("Error in opening message generation:", error);
+    return `Hi! I'm ${character.name}. Let's chat!`;
+  }
+}
+
 export async function main() {
   // Initialize client first
   await initializeClient();
@@ -240,6 +341,10 @@ export async function main() {
   );
 
   console.log("Model Response:", response);
+  
+  // Test opening message generation
+  const openingMessage = await generateOpeningMessage(character);
+  console.log("Opening Message:", openingMessage);
 }
 
 // Only run main if this file is executed directly

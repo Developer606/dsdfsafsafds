@@ -1523,6 +1523,10 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
 
   app.get("/api/messages/:characterId", async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
       let characterId = req.params.characterId;
       
       // Special case for "kishor" without space at the end
@@ -1534,8 +1538,51 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       const messages = await storage.getMessagesByCharacter(characterId);
       // Only return messages belonging to the authenticated user
       const userMessages = messages.filter((msg) => msg.userId === req.user.id);
-      res.json(userMessages);
+      
+      // If there are no messages, generate a proactive opening message from the character
+      if (userMessages.length === 0) {
+        try {
+          // Get the character details using our personalization module
+          const { getCharacterById, getUserProfileData } = await import("./character-personalization.js");
+          const character = await getCharacterById(characterId);
+          if (!character) {
+            throw new Error("Character not found");
+          }
+          
+          // Get user profile data for personalization
+          const userProfileData = await getUserProfileData(req.user.id);
+          
+          console.log(`Generating proactive opening message for ${character.name} with user profile:`, 
+                     userProfileData ? 'Profile data available' : 'No profile data');
+          
+          // Generate personalized opening message
+          const { generateOpeningMessage } = await import("./openai.js");
+          const openingMessage = await generateOpeningMessage(character, userProfileData);
+          
+          // Store the opening message in the database
+          const aiMessage = await storage.createMessage({
+            userId: req.user.id,
+            characterId: characterId,
+            content: openingMessage,
+            isUser: false,
+            language: "english", // Default language since we removed language selection
+            script: undefined,
+          });
+          
+          // Return the proactive message
+          res.json([aiMessage]);
+        } catch (error: any) {
+          console.error("Error generating proactive message:", error);
+          // If an error occurs, just return empty messages array
+          // The character won't initiate conversation in this case
+          res.json(userMessages);
+        }
+      } else {
+        // Return existing messages if there are any
+        res.json(userMessages);
+      }
     } catch (error: any) {
+      console.error("Error fetching messages:", error);
       res.status(500).json({ error: "Failed to fetch messages" });
     }
   });
@@ -1792,16 +1839,9 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             .map((m) => `${m.isUser ? "User" : character.name}: ${m.content}`)
             .join("\n");
           
-          // Fetch user profile data to personalize responses
-          const userProfile = await storage.getUser(user.id);
-          
-          // Extract only profile fields and convert null values to undefined for compatibility
-          const userProfileData = userProfile ? {
-            fullName: userProfile.fullName || undefined,
-            age: userProfile.age || undefined,
-            gender: userProfile.gender || undefined,
-            bio: userProfile.bio || undefined
-          } : undefined;
+          // Fetch user profile data for personalization using the dedicated module
+          const { getUserProfileData } = await import("./character-personalization.js");
+          const userProfileData = await getUserProfileData(user.id);
           
           console.log(`Generating AI response for ${character.name} with user profile data:`, 
                       userProfileData ? 'Profile data available' : 'No profile data');
@@ -1819,6 +1859,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             characterId: data.characterId,
             content: aiResponse,
             isUser: false,
+            language: "english", // Default language since we removed language selection
             script: data.script,
           });
 

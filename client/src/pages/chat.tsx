@@ -212,12 +212,15 @@ export default function Chat() {
   }, [messages.length]);
 
   const sendMessage = useMutation({
-    mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {
+    mutationFn: async ({ content, script }: { content: string; script?: string }) => {
       if (!user?.isPremium && remainingMessages <= 0) {
         setShowSubscriptionDialog(true);
         throw new Error("Message limit reached. Please upgrade to premium to continue chatting.");
       }
 
+      // Since we removed language selection, use a default language value
+      const language = "english"; // Default language
+      
       const tempId = Date.now();
       tempMessageIdRef.current = tempId.toString();
 
