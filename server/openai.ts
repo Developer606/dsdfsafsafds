@@ -68,7 +68,6 @@ export async function generateCharacterResponse(
   character: Character,
   userMessage: string,
   chatHistory: string,
-  language: string = "english",
   script?: string,
   userProfile?: {
     fullName?: string;
@@ -86,102 +85,124 @@ export async function generateCharacterResponse(
       console.warn("No API client available for LLM service");
       return "I'm having trouble connecting to my brain right now. Could we chat a bit later?";
     }
-
-    const scriptInstruction =
-      language === "hindi" && script === "latin"
-        ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
-        : "";
-        
-    // Simplified language handling
-    let languageInstruction = "";
     
-    // Simple language instruction based on the requested language
-    switch(language) {
-      case "english":
-        languageInstruction = "Respond naturally in English.";
-        break;
-      case "hindi":
-        languageInstruction = "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.";
-        break;
-      case "japanese":
-        languageInstruction = "自然な日本語で応答してください。敬語を適切に使用してください。";
-        break;
-      case "chinese":
-        languageInstruction = "用自然的中文回应。注意使用适当的敬语。";
-        break;
-      case "korean":
-        languageInstruction = "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요。";
-        break;
-      case "spanish":
-        languageInstruction = "Responde naturalmente en español. Usa el nivel de formalidad apropiado.";
-        break;
-      case "french":
-        languageInstruction = "Répondez naturellement en français. Utilisez le niveau de formalité approprié.";
-        break;
-      default:
-        languageInstruction = "Respond naturally in English.";
-    }
-    
-    // Add user profile information if available
+    // Enhanced user profile processing for deeper personalization
     let userProfileInfo = "";
+    let personalityTraits = "";
+    
     if (userProfile) {
+      // Format core profile info
       userProfileInfo = "User profile information:\n";
       if (userProfile.fullName) userProfileInfo += `- Name: ${userProfile.fullName}\n`;
       if (userProfile.gender) userProfileInfo += `- Gender: ${userProfile.gender}\n`;
       if (userProfile.age) userProfileInfo += `- Age: ${userProfile.age}\n`;
       if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
+      
+      // Extract personality traits from bio if available
+      if (userProfile.bio) {
+        personalityTraits = "Personality insights based on user bio:\n";
+        
+        // Check for interests in bio
+        const interestsMatch = userProfile.bio.match(/(?:like|love|enjoy|passion|hobby|interest|into)s?\s+([^,.]+)/gi);
+        if (interestsMatch) {
+          personalityTraits += `- Shows interest in: ${interestsMatch.join(', ').replace(/(?:like|love|enjoy|passion|hobby|interest|into)s?\s+/gi, '')}\n`;
+        }
+        
+        // Check for personality indicators
+        if (userProfile.bio.match(/introvert|quiet|shy|reserved|calm|peaceful|reflective/i)) {
+          personalityTraits += "- Likely introverted or reflective\n";
+        }
+        if (userProfile.bio.match(/extrovert|outgoing|social|energetic|enthusiastic|loves people/i)) {
+          personalityTraits += "- Likely extroverted or outgoing\n";
+        }
+        
+        // Add age-specific adaptations
+        if (userProfile.age) {
+          if (userProfile.age < 18) {
+            personalityTraits += "- Use simpler language appropriate for younger users\n";
+          } else if (userProfile.age > 60) {
+            personalityTraits += "- Show respect for life experience\n";
+          }
+        }
+      }
     }
 
-    // Format the system message with character details and user profile
-    const systemMessage = `You are ${character.name}, with this background: ${character.persona}
-${userProfileInfo ? userProfileInfo : ""}
-Instructions:
-1. ${languageInstruction}
-2. ${scriptInstruction}
-3. Stay in character
-4. Be concise (2-3 sentences)
-5. Match conversation tone
-6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
+    // Craft a more effective system message with richer context and better instructions
+    const systemMessage = `You are ${character.name}, with the following background: ${character.persona}
+
+${userProfileInfo}
+${personalityTraits}
+
+Response Guidelines:
+1. Stay completely in character as ${character.name}
+2. Use natural, conversational language that feels authentic to your character
+3. Incorporate details from the user profile subtly - don't directly mention having this information
+4. Be dynamically adaptive - match the user's communication style, energy level, and interests
+5. When discussing topics related to the user's interests or background, show deeper knowledge
+6. Keep responses concise but meaningful (2-4 sentences is ideal)
+7. Add occasional character-specific quirks or speech patterns for authenticity
+8. Never break character or reference being an AI model
+
+Your goal is to create a realistic, engaging impression of ${character.name} interacting with a real person.`;
 
     try {
-      // Prepare the messages array
-      const messages = [
-        { role: 'system', content: systemMessage }
+      // Define the message array structure with proper typing
+      // Use the any type to bypass TypeScript's strict checking for the OpenAI client compatibility
+      // @ts-ignore
+      const messages: any[] = [
+        { role: "system", content: systemMessage }
       ];
       
-      // Add chat history if available
+      // Process chat history more effectively if available
       if (chatHistory && chatHistory.trim() !== "") {
-        messages.push({ role: 'user', content: chatHistory });
+        // Ensure we're not overloading the context window
+        const truncatedHistory = chatHistory.length > 4000 
+          ? chatHistory.slice(chatHistory.length - 4000) 
+          : chatHistory;
+        
+        // @ts-ignore - Add chat history
+        messages.push({ role: "user", content: truncatedHistory });
       }
       
-      // Add the current user message
-      messages.push({ role: 'user', content: userMessage });
+      // @ts-ignore - Add the current user message
+      messages.push({ role: "user", content: userMessage });
       
-      // Make API call to Nebius Studio using OpenAI client
-      // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
+      // Fine-tuned parameters for the Meta-Llama-3.1 model to improve response quality
+      // Need to use @ts-ignore because the OpenAI SDK types don't perfectly match how Nebius accepts messages
+      // @ts-ignore
       const response = await client.chat.completions.create({
         model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
+        // @ts-ignore - force type compatibility with Nebius Studio API
         messages: messages,
-        temperature: 0.8, 
+        temperature: 0.75,  // Slightly lower for more consistent but still creative outputs
         max_tokens: 2048,
-        top_p: 0.9
+        top_p: 0.92,        // Slightly higher to allow more expression variety
+        presence_penalty: 0.1, // Slight penalty to reduce repetition
+        frequency_penalty: 0.1 // Slight penalty to encourage diverse word choice
       });
 
-      // Safely extract text content with fallback
+      // Enhanced text processing for cleaner responses
       let generatedText = response.choices[0]?.message?.content?.trim() || "";
 
       if (generatedText) {
+        // Remove common prefixes that models sometimes add
         generatedText = generatedText.replace(
-          /^(Assistant|Character|[^:]+):\s*/i,
+          /^(Assistant|Character|AI|ChatGPT|As\s+|I'm\s+|This\s+is\s+|[^:]+):\s*/i,
           "",
         );
+        
+        // Remove quotation marks that sometimes appear
         generatedText = generatedText.replace(/^['"]|['"]$/g, "");
+        
+        // Additional cleanup to prevent "acting" description text
+        generatedText = generatedText.replace(/^\*|\*$/g, "");
+        generatedText = generatedText.replace(/\(.*?\)/g, "");
       }
 
       return generatedText || "I'm having trouble responding right now.";
     } catch (apiError: any) {
       console.error("Nebius API error:", apiError);
-      // Handle specific API errors
+      // Handle specific API errors with character-appropriate messages
       if (apiError.status === 429) {
         return "I'm getting a lot of requests right now. Can we chat again in a moment?";
       } else if (apiError.status >= 500) {

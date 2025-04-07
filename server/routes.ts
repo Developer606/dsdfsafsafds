@@ -1810,7 +1810,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             character,
             data.content,
             chatHistory,
-            data.language,
             data.script,
             userProfileData
           );
@@ -1820,7 +1819,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             characterId: data.characterId,
             content: aiResponse,
             isUser: false,
-            language: data.language,
             script: data.script,
           });
 

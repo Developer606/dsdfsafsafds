@@ -554,7 +554,7 @@ export default function Chat() {
       )}>
         <div className="container mx-auto px-2 sm:px-4 py-2.5 sm:py-4 max-w-4xl">
           <ChatInput
-            onSend={(content, language, script) => sendMessage.mutate({ content, language, script })}
+            onSend={(content) => sendMessage.mutate({ content })}
             isLoading={sendMessage.isPending}
             chatStyle={chatStyle}
           />

@@ -1,6 +1,6 @@
 // Test script to verify user profile data integration with character responses
 // Use tsx to run this script: npx tsx test-user-profile-personalization.js
-import { generateCharacterResponse } from "./server/openai";
+import { generateCharacterResponse } from "./server/openai.js";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import Database from "better-sqlite3";
