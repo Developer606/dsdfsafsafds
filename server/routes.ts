@@ -1601,6 +1601,13 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       // This ensures we don't overwrite Google-provided names unnecessarily
       const currentUser = await storage.getUser(req.user.id);
       
+      console.log(`Updating profile for user ${req.user.id} with data:`, {
+        fullName,
+        age: Number(age),
+        gender,
+        bioProvided: bio ? 'Yes' : 'No'
+      });
+      
       // Update the user profile 
       const updatedUser = await storage.updateUserProfile(req.user.id, {
         // Only update fullName if it's different or not already set
@@ -1608,11 +1615,16 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         age: Number(age),
         gender,
         bio,
+        // Set profile as completed so we can use this information for personalization
         profileCompleted: true,
       });
       
-      // Return the updated user
-      res.json(updatedUser);
+      // Return the updated user with a helpful message about personalization
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json({
+        ...userWithoutPassword,
+        message: "Your profile has been updated! Characters will now personalize their responses based on your profile information."
+      });
     } catch (error) {
       console.error("Error updating user profile:", error);
       res.status(500).json({ error: "Failed to update profile" });
@@ -1783,12 +1795,12 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           // Fetch user profile data to personalize responses
           const userProfile = await storage.getUser(user.id);
           
-          // Extract only profile fields
+          // Extract only profile fields and convert null values to undefined for compatibility
           const userProfileData = userProfile ? {
-            fullName: userProfile.fullName,
-            age: userProfile.age,
-            gender: userProfile.gender,
-            bio: userProfile.bio
+            fullName: userProfile.fullName || undefined,
+            age: userProfile.age || undefined,
+            gender: userProfile.gender || undefined,
+            bio: userProfile.bio || undefined
           } : undefined;
           
           console.log(`Generating AI response for ${character.name} with user profile data:`, 

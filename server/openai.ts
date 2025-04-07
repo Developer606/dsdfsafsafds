@@ -91,23 +91,36 @@ export async function generateCharacterResponse(
       language === "hindi" && script === "latin"
         ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
         : "";
-
-    const languageInstructions: Record<string, string> = {
-      english: "Respond naturally in English.",
-      hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
-      japanese:
-        "自然な日本語で応答してください。敬語を適切に使用してください。",
-      chinese: "用自然的中文回应。注意使用适当的敬语。",
-      korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
-      spanish:
-        "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
-      french:
-        "Répondez naturellement en français. Utilisez le niveau de formalité approprié.",
-    };
-
-    const languageInstruction =
-      languageInstructions[language as keyof typeof languageInstructions] ||
-      languageInstructions.english;
+        
+    // Simplified language handling
+    let languageInstruction = "";
+    
+    // Simple language instruction based on the requested language
+    switch(language) {
+      case "english":
+        languageInstruction = "Respond naturally in English.";
+        break;
+      case "hindi":
+        languageInstruction = "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.";
+        break;
+      case "japanese":
+        languageInstruction = "自然な日本語で応答してください。敬語を適切に使用してください。";
+        break;
+      case "chinese":
+        languageInstruction = "用自然的中文回应。注意使用适当的敬语。";
+        break;
+      case "korean":
+        languageInstruction = "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요。";
+        break;
+      case "spanish":
+        languageInstruction = "Responde naturalmente en español. Usa el nivel de formalidad apropiado.";
+        break;
+      case "french":
+        languageInstruction = "Répondez naturellement en français. Utilisez le niveau de formalité approprié.";
+        break;
+      default:
+        languageInstruction = "Respond naturally in English.";
+    }
     
     // Add user profile information if available
     let userProfileInfo = "";
