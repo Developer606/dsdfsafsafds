@@ -372,6 +372,43 @@ Your responses must feel like authentic anime character dialogue - brief, emotiv
             generatedText = generatedText.replace(/\*.*?holds out.*?hand.*?\*/i, '✋');
           }
           
+          // Additional anime-style expressions
+          if (generatedText.match(/\*.*?sweatdrop.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?sweatdrop.*?\*/i, '😅');
+          }
+          
+          if (generatedText.match(/\*.*?anime.*?vein.*?\*/i) || generatedText.match(/\*.*?tick mark.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?(anime.*?vein|tick mark).*?\*/i, '💢');
+          }
+          
+          if (generatedText.match(/\*.*?sparkl(e|ing).*?eyes.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?sparkl(e|ing).*?eyes.*?\*/i, '✨');
+          }
+          
+          if (generatedText.match(/\*.*?anime.*?fall.*?\*/i) || generatedText.match(/\*.*?falls over.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?(anime.*?fall|falls over).*?\*/i, '💫');
+          }
+          
+          if (generatedText.match(/\*.*?pout(s|ing).*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?pout(s|ing).*?\*/i, '😡');
+          }
+          
+          if (generatedText.match(/\*.*?jaw drop.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?jaw drop.*?\*/i, '😱');
+          }
+          
+          if (generatedText.match(/\*.*?fidget(s|ing).*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?fidget(s|ing).*?\*/i, '😳');
+          }
+          
+          if (generatedText.match(/\*.*?fist pump.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?fist pump.*?\*/i, '👊');
+          }
+          
+          if (generatedText.match(/\*.*?victory sign.*?\*/i) || generatedText.match(/\*.*?peace sign.*?\*/i)) {
+            generatedText = generatedText.replace(/\*.*?(victory sign|peace sign).*?\*/i, '✌️');
+          }
+          
           // If still has asterisks content, preserve it
           // Otherwise, remove any standalone asterisks
           if (!generatedText.match(/\*[^*]+\*/)) {
@@ -615,6 +652,43 @@ Guidelines:
         
         if (generatedText.match(/\*.*?smiles widely.*?\*/i)) {
           generatedText = generatedText.replace(/\*.*?smiles widely.*?\*/i, '😄');
+        }
+        
+        // Additional anime-style expressions
+        if (generatedText.match(/\*.*?sweatdrop.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?sweatdrop.*?\*/i, '😅');
+        }
+        
+        if (generatedText.match(/\*.*?anime.*?vein.*?\*/i) || generatedText.match(/\*.*?tick mark.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?(anime.*?vein|tick mark).*?\*/i, '💢');
+        }
+        
+        if (generatedText.match(/\*.*?sparkl(e|ing).*?eyes.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?sparkl(e|ing).*?eyes.*?\*/i, '✨');
+        }
+        
+        if (generatedText.match(/\*.*?anime.*?fall.*?\*/i) || generatedText.match(/\*.*?falls over.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?(anime.*?fall|falls over).*?\*/i, '💫');
+        }
+        
+        if (generatedText.match(/\*.*?pout(s|ing).*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?pout(s|ing).*?\*/i, '😡');
+        }
+        
+        if (generatedText.match(/\*.*?jaw drop.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?jaw drop.*?\*/i, '😱');
+        }
+        
+        if (generatedText.match(/\*.*?fidget(s|ing).*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?fidget(s|ing).*?\*/i, '😳');
+        }
+        
+        if (generatedText.match(/\*.*?fist pump.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?fist pump.*?\*/i, '👊');
+        }
+        
+        if (generatedText.match(/\*.*?victory sign.*?\*/i) || generatedText.match(/\*.*?peace sign.*?\*/i)) {
+          generatedText = generatedText.replace(/\*.*?(victory sign|peace sign).*?\*/i, '✌️');
         }
         
         // Preserve any remaining asterisks content, or remove standalone asterisks
