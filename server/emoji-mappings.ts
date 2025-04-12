@@ -3,6 +3,9 @@
  * This file contains various mapping collections for converting text expressions to emojis
  */
 
+import { additionalEmojiMap } from './additional-emoji-mappings';
+import { characterCompleteEmojiMap } from './character-emoji-mappings';
+
 // Basic emotions and expressions mapping
 export const basicEmojiMap: Record<string, string> = {
   // Basic emotions and actions
@@ -329,5 +332,7 @@ export const completeEmojiMap: Record<string, string> = {
   ...basicEmojiMap,
   ...mentalStateEmojiMap,
   ...romanticEmojiMap,
-  ...loveEmojiMap
+  ...loveEmojiMap,
+  ...additionalEmojiMap,
+  ...characterCompleteEmojiMap
 };
