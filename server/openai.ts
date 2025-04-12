@@ -128,21 +128,23 @@ Instructions:
 3. Stay in character
 4. Be concise (2-3 sentences)
 5. Match conversation tone
-6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
+6. When users send emojis or stickers, always preserve them exactly as sent - do not replace them with text descriptions in asterisks (like *sigh* or *smile*)
+7. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
 
     try {
       // Prepare the messages array
       const messages = [
-        { role: 'system', content: systemMessage }
+        { role: 'system' as const, content: systemMessage }
       ];
       
       // Add chat history if available
       if (chatHistory && chatHistory.trim() !== "") {
-        messages.push({ role: 'user', content: chatHistory });
+        messages.push({ role: 'user' as const, content: chatHistory });
       }
       
       // Add the current user message
-      messages.push({ role: 'user', content: userMessage });
+      // Make sure emojis are preserved in their original form
+      messages.push({ role: 'user' as const, content: userMessage });
       
       // Make API call to Nebius Studio using OpenAI client
       // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
