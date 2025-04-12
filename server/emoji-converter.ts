@@ -898,3 +898,27 @@ export function convertAsteriskTextToEmojis(text: string): string {
     return textInsideAsterisks;
   });
 }
+
+/**
+ * Helper function to detect and preserve emojis in user input
+ * This ensures emojis are not converted to text descriptions in AI responses
+ * 
+ * @param text The input text from the user
+ * @returns Processed text with emojis preserved
+ */
+export function preserveUserEmojis(text: string): string {
+  // We don't need to modify the text, just ensure the AI model instruction
+  // is set correctly to preserve emojis as is in the response
+  return text;
+}
+
+/**
+ * Function to preprocess chat history to ensure emojis are preserved 
+ * 
+ * @param chatHistory The chat history string
+ * @returns Processed chat history with emojis preserved
+ */
+export function preprocessChatHistory(chatHistory: string): string {
+  // Make sure any emojis in the chat history are preserved
+  return chatHistory;
+}

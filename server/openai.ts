@@ -4,7 +4,11 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { getApiKey } from "./admin-db";
 import { OpenAI } from "openai";
-import { convertAsteriskTextToEmojis } from "./emoji-converter";
+import { 
+  convertAsteriskTextToEmojis, 
+  preserveUserEmojis, 
+  preprocessChatHistory 
+} from "./emoji-converter";
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -133,21 +137,25 @@ Instructions:
 3. Stay in character
 4. Be concise (2-3 sentences)
 5. Match conversation tone
-6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
+6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}
+7. IMPORTANT: When users send emojis like 😊, 😂, or 😍, preserve them in your responses exactly as they are. DO NOT convert emojis to text descriptions inside asterisks (like *smile* or *laugh*). Just use the actual emoji characters directly in your response.
+8. First, analyze the character's response before delivering it to the user. If any part of the message is enclosed within asterisks (e.g., *smile*), use this emoji mapping to convert them into actual emojis in the final response.`;
 
     try {
       // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
       const messages = [{ role: "system", content: systemMessage }];
 
-      // Add chat history if available
+      // Add chat history if available, but make sure to preprocess it to preserve emojis
       if (chatHistory && chatHistory.trim() !== "") {
+        const processedChatHistory = preprocessChatHistory(chatHistory);
         // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
-        messages.push({ role: "user", content: chatHistory });
+        messages.push({ role: "user", content: processedChatHistory });
       }
 
-      // Add the current user message
+      // Add the current user message, preserving any emojis
+      const processedUserMessage = preserveUserEmojis(userMessage);
       // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
-      messages.push({ role: "user", content: userMessage });
+      messages.push({ role: "user", content: processedUserMessage });
 
       // Make API call to Nebius Studio using OpenAI client
       // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
