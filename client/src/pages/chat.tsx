@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { ChatMessage } from "@/components/chat-message";
@@ -42,11 +42,6 @@ export default function Chat() {
   const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger">("whatsapp");
   const tempMessageIdRef = useRef<string>("");
 
-  // Define scrollToBottom first before using it
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messagesEndRef]);
-
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
@@ -60,7 +55,7 @@ export default function Chat() {
         description: "Chat style has been reset to WhatsApp. Upgrade to Premium to access additional styles.",
       });
     }
-  }, [user?.isPremium, chatStyle, toast]);
+  }, [user?.isPremium, chatStyle]);
 
   const toggleTheme = () => {
     const doc = document.documentElement;
@@ -100,35 +95,18 @@ export default function Chat() {
   });
   
   // Add a separate query to fetch this specific character
-  const { data: specificCharacter } = useQuery<Character>({
+  const { data: specificCharacter, isLoading: characterLoading } = useQuery<Character>({
     queryKey: [`/api/character/${characterId}`],
-    enabled: !!characterId // Only run query if characterId exists
+    enabled: !!characterId, // Only run query if characterId exists
   });
 
   // Try to find the character in the loaded characters array first, fall back to specifically fetched character
   const character = characters?.find((c: Character) => c.id === characterId) || specificCharacter;
 
-  const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<Message[]>({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: [`/api/messages/${characterId}`],
     enabled: !!characterId
   });
-
-  // Simulate character typing when first entering the chat
-  useEffect(() => {
-    if (characterId && messages.length === 0 && !messagesLoading && !isTyping) {
-      // Show typing indicator
-      setIsTyping(true);
-      
-      // Wait for 2 seconds to simulate character typing
-      setTimeout(() => {
-        // Refetch messages to get the proactive opening message
-        refetchMessages().then(() => {
-          setIsTyping(false);
-          scrollToBottom();
-        });
-      }, 2000);
-    }
-  }, [characterId, messages.length, messagesLoading, isTyping, refetchMessages, scrollToBottom]);
 
   const remainingMessages = user?.isPremium ? Infinity : FREE_USER_MESSAGE_LIMIT - (user?.messageCount || 0);
 
@@ -231,18 +209,15 @@ export default function Chat() {
     if (messages.length > 0) {
       scrollToBottom();
     }
-  }, [messages.length, scrollToBottom]);
+  }, [messages.length]);
 
   const sendMessage = useMutation({
-    mutationFn: async ({ content, script }: { content: string; script?: string }) => {
+    mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {
       if (!user?.isPremium && remainingMessages <= 0) {
         setShowSubscriptionDialog(true);
         throw new Error("Message limit reached. Please upgrade to premium to continue chatting.");
       }
 
-      // Since we removed language selection, use a default language value
-      const language = "english"; // Default language
-      
       const tempId = Date.now();
       tempMessageIdRef.current = tempId.toString();
 
@@ -316,6 +291,10 @@ export default function Chat() {
       }
     }
   });
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   if (!character) return null;
 
@@ -575,7 +554,7 @@ export default function Chat() {
       )}>
         <div className="container mx-auto px-2 sm:px-4 py-2.5 sm:py-4 max-w-4xl">
           <ChatInput
-            onSend={(content) => sendMessage.mutate({ content })}
+            onSend={(content, language, script) => sendMessage.mutate({ content, language, script })}
             isLoading={sendMessage.isPending}
             chatStyle={chatStyle}
           />

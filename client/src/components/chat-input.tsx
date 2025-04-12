@@ -1,29 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send, Smile, Loader2 } from "lucide-react";
 import EmojiPicker from 'emoji-picker-react';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Popover, 
   PopoverContent, 
   PopoverTrigger 
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { supportedLanguages } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
-  onSend: (content: string) => void;
+  onSend: (content: string, language: string, script?: string) => void;
   isLoading: boolean;
   chatStyle?: "whatsapp" | "chatgpt" | "messenger";
 }
 
 export function ChatInput({ onSend, isLoading, chatStyle = "whatsapp" }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  const [language, setLanguage] = useState("english");
+  const [script, setScript] = useState<"devanagari" | "latin">("devanagari");
+  const [showScriptSelector, setShowScriptSelector] = useState(false);
+
+  useEffect(() => {
+    setShowScriptSelector(language === "hindi");
+    if (language !== "hindi") {
+      setScript("devanagari");
+    }
+  }, [language]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !isLoading) {
-      onSend(message);
+      onSend(message, language, language === "hindi" ? script : undefined);
       setMessage("");
     }
   };
@@ -75,6 +93,29 @@ export function ChatInput({ onSend, isLoading, chatStyle = "whatsapp" }: ChatInp
           </PopoverContent>
         </Popover>
 
+        <Select
+          value={language}
+          onValueChange={setLanguage}
+        >
+          <SelectTrigger className={cn(
+            "w-[100px] h-8 border-0 focus:ring-0 bg-transparent rounded-md text-sm font-medium",
+            chatStyle === "whatsapp"
+              ? "text-[#00a884] dark:text-[#00a884]/90"
+              : chatStyle === "messenger"
+              ? "text-[#0084ff] dark:text-[#0084ff]/90"
+              : "text-gray-600 dark:text-gray-300"
+          )}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {supportedLanguages.map((lang) => (
+              <SelectItem key={lang.id} value={lang.id} className="text-sm">
+                {lang.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -95,7 +136,7 @@ export function ChatInput({ onSend, isLoading, chatStyle = "whatsapp" }: ChatInp
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey && message.trim() && !isLoading) {
               e.preventDefault();
-              onSend(message);
+              onSend(message, language, language === "hindi" ? script : undefined);
               setMessage("");
             }
           }}
