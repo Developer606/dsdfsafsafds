@@ -6,6 +6,7 @@ import { getApiKey } from "./admin-db";
 import { OpenAI } from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources";
 import { 
+  processUserInput,
   processAIResponse,
   addEmojiInstructions
 } from "./emoji-processor";
@@ -175,10 +176,11 @@ Rules:
         }
       }
       
-      // Add the current user message directly (no emoji processing needed)
+      // Add the current user message, preserving any emojis
+      const processedUserMessage = processUserInput(userMessage);
       formattedMessages.push({ 
         role: "user", 
-        content: userMessage 
+        content: processedUserMessage 
       });
 
       // Make API call with optimized parameters
