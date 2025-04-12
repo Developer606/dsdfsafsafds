@@ -145,11 +145,9 @@ Instructions:
       messages.push({ role: 'user', content: userMessage });
       
       // Make API call to Nebius Studio using OpenAI client
-      // We're using Nebius which accepts this format, so use a type assertion
-      // to tell TypeScript this is okay
+      // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
       const response = await client.chat.completions.create({
         model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
-        // @ts-ignore
         messages: messages,
         temperature: 0.8, 
         max_tokens: 2048,
@@ -181,125 +179,6 @@ Instructions:
   } catch (error: any) {
     console.error("LLM API error:", error);
     return "Hey, I'm feeling really exhausted, so I'm going to rest now. Talk to you soon!";
-  }
-}
-
-/**
- * Generate an initial conversation starter from the character to the user
- * based on user profile information
- * 
- * @param character The character that will initiate the conversation
- * @param language The language to use for the response
- * @param script Optional script specifier (e.g., "latin" for Hindi)
- * @param userProfile User profile data
- * @returns A conversation-initiating message
- */
-export async function generateInitialMessage(
-  character: Character,
-  language: string = "english",
-  script?: string,
-  userProfile?: {
-    fullName?: string;
-    age?: number;
-    gender?: string;
-    bio?: string;
-  }
-): Promise<string> {
-  try {
-    // Initialize client if not already done
-    const client = await initializeClient();
-
-    // If no client available, return fallback message
-    if (!client) {
-      console.warn("No API client available for LLM service");
-      return "Hello there! I'm excited to chat with you!";
-    }
-
-    const scriptInstruction =
-      language === "hindi" && script === "latin"
-        ? "Respond in Hindi but use Latin alphabet (include Devanagari in parentheses)."
-        : "";
-
-    const languageInstructions: Record<string, string> = {
-      english: "Respond naturally in English.",
-      hindi: "हिंदी में स्वाभाविक रूप से जवाब दें। Keep responses concise.",
-      japanese:
-        "自然な日本語で応答してください。敬語を適切に使用してください。",
-      chinese: "用自然的中文回应。注意使用适当的敬语。",
-      korean: "자연스러운 한국어로 대답해주세요. 존댓말을 적절히 사용해주세요.",
-      spanish:
-        "Responde naturalmente en español. Usa el nivel de formalidad apropiado.",
-      french:
-        "Répondez naturellement en français. Utilisez le niveau de formalité approprié.",
-    };
-
-    const languageInstruction =
-      languageInstructions[language as keyof typeof languageInstructions] ||
-      languageInstructions.english;
-    
-    // Add user profile information if available
-    let userProfileInfo = "";
-    if (userProfile) {
-      userProfileInfo = "User profile information:\n";
-      if (userProfile.fullName) userProfileInfo += `- Name: ${userProfile.fullName}\n`;
-      if (userProfile.gender) userProfileInfo += `- Gender: ${userProfile.gender}\n`;
-      if (userProfile.age) userProfileInfo += `- Age: ${userProfile.age}\n`;
-      if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
-    }
-
-    // Format the system message with character details and user profile
-    const systemMessage = `You are ${character.name}, with this background: ${character.persona}
-${userProfileInfo ? userProfileInfo : ""}
-Instructions:
-1. ${languageInstruction}
-2. ${scriptInstruction}
-3. Stay in character
-4. Be concise (2-3 sentences)
-5. Ask a personalized and engaging question to start a conversation
-6. ${userProfileInfo ? "Use the user profile information to make your message personalized and show you know about them" : "Be friendly and welcoming"}`;
-
-    try {
-      // Prepare the messages array with a special instruction to initiate conversation
-      const messages = [
-        { role: 'system', content: systemMessage },
-        { role: 'user', content: 'This is our first conversation. Please introduce yourself and ask me a question based on my profile information to start our conversation.' }
-      ];
-      
-      // Make API call to Nebius Studio using OpenAI client
-      // Convert messages to ChatCompletionMessageParam format
-      const formattedMessages = messages.map(msg => ({
-        role: msg.role as 'system' | 'user' | 'assistant',
-        content: msg.content
-      }));
-      
-      const response = await client.chat.completions.create({
-        model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
-        messages: formattedMessages,
-        temperature: 0.9, // Slightly higher temperature for more creative opening
-        max_tokens: 2048,
-        top_p: 0.9
-      });
-
-      // Safely extract text content with fallback
-      let generatedText = response.choices[0]?.message?.content?.trim() || "";
-
-      if (generatedText) {
-        generatedText = generatedText.replace(
-          /^(Assistant|Character|[^:]+):\s*/i,
-          "",
-        );
-        generatedText = generatedText.replace(/^['"]|['"]$/g, "");
-      }
-
-      return generatedText || "Hello there! I'm excited to chat with you!";
-    } catch (apiError: any) {
-      console.error("Nebius API error when generating initial message:", apiError);
-      // Return a generic greeting as fallback
-      return "Hello there! I'm so happy to meet you. Would you like to chat?";
-    }
-  } catch (error: any) {
-    console.error("LLM API error when generating initial message:", error);
-    return "Hi there! I've been looking forward to chatting with you!";
   }
 }
 
