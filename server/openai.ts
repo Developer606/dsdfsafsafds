@@ -52,7 +52,9 @@ export async function initializeClient(): Promise<OpenAI | null> {
 
     // Create OpenAI client with Nebius configuration
     openaiClient = new OpenAI({
-      baseURL: process.env["NEBIUS_API_ENDPOINT"] || 'https://api.studio.nebius.com/v1/',
+      baseURL:
+        process.env["NEBIUS_API_ENDPOINT"] ||
+        "https://api.studio.nebius.com/v1/",
       apiKey: token,
     });
 
@@ -76,7 +78,7 @@ export async function generateCharacterResponse(
     age?: number;
     gender?: string;
     bio?: string;
-  }
+  },
 ): Promise<string> {
   try {
     // Initialize client if not already done
@@ -109,13 +111,15 @@ export async function generateCharacterResponse(
     const languageInstruction =
       languageInstructions[language as keyof typeof languageInstructions] ||
       languageInstructions.english;
-    
+
     // Add user profile information if available
     let userProfileInfo = "";
     if (userProfile) {
       userProfileInfo = "User profile information:\n";
-      if (userProfile.fullName) userProfileInfo += `- Name: ${userProfile.fullName}\n`;
-      if (userProfile.gender) userProfileInfo += `- Gender: ${userProfile.gender}\n`;
+      if (userProfile.fullName)
+        userProfileInfo += `- Name: ${userProfile.fullName}\n`;
+      if (userProfile.gender)
+        userProfileInfo += `- Gender: ${userProfile.gender}\n`;
       if (userProfile.age) userProfileInfo += `- Age: ${userProfile.age}\n`;
       if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
     }
@@ -133,28 +137,26 @@ Instructions:
 
     try {
       // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
-      const messages = [
-        { role: 'system', content: systemMessage }
-      ];
-      
+      const messages = [{ role: "system", content: systemMessage }];
+
       // Add chat history if available
       if (chatHistory && chatHistory.trim() !== "") {
         // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
-        messages.push({ role: 'user', content: chatHistory });
+        messages.push({ role: "user", content: chatHistory });
       }
-      
+
       // Add the current user message
       // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
-      messages.push({ role: 'user', content: userMessage });
-      
+      messages.push({ role: "user", content: userMessage });
+
       // Make API call to Nebius Studio using OpenAI client
       // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
       const response = await client.chat.completions.create({
         model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
         messages: messages,
-        temperature: 0.8, 
-        max_tokens: 2048,
-        top_p: 0.9
+        temperature: 0.8,
+        max_tokens: 150,
+        top_p: 0.9,
       });
 
       // Safely extract text content with fallback
@@ -168,7 +170,7 @@ Instructions:
         );
         // Remove starting and ending quotes if present
         generatedText = generatedText.replace(/^['"]|['"]$/g, "");
-        
+
         // Convert text inside asterisks to emojis
         generatedText = convertAsteriskTextToEmojis(generatedText);
       }
