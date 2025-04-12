@@ -325,14 +325,34 @@ export const loveEmojiMap: Record<string, string> = {
 };
 
 /**
+ * Helper function to merge emoji maps while preventing duplicates
+ * This ensures each key is unique across all maps
+ */
+function mergeEmojiMaps(...maps: Record<string, string>[]): Record<string, string> {
+  const result: Record<string, string> = {};
+  
+  for (const map of maps) {
+    for (const [key, value] of Object.entries(map)) {
+      // Only add if the key doesn't exist yet to prevent duplicates
+      if (!result[key]) {
+        result[key] = value;
+      }
+    }
+  }
+  
+  return result;
+}
+
+/**
  * Combined emoji map with all expressions
  * This map is used by the emoji converter to transform text into emojis
+ * Using the mergeEmojiMaps function to prevent duplicate properties
  */
-export const completeEmojiMap: Record<string, string> = {
-  ...basicEmojiMap,
-  ...mentalStateEmojiMap,
-  ...romanticEmojiMap,
-  ...loveEmojiMap,
-  ...additionalEmojiMap,
-  ...characterCompleteEmojiMap
-};
+export const completeEmojiMap: Record<string, string> = mergeEmojiMaps(
+  basicEmojiMap,
+  mentalStateEmojiMap,
+  romanticEmojiMap,
+  loveEmojiMap,
+  additionalEmojiMap,
+  characterCompleteEmojiMap
+);
