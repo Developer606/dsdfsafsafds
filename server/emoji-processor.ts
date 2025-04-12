@@ -1,4 +1,5 @@
 import { completeEmojiMap } from './emoji-mappings';
+import { EmotionCategory, getEmotionForEmoji } from './emoji-emotion-mapping';
 
 // Create a sorted array of [key, value] pairs for more efficient matching
 // Sort by key length (descending) to prioritize longer, more specific matches
@@ -22,9 +23,9 @@ export function processUserInput(text: string): string {
  * This handles whole phrases like "I think I know" more intelligently
  * 
  * @param text The text to analyze for emoji matching
- * @returns The best matching emoji or null if no good match
+ * @returns Object with the best matching emoji and its original text, or null if no good match
  */
-function findBestEmojiMatch(text: string): string | null {
+function findBestEmojiMatch(text: string): { emoji: string; originalText: string } | null {
   if (!text) return null;
   
   const lowerCaseText = text.toLowerCase().trim();
@@ -35,7 +36,7 @@ function findBestEmojiMatch(text: string): string | null {
     if (lowerCaseText === expression || 
         lowerCaseText === expression + 's' ||
         lowerCaseText === expression + 'ing') {
-      return emoji;
+      return { emoji, originalText: text };
     }
   }
   
@@ -46,7 +47,7 @@ function findBestEmojiMatch(text: string): string | null {
         (lowerCaseText.includes(` ${expression} `) || 
          lowerCaseText.startsWith(`${expression} `) || 
          lowerCaseText.endsWith(` ${expression}`))) {
-      return emoji;
+      return { emoji, originalText: text };
     }
   }
   
@@ -55,12 +56,21 @@ function findBestEmojiMatch(text: string): string | null {
     for (const [expression, emoji] of sortedEmojiEntries) {
       // For short expressions, they should be more significant parts of the text
       if (expression.length >= 4 && lowerCaseText.includes(expression)) {
-        return emoji;
+        return { emoji, originalText: text };
       }
     }
   }
   
   return null;
+}
+
+/**
+ * Information about an emotion expressed in a message
+ */
+export interface EmotionInfo {
+  emoji: string;
+  originalText: string;
+  category: EmotionCategory;
 }
 
 /**
@@ -79,11 +89,11 @@ export function convertAsteriskTextToEmojis(text: string): string {
   
   return text.replace(asteriskPattern, (match, textInsideAsterisks) => {
     // Get the best matching emoji using our improved context-aware function
-    const emoji = findBestEmojiMatch(textInsideAsterisks);
+    const result = findBestEmojiMatch(textInsideAsterisks);
     
     // If we found a good match, use it
-    if (emoji) {
-      return emoji;
+    if (result) {
+      return result.emoji;
     }
     
     // If no match found, keep the original text but remove asterisks
@@ -94,13 +104,16 @@ export function convertAsteriskTextToEmojis(text: string): string {
 /**
  * Processes the AI response to ensure proper emoji display
  * This function replaces text expressions like *waves* with their emoji equivalents
- * Enhanced with better context-aware matching
+ * Enhanced with better context-aware matching and emotion categories
  * 
  * @param text AI generated response text
- * @returns Processed text with asterisk expressions converted to emojis
+ * @returns Object containing the processed text and emotion information
  */
-export function processAIResponse(text: string): string {
-  if (!text) return text;
+export function processAIResponse(text: string): {
+  processedText: string;
+  emotions: EmotionInfo[];
+} {
+  if (!text) return { processedText: text, emotions: [] };
   
   // Clean up prefix patterns like "Character:" or "Assistant:"
   let processedText = text.replace(/^(Assistant|Character|[^:]+):\s*/i, "");
@@ -108,20 +121,34 @@ export function processAIResponse(text: string): string {
   // Remove starting and ending quotes if present
   processedText = processedText.replace(/^['"]|['"]$/g, "");
   
+  // Store the emotion information found
+  const emotions: EmotionInfo[] = [];
+  
   // Replace all expressions within asterisks with their corresponding emojis
   // Using our improved context-aware matching
-  return processedText.replace(/\*([^*]+)\*/g, (match, textInsideAsterisks) => {
+  const resultText = processedText.replace(/\*([^*]+)\*/g, (match, textInsideAsterisks) => {
     // Get the best matching emoji using our improved context-aware function
-    const emoji = findBestEmojiMatch(textInsideAsterisks);
+    const result = findBestEmojiMatch(textInsideAsterisks);
     
-    // If we found a good match, use it
-    if (emoji) {
-      return emoji;
+    // If we found a good match, use it and store the emotion information
+    if (result) {
+      const category = getEmotionForEmoji(result.emoji);
+      emotions.push({
+        emoji: result.emoji,
+        originalText: textInsideAsterisks,
+        category
+      });
+      return result.emoji;
     }
     
     // If no match found, just return the text without asterisks
     return textInsideAsterisks;
   });
+  
+  return {
+    processedText: resultText,
+    emotions
+  };
 }
 
 /**
