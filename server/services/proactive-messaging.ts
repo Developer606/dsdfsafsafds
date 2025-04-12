@@ -1,7 +1,7 @@
 import { storage } from '../storage';
 import { socketService } from '../socket-io-server';
 import { generateCharacterResponse } from '../openai';
-import { PredefinedCharacter, CustomCharacter } from '@shared/schema';
+import { PredefinedCharacter, CustomCharacter, type Message, type User } from '@shared/schema';
 
 // Configuration for different personality types
 interface ProactiveConfig {
@@ -284,7 +284,14 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
     
     // Generate the AI response with the proactive prompt
     const aiResponse = await generateCharacterResponse(
-      character,
+      // Type cast to ensure compatibility with Character type
+      {
+        id: character.id.toString(),
+        name: character.name,
+        description: character.description,
+        persona: character.persona,
+        avatar: character.avatar
+      },
       prompt, // This is the prompt to make the character initiate conversation
       chatHistory,
       'english', // Default language 

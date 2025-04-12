@@ -1648,6 +1648,46 @@ export class DatabaseStorage implements IStorage {
     const { incrementAdvertisementStatInDb } = await import('./advertisement-db');
     await incrementAdvertisementStatInDb(advertisementId, stat);
   }
+  
+  /**
+   * Get a user by ID (used by proactive messaging service)
+   * @param userId The user ID to look up
+   * @returns The user object or null if not found
+   */
+  async getUserById(userId: number): Promise<User | null> {
+    try {
+      const user = await this.getUser(userId);
+      return user;
+    } catch (error) {
+      console.error(`Error in getUserById: ${error}`);
+      return null;
+    }
+  }
+  
+  /**
+   * Get messages between a user and character (used by proactive messaging service)
+   * @param userId The user ID
+   * @param characterId The character ID 
+   * @param limit Maximum number of messages to return (default: 50)
+   * @returns Array of messages between user and character
+   */
+  async getUserCharacterMessages(userId: number, characterId: string, limit: number = 50): Promise<Message[]> {
+    try {
+      // Get messages from the database with pagination
+      const result = await db
+        .select()
+        .from(messages)
+        .where(sql`${messages.userId} = ${userId} AND ${messages.characterId} = ${characterId}`)
+        .orderBy(sql`${messages.id} DESC`)
+        .limit(limit);
+      
+      // Return messages in chronological order (oldest first)
+      return result.reverse();
+    } catch (error) {
+      console.error(`Error in getUserCharacterMessages: ${error}`);
+      return [];
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
