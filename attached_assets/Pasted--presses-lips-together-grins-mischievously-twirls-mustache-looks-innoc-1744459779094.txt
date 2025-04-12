@@ -1,0 +1,164 @@
+"presses lips together" → 😶  
+"grins mischievously" → 😏  
+"twirls mustache" → 🧐  
+"looks innocent" → 😇  
+"pretends not to know" → 🤥  
+"acts surprised" → 😲  
+"acts offended" → 😤  
+"acts clueless" → 😶  
+"acts cool" → 😎  
+"acts dramatic" → 🎭  
+"acts suspicious" → 🕵️  
+"side-eyes" → 👀  
+"deadpans" → 😐  
+"monologues" → 🎙️  
+"narrates" → 📖  
+"commentates" → 🎤  
+"breaks fourth wall" → 🪞  
+"narrates dramatically" → 🎬  
+"voice cracks" → 🫨  
+"clears throat" → 😬  
+"adjusts tie" → 👔  
+"adjusts hat" → 🎩  
+"fixes hair" → 💇  
+"reapplies makeup" → 💄  
+"checks reflection" → 🪞  
+"pops collar" → 😎  
+"struts" → 🕺  
+"poses for camera" → 📸  
+"strikes pose" → 💃  
+"does peace sign" → ✌️  
+"throws gang sign" → 🫰  
+"salutes stiffly" → 🫡  
+"waves dramatically" → 👋  
+"nods curtly" → 🙃  
+"glances quickly" → 👀  
+"squints suspiciously" → 🧐  
+"glowers" → 😠  
+"glances knowingly" → 😏  
+"winks slyly" → 😉  
+"twirls finger" → 🔄  
+"cracks fingers" → ✋  
+"pats back" → 🤗  
+"rubs back" → 💆  
+"hugs tightly" → 🤗  
+"grabs hand" → ✋  
+"holds hands" → 🤝  
+"shakes hands" → 🤝  
+"crosses legs" → 🧍‍♂️  
+"stretches arms" → 😪  
+"reaches out" → ✋  
+"holds out hand" → ✋  
+"pulls away" → 🙅  
+"pushes away" → ✋  
+"nudges" → 🤏  
+"elbows gently" → 🫸  
+"pokes" → 👉  
+"tickles" → 😜  
+"scratches arm" → 🤔  
+"scratches back" → 🧍‍♂️  
+"scratches chin" → 🤨  
+"rubs eyes" → 😫  
+"rubs face" → 🫠  
+"covers nose" → 🤧  
+"blows nose" → 🤧  
+"snorts loudly" → 🐽  
+"chuckles to self" → 😏  
+"laughs softly" → 😊  
+"giggles behind hand" → 🤭  
+"laughs loudly" → 😂  
+"wheezes laughing" → 😆  
+"loses it" → 🤣  
+"wipes tear from eye" → 😢  
+"tears up" → 😢  
+"bawls" → 😭  
+"cries laughing" → 😂😭  
+"bites knuckle" → 😬  
+"gnashes teeth" → 😠  
+"smashes keyboard" → 😤⌨️  
+"throws chair" → 💺💥  
+"rages" → 😡  
+"stomps away" → 👣  
+"walks off" → 🚶‍♂️  
+"storms out" → 🌩️  
+"slams door behind" → 🚪💥  
+"locks door" → 🔒  
+"bars window" → 🪟🔒  
+"builds wall" → 🧱  
+"puts up shield" → 🛡️  
+"raises defenses" → 🧱🛡️  
+"hides behind wall" → 🫣  
+"ducks behind cover" → 🧍  
+"peeks out cautiously" → 👀  
+"emerges slowly" → 😶‍🌫️  
+"tiptoes" → 🐾  
+"creeps slowly" → 🫣  
+"sneaks in" → 🕵️‍♂️  
+"sneaks out" → 🕵️  
+"vanishes quietly" → 🌫️  
+"disappears in silence" → 🤫  
+"leaves note behind" → 📝  
+"writes quickly" → ✍️  
+"scribbles" → 📝  
+"draws heart" → ❤️  
+"writes love letter" → 💌  
+"sends text" → 📱  
+"spams emojis" → 😍😎😂🔥  
+"types nervously" → 🧑‍💻  
+"deletes message" → ❌  
+"unsends" → ⏪  
+"ghosts" → 👻  
+"left on read" → 🥲  
+"double texts" → 📱📱  
+"waits for reply" → ⏳  
+"refreshes chat" → 🔁  
+"gets left on seen" → 😭  
+"posts meme" → 🐸  
+"shares gif" → 🎞️  
+"reacts with emoji" → 😆👍❤️  
+"spams reactions" → 🔥🔥🔥  
+"screenshots" → 📸  
+"saves pic" → 💾  
+"zooms in" → 🔍  
+"zooms out" → 🔭  
+"enhances image" → 🕵️‍♂️  
+"analyzes photo" → 🧠  
+"solves puzzle" → 🧩  
+"decodes message" → 🔐  
+"cracks code" → 🧑‍💻  
+"finds clue" → 🕵️‍♀️  
+"gets idea" → 💡  
+"lightbulb moment" → 💡✨  
+"face lights up" → 😃  
+"eyes sparkle" → ✨👁️  
+"starts brainstorming" → 🤯  
+"thinks really hard" → 🧠💥  
+"explains quickly" → 💬  
+"talks fast" → 😮‍💨  
+"talks too much" → 😅  
+"talks over others" → 😬  
+"gets ignored" → 😐  
+"gets interrupted" → 😑  
+"gets cut off" → ✂️  
+"shuts down" → 🔇  
+"walks away silently" → 🚶‍♂️😶  
+"vanishes mid sentence" → 💨  
+"breaks into song" → 🎤🎶  
+"starts beatboxing" → 🥁  
+"plays air guitar" → 🎸  
+"plays air drums" → 🥁  
+"starts dancing" → 💃  
+"does happy dance" → 🕺  
+"breakdances" → 🌀  
+"moonwalks" → 🌝👣  
+"headbangs" → 🤘  
+"throws hands up in joy" → 🙌  
+"throws confetti" → 🎊  
+"celebrates" → 🎉  
+"pops champagne" → 🍾  
+"makes toast" → 🥂  
+"raises glass" → 🍷  
+"clinks glasses" → 🥂  
+"starts party" → 🪩  
+"turns up volume" → 🔊  
+"blasts music" → 🔥🎶  
