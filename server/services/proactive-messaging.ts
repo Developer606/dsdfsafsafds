@@ -171,9 +171,126 @@ export function trackConversation(
 }
 
 /**
- * Check if a character should send a proactive message
+ * Dynamic timing parameters for more human-like conversation patterns
  */
-function shouldSendProactiveMessage(conversation: ConversationState): boolean {
+interface DynamicTiming {
+  // Base likelihood percentage for sending message (0-100)
+  baseLikelihood: number;
+  
+  // Hour weights (0-23) - times when characters are more likely to message
+  hourWeights: number[];
+  
+  // Day weights (0-6, Sunday-Saturday)
+  dayWeights: number[];
+  
+  // Bonus for user active times based on past history
+  userActiveTimeBonus: number;
+  
+  // Factors that influence timing
+  timeFactors: {
+    // If conversation was intense (many messages), shorter delay before proactive message
+    conversationIntensityFactor: number;
+    // Length of the previous messages affects timing
+    previousMessageLengthFactor: number;
+  };
+}
+
+/**
+ * Provides timing parameters based on character personality and conversation context
+ */
+async function getDynamicTimingParameters(
+  conversation: ConversationState, 
+  characterId: string
+): Promise<DynamicTiming> {
+  const config = personalityConfigs[conversation.characterPersonality] || personalityConfigs.balanced;
+  
+  // Get current hour and day
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentDay = now.getDay(); // 0-6, Sunday-Saturday
+  
+  // Default timing parameters
+  const defaultTiming: DynamicTiming = {
+    baseLikelihood: config.messageFrequency,
+    hourWeights: Array(24).fill(1), // Neutral hour weights
+    dayWeights: Array(7).fill(1),   // Neutral day weights
+    userActiveTimeBonus: 20,        // 20% bonus for user's active times
+    timeFactors: {
+      conversationIntensityFactor: 0.8,
+      previousMessageLengthFactor: 0.7
+    }
+  };
+  
+  try {
+    // Get messages for analysis
+    const { userId } = conversation;
+    const messages = await storage.getUserCharacterMessages(userId, characterId);
+    
+    if (!messages || messages.length < 5) {
+      return defaultTiming; // Not enough data for personalized timing
+    }
+    
+    // Analyze message timing patterns
+    const messageTimes = messages.map(msg => new Date(msg.createdAt ?? Date.now()));
+    
+    // Count messages by hour
+    const messagesByHour = Array(24).fill(0);
+    messageTimes.forEach(time => {
+      messagesByHour[time.getHours()]++;
+    });
+    
+    // Count messages by day
+    const messagesByDay = Array(7).fill(0);
+    messageTimes.forEach(time => {
+      messagesByDay[time.getDay()]++;
+    });
+    
+    // Convert counts to weights (normalize to 0.5-1.5 range)
+    const hourWeights = messagesByHour.map(count => {
+      const max = Math.max(...messagesByHour);
+      return max > 0 ? 0.5 + (count / max) : 1;
+    });
+    
+    const dayWeights = messagesByDay.map(count => {
+      const max = Math.max(...messagesByDay);
+      return max > 0 ? 0.5 + (count / max) : 1;
+    });
+    
+    // Get conversation intensity (number of messages in last 24 hours)
+    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+    const recentMessages = messages.filter(msg => new Date(msg.createdAt ?? Date.now()).getTime() > oneDayAgo);
+    const conversationIntensity = recentMessages.length;
+    
+    // Calculate the average length of last few messages to gauge conversation depth
+    const lastFewMessages = messages.slice(-5);
+    const avgMessageLength = lastFewMessages.reduce((sum, msg) => sum + msg.content.length, 0) / lastFewMessages.length;
+    
+    // Set conversation intensity factor (more intense = more likely to continue)
+    const conversationIntensityFactor = Math.min(1.5, 0.5 + (conversationIntensity / 20));
+    
+    // Adjust message length factor (longer messages tend to need more time to respond)
+    const previousMessageLengthFactor = avgMessageLength > 200 ? 0.7 : 1.0;
+    
+    return {
+      baseLikelihood: config.messageFrequency,
+      hourWeights,
+      dayWeights,
+      userActiveTimeBonus: 20,
+      timeFactors: {
+        conversationIntensityFactor,
+        previousMessageLengthFactor
+      }
+    };
+  } catch (error) {
+    console.error(`[ProactiveMessaging] Error getting dynamic timing parameters:`, error);
+    return defaultTiming;
+  }
+}
+
+/**
+ * Check if a character should send a proactive message with enhanced dynamic timing
+ */
+async function shouldSendProactiveMessage(conversation: ConversationState): Promise<boolean> {
   const now = Date.now();
   const config = personalityConfigs[conversation.characterPersonality] || personalityConfigs.balanced;
   
@@ -194,9 +311,52 @@ function shouldSendProactiveMessage(conversation: ConversationState): boolean {
     return false;
   }
   
-  // Random chance based on character personality
+  // Get dynamic timing parameters
+  const dynamicTiming = await getDynamicTimingParameters(conversation, conversation.characterId);
+  
+  // Get current hour and day
+  const currentDate = new Date();
+  const currentHour = currentDate.getHours();
+  const currentDay = currentDate.getDay();
+  
+  // Calculate base likelihood adjusted by time weights
+  let likelihood = dynamicTiming.baseLikelihood;
+  
+  // Adjust by hour and day weights
+  likelihood *= dynamicTiming.hourWeights[currentHour];
+  likelihood *= dynamicTiming.dayWeights[currentDay];
+  
+  // Adjust by conversation factors
+  likelihood *= dynamicTiming.timeFactors.conversationIntensityFactor;
+  likelihood *= dynamicTiming.timeFactors.previousMessageLengthFactor;
+  
+  // Check for user's typical active time
+  const isActiveHour = dynamicTiming.hourWeights[currentHour] > 
+    (Math.max(...dynamicTiming.hourWeights) * 0.8);
+  
+  if (isActiveHour) {
+    likelihood += dynamicTiming.userActiveTimeBonus;
+  }
+  
+  // Cap likelihood at 95% - never fully certain
+  likelihood = Math.min(likelihood, 95);
+  
+  // Random chance based on adjusted likelihood
   const randomChance = Math.random() * 100;
-  return randomChance <= config.messageFrequency;
+  const shouldSend = randomChance <= likelihood;
+  
+  // Log decision factors for debugging
+  if (shouldSend) {
+    console.log(`[ProactiveMessaging] Deciding to send message to user ${conversation.userId}:`);
+    console.log(`- Base likelihood: ${dynamicTiming.baseLikelihood.toFixed(1)}%`);
+    console.log(`- Hour weight (${currentHour}): ${dynamicTiming.hourWeights[currentHour].toFixed(2)}`);
+    console.log(`- Day weight (${currentDay}): ${dynamicTiming.dayWeights[currentDay].toFixed(2)}`);
+    console.log(`- Conversation intensity: ${dynamicTiming.timeFactors.conversationIntensityFactor.toFixed(2)}`);
+    console.log(`- Final likelihood: ${likelihood.toFixed(1)}%`);
+    console.log(`- Random roll: ${randomChance.toFixed(1)}`);
+  }
+  
+  return shouldSend;
 }
 
 /**
@@ -619,9 +779,14 @@ async function scanConversations(): Promise<void> {
     const conversation = activeConversations.get(key);
     if (!conversation) continue;
     
-    // Skip if user has been active recently
-    if (shouldSendProactiveMessage(conversation)) {
-      await sendProactiveMessage(conversation);
+    try {
+      // Skip if user has been active recently or shouldn't get a message now
+      const shouldSend = await shouldSendProactiveMessage(conversation);
+      if (shouldSend) {
+        await sendProactiveMessage(conversation);
+      }
+    } catch (error) {
+      console.error(`[ProactiveMessaging] Error scanning conversation ${key}:`, error);
     }
   }
 }
@@ -693,10 +858,27 @@ export async function testProactiveMessage(userId: number, characterId: string):
     
     // Force the conversation to be eligible for a proactive message
     conversation.lastUserMessageTime = Date.now() - (60 * 60 * 1000); // Set last user message to 1 hour ago
+    conversation.lastProactiveMessageTime = Date.now() - (3 * 60 * 60 * 1000); // Last proactive message 3 hours ago
     
-    // Attempt to send the message
-    await sendProactiveMessage(conversation);
-    return true;
+    console.log('[ProactiveMessaging] Initiating test message');
+    
+    // Skip the shouldSendProactiveMessage check and directly send a message
+    try {
+      // First analyze the user profile to make the test message more personalized
+      const user = await storage.getUserById(userId);
+      
+      if (user) {
+        console.log(`[ProactiveMessaging] Test for user ${userId} (${user.username})`);
+      }
+      
+      // Directly send proactive message without checking conditions
+      await sendProactiveMessage(conversation);
+      console.log(`[ProactiveMessaging] Test successful for character ${characterId} to user ${userId}`);
+      return true;
+    } catch (innerError) {
+      console.error(`[ProactiveMessaging] Test message sending failed:`, innerError);
+      return false;
+    }
   } catch (error) {
     console.error(`[ProactiveMessaging] Test error:`, error);
     return false;
