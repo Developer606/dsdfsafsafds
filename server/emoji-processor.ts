@@ -1,0 +1,48 @@
+import { convertAsteriskTextToEmojis } from './emoji-converter';
+
+/**
+ * Processes the user message to ensure emojis are preserved for AI responses
+ * This function ensures that emojis in user messages are handled correctly
+ * 
+ * @param text User input message text containing emojis
+ * @returns Processed text with emojis properly formatted for AI input
+ */
+export function processUserInput(text: string): string {
+  // Simply return the text as-is, ensuring emojis are preserved
+  // The actual emoji preservation is handled by the AI model instruction
+  return text;
+}
+
+/**
+ * Processes the AI response to ensure proper emoji display
+ * 
+ * @param text AI generated response text
+ * @returns Processed text with proper emoji formatting
+ */
+export function processAIResponse(text: string): string {
+  if (!text) return text;
+  
+  // Clean up prefix patterns like "Character:" or "Assistant:"
+  let processedText = text.replace(/^(Assistant|Character|[^:]+):\s*/i, "");
+  
+  // Remove starting and ending quotes if present
+  processedText = processedText.replace(/^['"]|['"]$/g, "");
+  
+  // Convert text inside asterisks to emojis
+  processedText = convertAsteriskTextToEmojis(processedText);
+  
+  return processedText;
+}
+
+/**
+ * Adds emoji-preserving instructions to the AI system prompt
+ * 
+ * @param systemPrompt The original system prompt
+ * @returns Updated system prompt with emoji handling instructions
+ */
+export function addEmojiInstructions(systemPrompt: string): string {
+  // Add specific emoji handling instructions to the system prompt
+  return `${systemPrompt}
+7. IMPORTANT: When users send emojis like 😊, 😂, or 😍, preserve them in your responses exactly as they are. DO NOT convert emojis to text descriptions inside asterisks (like *smile* or *laugh*). Just use the actual emoji characters directly in your response.
+8. If you want to express emotions, you can use asterisks (e.g., *smile*) which will be converted to appropriate emojis automatically in the final response.`;
+}

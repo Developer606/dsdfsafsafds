@@ -5,10 +5,10 @@ import { fileURLToPath } from "url";
 import { getApiKey } from "./admin-db";
 import { OpenAI } from "openai";
 import { 
-  convertAsteriskTextToEmojis, 
-  preserveUserEmojis, 
-  preprocessChatHistory 
-} from "./emoji-converter";
+  processUserInput,
+  processAIResponse,
+  addEmojiInstructions
+} from "./emoji-processor";
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -128,8 +128,8 @@ export async function generateCharacterResponse(
       if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
     }
 
-    // Format the system message with character details and user profile
-    const systemMessage = `You are ${character.name}, with this background: ${character.persona}
+    // Format the basic system message with character details and user profile
+    let systemMessage = `You are ${character.name}, with this background: ${character.persona}
 ${userProfileInfo ? userProfileInfo : ""}
 Instructions:
 1. ${languageInstruction}
@@ -137,9 +137,10 @@ Instructions:
 3. Stay in character
 4. Be concise (2-3 sentences)
 5. Match conversation tone
-6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}
-7. IMPORTANT: When users send emojis like 😊, 😂, or 😍, preserve them in your responses exactly as they are. DO NOT convert emojis to text descriptions inside asterisks (like *smile* or *laugh*). Just use the actual emoji characters directly in your response.
-8. First, analyze the character's response before delivering it to the user. If any part of the message is enclosed within asterisks (e.g., *smile*), use this emoji mapping to convert them into actual emojis in the final response.`;
+6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
+
+    // Add emoji handling instructions to the system message
+    systemMessage = addEmojiInstructions(systemMessage);
 
     try {
       // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
@@ -147,13 +148,13 @@ Instructions:
 
       // Add chat history if available, but make sure to preprocess it to preserve emojis
       if (chatHistory && chatHistory.trim() !== "") {
-        const processedChatHistory = preprocessChatHistory(chatHistory);
+        const processedChatHistory = processUserInput(chatHistory);
         // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
         messages.push({ role: "user", content: processedChatHistory });
       }
 
       // Add the current user message, preserving any emojis
-      const processedUserMessage = preserveUserEmojis(userMessage);
+      const processedUserMessage = processUserInput(userMessage);
       // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
       messages.push({ role: "user", content: processedUserMessage });
 
@@ -171,16 +172,8 @@ Instructions:
       let generatedText = response.choices[0]?.message?.content?.trim() || "";
 
       if (generatedText) {
-        // Clean up prefix patterns like "Character:" or "Assistant:"
-        generatedText = generatedText.replace(
-          /^(Assistant|Character|[^:]+):\s*/i,
-          "",
-        );
-        // Remove starting and ending quotes if present
-        generatedText = generatedText.replace(/^['"]|['"]$/g, "");
-
-        // Convert text inside asterisks to emojis
-        generatedText = convertAsteriskTextToEmojis(generatedText);
+        // Process the AI response using our dedicated function
+        generatedText = processAIResponse(generatedText);
       }
 
       return generatedText || "I'm having trouble responding right now.";
