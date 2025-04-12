@@ -6,20 +6,21 @@ const sortedEmojiEntries = Object.entries(completeEmojiMap)
   .sort((a, b) => b[0].length - a[0].length);
 
 /**
- * Processes the user message to ensure emojis are preserved for AI responses
- * Per requirements, we don't modify user input - we leave it as is
+ * Processes the user message for AI responses
+ * Per requirements, we don't modify or process user input in any way
+ * This is intentionally a pass-through function
  * 
- * @param text User input message text containing emojis
- * @returns Original text without modification
+ * @param text User input message text 
+ * @returns Original text without any emoji processing
  */
 export function processUserInput(text: string): string {
-  // Return the text as-is, we don't process user emojis
+  // Return the text as-is with no processing whatsoever
   return text;
 }
 
 /**
- * Converts text enclosed in asterisks to appropriate emojis
- * This function handles expressions like *smile*, *wave*, etc.
+ * Processes the AI response to convert text expressions to emojis
+ * This function handles converting expressions like *smile*, *wave*, etc.
  * Optimized version with better matching logic - used only for character responses
  * 
  * @param text Text that may contain expressions in asterisks
