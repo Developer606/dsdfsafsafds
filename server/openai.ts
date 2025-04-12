@@ -5,6 +5,87 @@ import { fileURLToPath } from "url";
 import { getApiKey } from "./admin-db";
 import { OpenAI } from "openai";
 
+// Emoji mapping for common expressions found inside asterisks
+const emojiMap: Record<string, string> = {
+  // Basic emotions
+  "smile": "😊",
+  "grin": "😁",
+  "laugh": "😂",
+  "joy": "😄",
+  "sigh": "😔",
+  "sad": "😢",
+  "cry": "😢",
+  "tears": "😭",
+  "sob": "😭",
+  "angry": "😠",
+  "mad": "😡",
+  "furious": "🤬",
+  "frown": "🙁",
+  "worried": "😟",
+  "nervous": "😬",
+  "anxious": "😰",
+  "scared": "😨",
+  "terrified": "😱",
+  "confused": "😕",
+  "surprised": "😮",
+  "shocked": "😲",
+  "amazed": "😲",
+  "disappointed": "😞",
+  "relieved": "😌",
+  "satisfied": "😌",
+  "sleepy": "😴",
+  "tired": "😫",
+  "exhausted": "😩",
+  "yawn": "🥱",
+  "blush": "😊",
+  "embarrassed": "😳",
+  "thinking": "🤔",
+  "thoughtful": "🤔",
+  "neutral": "😐",
+  "indifferent": "😐",
+  "rolling eyes": "🙄",
+  "eye roll": "🙄",
+  "wink": "😉",
+  "smirk": "😏",
+  "tongue": "😛",
+  "tongue out": "😋",
+  "drool": "🤤",
+  "excited": "🤩",
+  "heart eyes": "😍",
+  "love": "❤️",
+  "heart": "❤️",
+  "thumbs up": "👍",
+  "thumbs down": "👎",
+  "clap": "👏",
+  "shrug": "🤷",
+  "face palm": "🤦",
+  "facepalm": "🤦",
+  "sweat": "😅",
+  "sweet": "🥰",
+  "hug": "🤗"
+};
+
+// Function to convert text inside asterisks to emojis
+function convertAsteriskTextToEmojis(text: string): string {
+  // Regular expression to match text inside asterisks: *text*
+  const asteriskPattern = /\*([^*]+)\*/g;
+  
+  return text.replace(asteriskPattern, (match, textInsideAsterisks) => {
+    // Convert to lowercase for matching
+    const lowerCaseText = textInsideAsterisks.toLowerCase().trim();
+    
+    // Check if there's a matching emoji in our map
+    for (const [expression, emoji] of Object.entries(emojiMap)) {
+      if (lowerCaseText.includes(expression)) {
+        return emoji; // Replace with appropriate emoji
+      }
+    }
+    
+    // If no match found, keep the original text but remove asterisks
+    return textInsideAsterisks;
+  });
+}
+
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -128,23 +209,23 @@ Instructions:
 3. Stay in character
 4. Be concise (2-3 sentences)
 5. Match conversation tone
-6. When users send emojis or stickers, always preserve them exactly as sent - do not replace them with text descriptions in asterisks (like *sigh* or *smile*)
-7. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
+6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
 
     try {
-      // Prepare the messages array
+      // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
       const messages = [
-        { role: 'system' as const, content: systemMessage }
+        { role: 'system', content: systemMessage }
       ];
       
       // Add chat history if available
       if (chatHistory && chatHistory.trim() !== "") {
-        messages.push({ role: 'user' as const, content: chatHistory });
+        // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
+        messages.push({ role: 'user', content: chatHistory });
       }
       
       // Add the current user message
-      // Make sure emojis are preserved in their original form
-      messages.push({ role: 'user' as const, content: userMessage });
+      // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
+      messages.push({ role: 'user', content: userMessage });
       
       // Make API call to Nebius Studio using OpenAI client
       // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
@@ -160,11 +241,16 @@ Instructions:
       let generatedText = response.choices[0]?.message?.content?.trim() || "";
 
       if (generatedText) {
+        // Clean up prefix patterns like "Character:" or "Assistant:"
         generatedText = generatedText.replace(
           /^(Assistant|Character|[^:]+):\s*/i,
           "",
         );
+        // Remove starting and ending quotes if present
         generatedText = generatedText.replace(/^['"]|['"]$/g, "");
+        
+        // Convert text inside asterisks to emojis
+        generatedText = convertAsteriskTextToEmojis(generatedText);
       }
 
       return generatedText || "I'm having trouble responding right now.";
