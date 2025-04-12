@@ -243,15 +243,22 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
     // Get character data
     let character: PredefinedCharacter | CustomCharacter | null = null;
     
-    if (characterId.startsWith('custom_')) {
-      const customId = parseInt(characterId.replace('custom_', ''));
-      character = await storage.getCustomCharacterById(customId);
-    } else {
-      character = await storage.getPredefinedCharacterById(characterId);
-    }
-    
-    if (!character) {
-      console.error(`[ProactiveMessaging] Character ${characterId} not found`);
+    try {
+      if (characterId.startsWith('custom_')) {
+        const customId = parseInt(characterId.replace('custom_', ''));
+        const customChar = await storage.getCustomCharacterById(customId);
+        if (customChar) character = customChar;
+      } else {
+        const predefinedChar = await storage.getPredefinedCharacterById(characterId);
+        if (predefinedChar) character = predefinedChar;
+      }
+      
+      if (!character) {
+        console.error(`[ProactiveMessaging] Character ${characterId} not found`);
+        return;
+      }
+    } catch (error) {
+      console.error(`[ProactiveMessaging] Error getting character ${characterId}:`, error);
       return;
     }
     
@@ -272,12 +279,13 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
     // Select a prompt for the AI
     const prompt = selectPrompt(conversation);
     
-    // Prepare user profile data for personalization
+    // Prepare user profile data for personalization, converting null to undefined
+    // to match the expected type in the generateCharacterResponse function
     const userProfileData = user ? {
-      fullName: user.fullName,
-      age: user.age,
-      gender: user.gender,
-      bio: user.bio
+      fullName: user.fullName || undefined,
+      age: user.age || undefined,
+      gender: user.gender || undefined,
+      bio: user.bio || undefined
     } : undefined;
     
     console.log(`[ProactiveMessaging] Generating proactive message from ${character.name} to user ${userId}`);
@@ -385,6 +393,53 @@ function resetDailyCounters(): void {
 /**
  * Initialize the proactive messaging service
  */
+/**
+ * Manually test sending a proactive message for a specific character
+ * This can be used for testing purposes via API
+ */
+export async function testProactiveMessage(userId: number, characterId: string): Promise<boolean> {
+  try {
+    const key = getConversationKey(userId, characterId);
+    let conversation = activeConversations.get(key);
+    
+    // If we don't have a tracking entry for this conversation, let's create one
+    if (!conversation) {
+      let character: PredefinedCharacter | CustomCharacter | null = null;
+      
+      if (characterId.startsWith('custom_')) {
+        const customId = parseInt(characterId.replace('custom_', ''));
+        character = await storage.getCustomCharacterById(customId);
+      } else {
+        character = await storage.getPredefinedCharacterById(characterId);
+      }
+      
+      if (!character) {
+        console.error(`[ProactiveMessaging] Test failed: Character ${characterId} not found`);
+        return false;
+      }
+      
+      // Create conversation tracking entry
+      trackConversation(userId, characterId, false, character);
+      conversation = activeConversations.get(key);
+      
+      if (!conversation) {
+        console.error(`[ProactiveMessaging] Test failed: Could not create conversation tracking`);
+        return false; 
+      }
+    }
+    
+    // Force the conversation to be eligible for a proactive message
+    conversation.lastUserMessageTime = Date.now() - (60 * 60 * 1000); // Set last user message to 1 hour ago
+    
+    // Attempt to send the message
+    await sendProactiveMessage(conversation);
+    return true;
+  } catch (error) {
+    console.error(`[ProactiveMessaging] Test error:`, error);
+    return false;
+  }
+}
+
 export function initializeProactiveMessaging(): void {
   // Scan for proactive message opportunities every minute
   setInterval(scanConversations, 60 * 1000);

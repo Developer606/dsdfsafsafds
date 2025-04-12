@@ -32,7 +32,7 @@ import uploadRoutes from "./routes/upload";
 import socialAuthRoutes, { initializeGoogleStrategy } from "./routes/social-auth";
 import { errorHandler } from "./middleware/error-handler";
 import { isAdmin } from "./middleware/auth";
-import { trackConversation, initializeProactiveMessaging } from "./services/proactive-messaging";
+import { trackConversation, initializeProactiveMessaging, testProactiveMessage } from "./services/proactive-messaging";
 import {
   insertMessageSchema,
   insertCustomCharacterSchema,

@@ -1657,7 +1657,7 @@ export class DatabaseStorage implements IStorage {
   async getUserById(userId: number): Promise<User | null> {
     try {
       const user = await this.getUser(userId);
-      return user;
+      return user || null; // Explicitly return null instead of undefined
     } catch (error) {
       console.error(`Error in getUserById: ${error}`);
       return null;
@@ -1681,8 +1681,15 @@ export class DatabaseStorage implements IStorage {
         .orderBy(sql`${messages.id} DESC`)
         .limit(limit);
       
+      // Transform the results to match the Message type by converting null to undefined
+      const transformedMessages = result.map(msg => ({
+        ...msg,
+        language: msg.language || undefined,
+        script: msg.script || undefined
+      }));
+      
       // Return messages in chronological order (oldest first)
-      return result.reverse();
+      return transformedMessages.reverse();
     } catch (error) {
       console.error(`Error in getUserCharacterMessages: ${error}`);
       return [];
