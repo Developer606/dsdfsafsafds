@@ -282,9 +282,9 @@ export const userIntentEmojiMap: Record<string, string> = {
   "grass": "🌿",
   "leaf": "🍃",
   "autumn": "🍂",
-  "winter": "❄️",
-  "spring": "🌸",
-  "summer": "☀️",
+  "winter_season": "❄️",
+  "spring_season": "🌸",
+  "summer_season": "☀️",
   
   // Food and drink
   "hungry": "🍽️",
