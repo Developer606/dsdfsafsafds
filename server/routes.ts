@@ -1794,7 +1794,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           console.log(`Generating AI response for ${character.name} with user profile data:`, 
                       userProfileData ? 'Profile data available' : 'No profile data');
 
-          const aiResponseWithEmotions = await generateCharacterResponse(
+          const aiResponse = await generateCharacterResponse(
             character,
             data.content,
             chatHistory,
@@ -1802,21 +1802,14 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             data.script,
             userProfileData
           );
-          
-          // Extract the emotions data for the response
-          const emotions = aiResponseWithEmotions.emotions || [];
-          // Format emotions data as JSON string and stringify it to store in the message
-          const emotionsData = emotions.length > 0 ? JSON.stringify(emotions) : "";
-          
-          // Create the message with the processed text and store emotions in metadata
+
           const aiMessage = await storage.createMessage({
             userId: user.id,
             characterId: data.characterId,
-            content: aiResponseWithEmotions.text,
+            content: aiResponse,
             isUser: false,
             language: data.language,
             script: data.script,
-            metadata: emotionsData ? JSON.stringify({ emotions: emotionsData }) : undefined
           });
 
           res.json([message, aiMessage]);

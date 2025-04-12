@@ -826,16 +826,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMessage(message: InsertMessage): Promise<Message> {
-    // Create a sanitized message object, adding metadata if provided
-    const messageData = {
-      ...message,
-      timestamp: new Date(),
-    };
-
-    // Insert the message into the database
     const [newMessage] = await db
       .insert(messages)
-      .values(messageData)
+      .values({
+        ...message,
+        timestamp: new Date(),
+      })
       .returning();
 
     // Increment message count for user messages only
@@ -851,7 +847,6 @@ export class DatabaseStorage implements IStorage {
       timestamp: new Date(newMessage.timestamp),
       language: newMessage.language || undefined,
       script: newMessage.script,
-      metadata: newMessage.metadata || null, // Include metadata in the response
     };
   }
 

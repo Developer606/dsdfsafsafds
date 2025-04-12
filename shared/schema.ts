@@ -90,7 +90,6 @@ export const messages = sqliteTable("messages", {
   isUser: integer("is_user", { mode: "boolean" }).notNull(),
   language: text("language").default("english"),
   script: text("script"),
-  metadata: text("metadata"), // Stores additional data like emotions as JSON string
   timestamp: integer("timestamp", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -134,7 +133,6 @@ export const insertMessageSchema = createInsertSchema(messages)
   .extend({
     language: z.string().default("english"),
     script: z.enum(["devanagari", "latin"]).optional(),
-    metadata: z.string().optional(), // For storing emotions and other data as JSON
   });
 
 // User schemas
@@ -184,7 +182,6 @@ export type Message = {
   isUser: boolean;
   language?: string;
   script?: string | null;
-  metadata?: string | null; // Stores additional data like emotions as JSON string
   timestamp: Date;
 };
 export type InsertMessage = z.infer<typeof insertMessageSchema>;

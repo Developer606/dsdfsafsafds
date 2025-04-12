@@ -8,8 +8,7 @@ import type { ChatCompletionMessageParam } from "openai/resources";
 import { 
   processUserInput,
   processAIResponse,
-  addEmojiInstructions,
-  type EmotionInfo
+  addEmojiInstructions
 } from "./emoji-processor";
 
 // Get directory name in ES modules
@@ -32,12 +31,6 @@ try {
 let token: string | null = null;
 let tokenInitialized = false;
 let openaiClient: OpenAI | null = null;
-
-// Extended type for character responses
-export interface CharacterResponseWithEmotions {
-  text: string;
-  emotions: EmotionInfo[];
-}
 
 // Function to initialize the token and OpenAI client
 export async function initializeClient(): Promise<OpenAI | null> {
@@ -91,7 +84,7 @@ export async function generateCharacterResponse(
     gender?: string;
     bio?: string;
   },
-): Promise<CharacterResponseWithEmotions> {
+): Promise<string> {
   try {
     // Initialize client if not already done
     const client = await initializeClient();
@@ -99,10 +92,7 @@ export async function generateCharacterResponse(
     // If no client available, return fallback message
     if (!client) {
       console.warn("No API client available for LLM service");
-      return {
-        text: "I'm having trouble connecting to my brain right now. Could we chat a bit later?",
-        emotions: []
-      };
+      return "I'm having trouble connecting to my brain right now. Could we chat a bit later?";
     }
 
     const scriptInstruction =
@@ -207,42 +197,24 @@ Rules:
       let generatedText = response.choices[0]?.message?.content?.trim() || "";
 
       if (generatedText) {
-        // Process the AI response using our enhanced function that returns emotion info
-        const processedResponse = processAIResponse(generatedText);
-        
-        // Return both the processed text and the emotions detected
-        return {
-          text: processedResponse.processedText,
-          emotions: processedResponse.emotions
-        };
+        // Process the AI response using our dedicated function
+        generatedText = processAIResponse(generatedText);
       }
 
-      return {
-        text: "I'm having trouble responding right now.",
-        emotions: []
-      };
+      return generatedText || "I'm having trouble responding right now.";
     } catch (apiError: any) {
       console.error("Nebius API error:", apiError);
       // Handle specific API errors
       if (apiError.status === 429) {
-        return {
-          text: "I'm getting a lot of requests right now. Can we chat again in a moment?",
-          emotions: []
-        };
+        return "I'm getting a lot of requests right now. Can we chat again in a moment?";
       } else if (apiError.status >= 500) {
-        return {
-          text: "My thinking circuits are experiencing some technical difficulties. Let's chat later!",
-          emotions: []
-        };
+        return "My thinking circuits are experiencing some technical difficulties. Let's chat later!";
       }
       throw apiError; // Re-throw for general error handling
     }
   } catch (error: any) {
     console.error("LLM API error:", error);
-    return {
-      text: "Hey, I'm feeling really exhausted, so I'm going to rest now. Talk to you soon!",
-      emotions: []
-    };
+    return "Hey, I'm feeling really exhausted, so I'm going to rest now. Talk to you soon!";
   }
 }
 
