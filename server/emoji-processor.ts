@@ -1,4 +1,4 @@
-import { convertAsteriskTextToEmojis } from './emoji-converter';
+import { completeEmojiMap } from './emoji-mappings';
 
 /**
  * Processes the user message to ensure emojis are preserved for AI responses
@@ -11,6 +11,31 @@ export function processUserInput(text: string): string {
   // Simply return the text as-is, ensuring emojis are preserved
   // The actual emoji preservation is handled by the AI model instruction
   return text;
+}
+
+/**
+ * Converts text enclosed in asterisks to appropriate emojis
+ * @param text Text that may contain expressions in asterisks
+ * @returns Text with asterisk expressions converted to emojis
+ */
+export function convertAsteriskTextToEmojis(text: string): string {
+  // Regular expression to match text inside asterisks: *text*
+  const asteriskPattern = /\*([^*]+)\*/g;
+  
+  return text.replace(asteriskPattern, (match, textInsideAsterisks) => {
+    // Convert to lowercase for matching
+    const lowerCaseText = textInsideAsterisks.toLowerCase().trim();
+    
+    // Check if there's a matching emoji in our map
+    for (const [expression, emoji] of Object.entries(completeEmojiMap)) {
+      if (lowerCaseText.includes(expression)) {
+        return emoji; // Replace with appropriate emoji
+      }
+    }
+    
+    // If no match found, keep the original text but remove asterisks
+    return textInsideAsterisks;
+  });
 }
 
 /**
