@@ -90,6 +90,8 @@ export const messages = sqliteTable("messages", {
   isUser: integer("is_user", { mode: "boolean" }).notNull(),
   language: text("language").default("english"),
   script: text("script"),
+  isProactive: integer("is_proactive", { mode: "boolean" }).default(false),
+  isRead: integer("is_read", { mode: "boolean" }).default(true),
   timestamp: integer("timestamp", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -133,6 +135,8 @@ export const insertMessageSchema = createInsertSchema(messages)
   .extend({
     language: z.string().default("english"),
     script: z.enum(["devanagari", "latin"]).optional(),
+    isProactive: z.boolean().default(false),
+    isRead: z.boolean().default(true),
   });
 
 // User schemas
@@ -182,6 +186,8 @@ export type Message = {
   isUser: boolean;
   language?: string;
   script?: string | null;
+  isProactive?: boolean;
+  isRead?: boolean;
   timestamp: Date;
 };
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
