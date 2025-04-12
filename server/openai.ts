@@ -117,29 +117,81 @@ export async function generateCharacterResponse(
       languageInstructions[language as keyof typeof languageInstructions] ||
       languageInstructions.english;
 
-    // Format user profile information more efficiently for token usage
-    const userProfilePrompt = userProfile ? 
-      `User info: ${[
+    // Create a more detailed and personalized user profile analysis for dynamic adaptation
+    let personalizedUserPrompt = '';
+    if (userProfile) {
+      // Build a more detailed understanding of the user based on their profile
+      const userTraits = [];
+      
+      // Parse basic demographic information
+      if (userProfile.age) {
+        // Age-specific adaptations
+        if (userProfile.age < 18) userTraits.push("younger audience");
+        else if (userProfile.age >= 18 && userProfile.age < 25) userTraits.push("young adult");
+        else if (userProfile.age >= 25 && userProfile.age < 40) userTraits.push("adult");
+        else userTraits.push("mature audience");
+      }
+      
+      // Gender-adaptive responses
+      if (userProfile.gender) {
+        userTraits.push(`${userProfile.gender.toLowerCase()}`);
+      }
+      
+      // Parse bio for personality insights if available
+      if (userProfile.bio) {
+        const bioLower = userProfile.bio.toLowerCase();
+        
+        // Interest detection
+        if (bioLower.includes("anime") || bioLower.includes("manga")) 
+          userTraits.push("anime enthusiast");
+        
+        if (bioLower.includes("game") || bioLower.includes("gaming") || bioLower.includes("gamer")) 
+          userTraits.push("gaming enthusiast");
+        
+        if (bioLower.includes("music") || bioLower.includes("song") || bioLower.includes("artist"))
+          userTraits.push("music lover");
+          
+        if (bioLower.includes("tech") || bioLower.includes("technology") || bioLower.includes("coding"))
+          userTraits.push("tech-oriented");
+          
+        // Personality traits inference
+        if (bioLower.includes("introvert") || bioLower.includes("shy") || bioLower.includes("quiet"))
+          userTraits.push("more reserved");
+          
+        if (bioLower.includes("extrovert") || bioLower.includes("outgoing") || bioLower.includes("social"))
+          userTraits.push("outgoing");
+          
+        if (bioLower.includes("creative") || bioLower.includes("artist") || bioLower.includes("writer"))
+          userTraits.push("creative");
+      }
+      
+      // Format the user profile data for prompt
+      const userBasicInfo = [
         userProfile.fullName ? `${userProfile.fullName}` : '',
         userProfile.gender ? `${userProfile.gender}` : '',
         userProfile.age ? `${userProfile.age}y` : ''
-      ].filter(Boolean).join(', ')}${userProfile.bio ? `\nBio: ${userProfile.bio.substring(0, 100)}` : ''}` : '';
+      ].filter(Boolean).join(', ');
+      
+      // Combine the traits and basic info into a personalized prompt
+      personalizedUserPrompt = `User profile: ${userBasicInfo}
+${userTraits.length > 0 ? `User traits: ${userTraits.join(', ')}` : ''}${userProfile.bio ? `\nBio: ${userProfile.bio.substring(0, 100)}` : ''}`;
+    }
 
     // Optimize character persona to reduce token usage (truncate if too long)
     const optimizedPersona = character.persona.length > 200 ? 
       character.persona.substring(0, 200) + "..." : character.persona;
 
-    // Optimized system message with lower token usage but preserved personality
+    // Enhanced system message with adaptive personalization
     let systemMessage = `You are ${character.name}: ${optimizedPersona}
-${userProfilePrompt}
+${personalizedUserPrompt ? personalizedUserPrompt : ''}
 Rules:
 1. Use ${languageInstruction}${scriptInstruction ? " " + scriptInstruction : ""}
-2. Stay in character
+2. Stay in character 
 3. Be concise (2-3 sentences)
-4. Match user tone
-5. ${userProfile ? "Personalize to user" : "Be friendly"}`;
+4. ${userProfile ? "Dynamically adapt your personality and responses to match the user's profile and interests" : "Match user tone"}
+5. ${userProfile ? "Reference user's interests or traits subtly when appropriate" : "Be friendly"}`;
 
-    // Add emoji handling instructions to the system message - more concise version
+    // Add emoji handling instructions to the system message
     systemMessage = addEmojiInstructions(systemMessage);
 
     try {
@@ -155,10 +207,50 @@ Rules:
         content: systemMessage 
       });
       
-      // Process chat history if available - use more efficient format
+      // Process chat history with enhanced personality analysis
+      let personalityInsights = "";
       if (chatHistory && chatHistory.trim() !== "") {
+        // Extract personality insights from user's message history
+        const allLines = chatHistory.split('\n');
+        let userMessageCount = 0;
+        const userMessages: string[] = [];
+        
+        // Collect all user messages
+        for (const line of allLines) {
+          if (line.startsWith("User:")) {
+            userMessageCount++;
+            userMessages.push(line.substring(5).trim());
+          }
+        }
+        
+        // Analyze user messages for personality insights if we have enough messages
+        if (userMessages.length >= 3) {
+          const userMessagesText = userMessages.join(" ");
+          
+          // Define interaction style detectors
+          const isVerbose = userMessages.some(msg => msg.length > 100);
+          const isConcise = userMessages.every(msg => msg.length < 20);
+          const usesEmojis = userMessages.some(msg => /[\u{1F600}-\u{1F64F}]/u.test(msg));
+          const isInquisitive = userMessages.filter(msg => msg.includes("?")).length > userMessages.length / 3;
+          const isPolite = userMessages.filter(msg => /please|thank you|thanks/i.test(msg)).length > 1;
+          const isAssertive = userMessages.filter(msg => /!$|must|should|need to/i.test(msg)).length > userMessages.length / 3;
+          
+          // Generate personality insights
+          const insights = [];
+          if (isVerbose) insights.push("prefers detailed conversation");
+          if (isConcise) insights.push("prefers brief exchanges");
+          if (usesEmojis) insights.push("expressive communication style with emojis");
+          if (isInquisitive) insights.push("curious and inquisitive");
+          if (isPolite) insights.push("values polite exchanges");
+          if (isAssertive) insights.push("direct and assertive");
+          
+          if (insights.length > 0) {
+            personalityInsights = `\nUser interaction style: ${insights.join(", ")}`;
+          }
+        }
+        
         // Only use the last 6 messages to save tokens
-        const chatLines = chatHistory.split('\n').slice(-6);
+        const chatLines = allLines.slice(-6);
         
         for (const line of chatLines) {
           if (line.startsWith("User:")) {
@@ -173,6 +265,11 @@ Rules:
               content: line.substring(colonIndex + 1).trim() 
             });
           }
+        }
+        
+        // If we have personality insights, add them to the system message
+        if (personalityInsights) {
+          formattedMessages[0].content += personalityInsights;
         }
       }
       
