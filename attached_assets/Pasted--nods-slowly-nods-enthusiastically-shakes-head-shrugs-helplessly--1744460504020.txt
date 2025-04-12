@@ -1,0 +1,146 @@
+"nods slowly" → 👍  
+"nods enthusiastically" → 😀👍  
+"shakes head" → 🙅‍♂️  
+"shrugs helplessly" → 🤷  
+"throws hands up" → 🙌  
+"slaps forehead" → 🤦  
+"facepalms hard" → 🤦‍♂️  
+"sighs deeply" → 😮‍💨  
+"gasps audibly" → 😲  
+"inhales sharply" → 😧  
+"holds chest" → 🫀  
+"clutches pearls" → 😱  
+"stares blankly" → 😐  
+"raises eyebrow" → 🤨  
+"furrows brows" → 😠  
+"squints slightly" → 🧐  
+"narrows eyes" → 😒  
+"widens eyes" → 😳  
+"eyes dart around" → 👀  
+"shifts uncomfortably" → 😬  
+"looks around nervously" → 😟  
+"bites lip" → 😬  
+"taps foot" → 👟  
+"bounces knee" → 🦵  
+"folds arms" → 😤  
+"crosses arms" → 🙅‍♀️  
+"tilts head" → 🤔  
+"tilts head confusedly" → 😕  
+"smirks" → 😏  
+"pouts" → 😢  
+"puffs up cheeks" → 😗  
+"makes a face" → 😝  
+"sticks tongue out" → 😛  
+"winks playfully" → 😉  
+"licks teeth" → 😋  
+"smacks lips" → 😚  
+"clicks tongue disapprovingly" → 🙄  
+"snaps gum" → 😐  
+"chews slowly" → 😬  
+"sips tea" → 🍵  
+"sips dramatically" → 🫖👀  
+"drinks slowly" → 🧃  
+"spits out drink" → 🤯🥤  
+"chokes on water" → 😵💦  
+"coughs loudly" → 😤  
+"bursts out laughing" → 🤣  
+"cackles" → 🧙‍♀️  
+"laughs maniacally" → 😈  
+"laughs nervously" → 😅  
+"giggles nervously" → 🤭  
+"snorts" → 😤  
+"screams internally" → 😫  
+"screams externally" → 😱  
+"shouts" → 📢  
+"yells angrily" → 😡  
+"howls" → 🐺  
+"growls lowly" → 😠  
+"huffs" → 😤  
+"snarls quietly" → 😾  
+"stomps foot" → 😡  
+"throws a fit" → 😫  
+"melts down" → 🫠  
+"whimpers" → 😢  
+"cries softly" → 😿  
+"sobs loudly" → 😭  
+"screeches" → 😫  
+"wails" → 😩  
+"groans" → 😖  
+"moans dramatically" → 🫥  
+"grumbles" → 😠  
+"mutters under breath" → 😤  
+"talks to self" → 🧠💬  
+"mumbles" → 😐  
+"grits out words" → 😤  
+"stutters" → 😬  
+"trails off" → 💭  
+"changes subject" → 🔀  
+"deflects" → 🛡️  
+"redirects conversation" → 🔄  
+"ghosts conversation" → 👻  
+"blocks user" → 🚫  
+"unfollows" → ❌  
+"deletes message chain" → 🧹  
+"burns evidence" → 🔥  
+"erases board" → 🧽  
+"clears chat" → 🧼  
+"shuts laptop" → 💻✖️  
+"disconnects internet" → 📶❌  
+"powers off phone" → 📴  
+"slaps phone away" → 📱💥  
+"turns off notifications" → 🔕  
+"puts phone face down" → 🙃  
+"locks screen" → 🔒  
+"enables do not disturb" → 🛑  
+"covers face with pillow" → 😩🛏️  
+"hides under blanket" → 😴🛌  
+"pretends to sleep" → 🫣  
+"actually falls asleep" → 😴  
+"snores loudly" → 💤  
+"dreams vividly" → 💭🌈  
+"has nightmare" → 😱  
+"wakes up suddenly" → 😳  
+"blinks sleepily" → 😪  
+"yawns" → 🥱  
+"stretches arms overhead" → 🙆  
+"drags feet" → 😩  
+"makes coffee" → ☕  
+"spills coffee" → ☕💥  
+"burns tongue" → 🔥👅  
+"rushes out door" → 🏃‍♂️🚪  
+"misses bus" → 🚌💨  
+"runs late" → ⏰😱  
+"curses under breath" → 🤬  
+"throws bag over shoulder" → 🎒  
+"slams locker" → 🧰💥  
+"punches wall" → 👊🧱  
+"breaks pencil" → ✏️💢  
+"throws paper ball" → 🗑️  
+"scribbles angrily" → ✍️😠  
+"doodles" → ✏️🎨  
+"zones out in class" → 😴  
+"passes note" → 📝👀  
+"cheats on test" → 👀📝  
+"gets caught" → 😳  
+"looks guilty" → 😬  
+"tries to explain" → 🙃  
+"begs for forgiveness" → 🙏  
+"offers bribe" → 💰👀  
+"gets detention" → ⛓️  
+"gets grounded" → 😩🏠  
+"stares at ceiling" → 😶‍🌫️  
+"counts tiles" → 🔢  
+"loses track of time" → ⏳  
+"panics at deadline" → 📆😱  
+"pulls all-nighter" → 😵‍💫  
+"drinks energy drink" → ⚡🥤  
+"gets caffeine crash" → 🛌  
+"stares at blank screen" → 🖥️😐  
+"reopens closed tab" → 🔁😅  
+"downloads shady file" → 😬💾  
+"regrets instantly" → 😓  
+"hears weird fan noise" → 🧊💻  
+"computer crashes" → 💻💥  
+"files disappear" → 🫥📁  
+"system reboots" → 🔄💻  
+"retypes everything" → 😭⌨️  
