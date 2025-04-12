@@ -75,14 +75,14 @@ export function processAIResponse(text: string): string {
 }
 
 /**
- * Adds emoji-preserving instructions to the AI system prompt
+ * Adds minimal emotion expression instructions to the AI system prompt
+ * Simplified version to reduce token usage
  * 
  * @param systemPrompt The original system prompt
- * @returns Updated system prompt with emoji handling instructions
+ * @returns Updated system prompt with minimal instructions
  */
 export function addEmojiInstructions(systemPrompt: string): string {
-  // Add specific emoji handling instructions to the system prompt
+  // Super concise instruction to just use asterisks for emotions
   return `${systemPrompt}
-7. IMPORTANT: When users send emojis like 😊, 😂, or 😍, preserve them in your responses exactly as they are. DO NOT convert emojis to text descriptions inside asterisks (like *smile* or *laugh*). Just use the actual emoji characters directly in your response.
-8. If you want to express emotions or actions, use asterisks (e.g., *waves*, *smiles*, *raises eyebrow*) which will be converted to appropriate emojis automatically in the final response.`;
+7. Express emotions using asterisks (*smiles*, *waves*, etc).`;
 }

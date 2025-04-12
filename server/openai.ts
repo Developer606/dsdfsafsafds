@@ -4,6 +4,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { getApiKey } from "./admin-db";
 import { OpenAI } from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources";
 import { 
   processUserInput,
   processAIResponse,
@@ -116,56 +117,77 @@ export async function generateCharacterResponse(
       languageInstructions[language as keyof typeof languageInstructions] ||
       languageInstructions.english;
 
-    // Add user profile information if available
-    let userProfileInfo = "";
-    if (userProfile) {
-      userProfileInfo = "User profile information:\n";
-      if (userProfile.fullName)
-        userProfileInfo += `- Name: ${userProfile.fullName}\n`;
-      if (userProfile.gender)
-        userProfileInfo += `- Gender: ${userProfile.gender}\n`;
-      if (userProfile.age) userProfileInfo += `- Age: ${userProfile.age}\n`;
-      if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
-    }
+    // Format user profile information more efficiently for token usage
+    const userProfilePrompt = userProfile ? 
+      `User info: ${[
+        userProfile.fullName ? `${userProfile.fullName}` : '',
+        userProfile.gender ? `${userProfile.gender}` : '',
+        userProfile.age ? `${userProfile.age}y` : ''
+      ].filter(Boolean).join(', ')}${userProfile.bio ? `\nBio: ${userProfile.bio.substring(0, 100)}` : ''}` : '';
 
-    // Format the basic system message with character details and user profile
-    let systemMessage = `You are ${character.name}, with this background: ${character.persona}
-${userProfileInfo ? userProfileInfo : ""}
-Instructions:
-1. ${languageInstruction}
-2. ${scriptInstruction}
-3. Stay in character
-4. Be concise (2-3 sentences)
-5. Match conversation tone
-6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
+    // Optimize character persona to reduce token usage (truncate if too long)
+    const optimizedPersona = character.persona.length > 200 ? 
+      character.persona.substring(0, 200) + "..." : character.persona;
 
-    // Add emoji handling instructions to the system message
+    // Optimized system message with lower token usage but preserved personality
+    let systemMessage = `You are ${character.name}: ${optimizedPersona}
+${userProfilePrompt}
+Rules:
+1. Use ${languageInstruction}${scriptInstruction ? " " + scriptInstruction : ""}
+2. Stay in character
+3. Be concise (2-3 sentences)
+4. Match user tone
+5. ${userProfile ? "Personalize to user" : "Be friendly"}`;
+
+    // Add emoji handling instructions to the system message - more concise version
     systemMessage = addEmojiInstructions(systemMessage);
 
     try {
-      // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
-      const messages = [{ role: "system", content: systemMessage }];
-
-      // Add chat history if available, but make sure to preprocess it to preserve emojis
+      // Create a more efficient message format with proper typing
+      const formattedMessages: ChatCompletionMessageParam[] = [];
+      
+      // Add system message first
+      formattedMessages.push({ 
+        role: "system", 
+        content: systemMessage 
+      });
+      
+      // Process chat history if available - use more efficient format
       if (chatHistory && chatHistory.trim() !== "") {
-        const processedChatHistory = processUserInput(chatHistory);
-        // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
-        messages.push({ role: "user", content: processedChatHistory });
+        // Only use the last 6 messages to save tokens
+        const chatLines = chatHistory.split('\n').slice(-6);
+        
+        for (const line of chatLines) {
+          if (line.startsWith("User:")) {
+            formattedMessages.push({ 
+              role: "user", 
+              content: line.substring(5).trim() 
+            });
+          } else if (line.includes(":")) {
+            const colonIndex = line.indexOf(":");
+            formattedMessages.push({ 
+              role: "assistant", 
+              content: line.substring(colonIndex + 1).trim() 
+            });
+          }
+        }
       }
-
+      
       // Add the current user message, preserving any emojis
       const processedUserMessage = processUserInput(userMessage);
-      // @ts-ignore - TypeScript doesn't fully recognize the OpenAI API message types
-      messages.push({ role: "user", content: processedUserMessage });
+      formattedMessages.push({ 
+        role: "user", 
+        content: processedUserMessage 
+      });
 
-      // Make API call to Nebius Studio using OpenAI client
-      // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
+      // Make API call with optimized parameters
       const response = await client.chat.completions.create({
         model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
-        messages: messages,
-        temperature: 0.8,
-        max_tokens: 150,
+        messages: formattedMessages,
+        temperature: 0.7, // Slightly lower to improve consistency
+        max_tokens: 120, // Reduced to save tokens
         top_p: 0.9,
+        presence_penalty: 0.3, // Added to improve creativity
       });
 
       // Safely extract text content with fallback
