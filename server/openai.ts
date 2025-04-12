@@ -144,7 +144,10 @@ Rules:
 
     try {
       // Create a more efficient message format with proper typing
-      const formattedMessages: ChatCompletionMessageParam[] = [];
+      const formattedMessages: Array<{
+        role: 'system' | 'user' | 'assistant';
+        content: string;
+      }> = [];
       
       // Add system message first
       formattedMessages.push({ 
