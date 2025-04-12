@@ -145,11 +145,11 @@ Instructions:
       messages.push({ role: 'user', content: userMessage });
       
       // Make API call to Nebius Studio using OpenAI client
-      // The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
-      // but we know the API accepts this format, so we'll use ts-ignore
-      // @ts-ignore
+      // We're using Nebius which accepts this format, so use a type assertion
+      // to tell TypeScript this is okay
       const response = await client.chat.completions.create({
         model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
+        // @ts-ignore
         messages: messages,
         temperature: 0.8, 
         max_tokens: 2048,
@@ -266,12 +266,15 @@ Instructions:
       ];
       
       // Make API call to Nebius Studio using OpenAI client
-      // The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
-      // but we know the API accepts this format, so we'll use ts-ignore
-      // @ts-ignore
+      // Convert messages to ChatCompletionMessageParam format
+      const formattedMessages = messages.map(msg => ({
+        role: msg.role as 'system' | 'user' | 'assistant',
+        content: msg.content
+      }));
+      
       const response = await client.chat.completions.create({
         model: "meta-llama/Meta-Llama-3.1-8B-Instruct",
-        messages: messages,
+        messages: formattedMessages,
         temperature: 0.9, // Slightly higher temperature for more creative opening
         max_tokens: 2048,
         top_p: 0.9
