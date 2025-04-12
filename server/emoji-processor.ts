@@ -15,10 +15,14 @@ export function processUserInput(text: string): string {
 
 /**
  * Converts text enclosed in asterisks to appropriate emojis
+ * This function handles expressions like *smile*, *wave*, etc.
+ * 
  * @param text Text that may contain expressions in asterisks
  * @returns Text with asterisk expressions converted to emojis
  */
 export function convertAsteriskTextToEmojis(text: string): string {
+  if (!text) return text;
+  
   // Regular expression to match text inside asterisks: *text*
   const asteriskPattern = /\*([^*]+)\*/g;
   
@@ -40,9 +44,10 @@ export function convertAsteriskTextToEmojis(text: string): string {
 
 /**
  * Processes the AI response to ensure proper emoji display
+ * This function completely replaces text expressions like *waves* with their emoji equivalents
  * 
  * @param text AI generated response text
- * @returns Processed text with proper emoji formatting
+ * @returns Processed text with asterisk expressions converted to emojis
  */
 export function processAIResponse(text: string): string {
   if (!text) return text;
@@ -53,10 +58,20 @@ export function processAIResponse(text: string): string {
   // Remove starting and ending quotes if present
   processedText = processedText.replace(/^['"]|['"]$/g, "");
   
-  // Convert text inside asterisks to emojis
-  processedText = convertAsteriskTextToEmojis(processedText);
-  
-  return processedText;
+  // Replace all expressions within asterisks with their corresponding emojis
+  return processedText.replace(/\*([^*]+)\*/g, (match, textInsideAsterisks) => {
+    const lowerCaseText = textInsideAsterisks.toLowerCase().trim();
+    
+    // Try to find a matching emoji in our comprehensive map
+    for (const [expression, emoji] of Object.entries(completeEmojiMap)) {
+      if (lowerCaseText.includes(expression)) {
+        return emoji; // Completely replace the asterisk expression with an emoji
+      }
+    }
+    
+    // If no match found, just return the text without asterisks
+    return textInsideAsterisks;
+  });
 }
 
 /**
@@ -69,5 +84,5 @@ export function addEmojiInstructions(systemPrompt: string): string {
   // Add specific emoji handling instructions to the system prompt
   return `${systemPrompt}
 7. IMPORTANT: When users send emojis like 😊, 😂, or 😍, preserve them in your responses exactly as they are. DO NOT convert emojis to text descriptions inside asterisks (like *smile* or *laugh*). Just use the actual emoji characters directly in your response.
-8. If you want to express emotions, you can use asterisks (e.g., *smile*) which will be converted to appropriate emojis automatically in the final response.`;
+8. If you want to express emotions or actions, use asterisks (e.g., *waves*, *smiles*, *raises eyebrow*) which will be converted to appropriate emojis automatically in the final response.`;
 }
