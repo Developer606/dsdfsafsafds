@@ -161,13 +161,19 @@ export function trackConversation(
     // Create new conversation tracking
     const personality = determineCharacterPersonality(character);
     
+    // For non-user messages (initialization from database), we need special handling
+    // to ensure characters can send proactive messages soon
+    // Set the timestamps to different values to allow for proactive messaging
+    const lastUserTime = isUserMessage ? now : now - (120 * 1000); // 2 minutes ago if not a user message
+    const lastProactiveTime = now - (300 * 1000); // 5 minutes ago
+    
     activeConversations.set(conversationKey, {
       userId,
       characterId,
       lastMessageTime: now,
-      lastUserMessageTime: isUserMessage ? now : 0,
+      lastUserMessageTime: lastUserTime,
       proactiveMessagesSent: 0,
-      lastProactiveMessageTime: 0,
+      lastProactiveMessageTime: lastProactiveTime,
       characterPersonality: personality
     });
     
@@ -306,20 +312,43 @@ async function shouldSendProactiveMessage(conversation: ConversationState): Prom
   console.log(`- Proactive messages sent today: ${conversation.proactiveMessagesSent}/${config.maxDailyMessages}`);
   
   // For testing purposes, reduce the inactivity threshold dramatically
-  const testingThreshold = USE_DEV_THRESHOLDS ? 10 * 1000 : config.inactivityThreshold; // 10 seconds in dev mode
+  const testingThreshold = USE_DEV_THRESHOLDS ? 5 * 1000 : config.inactivityThreshold; // Only 5 seconds in dev mode
   
   // Check if enough time has passed since the last user message
   const timeSinceLastUserMessage = now - conversation.lastUserMessageTime;
-  if (timeSinceLastUserMessage < testingThreshold) {
-    console.log(`[ProactiveMessaging] Too soon after user's last message`);
-    return false;
+  
+  // In dev mode, allow proactive messages to be sent more frequently
+  if (USE_DEV_THRESHOLDS) {
+    // For testing, if it's been more than 60 seconds since the user's last message,
+    // or if the user has never sent a message, allow proactive messaging
+    if (timeSinceLastUserMessage < testingThreshold && conversation.lastUserMessageTime > 0) {
+      console.log(`[ProactiveMessaging] Too soon after user's last message`);
+      return false;
+    }
+  } else {
+    // Normal production logic
+    if (timeSinceLastUserMessage < testingThreshold) {
+      console.log(`[ProactiveMessaging] Too soon after user's last message`);
+      return false;
+    }
   }
   
   // Check if enough time has passed since the last proactive message
   const timeSinceLastProactiveMessage = now - conversation.lastProactiveMessageTime;
-  if (timeSinceLastProactiveMessage < testingThreshold * 1.2) {
-    console.log(`[ProactiveMessaging] Too soon after last proactive message`);
-    return false;
+  
+  // In dev mode, allow for faster follow-up messages
+  if (USE_DEV_THRESHOLDS) {
+    // For testing, only require 10 seconds between proactive messages
+    if (timeSinceLastProactiveMessage < 10 * 1000) {
+      console.log(`[ProactiveMessaging] Too soon after last proactive message (${Math.floor(timeSinceLastProactiveMessage/1000)}s < 10s)`);
+      return false;
+    }
+  } else {
+    // Normal production logic
+    if (timeSinceLastProactiveMessage < testingThreshold * 1.2) {
+      console.log(`[ProactiveMessaging] Too soon after last proactive message`);
+      return false;
+    }
   }
   
   // Check if we've exceeded the daily message limit
