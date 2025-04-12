@@ -76,6 +76,8 @@ export interface IStorage {
   getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
   getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
   deleteCustomCharacter(id: number, userId: number): Promise<void>;
+  getRecentMessages(limit?: number): Promise<Message[]>;
+  getUserCharacterMessages(userId: number, characterId: string): Promise<Message[]>;
   updateUserSubscription(
     userId: number,
     data: {
@@ -822,6 +824,56 @@ export class DatabaseStorage implements IStorage {
       language: msg.language || undefined,
       script: msg.script,
       timestamp: new Date(msg.timestamp)
+    }));
+  }
+  
+  /**
+   * Get all messages between a specific user and character
+   * Used for proactive messaging to analyze conversation history
+   */
+  async getUserCharacterMessages(userId: number, characterId: string): Promise<Message[]> {
+    const rawMessages = await db
+      .select()
+      .from(messages)
+      .where(sql`${messages.userId} = ${userId} AND ${messages.characterId} = ${characterId}`)
+      .orderBy(sql`${messages.timestamp} ASC`);
+    
+    // Add createdAt field for compatibility with proactive messaging
+    return rawMessages.map(msg => ({
+      id: msg.id,
+      userId: msg.userId,
+      characterId: msg.characterId,
+      content: msg.content,
+      isUser: Boolean(msg.isUser),
+      language: msg.language || undefined,
+      script: msg.script,
+      timestamp: new Date(msg.timestamp),
+      createdAt: new Date(msg.timestamp) // Add createdAt alias for timestamp
+    }));
+  }
+  
+  /**
+   * Get recent messages across all users and characters
+   * Used for initializing proactive messaging tracking
+   */
+  async getRecentMessages(limit: number = 100): Promise<Message[]> {
+    const rawMessages = await db
+      .select()
+      .from(messages)
+      .orderBy(sql`${messages.timestamp} DESC`)
+      .limit(limit);
+    
+    // Convert raw messages to Message type with createdAt field
+    return rawMessages.map(msg => ({
+      id: msg.id,
+      userId: msg.userId,
+      characterId: msg.characterId,
+      content: msg.content,
+      isUser: Boolean(msg.isUser),
+      language: msg.language || undefined,
+      script: msg.script,
+      timestamp: new Date(msg.timestamp),
+      createdAt: new Date(msg.timestamp) // Add createdAt alias for timestamp
     }));
   }
 
