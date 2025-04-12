@@ -200,6 +200,9 @@ export function setupSocketIOServer(httpServer: HTTPServer, handleWebSocketTraff
     }
     userConnections.get(userId)?.add(socket);
     
+    // Join user-specific room for receiving character messages
+    socket.join(`user_${userId}`);
+    
     // Mark user as online in the status tracking service
     markUserOnline(userId, socket.id);
 

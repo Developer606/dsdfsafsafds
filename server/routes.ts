@@ -32,6 +32,7 @@ import uploadRoutes from "./routes/upload";
 import socialAuthRoutes, { initializeGoogleStrategy } from "./routes/social-auth";
 import { errorHandler } from "./middleware/error-handler";
 import { isAdmin } from "./middleware/auth";
+import { trackConversation, initializeProactiveMessaging } from "./services/proactive-messaging";
 import {
   insertMessageSchema,
   insertCustomCharacterSchema,
@@ -155,6 +156,9 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Pass true to indicate we want the Socket.IO server to handle all WebSocket traffic
   // This eliminates duplicate WebSocket servers to reduce memory and CPU usage
   const io = setupSocketIOServer(httpServer, true);
+  
+  // Initialize the proactive messaging service
+  initializeProactiveMessaging();
 
   // Tracking for socket.io connections will be handled within the socket-io-server.ts
   // The code below gets replaced by the io.on('connection') handler in socket-io-server.ts
@@ -1727,6 +1731,22 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         userId: user.id,
       });
       const message = await storage.createMessage(data);
+      
+      // Track this conversation for potential proactive messaging
+      let character: any = null;
+      
+      // Get character data for tracking
+      if (data.characterId.startsWith('custom_')) {
+        const customId = parseInt(data.characterId.replace('custom_', ''));
+        character = await storage.getCustomCharacterById(customId);
+      } else {
+        character = await storage.getPredefinedCharacterById(data.characterId);
+      }
+      
+      // Track the conversation for proactive messaging
+      if (character) {
+        trackConversation(user.id, data.characterId, true, character);
+      }
 
       if (data.isUser) {
         try {
@@ -1811,6 +1831,9 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             language: data.language,
             script: data.script,
           });
+          
+          // Track the conversation for the AI response too
+          trackConversation(user.id, data.characterId, false, character);
 
           res.json([message, aiMessage]);
         } catch (error: any) {
