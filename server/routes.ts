@@ -159,6 +159,28 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   
   // Initialize the proactive messaging service
   initializeProactiveMessaging();
+  
+  // Test endpoint for proactive messaging (protected by auth)
+  app.post("/api/test-proactive-message", authCheck, async (req, res) => {
+    try {
+      const { characterId } = req.body;
+      
+      if (!characterId) {
+        return res.status(400).json({ error: "Character ID is required" });
+      }
+      
+      const result = await testProactiveMessage(req.user!.id, characterId);
+      
+      if (result) {
+        res.json({ success: true, message: "Proactive message test initiated successfully" });
+      } else {
+        res.status(500).json({ error: "Failed to send proactive message" });
+      }
+    } catch (error) {
+      console.error("Error testing proactive message:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   // Tracking for socket.io connections will be handled within the socket-io-server.ts
   // The code below gets replaced by the io.on('connection') handler in socket-io-server.ts
