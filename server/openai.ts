@@ -4,7 +4,6 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { getApiKey } from "./admin-db";
 import { OpenAI } from "openai";
-import { enhanceSystemPromptWithEmojiHandling, fixEmojiDescriptions } from "./emoji-gestures";
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -120,8 +119,8 @@ export async function generateCharacterResponse(
       if (userProfile.bio) userProfileInfo += `- Bio: ${userProfile.bio}\n`;
     }
 
-    // Format the base system message with character details and user profile
-    let baseSystemMessage = `You are ${character.name}, with this background: ${character.persona}
+    // Format the system message with character details and user profile
+    const systemMessage = `You are ${character.name}, with this background: ${character.persona}
 ${userProfileInfo ? userProfileInfo : ""}
 Instructions:
 1. ${languageInstruction}
@@ -129,10 +128,8 @@ Instructions:
 3. Stay in character
 4. Be concise (2-3 sentences)
 5. Match conversation tone
-6. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
-
-    // Enhance the system message with emoji handling instructions
-    const systemMessage = enhanceSystemPromptWithEmojiHandling(baseSystemMessage);
+6. When users send emojis or stickers, always preserve them exactly as sent - do not replace them with text descriptions in asterisks (like *sigh* or *smile*)
+7. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
 
     try {
       // Prepare the messages array
@@ -142,14 +139,12 @@ Instructions:
       
       // Add chat history if available
       if (chatHistory && chatHistory.trim() !== "") {
-        // @ts-ignore - The role types are causing TypeScript issues but this works fine with Nebius
-        messages.push({ role: 'user', content: chatHistory });
+        messages.push({ role: 'user' as const, content: chatHistory });
       }
       
       // Add the current user message
       // Make sure emojis are preserved in their original form
-      // @ts-ignore - The role types are causing TypeScript issues but this works fine with Nebius
-      messages.push({ role: 'user', content: userMessage });
+      messages.push({ role: 'user' as const, content: userMessage });
       
       // Make API call to Nebius Studio using OpenAI client
       // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
@@ -165,15 +160,11 @@ Instructions:
       let generatedText = response.choices[0]?.message?.content?.trim() || "";
 
       if (generatedText) {
-        // Remove any role prefix and quotes
         generatedText = generatedText.replace(
           /^(Assistant|Character|[^:]+):\s*/i,
           "",
         );
         generatedText = generatedText.replace(/^['"]|['"]$/g, "");
-        
-        // Post-process the text to fix any emoji descriptions with asterisks
-        generatedText = fixEmojiDescriptions(generatedText);
       }
 
       return generatedText || "I'm having trouble responding right now.";
