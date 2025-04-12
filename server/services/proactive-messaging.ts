@@ -234,6 +234,266 @@ function selectPrompt(conversation: ConversationState): string {
 }
 
 /**
+ * Analyze user messages to identify personality traits and interests
+ * This helps characters tailor their proactive messages to the user
+ */
+async function analyzeUserPersonality(userId: number, characterId: string): Promise<{
+  traits: Record<string, number>,
+  interests: string[],
+  activeTimes: number[],
+  responsePatterns: any
+}> {
+  try {
+    // Get all user messages from this conversation
+    const allMessages = await storage.getUserCharacterMessages(userId, characterId);
+    
+    // Default values if analysis fails
+    const defaultAnalysis = {
+      traits: {
+        friendliness: 0.5,
+        formality: 0.5,
+        enthusiasm: 0.5,
+        curiosity: 0.5,
+        verbosity: 0.5
+      },
+      interests: [],
+      activeTimes: Array(24).fill(0), // Hours of day (0-23)
+      responsePatterns: {
+        averageResponseTime: 0,
+        averageMessageLength: 0,
+        topicsInitiated: [],
+        questionsAsked: 0
+      }
+    };
+    
+    // If no messages, return defaults
+    if (!allMessages || allMessages.length < 3) {
+      return defaultAnalysis;
+    }
+    
+    // Extract user messages
+    const userMessages = allMessages.filter(msg => msg.isUser);
+    
+    // Message timestamps for timing analysis
+    const messageTimes = userMessages.map(msg => new Date(msg.createdAt ?? Date.now()));
+    
+    // Count active times
+    const activeTimes = Array(24).fill(0);
+    messageTimes.forEach(time => {
+      activeTimes[time.getHours()]++;
+    });
+    
+    // Simple keyword-based interest extraction
+    const interestKeywords = [
+      'like', 'love', 'enjoy', 'favorite', 'interested in', 'hobby', 'passion',
+      'fan of', 'into', 'follow', 'watch', 'play', 'read', 'listen to'
+    ];
+    
+    // Extract potential interests from user messages
+    const potentialInterests = new Set<string>();
+    const combinedText = userMessages.map(msg => msg.content).join(' ').toLowerCase();
+    
+    // Simple keyword matching for interests (a more sophisticated NLP approach would be better)
+    interestKeywords.forEach(keyword => {
+      const regex = new RegExp(`${keyword}\\s+([\\w\\s]+)`, 'gi');
+      const matches = combinedText.match(regex);
+      if (matches) {
+        matches.forEach(match => {
+          const interestPhrase = match.replace(keyword, '').trim();
+          if (interestPhrase.length > 2 && interestPhrase.length < 30) {
+            potentialInterests.add(interestPhrase);
+          }
+        });
+      }
+    });
+    
+    // Calculate average message length for verbosity
+    const avgMessageLength = userMessages.reduce((sum, msg) => 
+      sum + msg.content.length, 0) / userMessages.length;
+    
+    // Calculate traits based on message patterns
+    const traits = {
+      friendliness: 0.5,
+      formality: 0.5,
+      enthusiasm: 0.5,
+      curiosity: 0.5,
+      verbosity: Math.min(avgMessageLength / 200, 1) // Scale 0-1 based on message length
+    };
+    
+    // Naive sentiment analysis for friendliness/enthusiasm
+    const friendlyTerms = ['thanks', 'thank you', 'appreciate', 'happy', 'glad', 'nice', 'good', 'great', 'awesome'];
+    const formalTerms = ['would you', 'could you', 'please', 'kindly', 'may I', 'I would like', 'I request'];
+    const enthusiasticTerms = ['wow', 'amazing', 'incredible', 'awesome', 'exciting', 'love', 'excellent', '!', '!!'];
+    const curiously = ['why', 'how', 'what', 'when', 'who', 'where', '?', 'curious', 'wonder'];
+    
+    // Count occurrences
+    let friendlyCount = 0;
+    let formalCount = 0;
+    let enthusiasmCount = 0;
+    let curiosityCount = 0;
+    
+    userMessages.forEach(msg => {
+      const lowerContent = msg.content.toLowerCase();
+      
+      friendlyTerms.forEach(term => {
+        if (lowerContent.includes(term)) friendlyCount++;
+      });
+      
+      formalTerms.forEach(term => {
+        if (lowerContent.includes(term)) formalCount++;
+      });
+      
+      enthusiasticTerms.forEach(term => {
+        if (lowerContent.includes(term)) enthusiasmCount++;
+      });
+      
+      curiously.forEach(term => {
+        if (lowerContent.includes(term)) curiosityCount++;
+      });
+    });
+    
+    // Calculate normalized scores (0-1)
+    traits.friendliness = Math.min(friendlyCount / (userMessages.length * 0.5), 1);
+    traits.formality = Math.min(formalCount / (userMessages.length * 0.3), 1);
+    traits.enthusiasm = Math.min(enthusiasmCount / (userMessages.length * 0.5), 1);
+    traits.curiosity = Math.min(curiosityCount / (userMessages.length * 0.5), 1);
+    
+    // Normalize for at least 0.3 value on each trait
+    Object.keys(traits).forEach(key => {
+      traits[key] = Math.max(0.3, traits[key]);
+    });
+    
+    // Get the user profile for additional personalization
+    const user = await storage.getUserById(userId);
+    
+    // Incorporate user profile data if available
+    if (user && user.bio) {
+      // Extract additional interests from bio
+      interestKeywords.forEach(keyword => {
+        const regex = new RegExp(`${keyword}\\s+([\\w\\s]+)`, 'gi');
+        const matches = user.bio.toLowerCase().match(regex);
+        if (matches) {
+          matches.forEach(match => {
+            const interestPhrase = match.replace(keyword, '').trim();
+            if (interestPhrase.length > 2 && interestPhrase.length < 30) {
+              potentialInterests.add(interestPhrase);
+            }
+          });
+        }
+      });
+    }
+    
+    // Count questions asked
+    const questionsAsked = userMessages.filter(msg => msg.content.includes('?')).length;
+    
+    return {
+      traits,
+      interests: Array.from(potentialInterests).slice(0, 5), // Top 5 interests
+      activeTimes,
+      responsePatterns: {
+        averageResponseTime: 0, // Would need paired messages to calculate
+        averageMessageLength: avgMessageLength,
+        topicsInitiated: Array.from(potentialInterests).slice(0, 3), // Top 3 for topics
+        questionsAsked
+      }
+    };
+  } catch (error) {
+    console.error(`[ProactiveMessaging] Error analyzing user personality:`, error);
+    // Return default analysis on error
+    return {
+      traits: {
+        friendliness: 0.5,
+        formality: 0.5,
+        enthusiasm: 0.5,
+        curiosity: 0.5,
+        verbosity: 0.5
+      },
+      interests: [],
+      activeTimes: Array(24).fill(0),
+      responsePatterns: {
+        averageResponseTime: 0,
+        averageMessageLength: 0,
+        topicsInitiated: [],
+        questionsAsked: 0
+      }
+    };
+  }
+}
+
+/**
+ * Generate a personalized prompt based on user's personality analysis and current context
+ */
+async function generatePersonalizedPrompt(
+  conversation: ConversationState,
+  character: PredefinedCharacter | CustomCharacter,
+  userAnalysis: ReturnType<typeof analyzeUserPersonality> extends Promise<infer T> ? T : never
+): Promise<string> {
+  // Start with the base prompt
+  const basePrompt = selectPrompt(conversation);
+  
+  // Get the current hour (in user's local time if available, otherwise server time)
+  const currentHour = new Date().getHours();
+  
+  // Check if this is a peak active time for the user
+  const isActiveHour = userAnalysis.activeTimes[currentHour] > 
+    Math.max(...userAnalysis.activeTimes) * 0.7;
+  
+  // Adjust prompt based on time context
+  let timeContext = '';
+  if (currentHour >= 5 && currentHour < 12) {
+    timeContext = 'morning';
+  } else if (currentHour >= 12 && currentHour < 17) {
+    timeContext = 'afternoon';
+  } else if (currentHour >= 17 && currentHour < 22) {
+    timeContext = 'evening';
+  } else {
+    timeContext = 'night';
+  }
+  
+  // Build personalization components
+  let personalizedComponents = [];
+  
+  // Add greeting based on time of day
+  personalizedComponents.push(`It's ${timeContext} where the user might be.`);
+  
+  // Add trait-based guidance
+  if (userAnalysis.traits.formality > 0.7) {
+    personalizedComponents.push("The user tends to be formal, so maintain appropriate politeness.");
+  } else if (userAnalysis.traits.formality < 0.4) {
+    personalizedComponents.push("The user is casual and informal, so adopt a relaxed conversational style.");
+  }
+  
+  if (userAnalysis.traits.verbosity > 0.7) {
+    personalizedComponents.push("The user enjoys detailed responses, so provide thoughtful explanations.");
+  } else if (userAnalysis.traits.verbosity < 0.4) {
+    personalizedComponents.push("The user prefers concise responses, so keep messages brief and to the point.");
+  }
+  
+  if (userAnalysis.traits.enthusiasm > 0.7) {
+    personalizedComponents.push("The user is enthusiastic, so match their energy level.");
+  }
+  
+  if (userAnalysis.traits.curiosity > 0.7) {
+    personalizedComponents.push("The user is very curious, so include thought-provoking questions that invite exploration.");
+  }
+  
+  // Add interest-based personalization
+  if (userAnalysis.interests.length > 0) {
+    // Randomly select one of their interests to potentially bring up
+    const randomInterest = userAnalysis.interests[Math.floor(Math.random() * userAnalysis.interests.length)];
+    personalizedComponents.push(`If contextually appropriate, consider referencing the user's interest in ${randomInterest}.`);
+  }
+  
+  // Consider activity patterns
+  if (isActiveHour) {
+    personalizedComponents.push("This is typically an active time for this user, so they may be likely to respond soon.");
+  }
+  
+  // Combine everything into a personalized prompt
+  return `${basePrompt}\n\nIncorporate these personalization insights about the user:\n- ${personalizedComponents.join('\n- ')}\n\nStay true to ${character.name}'s personality while adapting to the user's communication style.`;
+}
+
+/**
  * Generate and send a proactive message from a character
  */
 async function sendProactiveMessage(conversation: ConversationState): Promise<void> {
@@ -276,8 +536,11 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       .map(msg => `${msg.isUser ? 'User' : character!.name}: ${msg.content}`)
       .join('\n');
     
-    // Select a prompt for the AI
-    const prompt = selectPrompt(conversation);
+    // Analyze user's personality from past messages
+    const userAnalysis = await analyzeUserPersonality(userId, characterId);
+    
+    // Generate a personalized prompt based on user analysis
+    const personalizedPrompt = await generatePersonalizedPrompt(conversation, character, userAnalysis);
     
     // Prepare user profile data for personalization, converting null to undefined
     // to match the expected type in the generateCharacterResponse function
@@ -288,9 +551,9 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       bio: user.bio || undefined
     } : undefined;
     
-    console.log(`[ProactiveMessaging] Generating proactive message from ${character.name} to user ${userId}`);
+    console.log(`[ProactiveMessaging] Generating personalized proactive message from ${character.name} to user ${userId}`);
     
-    // Generate the AI response with the proactive prompt
+    // Generate the AI response with the personalized proactive prompt
     const aiResponse = await generateCharacterResponse(
       // Type cast to ensure compatibility with Character type
       {
@@ -300,7 +563,7 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
         persona: character.persona,
         avatar: character.avatar
       },
-      prompt, // This is the prompt to make the character initiate conversation
+      personalizedPrompt, // This is the personalized prompt to make the character initiate conversation
       chatHistory,
       'english', // Default language 
       undefined, // No specific script
@@ -335,7 +598,7 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
         }
       });
       
-      console.log(`[ProactiveMessaging] Sent proactive message from ${character.name} to user ${userId}`);
+      console.log(`[ProactiveMessaging] Sent personalized proactive message from ${character.name} to user ${userId}`);
     } else {
       console.error('[ProactiveMessaging] Socket.IO not initialized');
     }
