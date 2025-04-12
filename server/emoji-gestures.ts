@@ -45,6 +45,7 @@ export function containsEmoji(text: string): boolean {
 export function fixEmojiDescriptions(text: string): string {
   // Common patterns to fix
   const replacements: [RegExp, string][] = [
+    // Basic emotions
     [/\*sigh\*/gi, "😌"],
     [/\*sighs\*/gi, "😌"],
     [/\*smile\*/gi, "😊"],
@@ -61,9 +62,37 @@ export function fixEmojiDescriptions(text: string): string {
     [/\*frowns\*/gi, "🙁"],
     [/\*gasp\*/gi, "😮"],
     [/\*gasps\*/gi, "😮"],
+    
+    // Actions and gestures
     [/\*nods\*/gi, "🙂"],
     [/\*shakes head\*/gi, "🙅"],
-    [/\*waves\*/gi, "👋"]
+    [/\*waves\*/gi, "👋"],
+    [/\*thumbs up\*/gi, "👍"],
+    [/\*thumbs down\*/gi, "👎"],
+    [/\*shrug\*/gi, "🤷"],
+    [/\*shrugs\*/gi, "🤷"],
+    [/\*clap\*/gi, "👏"],
+    [/\*claps\*/gi, "👏"],
+    [/\*high five\*/gi, "✋"],
+    
+    // Additional emotions
+    [/\*sad\*/gi, "😢"],
+    [/\*cry\*/gi, "😢"],
+    [/\*cries\*/gi, "😢"],
+    [/\*angry\*/gi, "😠"],
+    [/\*annoyed\*/gi, "😒"],
+    [/\*shocked\*/gi, "😲"],
+    [/\*confused\*/gi, "😕"],
+    [/\*heart\*/gi, "❤️"],
+    [/\*love\*/gi, "❤️"],
+    [/\*joy\*/gi, "😂"],
+    [/\*excited\*/gi, "🎉"],
+    [/\*happy\*/gi, "😃"],
+    [/\*worried\*/gi, "😟"],
+    [/\*nervous\*/gi, "😬"],
+    [/\*curious\*/gi, "🤔"],
+    [/\*think\*/gi, "🤔"],
+    [/\*thinks\*/gi, "🤔"]
   ];
 
   let processedText = text;
