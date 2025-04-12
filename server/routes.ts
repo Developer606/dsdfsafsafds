@@ -150,6 +150,21 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Update authentication check middleware
+  const authCheck = (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({
+        error: "Authentication required",
+        redirectTo: "/login",
+      });
+    }
+    next();
+  };
+
   const httpServer = existingServer || createServer(app);
   
   // Set up Socket.IO server with our enhanced implementation
@@ -234,21 +249,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   
   // Add social authentication routes
   app.use('/api/auth', socialAuthRoutes);
-
-  // Update authentication check middleware
-  const authCheck = (
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction,
-  ) => {
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({
-        error: "Authentication required",
-        redirectTo: "/login",
-      });
-    }
-    next();
-  };
 
   // Apply auth check to protected routes
   app.use(
