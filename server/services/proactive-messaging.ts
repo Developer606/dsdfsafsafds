@@ -36,9 +36,14 @@ const personalityConfigs: Record<string, ProactiveConfig> = {
 // For development/testing, use shorter thresholds
 const USE_DEV_THRESHOLDS = process.env.NODE_ENV !== 'production';
 if (USE_DEV_THRESHOLDS) {
-  personalityConfigs.outgoing.inactivityThreshold = 1 * 60 * 1000; // 1 minute
-  personalityConfigs.balanced.inactivityThreshold = 2 * 60 * 1000; // 2 minutes
-  personalityConfigs.reserved.inactivityThreshold = 3 * 60 * 1000; // 3 minutes
+  personalityConfigs.outgoing.inactivityThreshold = 45 * 1000; // 45 seconds
+  personalityConfigs.balanced.inactivityThreshold = 1 * 60 * 1000; // 1 minute
+  personalityConfigs.reserved.inactivityThreshold = 90 * 1000; // 90 seconds
+  
+  // Increase message frequency for faster testing
+  personalityConfigs.outgoing.messageFrequency = 80;
+  personalityConfigs.balanced.messageFrequency = 60;
+  personalityConfigs.reserved.messageFrequency = 40;
 }
 
 // Track active conversations and when the last message was sent
@@ -773,21 +778,40 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
  */
 async function scanConversations(): Promise<void> {
   // Make a copy of the keys to prevent issues if the map changes during iteration
-  const conversationKeys = [...activeConversations.keys()];
+  const conversationKeys = Array.from(activeConversations.keys());
+  
+  console.log(`[ProactiveMessaging] Scanning ${conversationKeys.length} active conversations for proactive messaging opportunities`);
+  
+  let proactiveMessagesSent = 0;
   
   for (const key of conversationKeys) {
     const conversation = activeConversations.get(key);
     if (!conversation) continue;
     
     try {
+      // Check if user is online (if socket service is available)
+      const io = socketService.getIO();
+      const isUserOnline = io ? io.sockets.adapter.rooms.has(`user_${conversation.userId}`) : false;
+      
       // Skip if user has been active recently or shouldn't get a message now
       const shouldSend = await shouldSendProactiveMessage(conversation);
       if (shouldSend) {
+        // If we have the socket service, prioritize online users
+        if (!isUserOnline && Math.random() > 0.3) {
+          // 70% chance to skip offline users (but still allow some messages to offline users)
+          continue;
+        }
+        
         await sendProactiveMessage(conversation);
+        proactiveMessagesSent++;
       }
     } catch (error) {
       console.error(`[ProactiveMessaging] Error scanning conversation ${key}:`, error);
     }
+  }
+  
+  if (proactiveMessagesSent > 0) {
+    console.log(`[ProactiveMessaging] Sent ${proactiveMessagesSent} proactive messages in this scan`);
   }
 }
 
