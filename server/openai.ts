@@ -4,6 +4,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { getApiKey } from "./admin-db";
 import { OpenAI } from "openai";
+import { replaceExpressionsWithEmojis } from "./emoji-mapping";
 
 // Get directory name in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -132,19 +133,19 @@ Instructions:
 7. ${userProfileInfo ? "Use the user profile information to personalize your responses" : "Respond in a friendly manner"}`;
 
     try {
-      // Prepare the messages array
-      const messages = [
-        { role: 'system' as const, content: systemMessage }
+      // Prepare the messages array for the OpenAI API
+      const messages: Array<{role: 'system' | 'user' | 'assistant', content: string}> = [
+        { role: 'system', content: systemMessage }
       ];
       
       // Add chat history if available
       if (chatHistory && chatHistory.trim() !== "") {
-        messages.push({ role: 'user' as const, content: chatHistory });
+        messages.push({ role: 'user', content: chatHistory });
       }
       
       // Add the current user message
       // Make sure emojis are preserved in their original form
-      messages.push({ role: 'user' as const, content: userMessage });
+      messages.push({ role: 'user', content: userMessage });
       
       // Make API call to Nebius Studio using OpenAI client
       // @ts-ignore - The OpenAI SDK types don't match exactly with how Nebius Studio accepts messages
@@ -160,11 +161,15 @@ Instructions:
       let generatedText = response.choices[0]?.message?.content?.trim() || "";
 
       if (generatedText) {
+        // Clean up response formatting
         generatedText = generatedText.replace(
           /^(Assistant|Character|[^:]+):\s*/i,
           "",
         );
         generatedText = generatedText.replace(/^['"]|['"]$/g, "");
+        
+        // Process any text expressions to convert to emojis
+        generatedText = replaceExpressionsWithEmojis(generatedText);
       }
 
       return generatedText || "I'm having trouble responding right now.";
