@@ -776,7 +776,7 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       userProfileData
     );
     
-    // Store the message in the database
+    // Store the message in the database as a proactive, unread message
     const aiMessage = await storage.createMessage({
       userId: userId,
       characterId: characterId,
@@ -784,6 +784,8 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       isUser: false,
       language: 'english',
       script: undefined,
+      isProactive: true,
+      isRead: false,
     });
     
     // Update conversation tracking

@@ -899,7 +899,76 @@ export class DatabaseStorage implements IStorage {
       timestamp: new Date(newMessage.timestamp),
       language: newMessage.language || undefined,
       script: newMessage.script,
+      isProactive: Boolean(newMessage.isProactive),
+      isRead: Boolean(newMessage.isRead),
     };
+  }
+  
+  /**
+   * Get all characters for a user with unread proactive messages
+   * @param userId The user ID
+   * @returns Array of characters with unread messages status
+   */
+  async getCharactersWithUnreadMessages(userId: number): Promise<Character[]> {
+    try {
+      // Get all characters with unread proactive messages
+      const unreadMessages = await db
+        .select({
+          characterId: messages.characterId
+        })
+        .from(messages)
+        .where(
+          and(
+            eq(messages.userId, userId),
+            eq(messages.isUser, false),
+            eq(messages.isProactive, true),
+            eq(messages.isRead, false)
+          )
+        )
+        .groupBy(messages.characterId);
+      
+      if (!unreadMessages.length) {
+        return [];
+      }
+      
+      // Create a set of character IDs with unread messages
+      const characterIdsWithUnread = new Set(unreadMessages.map(msg => msg.characterId));
+      
+      // Get all characters
+      const allCharacters = await this.getCharacters();
+      
+      // Add unread status to each character
+      return allCharacters.map(character => ({
+        ...character,
+        hasUnreadMessage: characterIdsWithUnread.has(character.id)
+      }));
+    } catch (error) {
+      console.error("[getCharactersWithUnreadMessages] Error:", error);
+      return [];
+    }
+  }
+  
+  /**
+   * Mark all proactive messages from a character as read
+   * @param userId The user ID
+   * @param characterId The character ID
+   */
+  async markCharacterMessagesAsRead(userId: number, characterId: string): Promise<void> {
+    try {
+      await db
+        .update(messages)
+        .set({ isRead: true })
+        .where(
+          and(
+            eq(messages.userId, userId),
+            eq(messages.characterId, characterId),
+            eq(messages.isProactive, true),
+            eq(messages.isRead, false)
+          )
+        );
+    } catch (error) {
+      console.error("[markCharacterMessagesAsRead] Error:", error);
+    }
   }
 
   async clearChat(characterId: string): Promise<void> {
