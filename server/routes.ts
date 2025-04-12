@@ -1816,7 +1816,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             isUser: false,
             language: data.language,
             script: data.script,
-            metadata: emotionsData ? { emotions: emotionsData } : undefined
+            metadata: emotionsData ? JSON.stringify({ emotions: emotionsData }) : undefined
           });
 
           res.json([message, aiMessage]);

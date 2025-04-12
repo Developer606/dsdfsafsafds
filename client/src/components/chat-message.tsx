@@ -4,6 +4,13 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Check } from "lucide-react";
 import { motion } from "framer-motion";
+import { CharacterSticker } from "./character-sticker";
+
+interface EmotionInfo {
+  emoji: string;
+  originalText: string;
+  category: string;
+}
 
 interface ChatMessageProps {
   message: Message;
@@ -13,6 +20,38 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, character, chatStyle = "whatsapp" }: ChatMessageProps) {
   const isUser = message.isUser;
+  
+  // Parse the metadata to extract emotion information
+  const getEmotionData = (): EmotionInfo | null => {
+    if (!message.metadata || isUser) return null;
+    
+    try {
+      // If metadata is a string, try to parse it as JSON
+      const metadataObj = typeof message.metadata === 'string' 
+        ? JSON.parse(message.metadata) 
+        : message.metadata;
+      
+      // Check if emotions data exists
+      if (metadataObj?.emotions) {
+        // Handle emotions as a string that needs further parsing
+        const emotionsData = typeof metadataObj.emotions === 'string'
+          ? JSON.parse(metadataObj.emotions)
+          : metadataObj.emotions;
+        
+        // Return the first emotion if available
+        if (Array.isArray(emotionsData) && emotionsData.length > 0) {
+          return emotionsData[0];
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing message metadata:", error);
+    }
+    
+    return null;
+  };
+  
+  // Get emotion data for this message
+  const emotionData = getEmotionData();
 
   if (chatStyle === "chatgpt") {
     return (
@@ -27,8 +66,15 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
       >
         <div className="container mx-auto max-w-3xl flex gap-4 items-start">
           {!isUser && (
-            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 relative">
               <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />
+              
+              {/* Add character sticker for chatgpt style */}
+              {emotionData && (
+                <div className="absolute -right-3 -bottom-3 bg-white dark:bg-slate-800 rounded-full p-1 shadow-sm border border-gray-200 dark:border-slate-700">
+                  <span className="text-xl">{emotionData.emoji}</span>
+                </div>
+              )}
             </div>
           )}
           <div className="flex-1">
@@ -69,8 +115,15 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
           "items-end gap-2"
         )}>
           {!isUser && (
-            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+            <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 relative">
               <img src={character.avatar} alt={character.name} className="w-full h-full object-cover" />
+              
+              {/* Add emoji reaction for messenger style */}
+              {emotionData && (
+                <div className="absolute -right-2 -bottom-2 bg-white dark:bg-slate-800 rounded-full p-0.5 shadow-sm border border-gray-200 dark:border-slate-700">
+                  <span className="text-sm">{emotionData.emoji}</span>
+                </div>
+              )}
             </div>
           )}
           <div className={cn(
@@ -113,12 +166,23 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
         isUser ? "items-end" : "items-start"
       )}>
         <div className={cn(
-          "px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg",
+          "px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg relative",
           isUser 
             ? "bg-[#e7ffdb] dark:bg-emerald-800 rounded-tr-none" 
             : "bg-white dark:bg-slate-800 rounded-tl-none",
           "max-w-full"
         )}>
+          {/* Add character sticker for non-user messages with emotion data */}
+          {!isUser && emotionData && (
+            <CharacterSticker 
+              emoji={emotionData.emoji}
+              emotion={emotionData.originalText}
+              character={character}
+              size="small"
+              position="top"
+            />
+          )}
+          
           {!isUser && (
             <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1">
               {character.name}
