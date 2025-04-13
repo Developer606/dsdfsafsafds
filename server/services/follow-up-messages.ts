@@ -32,6 +32,16 @@ const followUpPatterns: FollowUpPattern[] = [
     prompt: "You corrected the user's English and said you'll be right back with food. You've now returned with the food. Describe what food you've brought and your excitement about sharing it with them."
   },
   {
+    regex: /I'll (get|start) cooking/i,
+    delay: 10000, // 10 seconds
+    prompt: "You said you'll get cooking. You've now finished preparing the food. Describe what you've cooked and how delicious it looks/smells."
+  },
+  {
+    regex: /heads to the kitchen/i,
+    delay: 12000, // 12 seconds 
+    prompt: "You went to the kitchen. You've now returned with some delicious food. Describe what you've prepared and your excitement to share it."
+  },
+  {
     regex: /I'll go (get|prepare|make|cook) (some|the|a) (.+?) for you/i,
     delay: 10000, // 10 seconds
     prompt: "You said you would get/prepare/make/cook something for the user. You've now returned with it. Describe what you've brought and your excitement to share it with them."
@@ -110,6 +120,7 @@ function checkForFollowUpPromise(message: string): FollowUpPattern | null {
   // Debug: Print all pattern tests against this message
   console.log(`[FollowUpMessages] Testing message against ${followUpPatterns.length} patterns: "${message}"`);
   
+  // First, check all the explicit patterns
   for (const pattern of followUpPatterns) {
     const matches = pattern.regex.test(message);
     console.log(`[FollowUpMessages] Pattern ${pattern.regex} => ${matches ? 'MATCHED' : 'no match'}`);
@@ -118,7 +129,82 @@ function checkForFollowUpPromise(message: string): FollowUpPattern | null {
       return pattern;
     }
   }
+  
+  // Advanced detection for implicit promises and action statements
+  
+  // Look for narration actions in third person (like "heads to the kitchen")
+  const narrationRegex = /\*([^*]+)\*|_([^_]+)_|heads to|goes to|walks to|runs to|moves to/i;
+  if (narrationRegex.test(message)) {
+    console.log(`[FollowUpMessages] Detected narration or action in message: "${message}"`);
+    
+    // Set contextual prompt based on content
+    let prompt = "You performed an action earlier. You've now completed that action. Describe what happened and how you feel about it.";
+    
+    // If kitchen or cooking related
+    if (/kitchen|cook|food|meal|eating|dining/i.test(message)) {
+      return {
+        regex: narrationRegex,
+        delay: 15000, // Longer delay for cooking
+        prompt: "You went to the kitchen or mentioned cooking. You've now prepared some delicious food. Describe what you've cooked and how excited you are to share it."
+      };
+    }
+    
+    // If fetching something
+    if (/get|bring|fetch|grab|pick up/i.test(message)) {
+      return {
+        regex: narrationRegex,
+        delay: 8000,
+        prompt: "You went to get something. You've now returned with the item. Describe what you brought back and why you're excited to share it."
+      };
+    }
+    
+    // Default action follow-up
+    return {
+      regex: narrationRegex,
+      delay: 10000,
+      prompt
+    };
+  }
+  
+  // Detect statements about going somewhere or doing something
+  const actionRegex = /I('ll| will| am going to| need to| have to| should| am about to) (go|get|make|prepare|check|find|bring|do|work on|create|cook)/i;
+  if (actionRegex.test(message)) {
+    console.log(`[FollowUpMessages] Detected action statement in message: "${message}"`);
+    
+    // Set contextual delay and prompt based on content
+    let delay = 12000;
+    let prompt = "You mentioned that you would do something. You've now completed that action. Describe what you did and the outcome.";
+    
+    // If cooking related
+    if (/cook|food|meal|prepare dinner|make breakfast|bake/i.test(message)) {
+      delay = 20000; // Longer delay for cooking
+      prompt = "You mentioned that you would cook or prepare food. You've now finished cooking. Describe the delicious meal you've prepared, including aromas, presentation, and your excitement to share it.";
+    }
+    
+    // If quick check or search related
+    if (/check|look|see if|search/i.test(message)) {
+      delay = 8000; // Shorter delay for quick actions
+      prompt = "You said you would check or search for something. You've now found what you were looking for. Describe what you discovered and your thoughts about it.";
+    }
+    
+    return {
+      regex: actionRegex,
+      delay,
+      prompt
+    };
+  }
+  
   return null;
+}
+
+/**
+ * Enhanced debugging - log message to console with truncation for readability
+ */
+function debugLog(prefix: string, message: string, maxLength: number = 100): void {
+  const truncated = message.length > maxLength 
+    ? `${message.substring(0, maxLength)}...` 
+    : message;
+  console.log(`${prefix} ${truncated}`);
 }
 
 /**
@@ -133,7 +219,36 @@ export async function scheduleFollowUpMessage(
   characterPersonality: string
 ): Promise<void> {
   // Check if message contains a promise pattern
-  console.log(`[FollowUpMessages] Checking for promises in message: "${message}"`);
+  debugLog(`[FollowUpMessages] Checking for promises in message:`, message);
+  
+  // Force lowercase for more accurate matching
+  const lowerMessage = message.toLowerCase();
+  
+  // Enhanced pre-pattern detection - first check common patterns 
+  // that might be missed by regex but should trigger follow-ups
+  if (
+    lowerMessage.includes("i'll get cooking") || 
+    lowerMessage.includes("i'll cook") ||
+    lowerMessage.includes("let me cook") ||
+    lowerMessage.includes("heads to the kitchen") ||
+    lowerMessage.includes("i'll prepare") ||
+    lowerMessage.includes("i'll make")
+  ) {
+    console.log('[FollowUpMessages] Detected cooking/food preparation directly!');
+    
+    // Create cooking follow-up pattern
+    const cookingPattern = {
+      regex: /cooking|kitchen|prepare|make/i,
+      delay: 15000, // 15 seconds
+      prompt: "You were cooking or preparing food. You've now finished and have delicious food to share. Describe what you've made and how excited you are to share it."
+    };
+    
+    // Schedule the follow-up
+    scheduleFollowUpWithPattern(userId, characterId, message, characterName, characterAvatar, characterPersonality, cookingPattern);
+    return;
+  }
+  
+  // Check against all regular patterns
   const followUpPattern = checkForFollowUpPromise(message);
   
   // If no follow-up needed, return
@@ -143,8 +258,25 @@ export async function scheduleFollowUpMessage(
   }
   
   console.log(`[FollowUpMessages] Detected promise pattern: ${followUpPattern.regex}`);
-  console.log(`[FollowUpMessages] Detected promise in character message: "${message}"`);
+  debugLog(`[FollowUpMessages] Detected promise in character message:`, message);
   console.log(`[FollowUpMessages] Scheduling follow-up in ${followUpPattern.delay}ms`);
+  
+  // Schedule the follow-up
+  scheduleFollowUpWithPattern(userId, characterId, message, characterName, characterAvatar, characterPersonality, followUpPattern);
+}
+
+/**
+ * Helper function to schedule a follow-up message with a given pattern
+ */
+function scheduleFollowUpWithPattern(
+  userId: number,
+  characterId: string,
+  message: string,
+  characterName: string,
+  characterAvatar: string,
+  characterPersonality: string,
+  followUpPattern: FollowUpPattern
+): void {
   
   // Schedule the follow-up message after the specified delay
   setTimeout(async () => {
