@@ -42,17 +42,24 @@ const personalityConfigs: Record<string, ProactiveConfig> = {
   }
 };
 
-// For development/testing, use shorter thresholds
+// For development/testing, use more conservative settings
+// This ensures messages are sent only when users are actively engaged
 const USE_DEV_THRESHOLDS = process.env.NODE_ENV !== 'production';
 if (USE_DEV_THRESHOLDS) {
-  personalityConfigs.outgoing.inactivityThreshold = 45 * 1000; // 45 seconds
-  personalityConfigs.balanced.inactivityThreshold = 1 * 60 * 1000; // 1 minute
-  personalityConfigs.reserved.inactivityThreshold = 90 * 1000; // 90 seconds
+  // Set longer thresholds to prevent message spam
+  personalityConfigs.outgoing.inactivityThreshold = 2 * 60 * 1000; // 2 minutes (was 45 seconds)
+  personalityConfigs.balanced.inactivityThreshold = 5 * 60 * 1000; // 5 minutes (was 1 minute)
+  personalityConfigs.reserved.inactivityThreshold = 10 * 60 * 1000; // 10 minutes (was 90 seconds)
   
-  // Increase message frequency for faster testing
-  personalityConfigs.outgoing.messageFrequency = 80;
-  personalityConfigs.balanced.messageFrequency = 60;
-  personalityConfigs.reserved.messageFrequency = 40;
+  // Reduce message frequency to prevent overwhelming users
+  personalityConfigs.outgoing.messageFrequency = 60; // was 80
+  personalityConfigs.balanced.messageFrequency = 40; // was 60
+  personalityConfigs.reserved.messageFrequency = 20; // was 40
+  
+  // Reduce daily message limits
+  personalityConfigs.outgoing.maxDailyMessages = 8; // was 10
+  personalityConfigs.balanced.maxDailyMessages = 4; // was 5
+  personalityConfigs.reserved.maxDailyMessages = 2; // was 3
 }
 
 // Track active conversations and when the last message was sent

@@ -16,6 +16,7 @@ import {
 import {
   markChatSessionActive,
   markChatSessionInactive,
+  isChatSessionActive
 } from './services/character-memory';
 
 // Socket performance configuration
@@ -416,15 +417,22 @@ export function setupSocketIOServer(httpServer: HTTPServer, handleWebSocketTraff
       try {
         const { characterId } = data;
         if (!characterId) {
+          log(`Missing characterId in chat_page_open event`);
           return;
         }
         
         log(`User ${userId} opened chat page with character ${characterId}`);
+        console.log(`[SocketIO] User ${userId} opened chat page with character ${characterId}`);
         
         // Mark chat session as active in memory system
         markChatSessionActive(userId, characterId);
+        
+        // Debug: check if the session is now marked as active
+        const isActive = isChatSessionActive(userId, characterId);
+        console.log(`[SocketIO] Chat session active status for ${userId}:${characterId}: ${isActive}`);
       } catch (error) {
         log(`Error handling chat page open: ${error}`);
+        console.error(`[SocketIO] Error handling chat_page_open event:`, error);
       }
     });
     
@@ -433,15 +441,22 @@ export function setupSocketIOServer(httpServer: HTTPServer, handleWebSocketTraff
       try {
         const { characterId } = data;
         if (!characterId) {
+          log(`Missing characterId in chat_page_close event`);
           return;
         }
         
         log(`User ${userId} closed chat page with character ${characterId}`);
+        console.log(`[SocketIO] User ${userId} closed chat page with character ${characterId}`);
         
         // Mark chat session as inactive in memory system
         markChatSessionInactive(userId, characterId);
+        
+        // Debug: check if the session is now marked as inactive
+        const isActive = isChatSessionActive(userId, characterId);
+        console.log(`[SocketIO] Chat session active status for ${userId}:${characterId}: ${isActive}`);
       } catch (error) {
         log(`Error handling chat page close: ${error}`);
+        console.error(`[SocketIO] Error handling chat_page_close event:`, error);
       }
     });
 
