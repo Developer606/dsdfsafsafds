@@ -1058,6 +1058,8 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
   try {
     const { userId, characterId } = conversation;
     
+    console.log(`[ProactiveMessaging] Attempting to send proactive message from character ${characterId} to user ${userId}`);
+    
     // Get character data
     let character: PredefinedCharacter | CustomCharacter | null = null;
     
@@ -1128,6 +1130,13 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       userProfileData
     );
     
+    if (!aiResponse) {
+      console.error('[ProactiveMessaging] Failed to generate AI response');
+      return;
+    }
+    
+    console.log(`[ProactiveMessaging] Successfully generated AI response: "${aiResponse.substring(0, 100)}${aiResponse.length > 100 ? '...' : ''}"`);
+    
     // Store the message in the database
     const aiMessage = await storage.createMessage({
       userId: userId,
@@ -1138,6 +1147,11 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       script: undefined,
     });
     
+    if (!aiMessage) {
+      console.error('[ProactiveMessaging] Failed to store message in database');
+      return;
+    }
+    
     // Update conversation tracking
     conversation.lastMessageTime = Date.now();
     conversation.lastProactiveMessageTime = Date.now();
@@ -1146,17 +1160,21 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
     // Emit the message via Socket.IO
     const io = socketService.getIO();
     if (io) {
-      // Find the socket for this user
-      io.to(`user_${userId}`).emit('character_message', {
-        message: aiMessage,
-        character: {
-          id: character.id,
-          name: character.name,
-          avatar: character.avatar
-        }
-      });
-      
-      console.log(`[ProactiveMessaging] Sent personalized proactive message from ${character.name} to user ${userId}`);
+      try {
+        // Find the socket for this user
+        io.to(`user_${userId}`).emit('character_message', {
+          message: aiMessage,
+          character: {
+            id: character.id,
+            name: character.name,
+            avatar: character.avatar
+          }
+        });
+        
+        console.log(`[ProactiveMessaging] Successfully sent proactive message from ${character.name} to user ${userId}`);
+      } catch (socketError) {
+        console.error(`[ProactiveMessaging] Socket emission error:`, socketError);
+      }
     } else {
       console.error('[ProactiveMessaging] Socket.IO not initialized');
     }
@@ -1177,7 +1195,9 @@ async function scanConversations(): Promise<void> {
   
   let proactiveMessagesSent = 0;
   
-  for (const key of conversationKeys) {
+  // Process each conversation
+  for (let i = 0; i < conversationKeys.length; i++) {
+    const key = conversationKeys[i];
     const conversation = activeConversations.get(key);
     if (!conversation) continue;
     
@@ -1215,23 +1235,25 @@ function cleanupInactiveConversations(): void {
   const now = Date.now();
   const maxInactiveTime = 24 * 60 * 60 * 1000; // 24 hours
   
-  for (const [key, conversation] of activeConversations.entries()) {
+  // Use Array.from to convert the entries iterator to an array for compatibility
+  Array.from(activeConversations.entries()).forEach(([key, conversation]) => {
     const timeSinceLastMessage = now - conversation.lastMessageTime;
     
     if (timeSinceLastMessage > maxInactiveTime) {
       activeConversations.delete(key);
       console.log(`[ProactiveMessaging] Removed inactive conversation: ${key}`);
     }
-  }
+  });
 }
 
 /**
  * Reset daily message counters
  */
 function resetDailyCounters(): void {
-  for (const conversation of activeConversations.values()) {
+  // Use Array.from to convert the values iterator to an array for compatibility
+  Array.from(activeConversations.values()).forEach(conversation => {
     conversation.proactiveMessagesSent = 0;
-  }
+  });
   console.log('[ProactiveMessaging] Reset daily message counters');
 }
 

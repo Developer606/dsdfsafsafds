@@ -184,10 +184,37 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         return res.status(400).json({ error: "Character ID is required" });
       }
       
+      console.log(`Received request to test proactive message from character ${characterId} to user ${req.user!.id}`);
+      
+      // Ensure the character exists before attempting to send a message
+      let character;
+      if (characterId.startsWith('custom_')) {
+        const customId = parseInt(characterId.replace('custom_', ''));
+        character = await storage.getCustomCharacterById(customId);
+      } else {
+        character = await storage.getPredefinedCharacterById(characterId);
+      }
+      
+      if (!character) {
+        return res.status(404).json({ error: "Character not found" });
+      }
+      
+      // Make sure we have a conversation with this character first
+      // This will ensure we track all the needed conversation parameters properly
+      trackConversation(req.user!.id, characterId, true, character);
+      
+      // Perform the actual test
       const result = await testProactiveMessage(req.user!.id, characterId);
       
       if (result) {
-        res.json({ success: true, message: "Proactive message test initiated successfully" });
+        res.json({ 
+          success: true, 
+          message: "Proactive message test initiated successfully",
+          character: {
+            id: character.id,
+            name: character.name
+          }
+        });
       } else {
         res.status(500).json({ error: "Failed to send proactive message" });
       }
