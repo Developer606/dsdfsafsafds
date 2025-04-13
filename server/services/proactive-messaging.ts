@@ -308,6 +308,12 @@ async function shouldSendProactiveMessage(conversation: ConversationState): Prom
   const now = Date.now();
   const config = personalityConfigs[conversation.characterPersonality] || personalityConfigs.balanced;
   
+  // Double-check if the chat session is active (user is on the chat page)
+  if (!isChatSessionActive(conversation.userId, conversation.characterId)) {
+    console.log(`[ProactiveMessaging] Skipping message for ${conversation.userId}:${conversation.characterId} - chat session not active`);
+    return false;
+  }
+  
   // Check if enough time has passed since the last user message
   const timeSinceLastUserMessage = now - conversation.lastUserMessageTime;
   if (timeSinceLastUserMessage < config.inactivityThreshold) {
@@ -824,25 +830,27 @@ async function scanConversations(): Promise<void> {
     if (!conversation) continue;
     
     try {
-      // Check if user is online (if socket service is available)
-      // Use our memory system to check if user is online and has the chat page active
-      const userIsOnline = isUserOnline(conversation.userId);
+      // First and most important check - is the user actually on the chat page for this character?
       const chatIsActive = isChatSessionActive(conversation.userId, conversation.characterId);
       
-      // Only proceed if chat is active
+      // Log for debugging
       if (!chatIsActive) {
+        console.log(`[ProactiveMessaging] User ${conversation.userId} is not active on chat page with ${conversation.characterId}, skipping`);
         continue;
       }
       
-      // Skip if user has been active recently or shouldn't get a message now
+      // Next, check if the user is online with an active socket connection
+      const userIsOnline = isUserOnline(conversation.userId);
+      
+      if (!userIsOnline) {
+        console.log(`[ProactiveMessaging] User ${conversation.userId} is not online, skipping`);
+        continue;
+      }
+      
+      // Now that we know the user is online and on the chat page, check if we should send a message
+      // based on timing, personality, and other factors
       const shouldSend = await shouldSendProactiveMessage(conversation);
       if (shouldSend) {
-        // If we have the socket service, prioritize online users
-        if (!userIsOnline && Math.random() > 0.3) {
-          // 70% chance to skip offline users (but still allow some messages to offline users)
-          continue;
-        }
-        
         await sendProactiveMessage(conversation);
         proactiveMessagesSent++;
       }

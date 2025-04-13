@@ -215,12 +215,30 @@ export default function Chat() {
   // Track when user enters and leaves the chat page for character memory system
   useEffect(() => {
     if (characterId && user?.id) {
+      console.log(`Opening chat page with character ${characterId}`);
+      
       // Notify the server that the user has opened the chat page
       socketManager.notifyChatPageOpen(characterId);
       
+      // Also handle document visibility changes
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          console.log(`Chat page with ${characterId} is now visible`);
+          socketManager.notifyChatPageOpen(characterId);
+        } else {
+          console.log(`Chat page with ${characterId} is now hidden`);
+          socketManager.notifyChatPageClose(characterId);
+        }
+      };
+      
+      // Add visibility change listeners
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
       // When component unmounts (user leaves the page), notify the server
       return () => {
+        console.log(`Closing chat page with character ${characterId}`);
         socketManager.notifyChatPageClose(characterId);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }
   }, [characterId, user?.id]);
