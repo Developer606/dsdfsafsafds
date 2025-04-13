@@ -14,37 +14,36 @@ interface ProactiveConfig {
 // Character personality types affect how proactive they are
 const personalityConfigs: Record<string, ProactiveConfig> = {
   "outgoing": {
-    inactivityThreshold: 2 * 60 * 1000, // 2 minutes - reduced from 3 minutes
-    messageFrequency: 80, // Increased from 70
-    followUpChance: 75, // Increased from 60
-    maxDailyMessages: 15 // Increased from 10
+    inactivityThreshold: 3 * 60 * 1000, // 3 minutes
+    messageFrequency: 70,
+    followUpChance: 60,
+    maxDailyMessages: 10
   },
   "balanced": {
-    inactivityThreshold: 5 * 60 * 1000, // 5 minutes - reduced from 10 minutes
-    messageFrequency: 60, // Increased from 40
-    followUpChance: 55, // Increased from 40
-    maxDailyMessages: 10 // Increased from 5
+    inactivityThreshold: 10 * 60 * 1000, // 10 minutes
+    messageFrequency: 40,
+    followUpChance: 40,
+    maxDailyMessages: 5
   },
   "reserved": {
-    inactivityThreshold: 10 * 60 * 1000, // 10 minutes - reduced from 20 minutes
-    messageFrequency: 40, // Increased from 20
-    followUpChance: 35, // Increased from 20
-    maxDailyMessages: 6 // Increased from 3
+    inactivityThreshold: 20 * 60 * 1000, // 20 minutes
+    messageFrequency: 20,
+    followUpChance: 20,
+    maxDailyMessages: 3
   }
 };
 
-// For development/testing, use shorter thresholds 
-// These are now even more aggressive for better testing
+// For development/testing, use shorter thresholds
 const USE_DEV_THRESHOLDS = process.env.NODE_ENV !== 'production';
 if (USE_DEV_THRESHOLDS) {
-  personalityConfigs.outgoing.inactivityThreshold = 20 * 1000; // 20 seconds - reduced from 45 seconds
-  personalityConfigs.balanced.inactivityThreshold = 30 * 1000; // 30 seconds - reduced from 1 minute
-  personalityConfigs.reserved.inactivityThreshold = 45 * 1000; // 45 seconds - reduced from 90 seconds
+  personalityConfigs.outgoing.inactivityThreshold = 45 * 1000; // 45 seconds
+  personalityConfigs.balanced.inactivityThreshold = 1 * 60 * 1000; // 1 minute
+  personalityConfigs.reserved.inactivityThreshold = 90 * 1000; // 90 seconds
   
   // Increase message frequency for faster testing
-  personalityConfigs.outgoing.messageFrequency = 90; // Increased from 80
-  personalityConfigs.balanced.messageFrequency = 75; // Increased from 60
-  personalityConfigs.reserved.messageFrequency = 60; // Increased from 40
+  personalityConfigs.outgoing.messageFrequency = 80;
+  personalityConfigs.balanced.messageFrequency = 60;
+  personalityConfigs.reserved.messageFrequency = 40;
 }
 
 // Track active conversations and when the last message was sent
@@ -60,9 +59,6 @@ interface ConversationState {
 
 // Conversation tracking
 const activeConversations = new Map<string, ConversationState>();
-
-// Export activeConversations and getConversationKey for use in character-thinking.ts
-export { activeConversations, getConversationKey };
 
 // Type for message generation prompts
 type ProactivePromptType = 
@@ -240,13 +236,7 @@ async function getDynamicTimingParameters(
     }
     
     // Analyze message timing patterns
-    const messageTimes = messages.map(msg => {
-      if (msg.timestamp instanceof Date) {
-        return msg.timestamp;
-      } else {
-        return new Date(msg.timestamp || Date.now());
-      }
-    });
+    const messageTimes = messages.map(msg => new Date(msg.createdAt ?? Date.now()));
     
     // Count messages by hour
     const messagesByHour = Array(24).fill(0);
@@ -273,13 +263,7 @@ async function getDynamicTimingParameters(
     
     // Get conversation intensity (number of messages in last 24 hours)
     const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-    const recentMessages = messages.filter(msg => {
-      if (msg.timestamp instanceof Date) {
-        return msg.timestamp.getTime() > oneDayAgo;
-      } else {
-        return new Date(msg.timestamp || Date.now()).getTime() > oneDayAgo;
-      }
-    });
+    const recentMessages = messages.filter(msg => new Date(msg.createdAt ?? Date.now()).getTime() > oneDayAgo);
     const conversationIntensity = recentMessages.length;
     
     // Calculate the average length of last few messages to gauge conversation depth
@@ -399,20 +383,8 @@ function selectPrompt(conversation: ConversationState): string {
     // It's been more than 12 hours
     selectedTypes = ['greeting', 'check_in', 'conversation_starter'];
   } else if (conversation.lastUserMessageTime > 0) {
-    // We have previous conversations, strongly prioritize follow-ups for continuity
-    // We want to maintain the conversation thread from previous exchanges
-    if (hoursSinceLastMessage < 6) {
-      // If recent conversation, heavily favor follow-ups to create natural continuity
-      const weightedTypes = [
-        'follow_up', 'follow_up', 'follow_up', 'follow_up', 'follow_up',  // 50% chance for follow-up
-        'share_thought', 'share_thought', 'share_thought',                // 30% chance for share_thought
-        'conversation_starter', 'check_in'                               // 20% chance for other types
-      ];
-      selectedTypes = weightedTypes as ProactivePromptType[];
-    } else {
-      // Some time has passed but still within a day
-      selectedTypes = promptTypes;
-    }
+    // We have previous conversations, can use follow-ups
+    selectedTypes = promptTypes;
   } else {
     // No previous user messages, avoid follow-ups
     selectedTypes = ['greeting', 'conversation_starter', 'share_thought', 'check_in'];
@@ -420,10 +392,6 @@ function selectPrompt(conversation: ConversationState): string {
   
   // Randomly select a prompt type from our filtered list
   const promptType = selectedTypes[Math.floor(Math.random() * selectedTypes.length)];
-
-  // Debug information for examining prompt type selection
-  console.log(`[ProactiveMessaging] Selected prompt type: ${promptType} for conversation ${conversation.characterId} with user ${conversation.userId}`);
-  console.log(`[ProactiveMessaging] Hours since last message: ${hoursSinceLastMessage.toFixed(1)}`);
   
   // Get all prompts of that type and randomly select one
   const prompts = proactivePrompts[promptType];
@@ -438,16 +406,10 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
   traits: Record<string, number>,
   interests: string[],
   activeTimes: number[],
-  responsePatterns: any,
-  emotionalState: string,
-  topics: string[],
-  contextualMemory: string[],
-  conversationStyle: Record<string, number>
+  responsePatterns: any
 }> {
   try {
-    console.log(`[ProactiveMessaging] Analyzing personality for user ${userId} with character ${characterId}`);
-    
-    // Get all user messages from this conversation from messages.db
+    // Get all user messages from this conversation
     const allMessages = await storage.getUserCharacterMessages(userId, characterId);
     
     // Default values if analysis fails
@@ -457,10 +419,7 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         formality: 0.5,
         enthusiasm: 0.5,
         curiosity: 0.5,
-        verbosity: 0.5,
-        consistency: 0.5,
-        openness: 0.5,
-        politeness: 0.5
+        verbosity: 0.5
       },
       interests: [],
       activeTimes: Array(24).fill(0), // Hours of day (0-23)
@@ -468,44 +427,20 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         averageResponseTime: 0,
         averageMessageLength: 0,
         topicsInitiated: [],
-        questionsAsked: 0,
-        responseConsistency: 0.5,
-        messageFrequency: "moderate"
-      },
-      emotionalState: "neutral",
-      topics: [],
-      contextualMemory: [],
-      conversationStyle: {
-        directness: 0.5,
-        humor: 0.5,
-        emotionalExpression: 0.5,
-        engagement: 0.5
+        questionsAsked: 0
       }
     };
     
     // If no messages, return defaults
     if (!allMessages || allMessages.length < 3) {
-      console.log(`[ProactiveMessaging] Not enough messages (${allMessages?.length || 0}) for user ${userId}, using default personality`);
       return defaultAnalysis;
     }
     
-    console.log(`[ProactiveMessaging] Found ${allMessages.length} messages for analysis`);
-    
     // Extract user messages
     const userMessages = allMessages.filter(msg => msg.isUser);
-    const characterMessages = allMessages.filter(msg => !msg.isUser);
     
-    // Message timestamps for timing analysis - handle the field correctly
-    const messageTimes = userMessages.map(msg => {
-      // Check timestamp with proper fallback
-      if (msg.timestamp instanceof Date) {
-        return msg.timestamp;
-      } else if (typeof msg.timestamp === 'string' || typeof msg.timestamp === 'number') {
-        return new Date(msg.timestamp);
-      } else {
-        return new Date();
-      }
-    });
+    // Message timestamps for timing analysis
+    const messageTimes = userMessages.map(msg => new Date(msg.createdAt ?? Date.now()));
     
     // Count active times
     const activeTimes = Array(24).fill(0);
@@ -513,127 +448,58 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
       activeTimes[time.getHours()]++;
     });
     
-    // Enhanced interest and topic extraction
+    // Simple keyword-based interest extraction
     const interestKeywords = [
       'like', 'love', 'enjoy', 'favorite', 'interested in', 'hobby', 'passion',
-      'fan of', 'into', 'follow', 'watch', 'play', 'read', 'listen to',
-      'obsessed with', 'addicted to', 'collect', 'fascinated by', 'study'
+      'fan of', 'into', 'follow', 'watch', 'play', 'read', 'listen to'
     ];
     
-    // Topic extraction related to conversation context
-    const topicIndicators = [
-      'about', 'regarding', 'concerning', 'on the topic of', 'talking about',
-      'discussing', 'think of', 'opinion on', 'thoughts on', 'feel about'
-    ];
-    
-    // Extract potential interests and topics
+    // Extract potential interests from user messages
     const potentialInterests = new Set<string>();
-    const potentialTopics = new Set<string>();
     const combinedText = userMessages.map(msg => msg.content).join(' ').toLowerCase();
     
-    // Track conversation memory for contextual relevance
-    const significantExchanges: string[] = [];
-    
-    // Advanced pattern matching for interests
+    // Simple keyword matching for interests (a more sophisticated NLP approach would be better)
     interestKeywords.forEach(keyword => {
-      const regex = new RegExp(`${keyword}\\s+([\\w\\s]+?)(?:\\.|,|!|\\?|$|\\s\\s)`, 'gi');
+      const regex = new RegExp(`${keyword}\\s+([\\w\\s]+)`, 'gi');
       const matches = combinedText.match(regex);
       if (matches) {
         matches.forEach(match => {
-          const interestPhrase = match.replace(new RegExp(`${keyword}\\s+`, 'i'), '').trim()
-            .replace(/[.,!?]$/, ''); // Remove trailing punctuation
-          if (interestPhrase.length > 2 && interestPhrase.length < 40) {
+          const interestPhrase = match.replace(keyword, '').trim();
+          if (interestPhrase.length > 2 && interestPhrase.length < 30) {
             potentialInterests.add(interestPhrase);
           }
         });
       }
     });
     
-    // Extract topics from conversations
-    topicIndicators.forEach(indicator => {
-      const regex = new RegExp(`${indicator}\\s+([\\w\\s]+?)(?:\\.|,|!|\\?|$|\\s\\s)`, 'gi');
-      const matches = combinedText.match(regex);
-      if (matches) {
-        matches.forEach(match => {
-          const topicPhrase = match.replace(new RegExp(`${indicator}\\s+`, 'i'), '').trim()
-            .replace(/[.,!?]$/, ''); // Remove trailing punctuation
-          if (topicPhrase.length > 2 && topicPhrase.length < 40) {
-            potentialTopics.add(topicPhrase);
-          }
-        });
-      }
-    });
-    
-    // Extract significant exchanges from conversation
-    if (allMessages.length >= 6) {
-      // Get some representative exchanges
-      for (let i = 0; i < allMessages.length - 1; i += 2) {
-        if (i + 1 < allMessages.length) {
-          const userMsg = allMessages[i].isUser ? allMessages[i].content : allMessages[i+1].content;
-          const charMsg = allMessages[i].isUser ? allMessages[i+1].content : allMessages[i].content;
-          
-          // Simplify and truncate messages for memory
-          const simplified = `User: ${userMsg.substring(0, 50)}${userMsg.length > 50 ? '...' : ''}\nCharacter: ${charMsg.substring(0, 50)}${charMsg.length > 50 ? '...' : ''}`;
-          significantExchanges.push(simplified);
-        }
-      }
-    }
-    
     // Calculate average message length for verbosity
     const avgMessageLength = userMessages.reduce((sum, msg) => 
       sum + msg.content.length, 0) / userMessages.length;
     
-    // More sophisticated traits analysis
+    // Calculate traits based on message patterns
     const traits = {
       friendliness: 0.5,
       formality: 0.5,
       enthusiasm: 0.5,
       curiosity: 0.5,
-      verbosity: Math.min(avgMessageLength / 200, 1), // Scale 0-1 based on message length
-      consistency: 0.5,
-      openness: 0.5,
-      politeness: 0.5
+      verbosity: Math.min(avgMessageLength / 200, 1) // Scale 0-1 based on message length
     };
     
-    // Enhanced sentiment analysis
-    const friendlyTerms = ['thanks', 'thank you', 'appreciate', 'happy', 'glad', 'nice', 'good', 'great', 'awesome', 'friend', 'lovely'];
-    const formalTerms = ['would you', 'could you', 'please', 'kindly', 'may I', 'I would like', 'I request', 'if you don\'t mind', 'pardon'];
-    const enthusiasticTerms = ['wow', 'amazing', 'incredible', 'awesome', 'exciting', 'love', 'excellent', '!', '!!', 'omg', 'cool', 'fantastic'];
-    const curiousTerms = ['why', 'how', 'what', 'when', 'who', 'where', '?', 'curious', 'wonder', 'interested', 'tell me more', 'explain'];
-    const openTerms = ['maybe', 'perhaps', 'possibly', 'consider', 'option', 'alternative', 'different view', 'perspective'];
-    const politeTerms = ['please', 'thank you', 'thanks', 'appreciate', 'grateful', 'sorry', 'excuse me'];
+    // Naive sentiment analysis for friendliness/enthusiasm
+    const friendlyTerms = ['thanks', 'thank you', 'appreciate', 'happy', 'glad', 'nice', 'good', 'great', 'awesome'];
+    const formalTerms = ['would you', 'could you', 'please', 'kindly', 'may I', 'I would like', 'I request'];
+    const enthusiasticTerms = ['wow', 'amazing', 'incredible', 'awesome', 'exciting', 'love', 'excellent', '!', '!!'];
+    const curiously = ['why', 'how', 'what', 'when', 'who', 'where', '?', 'curious', 'wonder'];
     
-    // Humor and directness indicators
-    const humorTerms = ['lol', 'haha', 'funny', 'joke', 'lmao', 'rofl', '😂', '🤣', 'hilarious', 'laugh'];
-    const directTerms = ['straight', 'honest', 'directly', 'frankly', 'to be clear', 'simply put', 'bottom line'];
-    
-    // Emotional state indicators
-    const happyTerms = ['happy', 'joy', 'excited', 'glad', 'wonderful', 'delighted', '😊', '😄', 'thrilled'];
-    const sadTerms = ['sad', 'unhappy', 'disappointed', 'upset', 'depressed', 'sorry', '😢', '😞', 'regret'];
-    const angryTerms = ['angry', 'upset', 'annoyed', 'frustrated', 'mad', '😠', 'hate', 'terrible'];
-    const anxiousTerms = ['worried', 'anxious', 'nervous', 'stress', 'concerned', 'fear', 'afraid', 'scary'];
-    
-    // Count occurrences with more sophisticated patterns
+    // Count occurrences
     let friendlyCount = 0;
     let formalCount = 0;
     let enthusiasmCount = 0;
     let curiosityCount = 0;
-    let opennessCount = 0;
-    let politenessCount = 0;
-    let humorCount = 0;
-    let directnessCount = 0;
     
-    // Emotional state tracking
-    let happyCount = 0;
-    let sadCount = 0;
-    let angryCount = 0;
-    let anxiousCount = 0;
-    
-    // Enhanced analysis using both message content and patterns
     userMessages.forEach(msg => {
       const lowerContent = msg.content.toLowerCase();
       
-      // Track trait indicators
       friendlyTerms.forEach(term => {
         if (lowerContent.includes(term)) friendlyCount++;
       });
@@ -646,91 +512,20 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         if (lowerContent.includes(term)) enthusiasmCount++;
       });
       
-      curiousTerms.forEach(term => {
+      curiously.forEach(term => {
         if (lowerContent.includes(term)) curiosityCount++;
-      });
-      
-      openTerms.forEach(term => {
-        if (lowerContent.includes(term)) opennessCount++;
-      });
-      
-      politeTerms.forEach(term => {
-        if (lowerContent.includes(term)) politenessCount++;
-      });
-      
-      // Humor and directness
-      humorTerms.forEach(term => {
-        if (lowerContent.includes(term)) humorCount++;
-      });
-      
-      directTerms.forEach(term => {
-        if (lowerContent.includes(term)) directnessCount++;
-      });
-      
-      // Emotional states
-      happyTerms.forEach(term => {
-        if (lowerContent.includes(term)) happyCount++;
-      });
-      
-      sadTerms.forEach(term => {
-        if (lowerContent.includes(term)) sadCount++;
-      });
-      
-      angryTerms.forEach(term => {
-        if (lowerContent.includes(term)) angryCount++;
-      });
-      
-      anxiousTerms.forEach(term => {
-        if (lowerContent.includes(term)) anxiousCount++;
       });
     });
     
-    // Calculate normalized scores (0-1) with improved weighting
+    // Calculate normalized scores (0-1)
     traits.friendliness = Math.min(friendlyCount / (userMessages.length * 0.5), 1);
     traits.formality = Math.min(formalCount / (userMessages.length * 0.3), 1);
     traits.enthusiasm = Math.min(enthusiasmCount / (userMessages.length * 0.5), 1);
     traits.curiosity = Math.min(curiosityCount / (userMessages.length * 0.5), 1);
-    traits.openness = Math.min(opennessCount / (userMessages.length * 0.3), 1);
-    traits.politeness = Math.min(politenessCount / (userMessages.length * 0.4), 1);
     
-    // Calculate conversation style metrics
-    const conversationStyle = {
-      directness: Math.min(directnessCount / (userMessages.length * 0.3), 1),
-      humor: Math.min(humorCount / (userMessages.length * 0.3), 1),
-      emotionalExpression: Math.min((happyCount + sadCount + angryCount + anxiousCount) / (userMessages.length * 0.8), 1),
-      engagement: Math.min(curiosityCount / (userMessages.length * 0.4), 1)
-    };
-    
-    // Determine primary emotional state
-    const emotionalStates = {
-      happy: happyCount,
-      sad: sadCount,
-      angry: angryCount,
-      anxious: anxiousCount
-    };
-    
-    // Get the dominant emotional state
-    let emotionalState = "neutral";
-    let maxCount = 0;
-    
-    Object.entries(emotionalStates).forEach(([state, count]) => {
-      if (count > maxCount) {
-        maxCount = count;
-        emotionalState = state;
-      }
-    });
-    
-    // If no clear emotional state is detected, leave as neutral
-    if (maxCount < userMessages.length * 0.15) {
-      emotionalState = "neutral";
-    }
-    
-    // Normalize for at least 0.2 value on each trait
+    // Normalize for at least 0.3 value on each trait
     Object.keys(traits).forEach(key => {
-      if (key in traits) {
-        // Type-safe trait access
-        traits[key as keyof typeof traits] = Math.max(0.2, traits[key as keyof typeof traits]);
-      }
+      traits[key] = Math.max(0.3, traits[key]);
     });
     
     // Get the user profile for additional personalization
@@ -738,16 +533,14 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
     
     // Incorporate user profile data if available
     if (user && user.bio) {
-      const userBio = user.bio.toString(); // Convert to string in case it's not already
       // Extract additional interests from bio
       interestKeywords.forEach(keyword => {
-        const regex = new RegExp(`${keyword}\\s+([\\w\\s]+?)(?:\\.|,|!|\\?|$|\\s\\s)`, 'gi');
-        const matches = userBio.toLowerCase().match(regex);
+        const regex = new RegExp(`${keyword}\\s+([\\w\\s]+)`, 'gi');
+        const matches = user.bio.toLowerCase().match(regex);
         if (matches) {
           matches.forEach(match => {
-            const interestPhrase = match.replace(new RegExp(`${keyword}\\s+`, 'i'), '').trim()
-              .replace(/[.,!?]$/, ''); // Remove trailing punctuation
-            if (interestPhrase.length > 2 && interestPhrase.length < 40) {
+            const interestPhrase = match.replace(keyword, '').trim();
+            if (interestPhrase.length > 2 && interestPhrase.length < 30) {
               potentialInterests.add(interestPhrase);
             }
           });
@@ -755,44 +548,20 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
       });
     }
     
-    // Count questions asked and calculate response consistency
+    // Count questions asked
     const questionsAsked = userMessages.filter(msg => msg.content.includes('?')).length;
     
-    // Calculate time consistency for message sending
-    const timeConsistency = messageTimes.length >= 5 ? calculateTimeConsistency(messageTimes) : 0.5;
-    
-    // Determine message frequency pattern
-    let messageFrequency = "moderate";
-    const avgMessagesPerDay = userMessages.length / (Math.max(1, (Date.now() - new Date(messageTimes[0]).getTime()) / (24 * 60 * 60 * 1000)));
-    
-    if (avgMessagesPerDay < 3) {
-      messageFrequency = "infrequent";
-    } else if (avgMessagesPerDay > 10) {
-      messageFrequency = "frequent";
-    }
-    
-    // Create and return the comprehensive user analysis
-    const completeAnalysis = {
+    return {
       traits,
-      interests: Array.from(potentialInterests).slice(0, 8), // Top 8 interests
+      interests: Array.from(potentialInterests).slice(0, 5), // Top 5 interests
       activeTimes,
       responsePatterns: {
-        averageResponseTime: calculateAverageResponseTime(allMessages),
+        averageResponseTime: 0, // Would need paired messages to calculate
         averageMessageLength: avgMessageLength,
-        topicsInitiated: Array.from(potentialTopics).slice(0, 5), // Top 5 for topics
-        questionsAsked,
-        responseConsistency: timeConsistency,
-        messageFrequency
-      },
-      emotionalState,
-      topics: Array.from(potentialTopics).slice(0, 5),
-      contextualMemory: significantExchanges.slice(-5), // Keep last 5 significant exchanges
-      conversationStyle
+        topicsInitiated: Array.from(potentialInterests).slice(0, 3), // Top 3 for topics
+        questionsAsked
+      }
     };
-    
-    console.log(`[ProactiveMessaging] Completed personality analysis for user ${userId}`);
-    return completeAnalysis;
-    
   } catch (error) {
     console.error(`[ProactiveMessaging] Error analyzing user personality:`, error);
     // Return default analysis on error
@@ -802,10 +571,7 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         formality: 0.5,
         enthusiasm: 0.5,
         curiosity: 0.5,
-        verbosity: 0.5,
-        consistency: 0.5,
-        openness: 0.5,
-        politeness: 0.5
+        verbosity: 0.5
       },
       interests: [],
       activeTimes: Array(24).fill(0),
@@ -813,100 +579,15 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         averageResponseTime: 0,
         averageMessageLength: 0,
         topicsInitiated: [],
-        questionsAsked: 0,
-        responseConsistency: 0.5,
-        messageFrequency: "moderate"
-      },
-      emotionalState: "neutral",
-      topics: [],
-      contextualMemory: [],
-      conversationStyle: {
-        directness: 0.5,
-        humor: 0.5,
-        emotionalExpression: 0.5,
-        engagement: 0.5
+        questionsAsked: 0
       }
     };
   }
 }
 
 /**
- * Calculate the consistency of message timing
- */
-function calculateTimeConsistency(messageTimes: Date[]): number {
-  try {
-    if (messageTimes.length < 3) return 0.5;
-    
-    // Calculate time differences between consecutive messages
-    const timeDiffs: number[] = [];
-    for (let i = 1; i < messageTimes.length; i++) {
-      timeDiffs.push(messageTimes[i].getTime() - messageTimes[i-1].getTime());
-    }
-    
-    // Calculate mean time difference
-    const meanTimeDiff = timeDiffs.reduce((sum, diff) => sum + diff, 0) / timeDiffs.length;
-    
-    // Calculate standard deviation
-    const squaredDiffs = timeDiffs.map(diff => Math.pow(diff - meanTimeDiff, 2));
-    const variance = squaredDiffs.reduce((sum, sqDiff) => sum + sqDiff, 0) / timeDiffs.length;
-    const stdDev = Math.sqrt(variance);
-    
-    // Calculate coefficient of variation (lower is more consistent)
-    const cv = stdDev / meanTimeDiff;
-    
-    // Map to 0-1 scale where 1 is very consistent
-    return Math.min(1, Math.max(0, 1 - (cv / 5)));
-  } catch (error) {
-    console.error('[ProactiveMessaging] Error calculating time consistency:', error);
-    return 0.5;
-  }
-}
-
-/**
- * Calculate average response time between messages
- */
-function calculateAverageResponseTime(messages: any[]): number {
-  try {
-    if (messages.length < 4) return 0;
-    
-    let totalResponseTime = 0;
-    let pairCount = 0;
-    
-    // For each user message followed by a character message
-    for (let i = 0; i < messages.length - 1; i++) {
-      if (messages[i].isUser && !messages[i+1].isUser) {
-        const userMsgTime = messages[i].timestamp instanceof Date 
-          ? messages[i].timestamp 
-          : new Date(messages[i].timestamp || Date.now());
-          
-        const responseMsgTime = messages[i+1].timestamp instanceof Date 
-          ? messages[i+1].timestamp 
-          : new Date(messages[i+1].timestamp || Date.now());
-        
-        const timeDiff = responseMsgTime.getTime() - userMsgTime.getTime();
-        
-        // Only include if it's a reasonable time (less than 10 minutes)
-        // to exclude outliers where systems were down or user was offline
-        if (timeDiff > 0 && timeDiff < 10 * 60 * 1000) {
-          totalResponseTime += timeDiff;
-          pairCount++;
-        }
-      }
-    }
-    
-    return pairCount > 0 ? totalResponseTime / pairCount : 0;
-  } catch (error) {
-    console.error('[ProactiveMessaging] Error calculating average response time:', error);
-    return 0;
-  }
-}
-
-/**
  * Generate a personalized prompt based on user's personality analysis and current context
  */
-// Import the character thinking service 
-import { getRecentCharacterThought } from './character-thinking';
-
 async function generatePersonalizedPrompt(
   conversation: ConversationState,
   character: PredefinedCharacter | CustomCharacter,
@@ -917,8 +598,6 @@ async function generatePersonalizedPrompt(
   
   // Get the current hour (in user's local time if available, otherwise server time)
   const currentHour = new Date().getHours();
-  const currentDay = new Date().getDay(); // 0 = Sunday, 6 = Saturday
-  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   
   // Check if this is a peak active time for the user
   const isActiveHour = userAnalysis.activeTimes[currentHour] > 
@@ -936,182 +615,47 @@ async function generatePersonalizedPrompt(
     timeContext = 'night';
   }
   
-  // Build enhanced personalization components
+  // Build personalization components
   let personalizedComponents = [];
   
-  // Add greeting based on time of day and day of week
-  personalizedComponents.push(`It's ${timeContext} on ${dayNames[currentDay]} where the user might be.`);
+  // Add greeting based on time of day
+  personalizedComponents.push(`It's ${timeContext} where the user might be.`);
   
-  // Add trait-based guidance with more nuanced descriptions
+  // Add trait-based guidance
   if (userAnalysis.traits.formality > 0.7) {
-    personalizedComponents.push("The user tends to be formal and proper, so maintain appropriate politeness and structure in your message.");
+    personalizedComponents.push("The user tends to be formal, so maintain appropriate politeness.");
   } else if (userAnalysis.traits.formality < 0.4) {
-    personalizedComponents.push("The user is casual and informal, so adopt a relaxed, friendly conversational style with less formal language.");
+    personalizedComponents.push("The user is casual and informal, so adopt a relaxed conversational style.");
   }
   
   if (userAnalysis.traits.verbosity > 0.7) {
-    personalizedComponents.push("The user enjoys detailed, thorough responses, so provide thoughtful explanations with some depth.");
+    personalizedComponents.push("The user enjoys detailed responses, so provide thoughtful explanations.");
   } else if (userAnalysis.traits.verbosity < 0.4) {
-    personalizedComponents.push("The user prefers concise, to-the-point responses, so keep messages brief and direct.");
+    personalizedComponents.push("The user prefers concise responses, so keep messages brief and to the point.");
   }
   
   if (userAnalysis.traits.enthusiasm > 0.7) {
-    personalizedComponents.push("The user is enthusiastic and expressive, so match their energy level with some enthusiasm in your message.");
+    personalizedComponents.push("The user is enthusiastic, so match their energy level.");
   }
   
   if (userAnalysis.traits.curiosity > 0.7) {
-    personalizedComponents.push("The user is very curious and inquisitive, so include thought-provoking questions that invite exploration.");
-  }
-  
-  // Add personality insights based on conversation style
-  if (userAnalysis.conversationStyle?.humor > 0.6) {
-    personalizedComponents.push("The user appreciates humor and light-heartedness, so a touch of humor would be well-received.");
-  }
-  
-  if (userAnalysis.conversationStyle?.directness > 0.6) {
-    personalizedComponents.push("The user values directness and straightforwardness, so be clear and to the point.");
-  }
-  
-  if (userAnalysis.traits.openness > 0.6) {
-    personalizedComponents.push("The user is open to new ideas and perspectives, so don't hesitate to offer alternative viewpoints.");
-  }
-  
-  if (userAnalysis.traits.politeness > 0.7) {
-    personalizedComponents.push("The user is consistently polite and courteous, so respond with similar courtesy.");
-  }
-  
-  // Add emotional state-based personalization
-  if (userAnalysis.emotionalState && userAnalysis.emotionalState !== "neutral") {
-    const emotionGuidance: Record<string, string> = {
-      happy: "The user appears to be in a positive, upbeat mood recently. Match this positive tone appropriately.",
-      sad: "The user seems to have expressed some sadness or disappointment recently. Respond with appropriate empathy and warmth.",
-      angry: "The user has expressed some frustration or annoyance recently. Acknowledge their feelings respectfully.",
-      anxious: "The user has expressed some concern or worry recently. Respond with reassurance and calm."
-    };
-    
-    const emotionalState = userAnalysis.emotionalState as string;
-    if (emotionalState in emotionGuidance) {
-      personalizedComponents.push(emotionGuidance[emotionalState]);
-    }
+    personalizedComponents.push("The user is very curious, so include thought-provoking questions that invite exploration.");
   }
   
   // Add interest-based personalization
   if (userAnalysis.interests.length > 0) {
-    // Randomly select up to two of their interests to potentially bring up
-    const selectedInterests = [];
-    const interestsCopy = [...userAnalysis.interests];
-    
-    // Get first interest
-    if (interestsCopy.length > 0) {
-      const randomIndex = Math.floor(Math.random() * interestsCopy.length);
-      selectedInterests.push(interestsCopy[randomIndex]);
-      interestsCopy.splice(randomIndex, 1);
-    }
-    
-    // Get second interest (if available)
-    if (interestsCopy.length > 0 && Math.random() > 0.5) {
-      const randomIndex = Math.floor(Math.random() * interestsCopy.length);
-      selectedInterests.push(interestsCopy[randomIndex]);
-    }
-    
-    if (selectedInterests.length === 1) {
-      personalizedComponents.push(`If contextually appropriate, consider referencing the user's interest in ${selectedInterests[0]}.`);
-    } else if (selectedInterests.length === 2) {
-      personalizedComponents.push(`The user has shown interest in both ${selectedInterests[0]} and ${selectedInterests[1]}. You could mention one of these if it fits naturally.`);
-    }
-  }
-  
-  // Add topic-based context from previous conversations
-  if (userAnalysis.topics && userAnalysis.topics.length > 0) {
-    const randomTopic = userAnalysis.topics[Math.floor(Math.random() * userAnalysis.topics.length)];
-    personalizedComponents.push(`The user has previously discussed the topic of ${randomTopic}, which could be relevant.`);
-  }
-  
-  // Add contextual memory if available
-  if (userAnalysis.contextualMemory && userAnalysis.contextualMemory.length > 0) {
-    // Get a random memory for context
-    const randomMemory = userAnalysis.contextualMemory[Math.floor(Math.random() * userAnalysis.contextualMemory.length)];
-    personalizedComponents.push(`Reference this exchange from your previous conversation if relevant:\n${randomMemory}`);
+    // Randomly select one of their interests to potentially bring up
+    const randomInterest = userAnalysis.interests[Math.floor(Math.random() * userAnalysis.interests.length)];
+    personalizedComponents.push(`If contextually appropriate, consider referencing the user's interest in ${randomInterest}.`);
   }
   
   // Consider activity patterns
   if (isActiveHour) {
-    personalizedComponents.push("This is typically an active time for this user, so they're likely to respond soon.");
+    personalizedComponents.push("This is typically an active time for this user, so they may be likely to respond soon.");
   }
   
-  // Add response pattern guidance
-  if (userAnalysis.responsePatterns?.messageFrequency) {
-    const frequencyGuidance: Record<string, string> = {
-      frequent: "The user tends to exchange messages frequently. They may appreciate a prompt response.",
-      moderate: "The user messages at a moderate pace, maintaining steady conversations.",
-      infrequent: "The user tends to message infrequently. A thoughtful message that stands on its own is appropriate."
-    };
-    
-    const frequency = userAnalysis.responsePatterns.messageFrequency as string;
-    if (frequency in frequencyGuidance) {
-      personalizedComponents.push(frequencyGuidance[frequency]);
-    }
-  }
-  
-  // Check if there are any recent character thoughts to incorporate
-  let thoughtGuidance = "";
-  const recentThought = getRecentCharacterThought(character.id.toString(), conversation.userId);
-  
-  if (recentThought) {
-    // Add the character's internal thoughts to guide the response
-    thoughtGuidance = `
-YOUR RECENT THOUGHTS:
-Based on your previous interactions, here's what you were thinking internally (not shared with the user):
-"${recentThought.thought}"
-
-This represents your internal state of mind and how you've been thinking about this user. Use these thoughts to inform your message, but don't directly state that you were thinking this.`;
-
-    // Add specific guidance based on thought type
-    switch(recentThought.type) {
-      case 'observation':
-        thoughtGuidance += "\nYou've made observations about this user that can guide your conversation.";
-        break;
-      case 'feeling':
-        thoughtGuidance += "\nYou have feelings about this user or your relationship that are influencing your message.";
-        break;
-      case 'plan':
-        thoughtGuidance += "\nYou have plans or intentions for what you want to discuss with this user.";
-        break;
-      case 'memory':
-        thoughtGuidance += "\nYou have memories related to this user that are relevant to your conversation.";
-        break;
-    }
-
-    console.log(`[ProactiveMessaging] Including character thought of type '${recentThought.type}' in prompt`);
-  }
-
-  // Build a more comprehensive prompt with all personality insights
-  const enhancedPrompt = `
-${basePrompt}
-
-Incorporate these personalization insights about the user to create a natural, proactive message that feels personal and tailored:
-
-${personalizedComponents.map(comp => `- ${comp}`).join('\n')}
-
-Your message should:
-1. Feel like a natural continuation of your relationship with this user
-2. Stay true to ${character.name}'s unique personality and character traits 
-3. Adapt to the user's communication style as described above
-4. Be engaging enough to invite a response
-5. Sound like something you'd genuinely want to share with or ask this specific user
-${thoughtGuidance}
-
-IMPORTANT CONTEXT:
-- Look at your most recent messages in the chat history and continue that conversation thread naturally
-- Reference specific things you were talking about in your last message
-- Maintain the same tone, personality, and topics from your previous conversation
-- If you were discussing teaching something or making plans, continue that thread
-- Be authentic to your character while maintaining conversational continuity
-
-Aim for an authentic, personalized message that the user will find meaningful and worth responding to.
-  `;
-  
-  return enhancedPrompt;
+  // Combine everything into a personalized prompt
+  return `${basePrompt}\n\nIncorporate these personalization insights about the user:\n- ${personalizedComponents.join('\n- ')}\n\nStay true to ${character.name}'s personality while adapting to the user's communication style.`;
 }
 
 /**
@@ -1120,8 +664,6 @@ Aim for an authentic, personalized message that the user will find meaningful an
 async function sendProactiveMessage(conversation: ConversationState): Promise<void> {
   try {
     const { userId, characterId } = conversation;
-    
-    console.log(`[ProactiveMessaging] Attempting to send proactive message from character ${characterId} to user ${userId}`);
     
     // Get character data
     let character: PredefinedCharacter | CustomCharacter | null = null;
@@ -1193,13 +735,6 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       userProfileData
     );
     
-    if (!aiResponse) {
-      console.error('[ProactiveMessaging] Failed to generate AI response');
-      return;
-    }
-    
-    console.log(`[ProactiveMessaging] Successfully generated AI response: "${aiResponse.substring(0, 100)}${aiResponse.length > 100 ? '...' : ''}"`);
-    
     // Store the message in the database
     const aiMessage = await storage.createMessage({
       userId: userId,
@@ -1210,11 +745,6 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       script: undefined,
     });
     
-    if (!aiMessage) {
-      console.error('[ProactiveMessaging] Failed to store message in database');
-      return;
-    }
-    
     // Update conversation tracking
     conversation.lastMessageTime = Date.now();
     conversation.lastProactiveMessageTime = Date.now();
@@ -1223,21 +753,17 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
     // Emit the message via Socket.IO
     const io = socketService.getIO();
     if (io) {
-      try {
-        // Find the socket for this user
-        io.to(`user_${userId}`).emit('character_message', {
-          message: aiMessage,
-          character: {
-            id: character.id,
-            name: character.name,
-            avatar: character.avatar
-          }
-        });
-        
-        console.log(`[ProactiveMessaging] Successfully sent proactive message from ${character.name} to user ${userId}`);
-      } catch (socketError) {
-        console.error(`[ProactiveMessaging] Socket emission error:`, socketError);
-      }
+      // Find the socket for this user
+      io.to(`user_${userId}`).emit('character_message', {
+        message: aiMessage,
+        character: {
+          id: character.id,
+          name: character.name,
+          avatar: character.avatar
+        }
+      });
+      
+      console.log(`[ProactiveMessaging] Sent personalized proactive message from ${character.name} to user ${userId}`);
     } else {
       console.error('[ProactiveMessaging] Socket.IO not initialized');
     }
@@ -1258,9 +784,7 @@ async function scanConversations(): Promise<void> {
   
   let proactiveMessagesSent = 0;
   
-  // Process each conversation
-  for (let i = 0; i < conversationKeys.length; i++) {
-    const key = conversationKeys[i];
+  for (const key of conversationKeys) {
     const conversation = activeConversations.get(key);
     if (!conversation) continue;
     
@@ -1298,25 +822,23 @@ function cleanupInactiveConversations(): void {
   const now = Date.now();
   const maxInactiveTime = 24 * 60 * 60 * 1000; // 24 hours
   
-  // Use Array.from to convert the entries iterator to an array for compatibility
-  Array.from(activeConversations.entries()).forEach(([key, conversation]) => {
+  for (const [key, conversation] of activeConversations.entries()) {
     const timeSinceLastMessage = now - conversation.lastMessageTime;
     
     if (timeSinceLastMessage > maxInactiveTime) {
       activeConversations.delete(key);
       console.log(`[ProactiveMessaging] Removed inactive conversation: ${key}`);
     }
-  });
+  }
 }
 
 /**
  * Reset daily message counters
  */
 function resetDailyCounters(): void {
-  // Use Array.from to convert the values iterator to an array for compatibility
-  Array.from(activeConversations.values()).forEach(conversation => {
+  for (const conversation of activeConversations.values()) {
     conversation.proactiveMessagesSent = 0;
-  });
+  }
   console.log('[ProactiveMessaging] Reset daily message counters');
 }
 
@@ -1338,11 +860,9 @@ export async function testProactiveMessage(userId: number, characterId: string):
       
       if (characterId.startsWith('custom_')) {
         const customId = parseInt(characterId.replace('custom_', ''));
-        const customChar = await storage.getCustomCharacterById(customId);
-        if (customChar) character = customChar;
+        character = await storage.getCustomCharacterById(customId);
       } else {
-        const predefinedChar = await storage.getPredefinedCharacterById(characterId);
-        if (predefinedChar) character = predefinedChar;
+        character = await storage.getPredefinedCharacterById(characterId);
       }
       
       if (!character) {
@@ -1389,19 +909,6 @@ export async function testProactiveMessage(userId: number, characterId: string):
   }
 }
 
-/**
- * Get all active conversations for monitoring and debugging
- */
-export function getActiveConversations(): Array<{key: string, conversation: ConversationState}> {
-  return Array.from(activeConversations.entries()).map(([key, conversation]) => ({
-    key,
-    conversation
-  }));
-}
-
-/**
- * Initialize the proactive messaging service
- */
 export function initializeProactiveMessaging(): void {
   // Scan for proactive message opportunities every minute
   setInterval(scanConversations, 60 * 1000);

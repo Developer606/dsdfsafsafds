@@ -2,7 +2,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import express from "express";
 import * as libraryDb from "./library-db";
-import { getAllCharacterThoughts, getRecentCharacterThought } from "./services/character-thinking";
 import session from "express-session";
 import passport from "passport";
 import multer from "multer";
@@ -176,50 +175,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Initialize the proactive messaging service
   initializeProactiveMessaging();
   
-  // Endpoint to get active conversations (admin only)
-  app.get("/api/admin/active-conversations", isAdmin, async (req, res) => {
-    try {
-      const { getActiveConversations } = await import("./services/proactive-messaging");
-      const conversations = getActiveConversations();
-      res.json({ conversations });
-    } catch (error) {
-      console.error("Error fetching active conversations:", error);
-      res.status(500).json({ error: "Failed to fetch active conversations" });
-    }
-  });
-  
-  // Endpoint to track a conversation with a character (for proactive messaging)
-  app.post("/api/track-character-conversation", authCheck, async (req, res) => {
-    try {
-      const { characterId } = req.body;
-      
-      if (!characterId) {
-        return res.status(400).json({ error: "Character ID is required" });
-      }
-      
-      // Get the character for tracking
-      let character;
-      if (characterId.startsWith('custom_')) {
-        const customId = parseInt(characterId.replace('custom_', ''));
-        character = await storage.getCustomCharacterById(customId);
-      } else {
-        character = await storage.getPredefinedCharacterById(characterId);
-      }
-      
-      if (!character) {
-        return res.status(404).json({ error: "Character not found" });
-      }
-      
-      // Track the conversation
-      trackConversation(req.user!.id, characterId, true, character);
-      
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error tracking conversation:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-  
   // Test endpoint for proactive messaging (protected by auth)
   app.post("/api/test-proactive-message", authCheck, async (req, res) => {
     try {
@@ -229,91 +184,16 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
         return res.status(400).json({ error: "Character ID is required" });
       }
       
-      console.log(`Received request to test proactive message from character ${characterId} to user ${req.user!.id}`);
-      
-      // Ensure the character exists before attempting to send a message
-      let character;
-      if (characterId.startsWith('custom_')) {
-        const customId = parseInt(characterId.replace('custom_', ''));
-        character = await storage.getCustomCharacterById(customId);
-      } else {
-        character = await storage.getPredefinedCharacterById(characterId);
-      }
-      
-      if (!character) {
-        return res.status(404).json({ error: "Character not found" });
-      }
-      
-      // Get the chat history with this character
-      const messages = await storage.getUserCharacterMessages(req.user!.id, characterId);
-      console.log(`Retrieved ${messages.length} messages from conversation history`);
-      
-      if (messages.length < 2) {
-        return res.status(400).json({ 
-          error: "Not enough conversation history with this character",
-          message: "Send a few messages first to build some conversation context"
-        });
-      }
-      
-      // Check the 2 most recent messages to ensure they're displayed properly in logs
-      const recentMessages = messages.slice(-2);
-      recentMessages.forEach((msg, i) => {
-        console.log(`Recent message ${i+1}: ${msg.isUser ? 'User' : character.name}: ${msg.content.substring(0, 50)}...`);
-      });
-      
-      // Make sure we have a conversation with this character first
-      // This will ensure we track all the needed conversation parameters properly
-      trackConversation(req.user!.id, characterId, true, character);
-      
-      // Perform the actual test
       const result = await testProactiveMessage(req.user!.id, characterId);
       
       if (result) {
-        res.json({ 
-          success: true, 
-          message: "Proactive message test initiated successfully",
-          character: {
-            id: character.id,
-            name: character.name
-          }
-        });
+        res.json({ success: true, message: "Proactive message test initiated successfully" });
       } else {
         res.status(500).json({ error: "Failed to send proactive message" });
       }
     } catch (error) {
       console.error("Error testing proactive message:", error);
       res.status(500).json({ error: "Internal server error" });
-    }
-  });
-  
-  // Character thinking debug endpoints
-  // Get all character thoughts (admin only)
-  app.get("/api/debug/character-thoughts", isAdmin, (req, res) => {
-    try {
-      const { getAllCharacterThoughts } = require('./services/character-thinking');
-      const thoughts = getAllCharacterThoughts();
-      res.json(thoughts);
-    } catch (error) {
-      console.error("Error fetching character thoughts:", error);
-      res.status(500).json({ error: "Failed to fetch character thoughts" });
-    }
-  });
-  
-  // Get thoughts for a specific character about a specific user (admin only)
-  app.get("/api/debug/character-thoughts/:characterId/:userId", isAdmin, (req, res) => {
-    try {
-      const { getRecentCharacterThought } = require('./services/character-thinking');
-      const { characterId, userId } = req.params;
-      const thought = getRecentCharacterThought(characterId, parseInt(userId));
-      
-      if (!thought) {
-        return res.status(404).json({ error: "No thoughts found for this character about this user" });
-      }
-      
-      res.json(thought);
-    } catch (error) {
-      console.error("Error fetching character thought:", error);
-      res.status(500).json({ error: "Failed to fetch character thought" });
     }
   });
 
