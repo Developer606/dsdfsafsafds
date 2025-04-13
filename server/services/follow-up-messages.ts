@@ -224,28 +224,135 @@ export async function scheduleFollowUpMessage(
   // Force lowercase for more accurate matching
   const lowerMessage = message.toLowerCase();
   
-  // Enhanced pre-pattern detection - first check common patterns 
-  // that might be missed by regex but should trigger follow-ups
-  if (
-    lowerMessage.includes("i'll get cooking") || 
-    lowerMessage.includes("i'll cook") ||
-    lowerMessage.includes("let me cook") ||
-    lowerMessage.includes("heads to the kitchen") ||
-    lowerMessage.includes("i'll prepare") ||
-    lowerMessage.includes("i'll make")
-  ) {
-    console.log('[FollowUpMessages] Detected cooking/food preparation directly!');
-    
-    // Create cooking follow-up pattern
-    const cookingPattern = {
-      regex: /cooking|kitchen|prepare|make/i,
-      delay: 15000, // 15 seconds
+  // Enhanced comprehensive direct string pattern detection
+  // This is a much more robust approach that catches many common action phrases
+  const directActionPatterns = [
+    // Food and cooking related
+    { 
+      patterns: [
+        "i'll get cooking", "i'll cook", "let me cook", "heads to the kitchen", "i'll prepare", 
+        "i'll make", "going to cook", "i'm cooking", "start cooking", "prepare", "making food", 
+        "make us some", "get some food", "i'll whip up", "i'll bake", "start preparing", 
+        "prepare a meal", "make us dinner", "make us lunch", "make us breakfast", "prepare something",
+        "goes to cook", "starts cooking", "warming up", "making a dish", "will make you", "will cook you",
+        "will prepare you", "let me fix you", "let me make you", "kitchen to", "go to the kitchen"
+      ],
+      category: "cooking",
+      delay: 15000,
       prompt: "You were cooking or preparing food. You've now finished and have delicious food to share. Describe what you've made and how excited you are to share it."
-    };
+    },
     
-    // Schedule the follow-up
-    scheduleFollowUpWithPattern(userId, characterId, message, characterName, characterAvatar, characterPersonality, cookingPattern);
-    return;
+    // Getting items or fetching something
+    {
+      patterns: [
+        "i'll go get", "i'll get it", "i'll grab", "let me get", "i'll fetch", "i'll find", 
+        "heads to get", "goes to get", "going to find", "let me find", "i'll look for", 
+        "let me see if", "going to search", "i'll retrieve", "let me check if", "bring you", 
+        "fetch you", "get you", "will get you", "will bring you", "i'll bring", "go get"
+      ],
+      category: "fetching",
+      delay: 10000,
+      prompt: "You went to get something. You've now returned with the item. Describe what you brought back and why you're excited to share it."
+    },
+    
+    // General actions
+    {
+      patterns: [
+        "let me go", "i'll go", "heads out", "leaves the room", "goes to", "i'll check", 
+        "i'll be back", "be right back", "brb", "give me a moment", "wait here", 
+        "wait a second", "will return", "i need to", "let me just", "one moment", "one second",
+        "be back in", "going to see", "check on", "look into", "will look at"
+      ],
+      category: "general",
+      delay: 12000,
+      prompt: "You left to do something. You've now returned. Describe what you did and your current mood or state."
+    }
+  ];
+  
+  // Check for direct string matches across all defined patterns
+  for (const patternGroup of directActionPatterns) {
+    for (const pattern of patternGroup.patterns) {
+      if (lowerMessage.includes(pattern)) {
+        console.log(`[FollowUpMessages] Detected direct action pattern: "${pattern}" (category: ${patternGroup.category})`);
+        
+        // Create a custom follow-up pattern
+        const actionPattern = {
+          regex: new RegExp(pattern, 'i'),
+          delay: patternGroup.delay,
+          prompt: patternGroup.prompt
+        };
+        
+        // Schedule the follow-up
+        scheduleFollowUpWithPattern(userId, characterId, message, characterName, characterAvatar, characterPersonality, actionPattern);
+        return;
+      }
+    }
+  }
+  
+  // Advanced AI-based action detection
+  // Look for verbs followed by movement or action indicators
+  const advancedActionPatterns = [
+    // Pattern for character mentioning they're going to do something with action verbs
+    /\b(will|going to|about to|starts? to|begins? to) (make|do|create|prepare|work on|build|clean|organize|find)\b/i,
+    
+    // Pattern for character narrating an action in third person
+    /\b(walks|heads|runs|goes|moves|proceeds|steps) (to|towards|into|out|away|back)\b/i,
+    
+    // Pattern for character setting something aside to do something else
+    /\b(let me|allow me to|going to) (take care of|handle|manage|deal with|work on|address)\b/i
+  ];
+  
+  // Check all advanced patterns
+  for (const pattern of advancedActionPatterns) {
+    if (pattern.test(message)) {
+      console.log(`[FollowUpMessages] Detected advanced action pattern: ${pattern}`);
+      
+      const actionCategory = determineActionCategory(message);
+      let delay = 12000; // Default delay
+      let prompt = "You were doing something. You've now completed that action. Describe what happened and how you feel about it.";
+      
+      // Customize prompt based on detected action type
+      if (actionCategory === 'cooking') {
+        delay = 15000;
+        prompt = "You were preparing something to eat. You've now finished cooking. Describe the delicious food you've prepared and your excitement to share it.";
+      } else if (actionCategory === 'fetching') {
+        delay = 10000;
+        prompt = "You went to get something. You've now returned with it. Describe what you found and your reaction.";
+      } else if (actionCategory === 'searching') {
+        delay = 8000;
+        prompt = "You were looking for something. You've now found what you were searching for. Describe your discovery.";
+      }
+      
+      // Create custom follow-up pattern
+      const actionPattern = {
+        regex: pattern,
+        delay,
+        prompt
+      };
+      
+      // Schedule the follow-up
+      scheduleFollowUpWithPattern(userId, characterId, message, characterName, characterAvatar, characterPersonality, actionPattern);
+      return;
+    }
+  }
+  
+  // Function to determine the category of action in a message
+  function determineActionCategory(text: string): string {
+    const lowerText = text.toLowerCase();
+    
+    if (/cook|food|meal|kitchen|prepare|bake|dinner|lunch|breakfast|dish|recipe|ingredients/i.test(lowerText)) {
+      return 'cooking';
+    }
+    
+    if (/get|bring|fetch|grab|pick up|retrieve|take|carry|deliver/i.test(lowerText)) {
+      return 'fetching';
+    }
+    
+    if (/find|search|look for|seek|hunt|locate|discover/i.test(lowerText)) {
+      return 'searching';
+    }
+    
+    return 'general';
   }
   
   // Check against all regular patterns
