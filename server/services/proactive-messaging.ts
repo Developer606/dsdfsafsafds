@@ -14,36 +14,37 @@ interface ProactiveConfig {
 // Character personality types affect how proactive they are
 const personalityConfigs: Record<string, ProactiveConfig> = {
   "outgoing": {
-    inactivityThreshold: 3 * 60 * 1000, // 3 minutes
-    messageFrequency: 70,
-    followUpChance: 60,
-    maxDailyMessages: 10
+    inactivityThreshold: 2 * 60 * 1000, // 2 minutes - reduced from 3 minutes
+    messageFrequency: 80, // Increased from 70
+    followUpChance: 75, // Increased from 60
+    maxDailyMessages: 15 // Increased from 10
   },
   "balanced": {
-    inactivityThreshold: 10 * 60 * 1000, // 10 minutes
-    messageFrequency: 40,
-    followUpChance: 40,
-    maxDailyMessages: 5
+    inactivityThreshold: 5 * 60 * 1000, // 5 minutes - reduced from 10 minutes
+    messageFrequency: 60, // Increased from 40
+    followUpChance: 55, // Increased from 40
+    maxDailyMessages: 10 // Increased from 5
   },
   "reserved": {
-    inactivityThreshold: 20 * 60 * 1000, // 20 minutes
-    messageFrequency: 20,
-    followUpChance: 20,
-    maxDailyMessages: 3
+    inactivityThreshold: 10 * 60 * 1000, // 10 minutes - reduced from 20 minutes
+    messageFrequency: 40, // Increased from 20
+    followUpChance: 35, // Increased from 20
+    maxDailyMessages: 6 // Increased from 3
   }
 };
 
-// For development/testing, use shorter thresholds
+// For development/testing, use shorter thresholds 
+// These are now even more aggressive for better testing
 const USE_DEV_THRESHOLDS = process.env.NODE_ENV !== 'production';
 if (USE_DEV_THRESHOLDS) {
-  personalityConfigs.outgoing.inactivityThreshold = 45 * 1000; // 45 seconds
-  personalityConfigs.balanced.inactivityThreshold = 1 * 60 * 1000; // 1 minute
-  personalityConfigs.reserved.inactivityThreshold = 90 * 1000; // 90 seconds
+  personalityConfigs.outgoing.inactivityThreshold = 20 * 1000; // 20 seconds - reduced from 45 seconds
+  personalityConfigs.balanced.inactivityThreshold = 30 * 1000; // 30 seconds - reduced from 1 minute
+  personalityConfigs.reserved.inactivityThreshold = 45 * 1000; // 45 seconds - reduced from 90 seconds
   
   // Increase message frequency for faster testing
-  personalityConfigs.outgoing.messageFrequency = 80;
-  personalityConfigs.balanced.messageFrequency = 60;
-  personalityConfigs.reserved.messageFrequency = 40;
+  personalityConfigs.outgoing.messageFrequency = 90; // Increased from 80
+  personalityConfigs.balanced.messageFrequency = 75; // Increased from 60
+  personalityConfigs.reserved.messageFrequency = 60; // Increased from 40
 }
 
 // Track active conversations and when the last message was sent
