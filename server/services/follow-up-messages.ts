@@ -623,7 +623,16 @@ export async function scheduleFollowUpMessage(
     /\b(walks|heads|runs|goes|moves|proceeds|steps) (to|towards|into|out|away|back)\b/i,
     
     // Pattern for character setting something aside to do something else
-    /\b(let me|allow me to|going to) (take care of|handle|manage|deal with|work on|address)\b/i
+    /\b(let me|allow me to|going to) (take care of|handle|manage|deal with|work on|address)\b/i,
+    
+    // Specific pattern for promising to message or contact later/when free
+    /\b(i'?ll|i will) (message|text|call|contact|talk to) you (when|as soon as|the moment|once) (i'?m|i am) (free|available|done|finished|back)\b/i,
+    
+    // Pattern for promises with a timeframe
+    /\b(i'?ll|i will) (get back to|return to|come back to) you (in|within|after) (a|an|some|the) (second|minute|moment|hour|day|while|bit)\b/i,
+    
+    // Pattern for doing something with explicit promise words
+    /\b(promise|vow|swear|guarantee) (to|that i'?ll|that i will) (.+?)\b/i
   ];
   
   // Check all advanced patterns
@@ -645,6 +654,21 @@ export async function scheduleFollowUpMessage(
       } else if (actionCategory === 'searching') {
         delay = 8000;
         prompt = "You were looking for something. You've now found what you were searching for. Describe your discovery.";
+      } else if (actionCategory === 'communication' || actionCategory === 'communication_promise') {
+        delay = 10000;
+        prompt = "You had promised to message or contact the user when you were free. You now have time and are reaching out as promised. Be friendly and ask what they've been up to.";
+      } else if (actionCategory === 'meeting' || actionCategory === 'meeting_promise') {
+        delay = 12000;
+        prompt = "You had promised to meet up with the user or do something together. You are now available and ready to fulfill that promise. Express your excitement about spending time together.";
+      } else if (actionCategory === 'promise') {
+        delay = 11000;
+        prompt = "You made a promise earlier. You've now fulfilled that promise. Explain how you kept your word and ask if there's anything else they need.";
+      } else if (actionCategory === 'cleaning') {
+        delay = 13000;
+        prompt = "You were cleaning or organizing something. You've now finished the task. Describe how much better the space looks and your satisfaction with the results.";
+      } else if (actionCategory === 'availability') {
+        delay = 9000;
+        prompt = "You mentioned you'd be free or available later. You now have free time and are reaching out to continue the conversation. Ask what they'd like to do now that you're available.";
       }
       
       // Create custom follow-up pattern
@@ -660,10 +684,27 @@ export async function scheduleFollowUpMessage(
     }
   }
   
-  // Function to determine the category of action in a message
+  // Enhanced function to determine the category of action in a message
   function determineActionCategory(text: string): string {
     const lowerText = text.toLowerCase();
     
+    // Check for promises and commitments first
+    if (/promise|commit|guarantee|assure|swear|vow|pledge|certainly|definitely|absolutely|surely/i.test(lowerText)) {
+      // Check if the promise involves messaging or communication
+      if (/message|text|call|contact|respond|reply|get back|reach out|talk/i.test(lowerText)) {
+        return 'communication_promise';
+      }
+      
+      // Check if the promise involves meeting or doing something together
+      if (/meet|see you|visit|come over|hang out|spend time|do something|activity|together/i.test(lowerText)) {
+        return 'meeting_promise';
+      }
+      
+      // Return general promise if specific type not determined
+      return 'promise';
+    }
+    
+    // Check for specific action categories
     if (/cook|food|meal|kitchen|prepare|bake|dinner|lunch|breakfast|dish|recipe|ingredients/i.test(lowerText)) {
       return 'cooking';
     }
@@ -674,6 +715,22 @@ export async function scheduleFollowUpMessage(
     
     if (/find|search|look for|seek|hunt|locate|discover/i.test(lowerText)) {
       return 'searching';
+    }
+    
+    if (/message|text|call|email|chat|contact|respond|reply|get back|reach out/i.test(lowerText)) {
+      return 'communication';
+    }
+    
+    if (/meet|see you|visit|come over|hang out|spend time|do something|activity|together/i.test(lowerText)) {
+      return 'meeting';
+    }
+    
+    if (/clean|tidy|organize|wash|dust|vacuum|sweep|mop|scrub|declutter/i.test(lowerText)) {
+      return 'cleaning';
+    }
+    
+    if (/free time|available|when i'm free|moment i'm free|not busy|have time/i.test(lowerText)) {
+      return 'availability';
     }
     
     return 'general';
