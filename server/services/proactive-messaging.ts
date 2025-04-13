@@ -236,7 +236,13 @@ async function getDynamicTimingParameters(
     }
     
     // Analyze message timing patterns
-    const messageTimes = messages.map(msg => new Date(msg.createdAt ?? Date.now()));
+    const messageTimes = messages.map(msg => {
+      if (msg.timestamp instanceof Date) {
+        return msg.timestamp;
+      } else {
+        return new Date(msg.timestamp || Date.now());
+      }
+    });
     
     // Count messages by hour
     const messagesByHour = Array(24).fill(0);
@@ -263,7 +269,13 @@ async function getDynamicTimingParameters(
     
     // Get conversation intensity (number of messages in last 24 hours)
     const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-    const recentMessages = messages.filter(msg => new Date(msg.createdAt ?? Date.now()).getTime() > oneDayAgo);
+    const recentMessages = messages.filter(msg => {
+      if (msg.timestamp instanceof Date) {
+        return msg.timestamp.getTime() > oneDayAgo;
+      } else {
+        return new Date(msg.timestamp || Date.now()).getTime() > oneDayAgo;
+      }
+    });
     const conversationIntensity = recentMessages.length;
     
     // Calculate the average length of last few messages to gauge conversation depth
@@ -695,7 +707,10 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
     
     // Normalize for at least 0.2 value on each trait
     Object.keys(traits).forEach(key => {
-      traits[key] = Math.max(0.2, traits[key]);
+      if (key in traits) {
+        // Type-safe trait access
+        traits[key as keyof typeof traits] = Math.max(0.2, traits[key as keyof typeof traits]);
+      }
     });
     
     // Get the user profile for additional personalization
@@ -703,10 +718,11 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
     
     // Incorporate user profile data if available
     if (user && user.bio) {
+      const userBio = user.bio.toString(); // Convert to string in case it's not already
       // Extract additional interests from bio
       interestKeywords.forEach(keyword => {
         const regex = new RegExp(`${keyword}\\s+([\\w\\s]+?)(?:\\.|,|!|\\?|$|\\s\\s)`, 'gi');
-        const matches = user.bio.toLowerCase().match(regex);
+        const matches = userBio.toLowerCase().match(regex);
         if (matches) {
           matches.forEach(match => {
             const interestPhrase = match.replace(new RegExp(`${keyword}\\s+`, 'i'), '').trim()
@@ -943,15 +959,16 @@ async function generatePersonalizedPrompt(
   
   // Add emotional state-based personalization
   if (userAnalysis.emotionalState && userAnalysis.emotionalState !== "neutral") {
-    const emotionGuidance = {
+    const emotionGuidance: Record<string, string> = {
       happy: "The user appears to be in a positive, upbeat mood recently. Match this positive tone appropriately.",
       sad: "The user seems to have expressed some sadness or disappointment recently. Respond with appropriate empathy and warmth.",
       angry: "The user has expressed some frustration or annoyance recently. Acknowledge their feelings respectfully.",
       anxious: "The user has expressed some concern or worry recently. Respond with reassurance and calm."
     };
     
-    if (emotionGuidance[userAnalysis.emotionalState]) {
-      personalizedComponents.push(emotionGuidance[userAnalysis.emotionalState]);
+    const emotionalState = userAnalysis.emotionalState as string;
+    if (emotionalState in emotionGuidance) {
+      personalizedComponents.push(emotionGuidance[emotionalState]);
     }
   }
   
@@ -1001,14 +1018,15 @@ async function generatePersonalizedPrompt(
   
   // Add response pattern guidance
   if (userAnalysis.responsePatterns?.messageFrequency) {
-    const frequencyGuidance = {
+    const frequencyGuidance: Record<string, string> = {
       frequent: "The user tends to exchange messages frequently. They may appreciate a prompt response.",
       moderate: "The user messages at a moderate pace, maintaining steady conversations.",
       infrequent: "The user tends to message infrequently. A thoughtful message that stands on its own is appropriate."
     };
     
-    if (frequencyGuidance[userAnalysis.responsePatterns.messageFrequency]) {
-      personalizedComponents.push(frequencyGuidance[userAnalysis.responsePatterns.messageFrequency]);
+    const frequency = userAnalysis.responsePatterns.messageFrequency as string;
+    if (frequency in frequencyGuidance) {
+      personalizedComponents.push(frequencyGuidance[frequency]);
     }
   }
   
@@ -1235,9 +1253,11 @@ export async function testProactiveMessage(userId: number, characterId: string):
       
       if (characterId.startsWith('custom_')) {
         const customId = parseInt(characterId.replace('custom_', ''));
-        character = await storage.getCustomCharacterById(customId);
+        const customChar = await storage.getCustomCharacterById(customId);
+        if (customChar) character = customChar;
       } else {
-        character = await storage.getPredefinedCharacterById(characterId);
+        const predefinedChar = await storage.getPredefinedCharacterById(characterId);
+        if (predefinedChar) character = predefinedChar;
       }
       
       if (!character) {
