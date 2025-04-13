@@ -24,79 +24,86 @@ interface ProgressiveDeliveryConfig {
 
 // Default settings for a natural typing experience
 const defaultConfig: ProgressiveDeliveryConfig = {
-  typingSpeed: 300, // characters per minute
-  minDelay: 500, // minimum 500ms between chunks
-  maxDelay: 2000, // maximum 2s between chunks
-  targetChunkSize: 30, // aim for ~30 character chunks
-  chunkSizeVariation: 0.3, // 30% variation in chunk size
+  typingSpeed: 200, // characters per minute - slower for more natural feel
+  minDelay: 600, // minimum 600ms between chunks
+  maxDelay: 1800, // maximum 1.8s between chunks
+  targetChunkSize: 20, // aim for smaller ~20 character chunks
+  chunkSizeVariation: 0.4, // 40% variation in chunk size for more natural delivery
 };
 
 /**
  * Split a message into natural chunks based on sentence structure and punctuation
+ * This implementation creates smaller, more natural chunks similar to human typing patterns
  */
 function splitIntoChunks(message: string, config: ProgressiveDeliveryConfig): string[] {
-  // Regular expression to split on sentence boundaries and preserve delimiters
-  const sentenceBoundaries = /([.!?]\s+|\n+)/g;
+  // First split by natural pauses (periods, question marks, exclamation marks, new lines)
+  const naturalPauses = message.split(/(?<=[.!?]\s+|\n+)/);
   
-  // First split by sentence boundaries
-  const sentences = message.split(sentenceBoundaries).reduce((acc, current, i, arr) => {
-    // Add the current part
-    acc.push(current);
-    // If this is a boundary and not the last item, add it to the sentence before
-    if (i % 2 === 1 && i < arr.length - 1) {
-      acc[acc.length - 2] += current;
-      // Remove the boundary from its own entry
-      acc.pop();
-    }
-    return acc;
-  }, [] as string[]);
-
-  // Filter out empty strings
-  const filteredSentences = sentences.filter(s => s.trim().length > 0);
-  
-  // If sentences are short enough already, return them directly
-  if (filteredSentences.every(s => s.length <= config.targetChunkSize * (1 + config.chunkSizeVariation))) {
-    return filteredSentences;
-  }
-  
-  // If some sentences are too long, split them further based on commas and conjunctions
+  // Result array for final chunks
   const result: string[] = [];
   
-  for (const sentence of filteredSentences) {
-    if (sentence.length <= config.targetChunkSize * (1 + config.chunkSizeVariation)) {
-      // This sentence is already small enough
-      result.push(sentence);
-    } else {
-      // Split further by commas, semicolons, and conjunctions
-      const subParts = sentence.split(/([,;]\s+|(?<=\s)(and|but|or|because|since|although|though|while|if|unless|until)\s+)/g);
+  // Process each natural pause section
+  for (const section of naturalPauses) {
+    // Skip empty sections
+    if (!section.trim()) continue;
+    
+    // If section is already short, add it directly
+    if (section.length <= config.targetChunkSize) {
+      result.push(section);
+      continue;
+    }
+    
+    // For longer sections, split by natural pause points (commas, conjunction words, etc.)
+    const pausePoints = section.split(/(?<=([,;:]\s+|(?<=\s)(and|but|or|because|since|although|though|while|if|unless|until)\s+))/);
+    
+    let currentChunk = '';
+    
+    for (let i = 0; i < pausePoints.length; i++) {
+      const part = pausePoints[i];
+      if (!part.trim()) continue;
       
-      let currentChunk = '';
-      for (let i = 0; i < subParts.length; i++) {
-        const part = subParts[i];
-        if (!part || part.length === 0) continue;
+      // Add some random variation to target size to make it feel more natural
+      const variation = 1 + (Math.random() * 2 - 1) * config.chunkSizeVariation;
+      const currentTargetSize = Math.floor(config.targetChunkSize * variation);
+      
+      // If adding this part would exceed target size and we already have content, 
+      // push current chunk and start new one
+      if (currentChunk && (currentChunk.length + part.length > currentTargetSize)) {
+        result.push(currentChunk);
+        currentChunk = part;
+      }
+      // If this is a very long part with no natural breaks, split by word boundaries
+      else if (!currentChunk && part.length > currentTargetSize * 1.5) {
+        // Split by word boundaries
+        const words = part.split(/\s+/);
+        let wordChunk = '';
         
-        // Calculate target size with some natural variation
-        const variation = 1 + (Math.random() * 2 - 1) * config.chunkSizeVariation;
-        const currentTargetSize = Math.floor(config.targetChunkSize * variation);
+        for (const word of words) {
+          if (wordChunk && (wordChunk.length + word.length + 1 > currentTargetSize)) {
+            result.push(wordChunk);
+            wordChunk = word;
+          } else {
+            wordChunk = wordChunk ? `${wordChunk} ${word}` : word;
+          }
+        }
         
-        if (currentChunk.length + part.length <= currentTargetSize || currentChunk.length === 0) {
-          // Add to current chunk
-          currentChunk += part;
-        } else {
-          // Current chunk is full - push it and start a new one
-          result.push(currentChunk);
-          currentChunk = part;
+        if (wordChunk) {
+          currentChunk = wordChunk;
         }
       }
-      
-      // Add the final chunk if there's anything left
-      if (currentChunk.length > 0) {
-        result.push(currentChunk);
+      // Otherwise just add to current chunk
+      else {
+        currentChunk += part;
       }
+    }
+    
+    // Don't forget to add the last chunk
+    if (currentChunk) {
+      result.push(currentChunk);
     }
   }
   
-  // Final filter to remove any empty chunks
+  // Ensure we don't have any empty chunks
   return result.filter(chunk => chunk.trim().length > 0);
 }
 
@@ -119,6 +126,8 @@ function calculateDelay(chunkLength: number, config: ProgressiveDeliveryConfig):
 
 /**
  * Progressively deliver a character message through socket.io
+ * This mimics realistic human typing patterns with clear typing indicators
+ * between message chunks to match the reference image
  */
 export async function deliverProgressiveMessage(
   userId: number,
@@ -146,8 +155,11 @@ export async function deliverProgressiveMessage(
   }
   
   try {
-    // Start typing indicator
+    // Initial typing indicator before any text appears
     io.to(`user_${userId}`).emit('typing_indicator', { isTyping: true });
+    
+    // Add some initial typing delay before first message chunk
+    await new Promise(resolve => setTimeout(resolve, 800));
     
     // Send each message chunk with a delay
     for (let i = 0; i < chunks.length; i++) {
@@ -156,9 +168,11 @@ export async function deliverProgressiveMessage(
       // Accumulate the message
       accumulatedMessage += chunk;
       
-      // Wait for a natural delay
-      const delay = calculateDelay(chunk.length, config);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      // Hide typing indicator just before showing the new chunk
+      io.to(`user_${userId}`).emit('typing_indicator', { isTyping: false });
+      
+      // Short pause before showing the new text
+      await new Promise(resolve => setTimeout(resolve, 150));
       
       // Create a partial message object
       const partialMessage = {
@@ -182,15 +196,24 @@ export async function deliverProgressiveMessage(
         isProgressiveUpdate: true
       });
       
-      // If this is not the last chunk, we need to show typing again
+      // If this is not the last chunk, show typing indicator again with a pause
       if (i < chunks.length - 1) {
-        // Small pause before typing indicator returns
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Calculate delay based on the next chunk's length
+        const nextChunk = chunks[i + 1];
+        const typingDelay = calculateDelay(nextChunk.length, config);
+        
+        // Short pause after message appears before typing indicator returns
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        // Show typing indicator for the next chunk
         io.to(`user_${userId}`).emit('typing_indicator', { isTyping: true });
+        
+        // Simulate typing the next chunk
+        await new Promise(resolve => setTimeout(resolve, typingDelay));
       }
     }
     
-    // Stop typing indicator after full message is delivered
+    // Ensure typing indicator is off after full message is delivered
     io.to(`user_${userId}`).emit('typing_indicator', { isTyping: false });
     
   } catch (error) {

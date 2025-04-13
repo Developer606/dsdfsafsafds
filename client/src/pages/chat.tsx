@@ -253,38 +253,51 @@ export default function Chat() {
       
       // Update the query data to reflect the progressive message update
       if (data.message && data.message.characterId === characterId) {
+        // Trigger message update animation
         queryClient.setQueryData<Message[]>(
           [`/api/messages/${characterId}`],
           (oldMessages = []) => {
-            // Update the existing message if it exists
+            // Check if this message already exists in our list
             const messageExists = oldMessages.some(msg => msg.id === data.message.id);
             
             if (messageExists) {
-              // Replace the message with the updated version
+              // Replace the existing message with the updated version
               return oldMessages.map(msg => 
                 msg.id === data.message.id ? data.message : msg
               );
             } else {
-              // Add the new message
+              // This is a new message, add it to the list
               return [...oldMessages, data.message];
             }
           }
         );
         
-        // Auto-scroll to show the updated content
-        setTimeout(scrollToBottom, 50);
+        // Auto-scroll to show the updated content - slight delay for smoother experience
+        setTimeout(scrollToBottom, 30);
       }
     };
     
-    // Set up listener for progressive character messages
+    // Listen for typing indicator events
+    const handleTypingIndicator = (data: any) => {
+      console.log("Typing indicator:", data.isTyping);
+      setIsTyping(data.isTyping);
+    };
+    
+    // Set up listeners for progressive message updates and typing indicators
     const removeCharacterMessageListener = socketManager.addEventListener(
       'character_message', 
       handleCharacterMessage
     );
     
-    // Clean up listener when component unmounts
+    const removeTypingIndicatorListener = socketManager.addEventListener(
+      'typing_indicator',
+      handleTypingIndicator
+    );
+    
+    // Clean up listeners when component unmounts
     return () => {
       removeCharacterMessageListener();
+      removeTypingIndicatorListener();
     };
   }, [characterId, queryClient]);
 

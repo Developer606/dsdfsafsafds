@@ -3,7 +3,8 @@ import { type Character } from "@shared/characters";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Check } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
 
 interface ChatMessageProps {
   message: Message;
@@ -13,9 +14,29 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, character, chatStyle = "whatsapp" }: ChatMessageProps) {
   const isUser = message.isUser;
+  const [prevContent, setPrevContent] = useState(message.content);
+  const [shouldAnimate, setShouldAnimate] = useState(false);
   
   // Check if message is a partial progressive update
   const isPartialMessage = !isUser && 'isPartial' in message && message.isPartial === true;
+  
+  // Track content changes to animate updates
+  useEffect(() => {
+    if (message.content !== prevContent) {
+      // Only animate if this is not the first time we're seeing this message
+      if (prevContent) {
+        setShouldAnimate(true);
+        
+        // Reset animation flag after animation completes
+        const timer = setTimeout(() => {
+          setShouldAnimate(false);
+        }, 300);
+        
+        return () => clearTimeout(timer);
+      }
+      setPrevContent(message.content);
+    }
+  }, [message.content, prevContent]);
 
   if (chatStyle === "chatgpt") {
     return (
