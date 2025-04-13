@@ -406,10 +406,16 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
   traits: Record<string, number>,
   interests: string[],
   activeTimes: number[],
-  responsePatterns: any
+  responsePatterns: any,
+  emotionalState: string,
+  topics: string[],
+  contextualMemory: string[],
+  conversationStyle: Record<string, number>
 }> {
   try {
-    // Get all user messages from this conversation
+    console.log(`[ProactiveMessaging] Analyzing personality for user ${userId} with character ${characterId}`);
+    
+    // Get all user messages from this conversation from messages.db
     const allMessages = await storage.getUserCharacterMessages(userId, characterId);
     
     // Default values if analysis fails
@@ -419,7 +425,10 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         formality: 0.5,
         enthusiasm: 0.5,
         curiosity: 0.5,
-        verbosity: 0.5
+        verbosity: 0.5,
+        consistency: 0.5,
+        openness: 0.5,
+        politeness: 0.5
       },
       interests: [],
       activeTimes: Array(24).fill(0), // Hours of day (0-23)
@@ -427,20 +436,44 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         averageResponseTime: 0,
         averageMessageLength: 0,
         topicsInitiated: [],
-        questionsAsked: 0
+        questionsAsked: 0,
+        responseConsistency: 0.5,
+        messageFrequency: "moderate"
+      },
+      emotionalState: "neutral",
+      topics: [],
+      contextualMemory: [],
+      conversationStyle: {
+        directness: 0.5,
+        humor: 0.5,
+        emotionalExpression: 0.5,
+        engagement: 0.5
       }
     };
     
     // If no messages, return defaults
     if (!allMessages || allMessages.length < 3) {
+      console.log(`[ProactiveMessaging] Not enough messages (${allMessages?.length || 0}) for user ${userId}, using default personality`);
       return defaultAnalysis;
     }
     
+    console.log(`[ProactiveMessaging] Found ${allMessages.length} messages for analysis`);
+    
     // Extract user messages
     const userMessages = allMessages.filter(msg => msg.isUser);
+    const characterMessages = allMessages.filter(msg => !msg.isUser);
     
-    // Message timestamps for timing analysis
-    const messageTimes = userMessages.map(msg => new Date(msg.createdAt ?? Date.now()));
+    // Message timestamps for timing analysis - handle the field correctly
+    const messageTimes = userMessages.map(msg => {
+      // Check timestamp with proper fallback
+      if (msg.timestamp instanceof Date) {
+        return msg.timestamp;
+      } else if (typeof msg.timestamp === 'string' || typeof msg.timestamp === 'number') {
+        return new Date(msg.timestamp);
+      } else {
+        return new Date();
+      }
+    });
     
     // Count active times
     const activeTimes = Array(24).fill(0);
@@ -448,58 +481,127 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
       activeTimes[time.getHours()]++;
     });
     
-    // Simple keyword-based interest extraction
+    // Enhanced interest and topic extraction
     const interestKeywords = [
       'like', 'love', 'enjoy', 'favorite', 'interested in', 'hobby', 'passion',
-      'fan of', 'into', 'follow', 'watch', 'play', 'read', 'listen to'
+      'fan of', 'into', 'follow', 'watch', 'play', 'read', 'listen to',
+      'obsessed with', 'addicted to', 'collect', 'fascinated by', 'study'
     ];
     
-    // Extract potential interests from user messages
+    // Topic extraction related to conversation context
+    const topicIndicators = [
+      'about', 'regarding', 'concerning', 'on the topic of', 'talking about',
+      'discussing', 'think of', 'opinion on', 'thoughts on', 'feel about'
+    ];
+    
+    // Extract potential interests and topics
     const potentialInterests = new Set<string>();
+    const potentialTopics = new Set<string>();
     const combinedText = userMessages.map(msg => msg.content).join(' ').toLowerCase();
     
-    // Simple keyword matching for interests (a more sophisticated NLP approach would be better)
+    // Track conversation memory for contextual relevance
+    const significantExchanges: string[] = [];
+    
+    // Advanced pattern matching for interests
     interestKeywords.forEach(keyword => {
-      const regex = new RegExp(`${keyword}\\s+([\\w\\s]+)`, 'gi');
+      const regex = new RegExp(`${keyword}\\s+([\\w\\s]+?)(?:\\.|,|!|\\?|$|\\s\\s)`, 'gi');
       const matches = combinedText.match(regex);
       if (matches) {
         matches.forEach(match => {
-          const interestPhrase = match.replace(keyword, '').trim();
-          if (interestPhrase.length > 2 && interestPhrase.length < 30) {
+          const interestPhrase = match.replace(new RegExp(`${keyword}\\s+`, 'i'), '').trim()
+            .replace(/[.,!?]$/, ''); // Remove trailing punctuation
+          if (interestPhrase.length > 2 && interestPhrase.length < 40) {
             potentialInterests.add(interestPhrase);
           }
         });
       }
     });
     
+    // Extract topics from conversations
+    topicIndicators.forEach(indicator => {
+      const regex = new RegExp(`${indicator}\\s+([\\w\\s]+?)(?:\\.|,|!|\\?|$|\\s\\s)`, 'gi');
+      const matches = combinedText.match(regex);
+      if (matches) {
+        matches.forEach(match => {
+          const topicPhrase = match.replace(new RegExp(`${indicator}\\s+`, 'i'), '').trim()
+            .replace(/[.,!?]$/, ''); // Remove trailing punctuation
+          if (topicPhrase.length > 2 && topicPhrase.length < 40) {
+            potentialTopics.add(topicPhrase);
+          }
+        });
+      }
+    });
+    
+    // Extract significant exchanges from conversation
+    if (allMessages.length >= 6) {
+      // Get some representative exchanges
+      for (let i = 0; i < allMessages.length - 1; i += 2) {
+        if (i + 1 < allMessages.length) {
+          const userMsg = allMessages[i].isUser ? allMessages[i].content : allMessages[i+1].content;
+          const charMsg = allMessages[i].isUser ? allMessages[i+1].content : allMessages[i].content;
+          
+          // Simplify and truncate messages for memory
+          const simplified = `User: ${userMsg.substring(0, 50)}${userMsg.length > 50 ? '...' : ''}\nCharacter: ${charMsg.substring(0, 50)}${charMsg.length > 50 ? '...' : ''}`;
+          significantExchanges.push(simplified);
+        }
+      }
+    }
+    
     // Calculate average message length for verbosity
     const avgMessageLength = userMessages.reduce((sum, msg) => 
       sum + msg.content.length, 0) / userMessages.length;
     
-    // Calculate traits based on message patterns
+    // More sophisticated traits analysis
     const traits = {
       friendliness: 0.5,
       formality: 0.5,
       enthusiasm: 0.5,
       curiosity: 0.5,
-      verbosity: Math.min(avgMessageLength / 200, 1) // Scale 0-1 based on message length
+      verbosity: Math.min(avgMessageLength / 200, 1), // Scale 0-1 based on message length
+      consistency: 0.5,
+      openness: 0.5,
+      politeness: 0.5
     };
     
-    // Naive sentiment analysis for friendliness/enthusiasm
-    const friendlyTerms = ['thanks', 'thank you', 'appreciate', 'happy', 'glad', 'nice', 'good', 'great', 'awesome'];
-    const formalTerms = ['would you', 'could you', 'please', 'kindly', 'may I', 'I would like', 'I request'];
-    const enthusiasticTerms = ['wow', 'amazing', 'incredible', 'awesome', 'exciting', 'love', 'excellent', '!', '!!'];
-    const curiously = ['why', 'how', 'what', 'when', 'who', 'where', '?', 'curious', 'wonder'];
+    // Enhanced sentiment analysis
+    const friendlyTerms = ['thanks', 'thank you', 'appreciate', 'happy', 'glad', 'nice', 'good', 'great', 'awesome', 'friend', 'lovely'];
+    const formalTerms = ['would you', 'could you', 'please', 'kindly', 'may I', 'I would like', 'I request', 'if you don\'t mind', 'pardon'];
+    const enthusiasticTerms = ['wow', 'amazing', 'incredible', 'awesome', 'exciting', 'love', 'excellent', '!', '!!', 'omg', 'cool', 'fantastic'];
+    const curiousTerms = ['why', 'how', 'what', 'when', 'who', 'where', '?', 'curious', 'wonder', 'interested', 'tell me more', 'explain'];
+    const openTerms = ['maybe', 'perhaps', 'possibly', 'consider', 'option', 'alternative', 'different view', 'perspective'];
+    const politeTerms = ['please', 'thank you', 'thanks', 'appreciate', 'grateful', 'sorry', 'excuse me'];
     
-    // Count occurrences
+    // Humor and directness indicators
+    const humorTerms = ['lol', 'haha', 'funny', 'joke', 'lmao', 'rofl', '😂', '🤣', 'hilarious', 'laugh'];
+    const directTerms = ['straight', 'honest', 'directly', 'frankly', 'to be clear', 'simply put', 'bottom line'];
+    
+    // Emotional state indicators
+    const happyTerms = ['happy', 'joy', 'excited', 'glad', 'wonderful', 'delighted', '😊', '😄', 'thrilled'];
+    const sadTerms = ['sad', 'unhappy', 'disappointed', 'upset', 'depressed', 'sorry', '😢', '😞', 'regret'];
+    const angryTerms = ['angry', 'upset', 'annoyed', 'frustrated', 'mad', '😠', 'hate', 'terrible'];
+    const anxiousTerms = ['worried', 'anxious', 'nervous', 'stress', 'concerned', 'fear', 'afraid', 'scary'];
+    
+    // Count occurrences with more sophisticated patterns
     let friendlyCount = 0;
     let formalCount = 0;
     let enthusiasmCount = 0;
     let curiosityCount = 0;
+    let opennessCount = 0;
+    let politenessCount = 0;
+    let humorCount = 0;
+    let directnessCount = 0;
     
+    // Emotional state tracking
+    let happyCount = 0;
+    let sadCount = 0;
+    let angryCount = 0;
+    let anxiousCount = 0;
+    
+    // Enhanced analysis using both message content and patterns
     userMessages.forEach(msg => {
       const lowerContent = msg.content.toLowerCase();
       
+      // Track trait indicators
       friendlyTerms.forEach(term => {
         if (lowerContent.includes(term)) friendlyCount++;
       });
@@ -512,20 +614,88 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         if (lowerContent.includes(term)) enthusiasmCount++;
       });
       
-      curiously.forEach(term => {
+      curiousTerms.forEach(term => {
         if (lowerContent.includes(term)) curiosityCount++;
+      });
+      
+      openTerms.forEach(term => {
+        if (lowerContent.includes(term)) opennessCount++;
+      });
+      
+      politeTerms.forEach(term => {
+        if (lowerContent.includes(term)) politenessCount++;
+      });
+      
+      // Humor and directness
+      humorTerms.forEach(term => {
+        if (lowerContent.includes(term)) humorCount++;
+      });
+      
+      directTerms.forEach(term => {
+        if (lowerContent.includes(term)) directnessCount++;
+      });
+      
+      // Emotional states
+      happyTerms.forEach(term => {
+        if (lowerContent.includes(term)) happyCount++;
+      });
+      
+      sadTerms.forEach(term => {
+        if (lowerContent.includes(term)) sadCount++;
+      });
+      
+      angryTerms.forEach(term => {
+        if (lowerContent.includes(term)) angryCount++;
+      });
+      
+      anxiousTerms.forEach(term => {
+        if (lowerContent.includes(term)) anxiousCount++;
       });
     });
     
-    // Calculate normalized scores (0-1)
+    // Calculate normalized scores (0-1) with improved weighting
     traits.friendliness = Math.min(friendlyCount / (userMessages.length * 0.5), 1);
     traits.formality = Math.min(formalCount / (userMessages.length * 0.3), 1);
     traits.enthusiasm = Math.min(enthusiasmCount / (userMessages.length * 0.5), 1);
     traits.curiosity = Math.min(curiosityCount / (userMessages.length * 0.5), 1);
+    traits.openness = Math.min(opennessCount / (userMessages.length * 0.3), 1);
+    traits.politeness = Math.min(politenessCount / (userMessages.length * 0.4), 1);
     
-    // Normalize for at least 0.3 value on each trait
+    // Calculate conversation style metrics
+    const conversationStyle = {
+      directness: Math.min(directnessCount / (userMessages.length * 0.3), 1),
+      humor: Math.min(humorCount / (userMessages.length * 0.3), 1),
+      emotionalExpression: Math.min((happyCount + sadCount + angryCount + anxiousCount) / (userMessages.length * 0.8), 1),
+      engagement: Math.min(curiosityCount / (userMessages.length * 0.4), 1)
+    };
+    
+    // Determine primary emotional state
+    const emotionalStates = {
+      happy: happyCount,
+      sad: sadCount,
+      angry: angryCount,
+      anxious: anxiousCount
+    };
+    
+    // Get the dominant emotional state
+    let emotionalState = "neutral";
+    let maxCount = 0;
+    
+    Object.entries(emotionalStates).forEach(([state, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        emotionalState = state;
+      }
+    });
+    
+    // If no clear emotional state is detected, leave as neutral
+    if (maxCount < userMessages.length * 0.15) {
+      emotionalState = "neutral";
+    }
+    
+    // Normalize for at least 0.2 value on each trait
     Object.keys(traits).forEach(key => {
-      traits[key] = Math.max(0.3, traits[key]);
+      traits[key] = Math.max(0.2, traits[key]);
     });
     
     // Get the user profile for additional personalization
@@ -535,12 +705,13 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
     if (user && user.bio) {
       // Extract additional interests from bio
       interestKeywords.forEach(keyword => {
-        const regex = new RegExp(`${keyword}\\s+([\\w\\s]+)`, 'gi');
+        const regex = new RegExp(`${keyword}\\s+([\\w\\s]+?)(?:\\.|,|!|\\?|$|\\s\\s)`, 'gi');
         const matches = user.bio.toLowerCase().match(regex);
         if (matches) {
           matches.forEach(match => {
-            const interestPhrase = match.replace(keyword, '').trim();
-            if (interestPhrase.length > 2 && interestPhrase.length < 30) {
+            const interestPhrase = match.replace(new RegExp(`${keyword}\\s+`, 'i'), '').trim()
+              .replace(/[.,!?]$/, ''); // Remove trailing punctuation
+            if (interestPhrase.length > 2 && interestPhrase.length < 40) {
               potentialInterests.add(interestPhrase);
             }
           });
@@ -548,20 +719,44 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
       });
     }
     
-    // Count questions asked
+    // Count questions asked and calculate response consistency
     const questionsAsked = userMessages.filter(msg => msg.content.includes('?')).length;
     
-    return {
+    // Calculate time consistency for message sending
+    const timeConsistency = messageTimes.length >= 5 ? calculateTimeConsistency(messageTimes) : 0.5;
+    
+    // Determine message frequency pattern
+    let messageFrequency = "moderate";
+    const avgMessagesPerDay = userMessages.length / (Math.max(1, (Date.now() - new Date(messageTimes[0]).getTime()) / (24 * 60 * 60 * 1000)));
+    
+    if (avgMessagesPerDay < 3) {
+      messageFrequency = "infrequent";
+    } else if (avgMessagesPerDay > 10) {
+      messageFrequency = "frequent";
+    }
+    
+    // Create and return the comprehensive user analysis
+    const completeAnalysis = {
       traits,
-      interests: Array.from(potentialInterests).slice(0, 5), // Top 5 interests
+      interests: Array.from(potentialInterests).slice(0, 8), // Top 8 interests
       activeTimes,
       responsePatterns: {
-        averageResponseTime: 0, // Would need paired messages to calculate
+        averageResponseTime: calculateAverageResponseTime(allMessages),
         averageMessageLength: avgMessageLength,
-        topicsInitiated: Array.from(potentialInterests).slice(0, 3), // Top 3 for topics
-        questionsAsked
-      }
+        topicsInitiated: Array.from(potentialTopics).slice(0, 5), // Top 5 for topics
+        questionsAsked,
+        responseConsistency: timeConsistency,
+        messageFrequency
+      },
+      emotionalState,
+      topics: Array.from(potentialTopics).slice(0, 5),
+      contextualMemory: significantExchanges.slice(-5), // Keep last 5 significant exchanges
+      conversationStyle
     };
+    
+    console.log(`[ProactiveMessaging] Completed personality analysis for user ${userId}`);
+    return completeAnalysis;
+    
   } catch (error) {
     console.error(`[ProactiveMessaging] Error analyzing user personality:`, error);
     // Return default analysis on error
@@ -571,7 +766,10 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         formality: 0.5,
         enthusiasm: 0.5,
         curiosity: 0.5,
-        verbosity: 0.5
+        verbosity: 0.5,
+        consistency: 0.5,
+        openness: 0.5,
+        politeness: 0.5
       },
       interests: [],
       activeTimes: Array(24).fill(0),
@@ -579,9 +777,91 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
         averageResponseTime: 0,
         averageMessageLength: 0,
         topicsInitiated: [],
-        questionsAsked: 0
+        questionsAsked: 0,
+        responseConsistency: 0.5,
+        messageFrequency: "moderate"
+      },
+      emotionalState: "neutral",
+      topics: [],
+      contextualMemory: [],
+      conversationStyle: {
+        directness: 0.5,
+        humor: 0.5,
+        emotionalExpression: 0.5,
+        engagement: 0.5
       }
     };
+  }
+}
+
+/**
+ * Calculate the consistency of message timing
+ */
+function calculateTimeConsistency(messageTimes: Date[]): number {
+  try {
+    if (messageTimes.length < 3) return 0.5;
+    
+    // Calculate time differences between consecutive messages
+    const timeDiffs: number[] = [];
+    for (let i = 1; i < messageTimes.length; i++) {
+      timeDiffs.push(messageTimes[i].getTime() - messageTimes[i-1].getTime());
+    }
+    
+    // Calculate mean time difference
+    const meanTimeDiff = timeDiffs.reduce((sum, diff) => sum + diff, 0) / timeDiffs.length;
+    
+    // Calculate standard deviation
+    const squaredDiffs = timeDiffs.map(diff => Math.pow(diff - meanTimeDiff, 2));
+    const variance = squaredDiffs.reduce((sum, sqDiff) => sum + sqDiff, 0) / timeDiffs.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Calculate coefficient of variation (lower is more consistent)
+    const cv = stdDev / meanTimeDiff;
+    
+    // Map to 0-1 scale where 1 is very consistent
+    return Math.min(1, Math.max(0, 1 - (cv / 5)));
+  } catch (error) {
+    console.error('[ProactiveMessaging] Error calculating time consistency:', error);
+    return 0.5;
+  }
+}
+
+/**
+ * Calculate average response time between messages
+ */
+function calculateAverageResponseTime(messages: any[]): number {
+  try {
+    if (messages.length < 4) return 0;
+    
+    let totalResponseTime = 0;
+    let pairCount = 0;
+    
+    // For each user message followed by a character message
+    for (let i = 0; i < messages.length - 1; i++) {
+      if (messages[i].isUser && !messages[i+1].isUser) {
+        const userMsgTime = messages[i].timestamp instanceof Date 
+          ? messages[i].timestamp 
+          : new Date(messages[i].timestamp || Date.now());
+          
+        const responseMsgTime = messages[i+1].timestamp instanceof Date 
+          ? messages[i+1].timestamp 
+          : new Date(messages[i+1].timestamp || Date.now());
+        
+        const timeDiff = responseMsgTime.getTime() - userMsgTime.getTime();
+        
+        // Only include if it's a reasonable time (less than 10 minutes)
+        // to exclude outliers where systems were down or user was offline
+        if (timeDiff > 0 && timeDiff < 10 * 60 * 1000) {
+          totalResponseTime += timeDiff;
+          pairCount++;
+        }
+      }
+    }
+    
+    return pairCount > 0 ? totalResponseTime / pairCount : 0;
+  } catch (error) {
+    console.error('[ProactiveMessaging] Error calculating average response time:', error);
+    return 0;
   }
 }
 
@@ -598,6 +878,8 @@ async function generatePersonalizedPrompt(
   
   // Get the current hour (in user's local time if available, otherwise server time)
   const currentHour = new Date().getHours();
+  const currentDay = new Date().getDay(); // 0 = Sunday, 6 = Saturday
+  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   
   // Check if this is a peak active time for the user
   const isActiveHour = userAnalysis.activeTimes[currentHour] > 
@@ -615,47 +897,140 @@ async function generatePersonalizedPrompt(
     timeContext = 'night';
   }
   
-  // Build personalization components
+  // Build enhanced personalization components
   let personalizedComponents = [];
   
-  // Add greeting based on time of day
-  personalizedComponents.push(`It's ${timeContext} where the user might be.`);
+  // Add greeting based on time of day and day of week
+  personalizedComponents.push(`It's ${timeContext} on ${dayNames[currentDay]} where the user might be.`);
   
-  // Add trait-based guidance
+  // Add trait-based guidance with more nuanced descriptions
   if (userAnalysis.traits.formality > 0.7) {
-    personalizedComponents.push("The user tends to be formal, so maintain appropriate politeness.");
+    personalizedComponents.push("The user tends to be formal and proper, so maintain appropriate politeness and structure in your message.");
   } else if (userAnalysis.traits.formality < 0.4) {
-    personalizedComponents.push("The user is casual and informal, so adopt a relaxed conversational style.");
+    personalizedComponents.push("The user is casual and informal, so adopt a relaxed, friendly conversational style with less formal language.");
   }
   
   if (userAnalysis.traits.verbosity > 0.7) {
-    personalizedComponents.push("The user enjoys detailed responses, so provide thoughtful explanations.");
+    personalizedComponents.push("The user enjoys detailed, thorough responses, so provide thoughtful explanations with some depth.");
   } else if (userAnalysis.traits.verbosity < 0.4) {
-    personalizedComponents.push("The user prefers concise responses, so keep messages brief and to the point.");
+    personalizedComponents.push("The user prefers concise, to-the-point responses, so keep messages brief and direct.");
   }
   
   if (userAnalysis.traits.enthusiasm > 0.7) {
-    personalizedComponents.push("The user is enthusiastic, so match their energy level.");
+    personalizedComponents.push("The user is enthusiastic and expressive, so match their energy level with some enthusiasm in your message.");
   }
   
   if (userAnalysis.traits.curiosity > 0.7) {
-    personalizedComponents.push("The user is very curious, so include thought-provoking questions that invite exploration.");
+    personalizedComponents.push("The user is very curious and inquisitive, so include thought-provoking questions that invite exploration.");
+  }
+  
+  // Add personality insights based on conversation style
+  if (userAnalysis.conversationStyle?.humor > 0.6) {
+    personalizedComponents.push("The user appreciates humor and light-heartedness, so a touch of humor would be well-received.");
+  }
+  
+  if (userAnalysis.conversationStyle?.directness > 0.6) {
+    personalizedComponents.push("The user values directness and straightforwardness, so be clear and to the point.");
+  }
+  
+  if (userAnalysis.traits.openness > 0.6) {
+    personalizedComponents.push("The user is open to new ideas and perspectives, so don't hesitate to offer alternative viewpoints.");
+  }
+  
+  if (userAnalysis.traits.politeness > 0.7) {
+    personalizedComponents.push("The user is consistently polite and courteous, so respond with similar courtesy.");
+  }
+  
+  // Add emotional state-based personalization
+  if (userAnalysis.emotionalState && userAnalysis.emotionalState !== "neutral") {
+    const emotionGuidance = {
+      happy: "The user appears to be in a positive, upbeat mood recently. Match this positive tone appropriately.",
+      sad: "The user seems to have expressed some sadness or disappointment recently. Respond with appropriate empathy and warmth.",
+      angry: "The user has expressed some frustration or annoyance recently. Acknowledge their feelings respectfully.",
+      anxious: "The user has expressed some concern or worry recently. Respond with reassurance and calm."
+    };
+    
+    if (emotionGuidance[userAnalysis.emotionalState]) {
+      personalizedComponents.push(emotionGuidance[userAnalysis.emotionalState]);
+    }
   }
   
   // Add interest-based personalization
   if (userAnalysis.interests.length > 0) {
-    // Randomly select one of their interests to potentially bring up
-    const randomInterest = userAnalysis.interests[Math.floor(Math.random() * userAnalysis.interests.length)];
-    personalizedComponents.push(`If contextually appropriate, consider referencing the user's interest in ${randomInterest}.`);
+    // Randomly select up to two of their interests to potentially bring up
+    const selectedInterests = [];
+    const interestsCopy = [...userAnalysis.interests];
+    
+    // Get first interest
+    if (interestsCopy.length > 0) {
+      const randomIndex = Math.floor(Math.random() * interestsCopy.length);
+      selectedInterests.push(interestsCopy[randomIndex]);
+      interestsCopy.splice(randomIndex, 1);
+    }
+    
+    // Get second interest (if available)
+    if (interestsCopy.length > 0 && Math.random() > 0.5) {
+      const randomIndex = Math.floor(Math.random() * interestsCopy.length);
+      selectedInterests.push(interestsCopy[randomIndex]);
+    }
+    
+    if (selectedInterests.length === 1) {
+      personalizedComponents.push(`If contextually appropriate, consider referencing the user's interest in ${selectedInterests[0]}.`);
+    } else if (selectedInterests.length === 2) {
+      personalizedComponents.push(`The user has shown interest in both ${selectedInterests[0]} and ${selectedInterests[1]}. You could mention one of these if it fits naturally.`);
+    }
+  }
+  
+  // Add topic-based context from previous conversations
+  if (userAnalysis.topics && userAnalysis.topics.length > 0) {
+    const randomTopic = userAnalysis.topics[Math.floor(Math.random() * userAnalysis.topics.length)];
+    personalizedComponents.push(`The user has previously discussed the topic of ${randomTopic}, which could be relevant.`);
+  }
+  
+  // Add contextual memory if available
+  if (userAnalysis.contextualMemory && userAnalysis.contextualMemory.length > 0) {
+    // Get a random memory for context
+    const randomMemory = userAnalysis.contextualMemory[Math.floor(Math.random() * userAnalysis.contextualMemory.length)];
+    personalizedComponents.push(`Reference this exchange from your previous conversation if relevant:\n${randomMemory}`);
   }
   
   // Consider activity patterns
   if (isActiveHour) {
-    personalizedComponents.push("This is typically an active time for this user, so they may be likely to respond soon.");
+    personalizedComponents.push("This is typically an active time for this user, so they're likely to respond soon.");
   }
   
-  // Combine everything into a personalized prompt
-  return `${basePrompt}\n\nIncorporate these personalization insights about the user:\n- ${personalizedComponents.join('\n- ')}\n\nStay true to ${character.name}'s personality while adapting to the user's communication style.`;
+  // Add response pattern guidance
+  if (userAnalysis.responsePatterns?.messageFrequency) {
+    const frequencyGuidance = {
+      frequent: "The user tends to exchange messages frequently. They may appreciate a prompt response.",
+      moderate: "The user messages at a moderate pace, maintaining steady conversations.",
+      infrequent: "The user tends to message infrequently. A thoughtful message that stands on its own is appropriate."
+    };
+    
+    if (frequencyGuidance[userAnalysis.responsePatterns.messageFrequency]) {
+      personalizedComponents.push(frequencyGuidance[userAnalysis.responsePatterns.messageFrequency]);
+    }
+  }
+  
+  // Build a more comprehensive prompt with all personality insights
+  const enhancedPrompt = `
+${basePrompt}
+
+Incorporate these personalization insights about the user to create a natural, proactive message that feels personal and tailored:
+
+${personalizedComponents.map(comp => `- ${comp}`).join('\n')}
+
+Your message should:
+1. Feel like a natural continuation of your relationship with this user
+2. Stay true to ${character.name}'s unique personality and character traits 
+3. Adapt to the user's communication style as described above
+4. Be engaging enough to invite a response
+5. Sound like something you'd genuinely want to share with or ask this specific user
+
+Aim for an authentic, personalized message that the user will find meaningful and worth responding to.
+  `;
+  
+  return enhancedPrompt;
 }
 
 /**
