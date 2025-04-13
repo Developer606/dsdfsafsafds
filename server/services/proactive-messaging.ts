@@ -161,19 +161,13 @@ export function trackConversation(
     // Create new conversation tracking
     const personality = determineCharacterPersonality(character);
     
-    // For non-user messages (initialization from database), we need special handling
-    // to ensure characters can send proactive messages soon
-    // Set the timestamps to different values to allow for proactive messaging
-    const lastUserTime = isUserMessage ? now : now - (120 * 1000); // 2 minutes ago if not a user message
-    const lastProactiveTime = now - (300 * 1000); // 5 minutes ago
-    
     activeConversations.set(conversationKey, {
       userId,
       characterId,
       lastMessageTime: now,
-      lastUserMessageTime: lastUserTime,
+      lastUserMessageTime: isUserMessage ? now : 0,
       proactiveMessagesSent: 0,
-      lastProactiveMessageTime: lastProactiveTime,
+      lastProactiveMessageTime: 0,
       characterPersonality: personality
     });
     
@@ -305,55 +299,20 @@ async function shouldSendProactiveMessage(conversation: ConversationState): Prom
   const now = Date.now();
   const config = personalityConfigs[conversation.characterPersonality] || personalityConfigs.balanced;
   
-  // Log detailed timing information for debugging
-  console.log(`[ProactiveMessaging] Checking conversation ${conversation.userId}-${conversation.characterId}:`);
-  console.log(`- Time since last user message: ${Math.floor((now - conversation.lastUserMessageTime)/1000)}s (threshold: ${Math.floor(config.inactivityThreshold/1000)}s)`);
-  console.log(`- Time since last proactive message: ${Math.floor((now - conversation.lastProactiveMessageTime)/1000)}s`);
-  console.log(`- Proactive messages sent today: ${conversation.proactiveMessagesSent}/${config.maxDailyMessages}`);
-  
-  // For testing purposes, reduce the inactivity threshold dramatically
-  const testingThreshold = USE_DEV_THRESHOLDS ? 5 * 1000 : config.inactivityThreshold; // Only 5 seconds in dev mode
-  
   // Check if enough time has passed since the last user message
   const timeSinceLastUserMessage = now - conversation.lastUserMessageTime;
-  
-  // In dev mode, allow proactive messages to be sent more frequently
-  if (USE_DEV_THRESHOLDS) {
-    // For testing, if it's been more than 60 seconds since the user's last message,
-    // or if the user has never sent a message, allow proactive messaging
-    if (timeSinceLastUserMessage < testingThreshold && conversation.lastUserMessageTime > 0) {
-      console.log(`[ProactiveMessaging] Too soon after user's last message`);
-      return false;
-    }
-  } else {
-    // Normal production logic
-    if (timeSinceLastUserMessage < testingThreshold) {
-      console.log(`[ProactiveMessaging] Too soon after user's last message`);
-      return false;
-    }
+  if (timeSinceLastUserMessage < config.inactivityThreshold) {
+    return false;
   }
   
   // Check if enough time has passed since the last proactive message
   const timeSinceLastProactiveMessage = now - conversation.lastProactiveMessageTime;
-  
-  // In dev mode, allow for faster follow-up messages
-  if (USE_DEV_THRESHOLDS) {
-    // For testing, only require 10 seconds between proactive messages
-    if (timeSinceLastProactiveMessage < 10 * 1000) {
-      console.log(`[ProactiveMessaging] Too soon after last proactive message (${Math.floor(timeSinceLastProactiveMessage/1000)}s < 10s)`);
-      return false;
-    }
-  } else {
-    // Normal production logic
-    if (timeSinceLastProactiveMessage < testingThreshold * 1.2) {
-      console.log(`[ProactiveMessaging] Too soon after last proactive message`);
-      return false;
-    }
+  if (timeSinceLastProactiveMessage < config.inactivityThreshold * 1.5) {
+    return false;
   }
   
   // Check if we've exceeded the daily message limit
   if (conversation.proactiveMessagesSent >= config.maxDailyMessages) {
-    console.log(`[ProactiveMessaging] Daily message limit reached`);
     return false;
   }
   
@@ -776,7 +735,7 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       userProfileData
     );
     
-    // Store the message in the database as a proactive, unread message
+    // Store the message in the database
     const aiMessage = await storage.createMessage({
       userId: userId,
       characterId: characterId,
@@ -784,8 +743,6 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       isUser: false,
       language: 'english',
       script: undefined,
-      isProactive: true,
-      isRead: false,
     });
     
     // Update conversation tracking
@@ -825,13 +782,6 @@ async function scanConversations(): Promise<void> {
   
   console.log(`[ProactiveMessaging] Scanning ${conversationKeys.length} active conversations for proactive messaging opportunities`);
   
-  // If no active conversations, try to initialize some from the database
-  if (conversationKeys.length === 0) {
-    await initializeConversationsFromDatabase();
-    // Return early and wait for the next scan cycle
-    return;
-  }
-  
   let proactiveMessagesSent = 0;
   
   for (const key of conversationKeys) {
@@ -862,77 +812,6 @@ async function scanConversations(): Promise<void> {
   
   if (proactiveMessagesSent > 0) {
     console.log(`[ProactiveMessaging] Sent ${proactiveMessagesSent} proactive messages in this scan`);
-  }
-}
-
-/**
- * Initialize conversations from recent message history in the database
- * This ensures we have active conversations to scan even if no users are currently online
- */
-async function initializeConversationsFromDatabase(): Promise<void> {
-  try {
-    console.log(`[ProactiveMessaging] No active conversations found, loading from database...`);
-    
-    // Get recent messages from the database (last 24 hours)
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-    
-    // Get a list of all recent user-character conversations
-    const recentMessages = await storage.getRecentMessages(50); // Get recent messages
-    
-    if (!recentMessages || recentMessages.length === 0) {
-      console.log(`[ProactiveMessaging] No recent messages found in database`);
-      return;
-    }
-    
-    console.log(`[ProactiveMessaging] Found ${recentMessages.length} recent messages`);
-    
-    // Map to store unique user-character pairs
-    const uniquePairs = new Map<string, {userId: number, characterId: string}>();
-    
-    // Extract unique user-character pairs
-    recentMessages.forEach(msg => {
-      const key = `${msg.userId}-${msg.characterId}`;
-      if (!uniquePairs.has(key)) {
-        uniquePairs.set(key, {
-          userId: msg.userId,
-          characterId: msg.characterId
-        });
-      }
-    });
-    
-    console.log(`[ProactiveMessaging] Found ${uniquePairs.size} unique user-character pairs`);
-    
-    // Initialize conversation tracking for each pair
-    for (const {userId, characterId} of uniquePairs.values()) {
-      // Skip if we already have this conversation
-      const key = getConversationKey(userId, characterId);
-      if (activeConversations.has(key)) continue;
-      
-      try {
-        // Get character data
-        let character: PredefinedCharacter | CustomCharacter | null = null;
-        
-        if (characterId.startsWith('custom_')) {
-          const customId = parseInt(characterId.replace('custom_', ''));
-          character = await storage.getCustomCharacterById(customId);
-        } else {
-          character = await storage.getPredefinedCharacterById(characterId);
-        }
-        
-        if (character) {
-          // Track the conversation
-          trackConversation(userId, characterId, false, character);
-          console.log(`[ProactiveMessaging] Initialized conversation tracking for user ${userId} and character ${characterId}`);
-        }
-      } catch (e) {
-        console.error(`[ProactiveMessaging] Error initializing conversation for ${userId}-${characterId}:`, e);
-      }
-    }
-    
-    console.log(`[ProactiveMessaging] Completed conversation initialization from database`);
-  } catch (error) {
-    console.error(`[ProactiveMessaging] Error initializing conversations from database:`, error);
   }
 }
 

@@ -76,8 +76,6 @@ export interface IStorage {
   getCustomCharactersByUser(userId: number): Promise<CustomCharacter[]>;
   getCustomCharacterById(id: number): Promise<CustomCharacter | undefined>;
   deleteCustomCharacter(id: number, userId: number): Promise<void>;
-  getRecentMessages(limit?: number): Promise<Message[]>;
-  getUserCharacterMessages(userId: number, characterId: string): Promise<Message[]>;
   updateUserSubscription(
     userId: number,
     data: {
@@ -826,56 +824,6 @@ export class DatabaseStorage implements IStorage {
       timestamp: new Date(msg.timestamp)
     }));
   }
-  
-  /**
-   * Get all messages between a specific user and character
-   * Used for proactive messaging to analyze conversation history
-   */
-  async getUserCharacterMessages(userId: number, characterId: string): Promise<Message[]> {
-    const rawMessages = await db
-      .select()
-      .from(messages)
-      .where(sql`${messages.userId} = ${userId} AND ${messages.characterId} = ${characterId}`)
-      .orderBy(sql`${messages.timestamp} ASC`);
-    
-    // Add createdAt field for compatibility with proactive messaging
-    return rawMessages.map(msg => ({
-      id: msg.id,
-      userId: msg.userId,
-      characterId: msg.characterId,
-      content: msg.content,
-      isUser: Boolean(msg.isUser),
-      language: msg.language || undefined,
-      script: msg.script,
-      timestamp: new Date(msg.timestamp),
-      createdAt: new Date(msg.timestamp) // Add createdAt alias for timestamp
-    }));
-  }
-  
-  /**
-   * Get recent messages across all users and characters
-   * Used for initializing proactive messaging tracking
-   */
-  async getRecentMessages(limit: number = 100): Promise<Message[]> {
-    const rawMessages = await db
-      .select()
-      .from(messages)
-      .orderBy(sql`${messages.timestamp} DESC`)
-      .limit(limit);
-    
-    // Convert raw messages to Message type with createdAt field
-    return rawMessages.map(msg => ({
-      id: msg.id,
-      userId: msg.userId,
-      characterId: msg.characterId,
-      content: msg.content,
-      isUser: Boolean(msg.isUser),
-      language: msg.language || undefined,
-      script: msg.script,
-      timestamp: new Date(msg.timestamp),
-      createdAt: new Date(msg.timestamp) // Add createdAt alias for timestamp
-    }));
-  }
 
   async createMessage(message: InsertMessage): Promise<Message> {
     const [newMessage] = await db
@@ -899,76 +847,7 @@ export class DatabaseStorage implements IStorage {
       timestamp: new Date(newMessage.timestamp),
       language: newMessage.language || undefined,
       script: newMessage.script,
-      isProactive: Boolean(newMessage.isProactive),
-      isRead: Boolean(newMessage.isRead),
     };
-  }
-  
-  /**
-   * Get all characters for a user with unread proactive messages
-   * @param userId The user ID
-   * @returns Array of characters with unread messages status
-   */
-  async getCharactersWithUnreadMessages(userId: number): Promise<Character[]> {
-    try {
-      // Get all characters with unread proactive messages
-      const unreadMessages = await db
-        .select({
-          characterId: messages.characterId
-        })
-        .from(messages)
-        .where(
-          and(
-            eq(messages.userId, userId),
-            eq(messages.isUser, false),
-            eq(messages.isProactive, true),
-            eq(messages.isRead, false)
-          )
-        )
-        .groupBy(messages.characterId);
-      
-      if (!unreadMessages.length) {
-        return [];
-      }
-      
-      // Create a set of character IDs with unread messages
-      const characterIdsWithUnread = new Set(unreadMessages.map(msg => msg.characterId));
-      
-      // Get all characters
-      const allCharacters = await this.getCharacters();
-      
-      // Add unread status to each character
-      return allCharacters.map(character => ({
-        ...character,
-        hasUnreadMessage: characterIdsWithUnread.has(character.id)
-      }));
-    } catch (error) {
-      console.error("[getCharactersWithUnreadMessages] Error:", error);
-      return [];
-    }
-  }
-  
-  /**
-   * Mark all proactive messages from a character as read
-   * @param userId The user ID
-   * @param characterId The character ID
-   */
-  async markCharacterMessagesAsRead(userId: number, characterId: string): Promise<void> {
-    try {
-      await db
-        .update(messages)
-        .set({ isRead: true })
-        .where(
-          and(
-            eq(messages.userId, userId),
-            eq(messages.characterId, characterId),
-            eq(messages.isProactive, true),
-            eq(messages.isRead, false)
-          )
-        );
-    } catch (error) {
-      console.error("[markCharacterMessagesAsRead] Error:", error);
-    }
   }
 
   async clearChat(characterId: string): Promise<void> {

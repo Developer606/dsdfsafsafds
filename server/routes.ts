@@ -3682,44 +3682,6 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       res.status(500).json({ error: "Failed to delete news" });
     }
   });
-  
-  // Endpoint to test proactive messaging
-  app.post('/api/test-proactive-message', isAdmin, async (req, res) => {
-    try {
-      const { userId, characterId } = req.body;
-      
-      if (!userId || !characterId) {
-        return res.status(400).json({ 
-          success: false, 
-          error: "Missing userId or characterId" 
-        });
-      }
-      
-      // Import the proactive messaging service
-      const { testProactiveMessage } = await import('./services/proactive-messaging');
-      
-      // Attempt to send a test message
-      const success = await testProactiveMessage(userId, characterId);
-      
-      if (success) {
-        res.json({ 
-          success: true, 
-          message: "Test proactive message sent successfully" 
-        });
-      } else {
-        res.status(500).json({ 
-          success: false, 
-          error: "Failed to send test proactive message" 
-        });
-      }
-    } catch (error) {
-      console.error('Error sending test proactive message:', error);
-      res.status(500).json({ 
-        success: false, 
-        error: "Server error" 
-      });
-    }
-  });
 
   return httpServer;
 }
