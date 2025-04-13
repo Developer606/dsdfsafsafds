@@ -3,10 +3,14 @@ import { socketService } from '../socket-io-server';
 import { generateCharacterResponse } from '../openai';
 import { PredefinedCharacter, CustomCharacter, type Message, type User } from '@shared/schema';
 
-// Additional imports for enhanced memory and sentiment analysis
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+// Import character memory system
+import { 
+  getCharacterMemory, 
+  generateMemoryEnhancedPrompt, 
+  suggestConversationTopic,
+  isChatSessionActive,
+  isUserOnline
+} from './character-memory';
 
 // Configuration for different personality types
 interface ProactiveConfig {
@@ -670,6 +674,18 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
   try {
     const { userId, characterId } = conversation;
     
+    // Check if the user is actively on the chat page for this character
+    if (!isChatSessionActive(userId, characterId)) {
+      console.log(`[ProactiveMessaging] User ${userId} is not active on chat page with ${characterId}, skipping proactive message`);
+      return;
+    }
+    
+    // Check if the user has an active socket connection
+    if (!isUserOnline(userId)) {
+      console.log(`[ProactiveMessaging] User ${userId} is not online, skipping proactive message`);
+      return;
+    }
+    
     // Get character data
     let character: PredefinedCharacter | CustomCharacter | null = null;
     
@@ -705,12 +721,26 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       .slice(-10) // Use last 10 messages
       .map(msg => `${msg.isUser ? 'User' : character!.name}: ${msg.content}`)
       .join('\n');
+
+    // Get the character's memory for this user
+    const characterMemory = await getCharacterMemory(userId, characterId);
     
-    // Analyze user's personality from past messages
-    const userAnalysis = await analyzeUserPersonality(userId, characterId);
+    // Suggest a conversation topic based on user interests
+    const suggestedTopic = suggestConversationTopic(characterMemory);
     
-    // Generate a personalized prompt based on user analysis
-    const personalizedPrompt = await generatePersonalizedPrompt(conversation, character, userAnalysis);
+    // Base prompt - select a standard prompt first
+    let basePrompt = selectPrompt(conversation);
+    
+    // If we have a suggested topic from memory, incorporate it into the prompt
+    if (suggestedTopic) {
+      // Add a 70% chance of actually using the suggested topic
+      if (Math.random() < 0.7) {
+        basePrompt += `\n\nThe user seems interested in '${suggestedTopic}'. Consider bringing up this topic in your message if appropriate.`;
+      }
+    }
+    
+    // Enhance the prompt with memory data
+    const personalizedPrompt = generateMemoryEnhancedPrompt(basePrompt, characterMemory, messages);
     
     // Prepare user profile data for personalization, converting null to undefined
     // to match the expected type in the generateCharacterResponse function
@@ -718,7 +748,7 @@ async function sendProactiveMessage(conversation: ConversationState): Promise<vo
       fullName: user.fullName || undefined,
       age: user.age || undefined,
       gender: user.gender || undefined,
-      bio: user.bio || undefined
+      bio: user.bio ? user.bio : undefined
     } : undefined;
     
     console.log(`[ProactiveMessaging] Generating personalized proactive message from ${character.name} to user ${userId}`);
@@ -795,14 +825,20 @@ async function scanConversations(): Promise<void> {
     
     try {
       // Check if user is online (if socket service is available)
-      const io = socketService.getIO();
-      const isUserOnline = io ? io.sockets.adapter.rooms.has(`user_${conversation.userId}`) : false;
+      // Use our memory system to check if user is online and has the chat page active
+      const userIsOnline = isUserOnline(conversation.userId);
+      const chatIsActive = isChatSessionActive(conversation.userId, conversation.characterId);
+      
+      // Only proceed if chat is active
+      if (!chatIsActive) {
+        continue;
+      }
       
       // Skip if user has been active recently or shouldn't get a message now
       const shouldSend = await shouldSendProactiveMessage(conversation);
       if (shouldSend) {
         // If we have the socket service, prioritize online users
-        if (!isUserOnline && Math.random() > 0.3) {
+        if (!userIsOnline && Math.random() > 0.3) {
           // 70% chance to skip offline users (but still allow some messages to offline users)
           continue;
         }
