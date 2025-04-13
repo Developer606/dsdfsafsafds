@@ -3,6 +3,11 @@ import { socketService } from '../socket-io-server';
 import { generateCharacterResponse } from '../openai';
 import { PredefinedCharacter, CustomCharacter, type Message, type User } from '@shared/schema';
 
+// Additional imports for enhanced memory and sentiment analysis
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
 // Configuration for different personality types
 interface ProactiveConfig {
   inactivityThreshold: number;  // Time in ms before initiating a message
