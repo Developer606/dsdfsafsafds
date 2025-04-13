@@ -27,6 +27,11 @@ const followUpPatterns: FollowUpPattern[] = [
     prompt: "You promised to come back with food. You've now returned with the food. Describe the food you've brought and your reaction to seeing the user again."
   },
   {
+    regex: /I think you mean.*?I'll be right back with your food/i,
+    delay: 8000, // 8 seconds
+    prompt: "You corrected the user's English and said you'll be right back with food. You've now returned with the food. Describe what food you've brought and your excitement about sharing it with them."
+  },
+  {
     regex: /I'll go (get|prepare|make|cook) (some|the|a) (.+?) for you/i,
     delay: 10000, // 10 seconds
     prompt: "You said you would get/prepare/make/cook something for the user. You've now returned with it. Describe what you've brought and your excitement to share it with them."
@@ -102,8 +107,14 @@ const followUpPatterns: FollowUpPattern[] = [
  * @returns The matching pattern or null if no match
  */
 function checkForFollowUpPromise(message: string): FollowUpPattern | null {
+  // Debug: Print all pattern tests against this message
+  console.log(`[FollowUpMessages] Testing message against ${followUpPatterns.length} patterns: "${message}"`);
+  
   for (const pattern of followUpPatterns) {
-    if (pattern.regex.test(message)) {
+    const matches = pattern.regex.test(message);
+    console.log(`[FollowUpMessages] Pattern ${pattern.regex} => ${matches ? 'MATCHED' : 'no match'}`);
+    
+    if (matches) {
       return pattern;
     }
   }
@@ -122,11 +133,16 @@ export async function scheduleFollowUpMessage(
   characterPersonality: string
 ): Promise<void> {
   // Check if message contains a promise pattern
+  console.log(`[FollowUpMessages] Checking for promises in message: "${message}"`);
   const followUpPattern = checkForFollowUpPromise(message);
   
   // If no follow-up needed, return
-  if (!followUpPattern) return;
+  if (!followUpPattern) {
+    console.log('[FollowUpMessages] No promise patterns detected in message');
+    return;
+  }
   
+  console.log(`[FollowUpMessages] Detected promise pattern: ${followUpPattern.regex}`);
   console.log(`[FollowUpMessages] Detected promise in character message: "${message}"`);
   console.log(`[FollowUpMessages] Scheduling follow-up in ${followUpPattern.delay}ms`);
   
