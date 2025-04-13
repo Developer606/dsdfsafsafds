@@ -61,6 +61,9 @@ interface ConversationState {
 // Conversation tracking
 const activeConversations = new Map<string, ConversationState>();
 
+// Export activeConversations and getConversationKey for use in character-thinking.ts
+export { activeConversations, getConversationKey };
+
 // Type for message generation prompts
 type ProactivePromptType = 
   | 'greeting'
@@ -901,6 +904,9 @@ function calculateAverageResponseTime(messages: any[]): number {
 /**
  * Generate a personalized prompt based on user's personality analysis and current context
  */
+// Import the character thinking service 
+import { getRecentCharacterThought } from './character-thinking';
+
 async function generatePersonalizedPrompt(
   conversation: ConversationState,
   character: PredefinedCharacter | CustomCharacter,
@@ -1047,6 +1053,38 @@ async function generatePersonalizedPrompt(
     }
   }
   
+  // Check if there are any recent character thoughts to incorporate
+  let thoughtGuidance = "";
+  const recentThought = getRecentCharacterThought(character.id.toString(), conversation.userId);
+  
+  if (recentThought) {
+    // Add the character's internal thoughts to guide the response
+    thoughtGuidance = `
+YOUR RECENT THOUGHTS:
+Based on your previous interactions, here's what you were thinking internally (not shared with the user):
+"${recentThought.thought}"
+
+This represents your internal state of mind and how you've been thinking about this user. Use these thoughts to inform your message, but don't directly state that you were thinking this.`;
+
+    // Add specific guidance based on thought type
+    switch(recentThought.type) {
+      case 'observation':
+        thoughtGuidance += "\nYou've made observations about this user that can guide your conversation.";
+        break;
+      case 'feeling':
+        thoughtGuidance += "\nYou have feelings about this user or your relationship that are influencing your message.";
+        break;
+      case 'plan':
+        thoughtGuidance += "\nYou have plans or intentions for what you want to discuss with this user.";
+        break;
+      case 'memory':
+        thoughtGuidance += "\nYou have memories related to this user that are relevant to your conversation.";
+        break;
+    }
+
+    console.log(`[ProactiveMessaging] Including character thought of type '${recentThought.type}' in prompt`);
+  }
+
   // Build a more comprehensive prompt with all personality insights
   const enhancedPrompt = `
 ${basePrompt}
@@ -1061,6 +1099,7 @@ Your message should:
 3. Adapt to the user's communication style as described above
 4. Be engaging enough to invite a response
 5. Sound like something you'd genuinely want to share with or ask this specific user
+${thoughtGuidance}
 
 IMPORTANT CONTEXT:
 - Look at your most recent messages in the chat history and continue that conversation thread naturally

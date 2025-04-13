@@ -10,6 +10,8 @@ import { setupSocketIOServer } from "./socket-io-server";
 import { initializeNotificationSocketService } from "./notification-socket-service";
 import { initializeFlaggedMessagesDb } from "./content-moderation";
 import { initializeEmailTransporter } from "./email";
+import { initializeProactiveMessaging } from "./services/proactive-messaging";
+import { initializeCharacterThinking } from "./services/character-thinking";
 import path from "path";
 
 const app = express();
@@ -102,6 +104,14 @@ app.use((req, res, next) => {
     // Start the broadcast scheduler
     startScheduler();
     log("Broadcast scheduler started successfully");
+    
+    // Initialize proactive messaging service
+    initializeProactiveMessaging();
+    log("Proactive messaging service initialized successfully");
+    
+    // Initialize character thinking service
+    initializeCharacterThinking();
+    log("Character thinking service initialized successfully");
 
     // Register routes and get the HTTP server
     // Note: The Socket.IO server is now set up inside registerRoutes

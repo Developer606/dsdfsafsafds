@@ -9,9 +9,26 @@
 
 import { storage } from '../storage';
 import { generateCharacterResponse } from '../openai';
-import { PredefinedCharacter, CustomCharacter } from '../character-db';
 import { socketService } from '../socket-io-server';
 import { activeConversations, trackConversation, getConversationKey } from './proactive-messaging';
+
+// Define the character types in a way that matches the structure from character-db
+interface BaseCharacter {
+  id: string | number;
+  name: string;
+  description: string;
+  persona: string;
+  avatar: string;
+}
+
+interface PredefinedCharacter extends BaseCharacter {
+  id: string;
+}
+
+interface CustomCharacter extends BaseCharacter {
+  id: number;
+  userId: number;
+}
 
 // Track character thoughts and internal states
 interface CharacterThought {
