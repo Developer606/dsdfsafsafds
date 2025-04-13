@@ -272,7 +272,7 @@ async function getDynamicTimingParameters(
     
     // Get conversation intensity (number of messages in last 24 hours)
     const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
-    const recentMessages = messages.filter(msg => new Date(msg.createdAt ?? Date.now()).getTime() > oneDayAgo);
+    const recentMessages = messages.filter(msg => msg.timestamp.getTime() > oneDayAgo);
     const conversationIntensity = recentMessages.length;
     
     // Calculate the average length of last few messages to gauge conversation depth
@@ -449,7 +449,7 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
     const userMessages = allMessages.filter(msg => msg.isUser);
     
     // Message timestamps for timing analysis
-    const messageTimes = userMessages.map(msg => new Date(msg.createdAt ?? Date.now()));
+    const messageTimes = userMessages.map(msg => msg.timestamp);
     
     // Count active times
     const activeTimes = Array(24).fill(0);
@@ -486,7 +486,7 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
       sum + msg.content.length, 0) / userMessages.length;
     
     // Calculate traits based on message patterns
-    const traits = {
+    const traits: Record<string, number> = {
       friendliness: 0.5,
       formality: 0.5,
       enthusiasm: 0.5,
@@ -534,18 +534,18 @@ async function analyzeUserPersonality(userId: number, characterId: string): Prom
     
     // Normalize for at least 0.3 value on each trait
     Object.keys(traits).forEach(key => {
-      traits[key] = Math.max(0.3, traits[key]);
+      traits[key as keyof typeof traits] = Math.max(0.3, traits[key as keyof typeof traits]);
     });
     
     // Get the user profile for additional personalization
     const user = await storage.getUserById(userId);
     
     // Incorporate user profile data if available
-    if (user && user.bio) {
+    if (user && user.bio !== null && user.bio !== undefined) {
       // Extract additional interests from bio
       interestKeywords.forEach(keyword => {
         const regex = new RegExp(`${keyword}\\s+([\\w\\s]+)`, 'gi');
-        const matches = user.bio.toLowerCase().match(regex);
+        const matches = user.bio!.toLowerCase().match(regex);
         if (matches) {
           matches.forEach(match => {
             const interestPhrase = match.replace(keyword, '').trim();
@@ -905,9 +905,11 @@ export async function testProactiveMessage(userId: number, characterId: string):
       
       if (characterId.startsWith('custom_')) {
         const customId = parseInt(characterId.replace('custom_', ''));
-        character = await storage.getCustomCharacterById(customId);
+        const customChar = await storage.getCustomCharacterById(customId);
+        if (customChar) character = customChar;
       } else {
-        character = await storage.getPredefinedCharacterById(characterId);
+        const predefinedChar = await storage.getPredefinedCharacterById(characterId);
+        if (predefinedChar) character = predefinedChar;
       }
       
       if (!character) {
