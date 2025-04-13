@@ -164,24 +164,35 @@ export async function scheduleFollowUpMessage(
         return;
       }
       
-      // Generate the follow-up message using the character's personality and the follow-up prompt
-      const prompt = `
-Character: ${characterName}
-Personality: ${characterPersonality || character.persona}
-
-You previously said: "${message}"
-
-${followUpPattern.prompt}
-
-Keep your response natural, in-character, and relatively brief (maximum 2-3 sentences). Include an appropriate emoji if it matches your character's style.
-      `.trim();
+      // Create a character object for the LLM
+      const characterObject = {
+        id: characterId,
+        name: characterName,
+        avatar: characterAvatar,
+        description: `${characterName} is following up on a previous conversation`,
+        persona: characterPersonality || 'friendly and helpful character'
+      };
       
-      // Generate AI response
+      // Create a prompt for the follow-up message
+      const userPrompt = `You previously said: "${message}" ${followUpPattern.prompt}`;
+      
+      // Create chat history context
+      const chatHistory = `Character: ${characterName}
+User: ${user.username || 'User'}
+Character: ${message}`;
+      
+      // Generate AI response using the LLM
       const aiResponse = await generateCharacterResponse(
-        prompt, 
-        { 
-          name: user.username || 'User',
-          profileData: user.profile || {} 
+        characterObject,
+        userPrompt,
+        chatHistory,
+        'english',
+        undefined,
+        {
+          fullName: user.fullName || undefined,
+          age: user.age || undefined,
+          gender: user.gender || undefined,
+          bio: user.bio || undefined
         }
       );
       
