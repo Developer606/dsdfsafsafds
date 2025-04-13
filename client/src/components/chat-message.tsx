@@ -63,9 +63,16 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
               {isUser ? "You" : character.name}
             </p>
             <div className="prose dark:prose-invert max-w-none">
-              <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">
-                {message.content}
-              </p>
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={message.content}
+                  initial={shouldAnimate ? { opacity: 0.6 } : { opacity: 1 }}
+                  animate={{ opacity: 1 }}
+                  className="whitespace-pre-wrap text-gray-800 dark:text-gray-200"
+                >
+                  {message.content}
+                </motion.p>
+              </AnimatePresence>
             </div>
           </div>
           {isUser && (
@@ -113,9 +120,16 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
                 ? "bg-[#0084ff] text-white" 
                 : "bg-[#f0f0f0] dark:bg-slate-700 text-black dark:text-white"
             )}>
-              <p className="text-sm sm:text-base whitespace-pre-wrap break-words">
-                {message.content}
-              </p>
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={message.content}
+                  initial={shouldAnimate ? { opacity: 0.6 } : { opacity: 1 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm sm:text-base whitespace-pre-wrap break-words"
+                >
+                  {message.content}
+                </motion.p>
+              </AnimatePresence>
             </div>
             <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {format(new Date(message.timestamp), "h:mm a")}
@@ -158,9 +172,16 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
               {character.name}
             </p>
           )}
-          <p className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
-            {message.content}
-          </p>
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={message.content}
+              initial={shouldAnimate ? { opacity: 0.6 } : { opacity: 1 }}
+              animate={{ opacity: 1 }}
+              className="text-sm sm:text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words"
+            >
+              {message.content}
+            </motion.p>
+          </AnimatePresence>
           <div className="flex items-center justify-end gap-1 mt-1">
             <span className="text-xs text-gray-500 dark:text-gray-400">
               {format(new Date(message.timestamp), "h:mm a")}
