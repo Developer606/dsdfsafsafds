@@ -1857,7 +1857,28 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           // Track the conversation for the AI response too
           trackConversation(user.id, data.characterId, false, character);
 
+          // Return the messages immediately so the client has the user message
           res.json([message, aiMessage]);
+          
+          // After response is sent, start progressive delivery
+          try {
+            // Import the progressive delivery service
+            const { deliverProgressiveMessage } = await import('./services/progressive-delivery');
+            
+            // Deliver the message in progressive chunks with typing animations
+            deliverProgressiveMessage(
+              user.id,
+              data.characterId,
+              aiResponse,
+              aiMessage.id,
+              character.name,
+              character.avatar
+            ).catch(err => {
+              console.error('Error in progressive message delivery:', err);
+            });
+          } catch (error) {
+            console.error('Failed to initialize progressive message delivery:', error);
+          }
         } catch (error: any) {
           // If AI response fails, still return the user message but with an error
           res.status(207).json({

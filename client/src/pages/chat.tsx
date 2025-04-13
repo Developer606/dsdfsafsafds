@@ -242,6 +242,51 @@ export default function Chat() {
       };
     }
   }, [characterId, user?.id]);
+  
+  // Handle progressive character messages
+  useEffect(() => {
+    if (!characterId) return;
+    
+    // Listen for character_message events to handle progressive message delivery
+    const handleCharacterMessage = (data: any) => {
+      if (!data.isProgressiveUpdate) return;
+      
+      // Update the query data to reflect the progressive message update
+      if (data.message && data.message.characterId === characterId) {
+        queryClient.setQueryData<Message[]>(
+          [`/api/messages/${characterId}`],
+          (oldMessages = []) => {
+            // Update the existing message if it exists
+            const messageExists = oldMessages.some(msg => msg.id === data.message.id);
+            
+            if (messageExists) {
+              // Replace the message with the updated version
+              return oldMessages.map(msg => 
+                msg.id === data.message.id ? data.message : msg
+              );
+            } else {
+              // Add the new message
+              return [...oldMessages, data.message];
+            }
+          }
+        );
+        
+        // Auto-scroll to show the updated content
+        setTimeout(scrollToBottom, 50);
+      }
+    };
+    
+    // Set up listener for progressive character messages
+    const removeCharacterMessageListener = socketManager.addEventListener(
+      'character_message', 
+      handleCharacterMessage
+    );
+    
+    // Clean up listener when component unmounts
+    return () => {
+      removeCharacterMessageListener();
+    };
+  }, [characterId, queryClient]);
 
   const sendMessage = useMutation({
     mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {

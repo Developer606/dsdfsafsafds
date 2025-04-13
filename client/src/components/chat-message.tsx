@@ -13,6 +13,9 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, character, chatStyle = "whatsapp" }: ChatMessageProps) {
   const isUser = message.isUser;
+  
+  // Check if message is a partial progressive update
+  const isPartialMessage = !isUser && 'isPartial' in message && message.isPartial === true;
 
   if (chatStyle === "chatgpt") {
     return (
@@ -101,7 +104,11 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      // For progressive updates, use a faster transition
+      transition={{ 
+        duration: isPartialMessage ? 0.1 : 0.3,
+        type: isPartialMessage ? "tween" : "spring" 
+      }}
       className={cn(
         "px-2 sm:px-4 py-1 sm:py-2",
         isUser ? "ml-auto" : "mr-auto",

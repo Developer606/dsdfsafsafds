@@ -142,6 +142,39 @@ class SocketIOManager {
       }
     });
     
+    // Handle progressive character messages
+    this.socket.on('character_message', (data) => {
+      console.log('Received character message:', data);
+      this.notifyListeners('character_message', data);
+      
+      // If this is not a progressive update, we don't need to do anything special
+      if (!data.isProgressiveUpdate) {
+        return;
+      }
+      
+      // For progressive updates, we want to update the message in place
+      // without triggering a full refetch from the server
+      if (data.message && data.message.characterId) {
+        // Get the existing query data
+        const queryKey = [`/api/messages/${data.message.characterId}`];
+        const existingMessages = queryClient.getQueryData<any[]>(queryKey) || [];
+        
+        // Update the message or add it if it doesn't exist
+        const updatedMessages = existingMessages.map(msg => 
+          msg.id === data.message.id ? data.message : msg
+        );
+        
+        // If the message wasn't found, this was probably the first chunk
+        // so we add it to the list
+        if (!existingMessages.some(msg => msg.id === data.message.id)) {
+          updatedMessages.push(data.message);
+        }
+        
+        // Update the query cache with the new message list
+        queryClient.setQueryData(queryKey, updatedMessages);
+      }
+    });
+    
     // Handle message sent confirmation
     this.socket.on('message_sent', (data) => {
       console.log('Message sent confirmation:', data);
