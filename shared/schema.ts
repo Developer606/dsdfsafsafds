@@ -90,7 +90,6 @@ export const messages = sqliteTable("messages", {
   isUser: integer("is_user", { mode: "boolean" }).notNull(),
   language: text("language").default("english"),
   script: text("script"),
-  metadata: text("metadata"), // JSON field for message chunk metadata
   timestamp: integer("timestamp", { mode: "timestamp_ms" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -184,12 +183,6 @@ export type Message = {
   language?: string;
   script?: string | null;
   timestamp: Date;
-  metadata?: {
-    isMessageChunk?: boolean;
-    chunkIndex?: number;
-    totalChunks?: number;
-    isLastChunk?: boolean;
-  };
 };
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
