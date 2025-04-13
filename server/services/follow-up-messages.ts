@@ -842,7 +842,8 @@ Character: ${message}`;
       // Store the message in the database with required fields
       // Calculate a realistic time difference between the original message and the follow-up
       // Since we don't have timestamp in the message string, use current time as base
-      const originalMessageTime = new Date();
+      // Get the timestamp from the original message or use current time as fallback
+      const originalMessageTime = message.timestamp ? new Date(message.timestamp) : new Date();
       const currentTime = new Date();
       
       // Calculate the actual delay in the conversation
