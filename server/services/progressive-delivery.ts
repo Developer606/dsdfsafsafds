@@ -37,6 +37,12 @@ const defaultConfig: ProgressiveDeliveryConfig = {
  */
 function splitIntoChunks(message: string, config: ProgressiveDeliveryConfig): string[] {
   // First split by natural pauses (periods, question marks, exclamation marks, new lines)
+  // Ensure message is a valid string before splitting
+  if (!message || typeof message !== 'string') {
+    console.error('[ProgressiveDelivery] Invalid message in splitIntoChunks:', message);
+    return ['No message available.'];
+  }
+  
   const naturalPauses = message.split(/(?<=[.!?]\s+|\n+)/);
   
   // Result array for final chunks
@@ -44,8 +50,8 @@ function splitIntoChunks(message: string, config: ProgressiveDeliveryConfig): st
   
   // Process each natural pause section
   for (const section of naturalPauses) {
-    // Skip empty sections
-    if (!section.trim()) continue;
+    // Skip empty or undefined sections
+    if (!section || !section.trim()) continue;
     
     // If section is already short, add it directly
     if (section.length <= config.targetChunkSize) {
@@ -60,7 +66,8 @@ function splitIntoChunks(message: string, config: ProgressiveDeliveryConfig): st
     
     for (let i = 0; i < pausePoints.length; i++) {
       const part = pausePoints[i];
-      if (!part.trim()) continue;
+      // Skip empty parts or undefined parts
+      if (!part || !part.trim()) continue;
       
       // Add some random variation to target size to make it feel more natural
       const variation = 1 + (Math.random() * 2 - 1) * config.chunkSizeVariation;
@@ -140,6 +147,12 @@ export async function deliverProgressiveMessage(
 ): Promise<void> {
   // Merge default config with any custom settings
   const config = { ...defaultConfig, ...customConfig };
+  
+  // Make sure we have a valid message before splitting
+  if (!message || typeof message !== 'string') {
+    console.error('[ProgressiveDelivery] Invalid message received:', message);
+    return;
+  }
   
   // Split message into natural chunks
   const chunks = splitIntoChunks(message, config);

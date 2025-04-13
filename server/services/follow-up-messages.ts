@@ -22,7 +22,7 @@ interface FollowUpPattern {
 const followUpPatterns: FollowUpPattern[] = [
   // Food related follow-ups
   {
-    regex: /I'll be (right )?back with (your|the) food/i,
+    regex: /I'll be (right )?back with (your|the|some) (food|tempura|yakitori|meal|dinner|breakfast|lunch|snack)/i,
     delay: 8000, // 8 seconds
     prompt: "You promised to come back with food. You've now returned with the food. Describe the food you've brought and your reaction to seeing the user again."
   },
