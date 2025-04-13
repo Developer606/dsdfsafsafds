@@ -394,6 +394,34 @@ class SocketIOManager {
   }
   
   /**
+   * Notify the server when a chat page with a character is opened
+   * @param characterId The ID of the character being chatted with
+   */
+  public notifyChatPageOpen(characterId: string): void {
+    if (!this.socket || !this.socket.connected) {
+      this.connect();
+    }
+    
+    this.socket?.emit('chat_page_open', {
+      characterId
+    });
+  }
+  
+  /**
+   * Notify the server when a chat page with a character is closed
+   * @param characterId The ID of the character being chatted with
+   */
+  public notifyChatPageClose(characterId: string): void {
+    if (!this.socket || !this.socket.connected) {
+      this.connect();
+    }
+    
+    this.socket?.emit('chat_page_close', {
+      characterId
+    });
+  }
+  
+  /**
    * Force refresh conversation data
    * @param otherUserId The ID of the other user in the conversation
    * @param force Whether to force a thorough refresh

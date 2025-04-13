@@ -11,6 +11,7 @@ import { type Message, FREE_USER_MESSAGE_LIMIT } from "@shared/schema";
 import { type Character } from "@shared/characters";
 import { type User } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
+import { socketManager } from "@/lib/socket-io-client";
 import { SubscriptionDialog } from "@/components/subscription-dialog";
 import { ArrowLeft } from "lucide-react";
 import {
@@ -210,6 +211,19 @@ export default function Chat() {
       scrollToBottom();
     }
   }, [messages.length]);
+  
+  // Track when user enters and leaves the chat page for character memory system
+  useEffect(() => {
+    if (characterId && user?.id) {
+      // Notify the server that the user has opened the chat page
+      socketManager.notifyChatPageOpen(characterId);
+      
+      // When component unmounts (user leaves the page), notify the server
+      return () => {
+        socketManager.notifyChatPageClose(characterId);
+      };
+    }
+  }, [characterId, user?.id]);
 
   const sendMessage = useMutation({
     mutationFn: async ({ content, language, script }: { content: string; language: string; script?: string }) => {

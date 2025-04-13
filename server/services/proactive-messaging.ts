@@ -245,7 +245,7 @@ async function getDynamicTimingParameters(
     }
     
     // Analyze message timing patterns
-    const messageTimes = messages.map(msg => new Date(msg.createdAt ?? Date.now()));
+    const messageTimes = messages.map(msg => msg.timestamp);
     
     // Count messages by hour
     const messagesByHour = Array(24).fill(0);
