@@ -863,7 +863,9 @@ function cleanupInactiveConversations(): void {
   const now = Date.now();
   const maxInactiveTime = 24 * 60 * 60 * 1000; // 24 hours
   
-  for (const [key, conversation] of activeConversations.entries()) {
+  // Convert to array to work around iteration issues
+  const entries = Array.from(activeConversations.entries());
+  for (const [key, conversation] of entries) {
     const timeSinceLastMessage = now - conversation.lastMessageTime;
     
     if (timeSinceLastMessage > maxInactiveTime) {
@@ -877,7 +879,9 @@ function cleanupInactiveConversations(): void {
  * Reset daily message counters
  */
 function resetDailyCounters(): void {
-  for (const conversation of activeConversations.values()) {
+  // Convert to array to work around iteration issues
+  const conversations = Array.from(activeConversations.values());
+  for (const conversation of conversations) {
     conversation.proactiveMessagesSent = 0;
   }
   console.log('[ProactiveMessaging] Reset daily message counters');
