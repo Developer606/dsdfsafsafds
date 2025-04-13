@@ -224,18 +224,89 @@ export async function scheduleFollowUpMessage(
   // Force lowercase for more accurate matching
   const lowerMessage = message.toLowerCase();
   
-  // Enhanced comprehensive direct string pattern detection
+  // Enhanced comprehensive direct string pattern detection with 1000+ patterns
   // This is a much more robust approach that catches many common action phrases
   const directActionPatterns = [
     // Food and cooking related
     { 
       patterns: [
+        // Basic cooking phrases
         "i'll get cooking", "i'll cook", "let me cook", "heads to the kitchen", "i'll prepare", 
         "i'll make", "going to cook", "i'm cooking", "start cooking", "prepare", "making food", 
         "make us some", "get some food", "i'll whip up", "i'll bake", "start preparing", 
         "prepare a meal", "make us dinner", "make us lunch", "make us breakfast", "prepare something",
         "goes to cook", "starts cooking", "warming up", "making a dish", "will make you", "will cook you",
-        "will prepare you", "let me fix you", "let me make you", "kitchen to", "go to the kitchen"
+        "will prepare you", "let me fix you", "let me make you", "kitchen to", "go to the kitchen",
+        
+        // Expanded cooking phrases
+        "i should cook", "i can cook", "i'll start making", "let me prepare", "let me whip up",
+        "let me fix", "gonna cook", "going to prepare", "going to make", "gonna make", "time to cook",
+        "time to make", "i'm going to whip up", "i'm gonna prepare", "begin cooking", "begin preparing",
+        "start making", "start the preparation", "prep some", "prep the", "prepare the", "make the",
+        "cooking coming up", "i'd be happy to cook", "be happy to make", "glad to cook", "glad to prepare",
+        "let's see what i can cook", "see what i can make", "check what ingredients", "what ingredients i have",
+        "what i can make", "what i can cook", "what i can prepare", "what i can whip up",
+        "let me see what food", "check the kitchen", "see what's in the kitchen", "look in the kitchen",
+        "look in the fridge", "check the fridge", "see what's in the fridge", "raid the fridge",
+        "look for ingredients", "get some ingredients", "gather ingredients", "collect ingredients",
+        "need some ingredients", "need ingredients for", "ingredients for", "recipe for",
+        "i know a recipe", "i know a good recipe", "i have a recipe", "follow a recipe",
+        "make something tasty", "cook something delicious", "prepare something tasty", "whip up something delicious",
+        "cook up a", "whip up a", "prepare a", "fix a", "make a", "baking a", "cooking a", "grilling a",
+        "boiling some", "frying some", "roasting some", "steaming some", "simmering some", "sautéing some",
+        
+        // Cultural and specific food mentions
+        "make some pasta", "cook some pasta", "prepare some pasta", "boil some pasta", "cook pasta",
+        "make some soup", "cook some soup", "prepare some soup", "simmer some soup", "make a soup",
+        "make some rice", "cook some rice", "prepare some rice", "steam some rice", "cook rice",
+        "make a sandwich", "prepare a sandwich", "fix a sandwich", "assemble a sandwich", "make sandwich",
+        "make some noodles", "cook some noodles", "prepare some noodles", "boil some noodles", "cook noodles",
+        "make some curry", "cook some curry", "prepare some curry", "simmer some curry", "make curry",
+        "make some stir-fry", "cook some stir-fry", "prepare some stir-fry", "stir-fry some", "make stir-fry",
+        "make some pizza", "prepare some pizza", "bake some pizza", "make a pizza", "bake a pizza",
+        "make some tacos", "prepare some tacos", "cook some tacos", "assemble some tacos", "make tacos",
+        "make some sushi", "prepare some sushi", "roll some sushi", "make sushi", "prepare sushi",
+        "make some tempura", "prepare some tempura", "fry some tempura", "make tempura", "cook tempura",
+        "make some ramen", "prepare some ramen", "cook some ramen", "boil some ramen", "make ramen",
+        "make some udon", "prepare some udon", "cook some udon", "boil some udon", "make udon",
+        "make some soba", "prepare some soba", "cook some soba", "boil some soba", "make soba",
+        "make some yakitori", "prepare some yakitori", "grill some yakitori", "make yakitori", "cook yakitori",
+        "make some donburi", "prepare some donburi", "cook some donburi", "make donburi", "cook donburi",
+        "make some gyoza", "prepare some gyoza", "steam some gyoza", "fry some gyoza", "make gyoza",
+        "make some takoyaki", "prepare some takoyaki", "cook some takoyaki", "make takoyaki", "cook takoyaki",
+        "make some okonomiyaki", "prepare some okonomiyaki", "cook some okonomiyaki", "make okonomiyaki",
+        "make some snacks", "prepare some snacks", "get some snacks", "fix some snacks", "make snacks",
+        "make some treats", "prepare some treats", "bake some treats", "make treats", "bake treats",
+        "make some dessert", "prepare some dessert", "bake some dessert", "make dessert", "bake dessert",
+        "make some cookies", "bake some cookies", "prepare some cookies", "make cookies", "bake cookies",
+        "make some cake", "bake some cake", "prepare some cake", "make cake", "bake cake",
+        "make some pie", "bake some pie", "prepare some pie", "make pie", "bake pie",
+        
+        // Narration and roleplay actions in kitchen
+        "*goes to the kitchen*", "*heads to the kitchen*", "*walks to the kitchen*", "*runs to the kitchen*",
+        "*enters the kitchen*", "*moves to the kitchen*", "*hurries to the kitchen*", "*skips to the kitchen*",
+        "*sneaks to the kitchen*", "*steps into the kitchen*", "*dashes to the kitchen*", "*proceeds to the kitchen*",
+        "*makes way to kitchen*", "*finds the kitchen*", "*reaches the kitchen*", "*arrives at the kitchen*",
+        "*stands in the kitchen*", "*waits in the kitchen*", "*stays in the kitchen*", "*works in the kitchen*",
+        "*cooks in kitchen*", "*prepares in kitchen*", "*starts cooking*", "*begins cooking*", "*commences cooking*",
+        "*initiates cooking*", "*gets cooking*", "*gets to cooking*", "*gets to work*", "*sets to work*",
+        "*puts on apron*", "*ties apron*", "*wears apron*", "*dons apron*", "*slips on apron*",
+        "*rolls up sleeves*", "*washes hands*", "*checks ingredients*", "*gathers ingredients*",
+        "*opens fridge*", "*searches refrigerator*", "*opens refrigerator*", "*looks inside fridge*",
+        "*searches pantry*", "*opens pantry*", "*checks pantry*", "*looks inside pantry*",
+        "*takes out ingredients*", "*pulls out ingredients*", "*selects ingredients*", "*chooses ingredients*",
+        "*prepares ingredients*", "*chops vegetables*", "*cuts vegetables*", "*slices vegetables*",
+        "*dices vegetables*", "*minces vegetables*", "*peels vegetables*", "*peels fruits*",
+        "*cuts meat*", "*slices meat*", "*trims meat*", "*prepares meat*", "*seasons meat*",
+        "*measures ingredients*", "*weighs ingredients*", "*mixes ingredients*", "*combines ingredients*",
+        "*stirs ingredients*", "*blends ingredients*", "*whisks ingredients*", "*folds ingredients*",
+        "*kneads dough*", "*rolls dough*", "*shapes dough*", "*proofs dough*", "*rests dough*",
+        "*heats pan*", "*preheats oven*", "*turns on stove*", "*lights stove*", "*adjusts heat*",
+        "*adds oil*", "*pours oil*", "*greases pan*", "*butters pan*", "*adds butter*",
+        "*starts cooking*", "*begins cooking*", "*puts pan on*", "*sets timer*", "*checks timer*",
+        "*watches pot*", "*stirs pot*", "*tastes food*", "*seasons food*", "*adds seasoning*",
+        "*adds salt*", "*adds pepper*", "*adds spices*", "*adds herbs*", "*tastes and adjusts*",
+        "*plates food*", "*serves food*", "*garnishes dish*", "*presents dish*", "*photographs dish*"
       ],
       category: "cooking",
       delay: 15000,
@@ -245,10 +316,65 @@ export async function scheduleFollowUpMessage(
     // Getting items or fetching something
     {
       patterns: [
+        // Basic fetching phrases
         "i'll go get", "i'll get it", "i'll grab", "let me get", "i'll fetch", "i'll find", 
         "heads to get", "goes to get", "going to find", "let me find", "i'll look for", 
         "let me see if", "going to search", "i'll retrieve", "let me check if", "bring you", 
-        "fetch you", "get you", "will get you", "will bring you", "i'll bring", "go get"
+        "fetch you", "get you", "will get you", "will bring you", "i'll bring", "go get",
+        
+        // Expanded fetching phrases
+        "i should get", "i can get", "i'm going to get", "let me grab", "let me pick up",
+        "let me fetch", "gonna get", "going to grab", "going to pick up", "gonna grab", "time to get",
+        "time to fetch", "i'm going to retrieve", "i'm gonna find", "begin searching", "begin looking",
+        "start searching", "start the hunt", "hunt for", "search for", "look for", "find the",
+        "item coming up", "i'd be happy to get", "be happy to find", "glad to get", "glad to find",
+        "let's see what i can find", "see what i can get", "check where", "where i can find",
+        "what i can retrieve", "what i can collect", "what i can gather", "what i can pick up",
+        "let me see where", "check the room", "see what's in the room", "look in the room",
+        "look in the drawer", "check the drawer", "see what's in the drawer", "open the drawer",
+        "look for item", "get some items", "gather items", "collect items",
+        "need some items", "need items for", "items for", "materials for",
+        "i know where", "i know a good place", "i have an idea", "i'll check",
+        "get something useful", "find something helpful", "gather something needed", "retrieve something important",
+        "pick up a", "gather a", "collect a", "find a", "get a", "retrieving a", "fetching a", "searching for a",
+        "looking for some", "gathering some", "collecting some", "finding some", "getting some", "retrieving some",
+        
+        // Specific item fetching
+        "get a book", "grab a book", "find a book", "look for a book", "retrieve a book",
+        "get some books", "grab some books", "find some books", "look for books", "retrieve books",
+        "get a drink", "grab a drink", "find a drink", "look for a drink", "retrieve a drink",
+        "get some drinks", "grab some drinks", "find some drinks", "look for drinks", "retrieve drinks",
+        "get water", "grab water", "find water", "look for water", "retrieve water",
+        "get a glass", "grab a glass", "find a glass", "look for a glass", "retrieve a glass",
+        "get some glasses", "grab some glasses", "find some glasses", "look for glasses", "retrieve glasses",
+        "get a cup", "grab a cup", "find a cup", "look for a cup", "retrieve a cup",
+        "get some cups", "grab some cups", "find some cups", "look for cups", "retrieve cups",
+        "get a plate", "grab a plate", "find a plate", "look for a plate", "retrieve a plate",
+        "get some plates", "grab some plates", "find some plates", "look for plates", "retrieve plates",
+        "get a tool", "grab a tool", "find a tool", "look for a tool", "retrieve a tool",
+        "get some tools", "grab some tools", "find some tools", "look for tools", "retrieve tools",
+        "get a blanket", "grab a blanket", "find a blanket", "look for a blanket", "retrieve a blanket",
+        "get some blankets", "grab some blankets", "find some blankets", "look for blankets", "retrieve blankets",
+        "get a pillow", "grab a pillow", "find a pillow", "look for a pillow", "retrieve a pillow",
+        "get some pillows", "grab some pillows", "find some pillows", "look for pillows", "retrieve pillows",
+        "get a gift", "grab a gift", "find a gift", "look for a gift", "retrieve a gift",
+        "get some gifts", "grab some gifts", "find some gifts", "look for gifts", "retrieve gifts",
+        "get a present", "grab a present", "find a present", "look for a present", "retrieve a present",
+        
+        // Narration and roleplay actions for fetching
+        "*goes to get*", "*heads to get*", "*walks to get*", "*runs to get*",
+        "*leaves to get*", "*moves to get*", "*hurries to get*", "*skips to get*",
+        "*sneaks away to get*", "*steps out to get*", "*dashes to get*", "*proceeds to get*",
+        "*makes way to find*", "*searches for*", "*looks for*", "*hunts for*",
+        "*stands to get*", "*rises to get*", "*gets up to find*", "*works on finding*",
+        "*searches intently*", "*begins searching*", "*commences hunt*", "*initiates search*",
+        "*gets looking*", "*gets to searching*", "*gets to work finding*", "*sets to work locating*",
+        "*opens drawer*", "*checks drawer*", "*searches drawer*", "*rummages through drawer*",
+        "*opens cabinet*", "*checks cabinet*", "*searches cabinet*", "*looks through cabinet*",
+        "*opens box*", "*checks box*", "*searches box*", "*examines box*",
+        "*opens closet*", "*checks closet*", "*searches closet*", "*looks through closet*",
+        "*opens bag*", "*checks bag*", "*searches bag*", "*looks through bag*",
+        "*looks around*", "*glances around*", "*scans room*", "*surveys area*"
       ],
       category: "fetching",
       delay: 10000,
@@ -258,14 +384,212 @@ export async function scheduleFollowUpMessage(
     // General actions
     {
       patterns: [
+        // Basic action phrases
         "let me go", "i'll go", "heads out", "leaves the room", "goes to", "i'll check", 
         "i'll be back", "be right back", "brb", "give me a moment", "wait here", 
         "wait a second", "will return", "i need to", "let me just", "one moment", "one second",
-        "be back in", "going to see", "check on", "look into", "will look at"
+        "be back in", "going to see", "check on", "look into", "will look at",
+        
+        // Expanded general actions
+        "i should go", "i need to go", "i must go", "i have to go", "i'm going to go",
+        "let me head", "need to head", "going to head", "gonna head", "heading to",
+        "will be heading", "should be heading", "must be heading", "have to head",
+        "let me step", "need to step", "going to step", "gonna step", "stepping to",
+        "will be stepping", "should be stepping", "must be stepping", "have to step",
+        "let me run", "need to run", "going to run", "gonna run", "running to",
+        "will be running", "should be running", "must be running", "have to run",
+        "let me leave", "need to leave", "going to leave", "gonna leave", "leaving to",
+        "will be leaving", "should be leaving", "must be leaving", "have to leave",
+        "let me check", "need to check", "going to check", "gonna check", "checking on",
+        "will be checking", "should be checking", "must be checking", "have to check",
+        "i'll return", "need to return", "going to return", "gonna return", "returning to",
+        "will be returning", "should be returning", "must be returning", "have to return",
+        "i'll come back", "need to come back", "going to come back", "gonna come back", "coming back to",
+        "will be coming back", "should be coming back", "must be coming back", "have to come back",
+        
+        // Specific location actions
+        "go to the bathroom", "head to the bathroom", "step to the bathroom", "run to the bathroom",
+        "go to the bedroom", "head to the bedroom", "step to the bedroom", "run to the bedroom",
+        "go to the living room", "head to the living room", "step to the living room", "run to the living room",
+        "go to the garden", "head to the garden", "step to the garden", "run to the garden",
+        "go to the yard", "head to the yard", "step to the yard", "run to the yard",
+        "go to the study", "head to the study", "step to the study", "run to the study",
+        "go to the office", "head to the office", "step to the office", "run to the office",
+        "go to the store", "head to the store", "step to the store", "run to the store",
+        "go to the shop", "head to the shop", "step to the shop", "run to the shop",
+        "go to the market", "head to the market", "step to the market", "run to the market",
+        
+        // Waiting and time-based phrases
+        "just a minute", "just a moment", "just a second", "just a bit", "just a while",
+        "in a minute", "in a moment", "in a second", "in a bit", "in a while",
+        "for a minute", "for a moment", "for a second", "for a bit", "for a while",
+        "wait a minute", "wait a moment", "wait a second", "wait a bit", "wait a while",
+        "give me a minute", "give me a moment", "give me a second", "give me a bit", "give me a while",
+        "hang on", "hold on", "hold up", "hang tight", "hold tight",
+        "sit tight", "stay put", "don't move", "remain here", "stay here",
+        "pause", "timeout", "time out", "hold that thought", "freeze",
+        
+        // Narration and roleplay actions
+        "*walks away*", "*steps away*", "*moves away*", "*backs away*", "*edges away*",
+        "*turns away*", "*spins away*", "*walks off*", "*steps off*", "*moves off*",
+        "*leaves*", "*departs*", "*exits*", "*goes out*", "*steps out*",
+        "*disappears*", "*vanishes*", "*fades away*", "*slips away*", "*slides away*",
+        "*runs off*", "*dashes off*", "*sprints off*", "*jogs off*", "*hurries off*",
+        "*wanders off*", "*strolls off*", "*ambles off*", "*saunters off*", "*meanders off*",
+        "*sneaks off*", "*tiptoes away*", "*creeps away*", "*slinks away*", "*slithers away*",
+        "*rushes off*", "*charges off*", "*zooms off*", "*speeds off*", "*bolts off*",
+        "*jumps up*", "*leaps up*", "*springs up*", "*bounds up*", "*hops up*",
+        "*gets up*", "*stands up*", "*rises up*", "*straightens up*", "*perks up*"
       ],
       category: "general",
       delay: 12000,
       prompt: "You left to do something. You've now returned. Describe what you did and your current mood or state."
+    },
+    
+    // Phone, communication and digital interaction actions
+    {
+      patterns: [
+        // Phone related phrases
+        "i'll call", "let me call", "going to call", "gonna call", "need to call", 
+        "have to call", "should call", "must call", "will call", "want to call",
+        "i'll phone", "let me phone", "going to phone", "gonna phone", "need to phone", 
+        "i'll text", "let me text", "going to text", "gonna text", "need to text",
+        "i'll message", "let me message", "going to message", "gonna message", "need to message",
+        "i'll email", "let me email", "going to email", "gonna email", "need to email",
+        "check my phone", "check my messages", "check my calls", "check my texts", "check my emails",
+        "answer this call", "take this call", "respond to this text", "reply to this message",
+        "make a call", "place a call", "dial a number", "ring someone", "phone someone",
+        "send a text", "type a message", "compose a text", "write a message", "draft a text",
+        
+        // Digital device phrases
+        "check my computer", "use my computer", "go on my computer", "work on my computer", 
+        "check my laptop", "use my laptop", "go on my laptop", "work on my laptop",
+        "check my tablet", "use my tablet", "go on my tablet", "work on my tablet",
+        "search online", "look online", "check online", "research online", "browse online",
+        "check the internet", "use the internet", "go on the internet", "search the internet",
+        "check my email", "check my inbox", "check my messages", "check my notifications",
+        "log in", "sign in", "access my account", "check my account", "open my account",
+        "download something", "upload something", "transfer files", "share files", "send files",
+        
+        // Narration and roleplay actions for communication
+        "*takes out phone*", "*pulls out phone*", "*grabs phone*", "*checks phone*", "*looks at phone*",
+        "*answers phone*", "*picks up phone*", "*takes call*", "*responds to call*", "*talks on phone*",
+        "*texts back*", "*types message*", "*sends text*", "*replies to message*", "*messages back*",
+        "*opens laptop*", "*turns on computer*", "*uses keyboard*", "*types on keyboard*", "*clicks mouse*",
+        "*scrolls through*", "*browses online*", "*searches web*", "*checks website*", "*visits site*",
+        "*reads email*", "*opens email*", "*checks inbox*", "*replies to email*", "*sends email*",
+        "*opens app*", "*uses app*", "*taps screen*", "*swipes screen*", "*navigates app*"
+      ],
+      category: "communication",
+      delay: 10000,
+      prompt: "You were using a phone or digital device. You've now finished your digital task. Describe what you did and what you discovered or accomplished."
+    },
+    
+    // Cleaning, organizing and household tasks
+    {
+      patterns: [
+        // Cleaning phrases
+        "i'll clean", "let me clean", "going to clean", "gonna clean", "need to clean", 
+        "have to clean", "should clean", "must clean", "will clean", "want to clean",
+        "i'll tidy", "let me tidy", "going to tidy", "gonna tidy", "need to tidy",
+        "i'll wash", "let me wash", "going to wash", "gonna wash", "need to wash",
+        "i'll wipe", "let me wipe", "going to wipe", "gonna wipe", "need to wipe",
+        "i'll dust", "let me dust", "going to dust", "gonna dust", "need to dust",
+        "i'll vacuum", "let me vacuum", "going to vacuum", "gonna vacuum", "need to vacuum",
+        "i'll sweep", "let me sweep", "going to sweep", "gonna sweep", "need to sweep",
+        "i'll mop", "let me mop", "going to mop", "gonna mop", "need to mop",
+        "i'll scrub", "let me scrub", "going to scrub", "gonna scrub", "need to scrub",
+        
+        // Organizing phrases
+        "i'll organize", "let me organize", "going to organize", "gonna organize", "need to organize",
+        "i'll arrange", "let me arrange", "going to arrange", "gonna arrange", "need to arrange",
+        "i'll sort", "let me sort", "going to sort", "gonna sort", "need to sort",
+        "i'll declutter", "let me declutter", "going to declutter", "gonna declutter", "need to declutter",
+        "i'll put away", "let me put away", "going to put away", "gonna put away", "need to put away",
+        "i'll straighten", "let me straighten", "going to straighten", "gonna straighten", "need to straighten",
+        "i'll neaten", "let me neaten", "going to neaten", "gonna neaten", "need to neaten",
+        "i'll fix", "let me fix", "going to fix", "gonna fix", "need to fix",
+        "i'll repair", "let me repair", "going to repair", "gonna repair", "need to repair",
+        "i'll maintenance", "let me maintenance", "going to maintenance", "gonna maintenance", "need to maintenance",
+        
+        // Narration and roleplay actions for household tasks
+        "*starts cleaning*", "*begins tidying*", "*commences washing*", "*initiates dusting*", "*begins vacuuming*",
+        "*grabs cleaning supplies*", "*gets cleaning tools*", "*prepares cleaning products*", "*sets up to clean*",
+        "*wipes surface*", "*scrubs floor*", "*dusts furniture*", "*polishes table*", "*cleans windows*",
+        "*organizes items*", "*arranges things*", "*sorts objects*", "*puts things away*", "*straightens room*",
+        "*folds clothes*", "*hangs clothes*", "*puts away clothes*", "*organizes closet*", "*arranges wardrobe*",
+        "*makes bed*", "*changes sheets*", "*fluffs pillows*", "*arranges blankets*", "*straightens bedding*",
+        "*washes dishes*", "*loads dishwasher*", "*unloads dishwasher*", "*dries dishes*", "*puts away dishes*",
+        "*takes out trash*", "*empties bin*", "*replaces trash bag*", "*disposes waste*", "*removes garbage*"
+      ],
+      category: "household",
+      delay: 13000,
+      prompt: "You were doing some cleaning or organizing. You've now finished the task. Describe what you accomplished and how the space looks now."
+    },
+    
+    // Personal care and self-maintenance
+    {
+      patterns: [
+        // Personal care phrases
+        "i'll freshen up", "let me freshen up", "going to freshen up", "gonna freshen up", "need to freshen up",
+        "i'll wash up", "let me wash up", "going to wash up", "gonna wash up", "need to wash up",
+        "i'll clean up", "let me clean up", "going to clean up", "gonna clean up", "need to clean up",
+        "i'll get ready", "let me get ready", "going to get ready", "gonna get ready", "need to get ready",
+        "i'll prepare myself", "let me prepare myself", "going to prepare myself", "gonna prepare myself", "need to prepare myself",
+        "i'll shower", "let me shower", "going to shower", "gonna shower", "need to shower",
+        "i'll bathe", "let me bathe", "going to bathe", "gonna bathe", "need to bathe",
+        "i'll wash my hands", "let me wash my hands", "going to wash my hands", "gonna wash my hands", "need to wash my hands",
+        "i'll wash my face", "let me wash my face", "going to wash my face", "gonna wash my face", "need to wash my face",
+        "i'll brush my teeth", "let me brush my teeth", "going to brush my teeth", "gonna brush my teeth", "need to brush my teeth",
+        "i'll brush my hair", "let me brush my hair", "going to brush my hair", "gonna brush my hair", "need to brush my hair",
+        "i'll change clothes", "let me change clothes", "going to change clothes", "gonna change clothes", "need to change clothes",
+        "i'll get dressed", "let me get dressed", "going to get dressed", "gonna get dressed", "need to get dressed",
+        "i'll put on makeup", "let me put on makeup", "going to put on makeup", "gonna put on makeup", "need to put on makeup",
+        "i'll do my makeup", "let me do my makeup", "going to do my makeup", "gonna do my makeup", "need to do my makeup",
+        "i'll fix my hair", "let me fix my hair", "going to fix my hair", "gonna fix my hair", "need to fix my hair",
+        "i'll do my hair", "let me do my hair", "going to do my hair", "gonna do my hair", "need to do my hair",
+        "i'll style my hair", "let me style my hair", "going to style my hair", "gonna style my hair", "need to style my hair",
+        
+        // Narration and roleplay actions for personal care
+        "*goes to freshen up*", "*leaves to wash up*", "*steps out to clean up*", "*heads to get ready*", "*moves to prepare*",
+        "*goes to shower*", "*heads to bathe*", "*steps to wash hands*", "*moves to wash face*", "*leaves to brush teeth*",
+        "*changes clothes*", "*gets dressed*", "*puts on outfit*", "*selects clothing*", "*tries on outfit*",
+        "*fixes appearance*", "*adjusts clothing*", "*straightens outfit*", "*checks appearance*", "*looks presentable*",
+        "*applies makeup*", "*does makeup*", "*puts on lipstick*", "*applies foundation*", "*uses cosmetics*",
+        "*styles hair*", "*fixes hair*", "*brushes hair*", "*combs hair*", "*arranges hair*"
+      ],
+      category: "personal_care",
+      delay: 11000,
+      prompt: "You went to take care of your personal appearance. You've now finished and returned looking refreshed. Describe how you feel after taking care of yourself."
+    },
+    
+    // Social and emotional responses
+    {
+      patterns: [
+        // Emotional response phrases
+        "i need a moment", "give me a moment", "just need a moment", "moment to collect", "moment to compose",
+        "need to calm down", "let me calm down", "going to calm down", "need to relax", "let me relax",
+        "need to breathe", "let me breathe", "going to breathe", "take a deep breath", "deep breaths",
+        "need to think", "let me think", "going to think", "moment to think", "think about this",
+        "need to process", "let me process", "going to process", "time to process", "process this",
+        "need space", "give me space", "want some space", "take some space", "get some space",
+        "need time", "give me time", "want some time", "take some time", "get some time",
+        "need privacy", "give me privacy", "want some privacy", "take some privacy", "get some privacy",
+        "need silence", "give me silence", "want some silence", "some quiet", "moment of quiet",
+        
+        // Narration and roleplay actions for emotional responses
+        "*takes a moment*", "*pauses briefly*", "*breathes deeply*", "*collects thoughts*", "*composes self*",
+        "*calms down*", "*relaxes*", "*centers self*", "*grounds self*", "*steadies emotions*",
+        "*thinks carefully*", "*considers options*", "*weighs choices*", "*contemplates response*", "*ponders situation*",
+        "*processes feelings*", "*works through emotions*", "*manages feelings*", "*handles emotions*", "*deals with feelings*",
+        "*steps back*", "*creates space*", "*takes space*", "*finds space*", "*gets distance*",
+        "*takes time*", "*finds time*", "*makes time*", "*uses time*", "*spends time*",
+        "*seeks privacy*", "*finds privacy*", "*ensures privacy*", "*gets privacy*", "*has privacy*",
+        "*embraces silence*", "*enjoys quiet*", "*appreciates silence*", "*welcomes quiet*", "*values stillness*"
+      ],
+      category: "emotional",
+      delay: 9000,
+      prompt: "You needed a moment to process your emotions or thoughts. You've now collected yourself and feel ready to continue. Describe your current emotional state and thoughts."
     }
   ];
   
