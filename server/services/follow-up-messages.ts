@@ -809,8 +809,15 @@ function scheduleFollowUpWithPattern(
         persona: characterPersonality || 'friendly and helpful character'
       };
       
-      // Create a prompt for the follow-up message
-      const userPrompt = `You previously said: "${message}" ${followUpPattern.prompt}`;
+      // Create a prompt for the follow-up message with an indicator that this is a follow-up
+      // This helps users recognize that the character is continuing from a previous promise
+      let followUpPrompt = followUpPattern.prompt;
+      
+      // Add a natural follow-up indicator to the beginning of the message
+      // This will make it clear to the user that this is a continuation
+      followUpPrompt += " Start your message with something that indicates you're following up on what you promised, like 'As promised...' or 'I'm back now...' or 'Just as I said I would...' or similar natural phrases. Make it sound natural, not robotic.";
+      
+      const userPrompt = `You previously said: "${message}" ${followUpPrompt}`;
       
       // Create chat history context
       const chatHistory = `Character: ${characterName}
@@ -833,13 +840,18 @@ Character: ${message}`;
       );
       
       // Store the message in the database with required fields
+      // Calculate a unique timestamp to show clearly it's a different message
+      const currentTime = new Date();
+      // Make sure the timestamp is different from the original message
+      const uniqueTimestamp = new Date(currentTime.getTime() + 60000); // Add 1 minute to make it visibly different
+      
       const messageData = {
         userId,
         characterId,
         content: aiResponse,
         isUser: false,
         language: 'en', // Default to English, could be enhanced to detect or match user's language
-        timestamp: new Date()
+        timestamp: uniqueTimestamp
       };
       
       const followUpMessage = await storage.createMessage(messageData);
