@@ -851,49 +851,68 @@ Character: ${message}`;
       const timeDifferenceSeconds = Math.floor((timeDifferenceMs % 60000) / 1000);
       
       // Calculate a realistic follow-up time based on message content
-      // Use a helper function to categorize the message by content
-      function categorizeMessage(text: string): string {
-        const lowerText = text.toLowerCase();
-        
-        // Check for cooking-related content
-        if (/cook|food|meal|kitchen|prepare|bake|dinner|lunch|breakfast|dish|recipe|ingredients/i.test(lowerText)) {
-          return 'cooking';
-        }
-        
-        // Check for fetching-related content
-        if (/get|bring|fetch|grab|pick up|retrieve|take|carry|deliver/i.test(lowerText)) {
-          return 'fetching';
-        }
-        
-        // Check for searching-related content
-        if (/find|search|look for|seek|hunt|locate|discover/i.test(lowerText)) {
-          return 'searching';
-        }
-        
-        // Check for communication-related content
-        if (/message|text|call|email|chat|contact|respond|reply|get back|reach out/i.test(lowerText)) {
-          return 'communication';
-        }
-        
-        // Check for meeting-related content
-        if (/meet|see you|visit|come over|hang out|spend time|do something|activity|together/i.test(lowerText)) {
-          return 'meeting';
-        }
-        
-        // Check for cleaning-related content
-        if (/clean|tidy|organize|wash|dust|vacuum|sweep|mop|scrub|declutter/i.test(lowerText)) {
-          return 'cleaning';
-        }
-        
-        // Check for availability-related content
-        if (/free time|available|when i'm free|moment i'm free|not busy|have time/i.test(lowerText)) {
-          return 'availability';
-        }
-        
-        return 'general';
-      }
+      // Determine the category based on message content
+      const lowerMessage = message.toLowerCase();
       
-      const actionCategory = categorizeMessage(message);
+      // Define the possible action categories
+      type ActionCategory = 
+        | 'cooking' 
+        | 'fetching' 
+        | 'searching' 
+        | 'communication' 
+        | 'communication_promise'
+        | 'meeting' 
+        | 'meeting_promise'
+        | 'cleaning'
+        | 'household'
+        | 'promise'
+        | 'availability'
+        | 'general';
+        
+      let actionCategory: ActionCategory = 'general';
+      
+      // Check for cooking-related content
+      if (/cook|food|meal|kitchen|prepare|bake|dinner|lunch|breakfast|dish|recipe|ingredients/i.test(lowerMessage)) {
+        actionCategory = 'cooking';
+      }
+      // Check for fetching-related content
+      else if (/get|bring|fetch|grab|pick up|retrieve|take|carry|deliver/i.test(lowerMessage)) {
+        actionCategory = 'fetching';
+      }
+      // Check for searching-related content
+      else if (/find|search|look for|seek|hunt|locate|discover/i.test(lowerMessage)) {
+        actionCategory = 'searching';
+      }
+      // Check for communication-related content
+      else if (/message|text|call|email|chat|contact|respond|reply|get back|reach out/i.test(lowerMessage)) {
+        // Check if it's a promise to communicate
+        if (/promise|swear|guarantee|definitely|absolutely|certainly|surely/i.test(lowerMessage)) {
+          actionCategory = 'communication_promise';
+        } else {
+          actionCategory = 'communication';
+        }
+      }
+      // Check for meeting-related content
+      else if (/meet|see you|visit|come over|hang out|spend time|do something|activity|together/i.test(lowerMessage)) {
+        // Check if it's a promise to meet
+        if (/promise|swear|guarantee|definitely|absolutely|certainly|surely/i.test(lowerMessage)) {
+          actionCategory = 'meeting_promise';
+        } else {
+          actionCategory = 'meeting';
+        }
+      }
+      // Check for cleaning-related content
+      else if (/clean|tidy|organize|wash|dust|vacuum|sweep|mop|scrub|declutter/i.test(lowerMessage)) {
+        actionCategory = 'cleaning';
+      }
+      // Check for availability-related content
+      else if (/free time|available|when i'm free|moment i'm free|not busy|have time/i.test(lowerMessage)) {
+        actionCategory = 'availability';
+      }
+      // General promise fallback
+      else if (/promise|swear|guarantee|definitely|absolutely|certainly|surely/i.test(lowerMessage)) {
+        actionCategory = 'promise';
+      }
       
       // Define realistic timing for different actions (in minutes)
       const actionTimes = {
