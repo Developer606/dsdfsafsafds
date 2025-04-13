@@ -840,10 +840,96 @@ Character: ${message}`;
       );
       
       // Store the message in the database with required fields
-      // Calculate a unique timestamp to show clearly it's a different message
+      // Calculate a realistic time difference between the original message and the follow-up
+      // Since we don't have timestamp in the message string, use current time as base
+      const originalMessageTime = new Date();
       const currentTime = new Date();
+      
+      // Calculate the actual delay in the conversation
+      const timeDifferenceMs = currentTime.getTime() - originalMessageTime.getTime();
+      const timeDifferenceMinutes = Math.floor(timeDifferenceMs / 60000);
+      const timeDifferenceSeconds = Math.floor((timeDifferenceMs % 60000) / 1000);
+      
+      // Calculate a realistic follow-up time based on message content
+      // Use a helper function to categorize the message by content
+      function categorizeMessage(text: string): string {
+        const lowerText = text.toLowerCase();
+        
+        // Check for cooking-related content
+        if (/cook|food|meal|kitchen|prepare|bake|dinner|lunch|breakfast|dish|recipe|ingredients/i.test(lowerText)) {
+          return 'cooking';
+        }
+        
+        // Check for fetching-related content
+        if (/get|bring|fetch|grab|pick up|retrieve|take|carry|deliver/i.test(lowerText)) {
+          return 'fetching';
+        }
+        
+        // Check for searching-related content
+        if (/find|search|look for|seek|hunt|locate|discover/i.test(lowerText)) {
+          return 'searching';
+        }
+        
+        // Check for communication-related content
+        if (/message|text|call|email|chat|contact|respond|reply|get back|reach out/i.test(lowerText)) {
+          return 'communication';
+        }
+        
+        // Check for meeting-related content
+        if (/meet|see you|visit|come over|hang out|spend time|do something|activity|together/i.test(lowerText)) {
+          return 'meeting';
+        }
+        
+        // Check for cleaning-related content
+        if (/clean|tidy|organize|wash|dust|vacuum|sweep|mop|scrub|declutter/i.test(lowerText)) {
+          return 'cleaning';
+        }
+        
+        // Check for availability-related content
+        if (/free time|available|when i'm free|moment i'm free|not busy|have time/i.test(lowerText)) {
+          return 'availability';
+        }
+        
+        return 'general';
+      }
+      
+      const actionCategory = categorizeMessage(message);
+      
+      // Define realistic timing for different actions (in minutes)
+      const actionTimes = {
+        'cooking': 15,              // Cooking takes about 15 minutes
+        'fetching': 5,              // Fetching items takes about 5 minutes
+        'searching': 8,             // Searching for things takes about 8 minutes
+        'communication': 3,         // Communication tasks take about 3 minutes
+        'communication_promise': 3, // Communication promises take about 3 minutes
+        'meeting': 10,              // Meeting preparations take about 10 minutes
+        'meeting_promise': 10,      // Meeting promises take about 10 minutes
+        'cleaning': 20,             // Cleaning takes about 20 minutes
+        'household': 12,            // Household tasks take about 12 minutes
+        'promise': 7,               // General promises take about 7 minutes
+        'availability': 5,          // Availability changes take about 5 minutes
+        'general': 5,               // General tasks take about 5 minutes
+      };
+      
+      // Get the appropriate time offset or default to 5 minutes
+      // Use type assertion to avoid TypeScript warning with index access
+      const timeOffsetMinutes = actionTimes[actionCategory as keyof typeof actionTimes] || 5;
+      
+      // Convert to milliseconds for timestamp calculation
+      const timeOffsetMs = timeOffsetMinutes * 60 * 1000;
+      
+      // Log extensive details about the timing
+      console.log(`[FollowUpMessages] Original message time: ${originalMessageTime.toISOString()}`);
+      console.log(`[FollowUpMessages] Current time: ${currentTime.toISOString()}`);
+      console.log(`[FollowUpMessages] Actual time elapsed: ${timeDifferenceMinutes} minutes, ${timeDifferenceSeconds} seconds`);
+      console.log(`[FollowUpMessages] Original delay setting: ${followUpPattern.delay}ms (${followUpPattern.delay/1000} seconds)`);
+      console.log(`[FollowUpMessages] Action category: ${actionCategory}`);
+      console.log(`[FollowUpMessages] Applied time offset: ${timeOffsetMinutes} minutes (${timeOffsetMs}ms)`);
+      
       // Make sure the timestamp is different from the original message
-      const uniqueTimestamp = new Date(currentTime.getTime() + 60000); // Add 1 minute to make it visibly different
+      // This creates a more realistic timestamp showing when the character would realistically have completed the task
+      // The timestamp will show as "timeOffsetMinutes" after the original message
+      const uniqueTimestamp = new Date(originalMessageTime.getTime() + timeOffsetMs);
       
       const messageData = {
         userId,
