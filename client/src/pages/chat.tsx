@@ -614,7 +614,7 @@ export default function Chat() {
                   chatStyle={chatStyle}
                 />
               ))}
-              {isTyping && <TypingIndicator />}
+              {isTyping && <TypingIndicator chatStyle={chatStyle} />}
               <div ref={messagesEndRef} />
             </>
           )}
