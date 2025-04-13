@@ -1836,6 +1836,7 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
           console.log(`Generating AI response for ${character.name} with user profile data:`, 
                       userProfileData ? 'Profile data available' : 'No profile data');
 
+          // Generate the full AI response
           const aiResponse = await generateCharacterResponse(
             character,
             data.content,
@@ -1844,20 +1845,52 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             data.script,
             userProfileData
           );
-
-          const aiMessage = await storage.createMessage({
-            userId: user.id,
-            characterId: data.characterId,
-            content: aiResponse,
-            isUser: false,
-            language: data.language,
-            script: data.script,
-          });
+          
+          // Import the message splitting utility
+          const { splitMessageIntoChunks } = await import('./utils/message-utils');
+          
+          // Split the response into separate chunks for a more natural typing experience
+          const messageChunks = splitMessageIntoChunks(
+            aiResponse,
+            30,  // Min chunk size 
+            150, // Max chunk size
+            2    // Min chunks (ensure at least 2 chunks for typing effect)
+          );
+          
+          console.log(`Split AI response into ${messageChunks.length} chunks`);
+          
+          // Create all the message chunks
+          const aiMessages = [];
+          
+          for (let i = 0; i < messageChunks.length; i++) {
+            const chunk = messageChunks[i];
+            const isLastChunk = i === messageChunks.length - 1;
+            
+            // Store the chunk as a message
+            const aiMessage = await storage.createMessage({
+              userId: user.id,
+              characterId: data.characterId,
+              content: chunk,
+              isUser: false,
+              language: data.language,
+              script: data.script,
+              // Add metadata to identify chunks
+              metadata: {
+                isMessageChunk: true,
+                chunkIndex: i,
+                totalChunks: messageChunks.length,
+                isLastChunk
+              }
+            });
+            
+            aiMessages.push(aiMessage);
+          }
           
           // Track the conversation for the AI response too
           trackConversation(user.id, data.characterId, false, character);
 
-          res.json([message, aiMessage]);
+          // Return user message and all AI message chunks
+          res.json([message, ...aiMessages]);
         } catch (error: any) {
           // If AI response fails, still return the user message but with an error
           res.status(207).json({
