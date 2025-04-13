@@ -22,7 +22,10 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ 
+          duration: isPartialMessage ? 0.1 : 0.3,
+          type: isPartialMessage ? "tween" : "spring" 
+        }}
         className={cn(
           "py-8 px-4 md:px-6",
           isUser ? "bg-white dark:bg-slate-800" : "bg-gray-50 dark:bg-slate-900"
@@ -59,7 +62,10 @@ export function ChatMessage({ message, character, chatStyle = "whatsapp" }: Chat
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ 
+          duration: isPartialMessage ? 0.1 : 0.3,
+          type: isPartialMessage ? "tween" : "spring" 
+        }}
         className={cn(
           "px-2 sm:px-4 py-1 sm:py-2",
           isUser ? "ml-auto" : "mr-auto",
