@@ -175,6 +175,50 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
   // Initialize the proactive messaging service
   initializeProactiveMessaging();
   
+  // Endpoint to get active conversations (admin only)
+  app.get("/api/admin/active-conversations", isAdmin, async (req, res) => {
+    try {
+      const { getActiveConversations } = await import("./services/proactive-messaging");
+      const conversations = getActiveConversations();
+      res.json({ conversations });
+    } catch (error) {
+      console.error("Error fetching active conversations:", error);
+      res.status(500).json({ error: "Failed to fetch active conversations" });
+    }
+  });
+  
+  // Endpoint to track a conversation with a character (for proactive messaging)
+  app.post("/api/track-character-conversation", authCheck, async (req, res) => {
+    try {
+      const { characterId } = req.body;
+      
+      if (!characterId) {
+        return res.status(400).json({ error: "Character ID is required" });
+      }
+      
+      // Get the character for tracking
+      let character;
+      if (characterId.startsWith('custom_')) {
+        const customId = parseInt(characterId.replace('custom_', ''));
+        character = await storage.getCustomCharacterById(customId);
+      } else {
+        character = await storage.getPredefinedCharacterById(characterId);
+      }
+      
+      if (!character) {
+        return res.status(404).json({ error: "Character not found" });
+      }
+      
+      // Track the conversation
+      trackConversation(req.user!.id, characterId, true, character);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking conversation:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
   // Test endpoint for proactive messaging (protected by auth)
   app.post("/api/test-proactive-message", authCheck, async (req, res) => {
     try {

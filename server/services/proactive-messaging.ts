@@ -1326,6 +1326,19 @@ export async function testProactiveMessage(userId: number, characterId: string):
   }
 }
 
+/**
+ * Get all active conversations for monitoring and debugging
+ */
+export function getActiveConversations(): Array<{key: string, conversation: ConversationState}> {
+  return Array.from(activeConversations.entries()).map(([key, conversation]) => ({
+    key,
+    conversation
+  }));
+}
+
+/**
+ * Initialize the proactive messaging service
+ */
 export function initializeProactiveMessaging(): void {
   // Scan for proactive message opportunities every minute
   setInterval(scanConversations, 60 * 1000);
