@@ -1876,6 +1876,31 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
             ).catch(err => {
               console.error('Error in progressive message delivery:', err);
             });
+            
+            // Also schedule a follow-up message if the character promised something
+            // This schedules automatic responses for things like "I'll be right back with food"
+            try {
+              // Import the follow-up messages service
+              const { scheduleFollowUpMessage } = await import('./services/follow-up-messages');
+              
+              // Get character personality for contextual follow-ups
+              const personality = character.persona || 'friendly and helpful';
+              
+              // Schedule a follow-up message if the AI's response contains a promise
+              scheduleFollowUpMessage(
+                user.id,
+                data.characterId,
+                aiResponse,
+                character.name,
+                character.avatar,
+                personality
+              ).catch(err => {
+                console.error('Error scheduling follow-up message:', err);
+              });
+            } catch (followUpError) {
+              console.error('Failed to initialize follow-up message service:', followUpError);
+              // Non-critical error - main functionality will still work
+            }
           } catch (error) {
             console.error('Failed to initialize progressive message delivery:', error);
           }
