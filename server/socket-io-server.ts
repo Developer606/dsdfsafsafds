@@ -13,6 +13,10 @@ import {
   checkMessageContent, 
   flagMessage 
 } from './content-moderation';
+import {
+  markChatSessionActive,
+  markChatSessionInactive,
+} from './services/character-memory';
 
 // Socket performance configuration
 const SOCKET_LOG_LEVEL = process.env.NODE_ENV === 'production' ? 'error' : 'info';
@@ -109,7 +113,7 @@ export function setupSocketIOServer(httpServer: HTTPServer, handleWebSocketTraff
     });
     
     // Remove inactive users from tracking
-    cleanupInactiveUsers(INACTIVE_USER_THRESHOLD);
+    cleanupInactiveUsers();
     
     // Clear any empty sets
     userConnections.forEach((connections, userId) => {
@@ -406,6 +410,40 @@ export function setupSocketIOServer(httpServer: HTTPServer, handleWebSocketTraff
         log(`Error handling typing indicator: ${error}`);
       }
     });
+    
+    // Handle chat page activity for character memory system
+    socket.on('chat_page_open', (data) => {
+      try {
+        const { characterId } = data;
+        if (!characterId) {
+          return;
+        }
+        
+        log(`User ${userId} opened chat page with character ${characterId}`);
+        
+        // Mark chat session as active in memory system
+        markChatSessionActive(userId, characterId);
+      } catch (error) {
+        log(`Error handling chat page open: ${error}`);
+      }
+    });
+    
+    // Handle chat page closed event
+    socket.on('chat_page_close', (data) => {
+      try {
+        const { characterId } = data;
+        if (!characterId) {
+          return;
+        }
+        
+        log(`User ${userId} closed chat page with character ${characterId}`);
+        
+        // Mark chat session as inactive in memory system
+        markChatSessionInactive(userId, characterId);
+      } catch (error) {
+        log(`Error handling chat page close: ${error}`);
+      }
+    });
 
     // Handle refresh conversation requests
     socket.on('refresh_conversation', async (data) => {
@@ -483,7 +521,7 @@ export function setupSocketIOServer(httpServer: HTTPServer, handleWebSocketTraff
 
   // Set up maintenance interval for user status cleanup
   setInterval(() => {
-    cleanupInactiveUsers(INACTIVE_USER_THRESHOLD);
+    cleanupInactiveUsers();
   }, 60 * 60 * 1000); // Run every hour
 
   // Initialize the socket service with this io instance
