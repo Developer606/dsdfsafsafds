@@ -395,8 +395,20 @@ function selectPrompt(conversation: ConversationState): string {
     // It's been more than 12 hours
     selectedTypes = ['greeting', 'check_in', 'conversation_starter'];
   } else if (conversation.lastUserMessageTime > 0) {
-    // We have previous conversations, can use follow-ups
-    selectedTypes = promptTypes;
+    // We have previous conversations, strongly prioritize follow-ups for continuity
+    // We want to maintain the conversation thread from previous exchanges
+    if (hoursSinceLastMessage < 6) {
+      // If recent conversation, heavily favor follow-ups to create natural continuity
+      const weightedTypes = [
+        'follow_up', 'follow_up', 'follow_up', 'follow_up', 'follow_up',  // 50% chance for follow-up
+        'share_thought', 'share_thought', 'share_thought',                // 30% chance for share_thought
+        'conversation_starter', 'check_in'                               // 20% chance for other types
+      ];
+      selectedTypes = weightedTypes as ProactivePromptType[];
+    } else {
+      // Some time has passed but still within a day
+      selectedTypes = promptTypes;
+    }
   } else {
     // No previous user messages, avoid follow-ups
     selectedTypes = ['greeting', 'conversation_starter', 'share_thought', 'check_in'];
@@ -404,6 +416,10 @@ function selectPrompt(conversation: ConversationState): string {
   
   // Randomly select a prompt type from our filtered list
   const promptType = selectedTypes[Math.floor(Math.random() * selectedTypes.length)];
+
+  // Debug information for examining prompt type selection
+  console.log(`[ProactiveMessaging] Selected prompt type: ${promptType} for conversation ${conversation.characterId} with user ${conversation.userId}`);
+  console.log(`[ProactiveMessaging] Hours since last message: ${hoursSinceLastMessage.toFixed(1)}`);
   
   // Get all prompts of that type and randomly select one
   const prompts = proactivePrompts[promptType];
@@ -1044,6 +1060,13 @@ Your message should:
 3. Adapt to the user's communication style as described above
 4. Be engaging enough to invite a response
 5. Sound like something you'd genuinely want to share with or ask this specific user
+
+IMPORTANT CONTEXT:
+- Look at your most recent messages in the chat history and continue that conversation thread naturally
+- Reference specific things you were talking about in your last message
+- Maintain the same tone, personality, and topics from your previous conversation
+- If you were discussing teaching something or making plans, continue that thread
+- Be authentic to your character while maintaining conversational continuity
 
 Aim for an authentic, personalized message that the user will find meaningful and worth responding to.
   `;
