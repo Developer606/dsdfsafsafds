@@ -2,6 +2,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import express from "express";
 import * as libraryDb from "./library-db";
+import { getAllCharacterThoughts, getRecentCharacterThought } from "./services/character-thinking";
 import session from "express-session";
 import passport from "passport";
 import multer from "multer";
@@ -282,6 +283,37 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
     } catch (error) {
       console.error("Error testing proactive message:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+  
+  // Character thinking debug endpoints
+  // Get all character thoughts (admin only)
+  app.get("/api/debug/character-thoughts", isAdmin, (req, res) => {
+    try {
+      const { getAllCharacterThoughts } = require('./services/character-thinking');
+      const thoughts = getAllCharacterThoughts();
+      res.json(thoughts);
+    } catch (error) {
+      console.error("Error fetching character thoughts:", error);
+      res.status(500).json({ error: "Failed to fetch character thoughts" });
+    }
+  });
+  
+  // Get thoughts for a specific character about a specific user (admin only)
+  app.get("/api/debug/character-thoughts/:characterId/:userId", isAdmin, (req, res) => {
+    try {
+      const { getRecentCharacterThought } = require('./services/character-thinking');
+      const { characterId, userId } = req.params;
+      const thought = getRecentCharacterThought(characterId, parseInt(userId));
+      
+      if (!thought) {
+        return res.status(404).json({ error: "No thoughts found for this character about this user" });
+      }
+      
+      res.json(thought);
+    } catch (error) {
+      console.error("Error fetching character thought:", error);
+      res.status(500).json({ error: "Failed to fetch character thought" });
     }
   });
 
