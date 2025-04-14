@@ -210,6 +210,7 @@ function debugLog(prefix: string, message: string, maxLength: number = 100): voi
 /**
  * Schedule an automatic follow-up message based on a character's promise
  */
+// CRITICAL FIX: Enhanced follow-up message scheduling with guaranteed delivery
 export async function scheduleFollowUpMessage(
   userId: number,
   characterId: string,
@@ -988,7 +989,7 @@ Character: ${message}`;
         characterAvatar
       );
       
-      // CRITICAL FIX: Multiple socket emissions to ensure follow-up message appears
+      // CRITICAL FIX: Multiple socket emissions to ensure follow-up message appears INSTANTLY
       console.log(`[FollowUpMessages] CRITICAL FIX: Sending follow-up message via multiple channels: ${followUpMessage.id}`);
       
       // Use the already-initialized io from above

@@ -495,13 +495,8 @@ export default function Chat() {
       socketManager.notifyChatPageClose(characterId);
     };
     
-    // Clean up listeners when component unmounts
-    return () => {
-      removeCharacterMessageListener();
-      removeNewMessageListener();
-      removeTypingIndicatorListener();
-      socketManager.notifyChatPageClose(characterId);
-    };
+    // CRITICAL FIX: Use our comprehensive cleanup function that properly handles all resources
+    return cleanupFunction;
   }, [characterId, queryClient]);
 
   const sendMessage = useMutation({
