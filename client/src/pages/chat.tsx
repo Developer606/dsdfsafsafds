@@ -299,54 +299,90 @@ export default function Chat() {
           }
         }
         
-        // For follow-up messages (not progressive updates), trigger a forced refresh
-        if (data.isFollowUpMessage || (!data.isProgressiveUpdate && data.message.content.includes("As promised"))) {
-          console.log('Follow-up message detected, forcing refresh');
+        // CRITICAL FIX: For follow-up messages, DIRECTLY update the messages state without refresh
+        if (data.isFollowUpMessage || (!data.isProgressiveUpdate && 
+            (data.message.content.includes("As promised") || 
+             data.message.content.includes("I'm back") || 
+             data.message.content.includes("Just as I said") ||
+             data.message.content.includes("As I promised")))) {
           
-          // Ensure the message appears in the UI with a slight delay
-          setTimeout(() => {
-            // Force refresh messages
-            queryClient.invalidateQueries({ queryKey: [`/api/messages/${characterId}`] });
+          console.log('CRITICAL: Follow-up message detected, ensuring immediate display WITHOUT refresh');
+          
+          // Create direct state update for follow-up messages
+          const existingMessages = queryClient.getQueryData<Message[]>([`/api/messages/${characterId}`]) || [];
+          
+          // Make sure the message isn't already there
+          if (!existingMessages.some(msg => msg.id === data.message.id)) {
+            console.log('FIXING: Adding follow-up message DIRECTLY to messages:', data.message.id);
             
-            // Force scroll to bottom again to ensure message is visible
-            setTimeout(scrollToBottom, 100);
-          }, 500);
+            // Add message to existing messages
+            const updatedMessages = [...existingMessages, data.message];
+            
+            // Sort by timestamp to ensure proper order
+            const sortedMessages = updatedMessages.sort((a, b) => {
+              return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+            });
+            
+            // CRITICAL: Force direct cache update with the new message included
+            queryClient.setQueryData([`/api/messages/${characterId}`], sortedMessages);
+            
+            // IMPORTANT: Force immediate scrolling to show the new message
+            scrollToBottom();
+            setTimeout(scrollToBottom, 50);
+            setTimeout(scrollToBottom, 150);
+          }
         }
       }
     };
     
-    // Also handle the new_message event which may be triggered for follow-up messages
+    // IMPROVED: Handle new_message event directly for follow-up messages
     const handleNewMessage = (data: any) => {
-      console.log('New message event received in chat component:', data);
+      console.log('CRITICAL: New_message event received for possible follow-up message:', data);
       
       // If this is a message from the current character, ensure it shows up
       if (data.message && data.message.characterId === characterId && !data.message.isUser) {
-        // Update the messages in our query cache
-        queryClient.setQueryData<Message[]>(
-          [`/api/messages/${characterId}`],
-          (oldMessages = []) => {
-            // Check if this message already exists
-            if (oldMessages && oldMessages.some(msg => msg.id === data.message.id)) {
-              return oldMessages; // Already have this message
+        // Check for follow-up messages by content patterns
+        const isFollowUp = data.isFollowUpMessage || 
+          data.message.content.includes("As promised") || 
+          data.message.content.includes("I'm back") || 
+          data.message.content.includes("Just as I said") || 
+          data.message.content.includes("As I promised");
+        
+        if (isFollowUp) {
+          console.log('CRITICAL FIX: Detected follow-up message via new_message event:', data.message.id);
+        }
+        
+        // Get existing messages
+        const existingMessages = queryClient.getQueryData<Message[]>([`/api/messages/${characterId}`]) || [];
+        
+        // Check if this message already exists
+        if (!existingMessages.some(msg => msg.id === data.message.id)) {
+          // Add the new message and sort messages
+          const updatedMessages = [...existingMessages, data.message].sort((a, b) => {
+            return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+          });
+          
+          console.log('DIRECT ADD: Adding message immediately to messages list:', data.message.id);
+          
+          // CRITICAL: Update state with the new message included
+          queryClient.setQueryData([`/api/messages/${characterId}`], updatedMessages);
+          
+          // IMPORTANT: Force multiple scrolls to ensure visibility
+          scrollToBottom();
+          setTimeout(scrollToBottom, 50);
+          setTimeout(scrollToBottom, 150);
+          
+          // Try to play a notification sound for new messages
+          if (!document.hasFocus()) {
+            try {
+              const audio = new Audio('/sounds/message.mp3');
+              audio.volume = 0.5;
+              audio.play().catch(e => console.log('Could not play notification sound:', e));
+            } catch (error) {
+              console.log('Error playing notification sound:', error);
             }
-            
-            // Add the new message
-            const updatedMessages = [...oldMessages, data.message];
-            
-            // Sort by timestamp
-            return updatedMessages.sort((a, b) => {
-              const dateA = new Date(a.timestamp).getTime();
-              const dateB = new Date(b.timestamp).getTime();
-              return dateA - dateB;
-            });
           }
-        );
-        
-        // Invalidate queries to ensure UI shows the message
-        queryClient.invalidateQueries({ queryKey: [`/api/messages/${characterId}`] });
-        
-        // Auto-scroll to show the new content
-        setTimeout(scrollToBottom, 100);
+        }
       }
     };
     
