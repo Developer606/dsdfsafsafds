@@ -975,6 +975,7 @@ Character: ${message}`;
       console.log(`[FollowUpMessages] Created follow-up message: ${followUpMessage.id}`);
       
       // Deliver the message progressively with typing indicators
+      console.log(`[FollowUpMessages] Delivering follow-up message as progressive message: ${followUpMessage.id}`);
       deliverProgressiveMessage(
         userId,
         characterId,
@@ -983,6 +984,24 @@ Character: ${message}`;
         characterName,
         characterAvatar
       );
+      
+      // ALSO emit a direct message notification for clients that might miss the progressive updates
+      // This is crucial for making follow-up messages appear immediately without page refresh
+      console.log(`[FollowUpMessages] Also emitting direct message notification for follow-up: ${followUpMessage.id}`);
+      
+      const io = socketService.getIO();
+      if (io) {
+        // Send an immediate event to any connected clients for this user
+        io.to(`user_${userId}`).emit('new_message', {
+          message: followUpMessage,
+          character: {
+            id: characterId,
+            name: characterName,
+            avatar: characterAvatar
+          },
+          isFollowUpMessage: true
+        });
+      }
       
     } catch (error) {
       console.error('[FollowUpMessages] Error sending follow-up message:', error);

@@ -356,10 +356,24 @@ export default function Chat() {
       setIsTyping(data.isTyping);
     };
     
-    // Set up listeners for progressive message updates and typing indicators
+    // Ensure socket is connected
+    if (!socketManager.isConnected()) {
+      console.log("Socket not connected in chat component, connecting now...");
+      socketManager.connect();
+    }
+
+    // Notify server that we're viewing this character's chat
+    socketManager.notifyChatPageOpen(characterId);
+    
+    // Set up listeners for messages and typing indicators
     const removeCharacterMessageListener = socketManager.addEventListener(
       'character_message', 
       handleCharacterMessage
+    );
+    
+    const removeNewMessageListener = socketManager.addEventListener(
+      'new_message',
+      handleNewMessage
     );
     
     const removeTypingIndicatorListener = socketManager.addEventListener(
@@ -367,10 +381,24 @@ export default function Chat() {
       handleTypingIndicator
     );
     
+    // Also fetch the latest messages directly as a fallback
+    console.log("Fetching latest messages for character", characterId);
+    fetch(`/api/messages/${characterId}`)
+      .then(res => res.json())
+      .then(messages => {
+        if (Array.isArray(messages) && messages.length > 0) {
+          // Update the query cache with the latest messages
+          queryClient.setQueryData([`/api/messages/${characterId}`], messages);
+        }
+      })
+      .catch(err => console.error("Error fetching latest messages:", err));
+    
     // Clean up listeners when component unmounts
     return () => {
       removeCharacterMessageListener();
+      removeNewMessageListener();
       removeTypingIndicatorListener();
+      socketManager.notifyChatPageClose(characterId);
     };
   }, [characterId, queryClient]);
 
