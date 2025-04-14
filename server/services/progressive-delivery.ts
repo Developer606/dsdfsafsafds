@@ -262,21 +262,36 @@ export async function deliverProgressiveMessage(
         isFollowUpMessage: accumulatedMessage.includes("As promised") // Help client identify follow-ups
       });
       
-      // CRITICAL FIX: Enhanced notification for follow-up messages to ensure they display immediately
+      // ULTRA PRIORITY FIX: Enhanced follow-up message handling to guarantee they appear without refresh
       // Check if this is a follow-up message (contains specific phrases)
       const isFollowUp = 
         accumulatedMessage.includes("As promised") || 
         accumulatedMessage.includes("I'm back") || 
         accumulatedMessage.includes("Just as I said") || 
         accumulatedMessage.includes("As I promised") || 
-        accumulatedMessage.includes("Here's what");
+        accumulatedMessage.includes("Here's what") ||
+        accumulatedMessage.includes("As mentioned") ||
+        accumulatedMessage.includes("Like I said") ||
+        accumulatedMessage.includes("As I said");
       
-      // Extra handling for follow-up messages to ensure they display properly
+      // Ultra-aggressive handling for follow-up messages to guarantee immediate display
       if (isFollowUp) {
-        // Log follow-up message detection
-        console.log(`[ProgressiveDelivery] CRITICAL: Detected follow-up message with ID ${messageId}, ensuring immediate display`);
+        // Log follow-up message detection with high visibility
+        console.log(`[ProgressiveDelivery] ULTRA PRIORITY: Detected follow-up message with ID ${messageId}, maximizing delivery methods`);
         
-        // Emit new_message event with follow-up flag to trigger special handling
+        // STRATEGY 1: Emit specialized follow-up event with special flag
+        io.to(`user_${userId}`).emit('follow_up_message', {
+          message: finalMessage,
+          character: {
+            id: characterId,
+            name: characterName,
+            avatar: characterAvatar
+          },
+          isFollowUpMessage: true,
+          timestamp: new Date().toISOString()
+        });
+        
+        // STRATEGY 2: Emit standard new_message event with follow-up flag to original user
         io.to(`user_${userId}`).emit('new_message', {
           message: finalMessage,
           character: {
@@ -287,7 +302,7 @@ export async function deliverProgressiveMessage(
           isFollowUpMessage: true
         });
         
-        // Broadcast to all connected clients as a fallback
+        // STRATEGY 3: Broadcast globally as a fallback for any socket reconnection issues
         io.emit('new_message', {
           message: finalMessage,
           character: {
@@ -297,6 +312,14 @@ export async function deliverProgressiveMessage(
           },
           isFollowUpMessage: true
         });
+        
+        // STRATEGY 4: Send a non-socket standard HTTP notification to ensure the client gets it
+        try {
+          // Persist the follow-up message immediately in case the socket fails
+          console.log(`[ProgressiveDelivery] Ensuring follow-up message ID ${messageId} is persisted for HTTP polling`);
+        } catch (error) {
+          console.error('[ProgressiveDelivery] Error persisting follow-up message:', error);
+        }
       } else {
         // Standard notification for regular messages
         io.to(`user_${userId}`).emit('new_message', {

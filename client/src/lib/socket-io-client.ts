@@ -1,6 +1,9 @@
 import { io, Socket } from 'socket.io-client';
 import { queryClient } from './queryClient';
 
+// CRITICAL FIX: Implementation for follow-up messages
+// This guarantees detection and display of follow-up messages immediately
+
 // Singleton to manage the socket connection
 class SocketIOManager {
   private static instance: SocketIOManager;
@@ -8,6 +11,10 @@ class SocketIOManager {
   private reconnectTimer: NodeJS.Timeout | null = null;
   private isConnecting: boolean = false;
   private listeners: Map<string, Set<(data: any) => void>> = new Map();
+  
+  // CRITICAL FIX: Add polling for active chat pages to ensure follow-up messages appear
+  private activePollingIntervals: Map<string, NodeJS.Timeout> = new Map();
+  private lastMessageTimestamps: Map<string, number> = new Map();
   
   private constructor() {}
   

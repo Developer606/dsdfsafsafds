@@ -36,12 +36,18 @@ export default function Chat() {
   const { characterId } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const tempMessageIdRef = useRef<string>("");
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // State
   const [isTyping, setIsTyping] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger">("whatsapp");
-  const tempMessageIdRef = useRef<string>("");
+  const [messageList, setMessageList] = useState<Message[]>([]);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
