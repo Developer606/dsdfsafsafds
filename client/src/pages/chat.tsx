@@ -255,7 +255,8 @@ export default function Chat() {
       // Update the query data to reflect the message update
       if (data.message && data.message.characterId === characterId) {
         console.log('Handling message in chat component:', data.message.id, 
-          data.isProgressiveUpdate ? '(progressive)' : '(regular/follow-up)');
+          data.isProgressiveUpdate ? '(progressive)' : 
+          data.isFollowUpMessage ? '(follow-up)' : '(regular)');
         
         // Trigger message update animation
         queryClient.setQueryData<Message[]>(
@@ -287,7 +288,7 @@ export default function Chat() {
         setTimeout(scrollToBottom, 30);
         
         // If this is a new message (not progressive update), play a sound notification
-        if (!data.isProgressiveUpdate && !document.hasFocus()) {
+        if ((!data.isProgressiveUpdate || data.isFollowUpMessage) && !document.hasFocus()) {
           // Try to play a notification sound
           try {
             const audio = new Audio('/sounds/message.mp3');
@@ -297,6 +298,55 @@ export default function Chat() {
             console.log('Error playing notification sound:', error);
           }
         }
+        
+        // For follow-up messages (not progressive updates), trigger a forced refresh
+        if (data.isFollowUpMessage || (!data.isProgressiveUpdate && data.message.content.includes("As promised"))) {
+          console.log('Follow-up message detected, forcing refresh');
+          
+          // Ensure the message appears in the UI with a slight delay
+          setTimeout(() => {
+            // Force refresh messages
+            queryClient.invalidateQueries({ queryKey: [`/api/messages/${characterId}`] });
+            
+            // Force scroll to bottom again to ensure message is visible
+            setTimeout(scrollToBottom, 100);
+          }, 500);
+        }
+      }
+    };
+    
+    // Also handle the new_message event which may be triggered for follow-up messages
+    const handleNewMessage = (data: any) => {
+      console.log('New message event received in chat component:', data);
+      
+      // If this is a message from the current character, ensure it shows up
+      if (data.message && data.message.characterId === characterId && !data.message.isUser) {
+        // Update the messages in our query cache
+        queryClient.setQueryData<Message[]>(
+          [`/api/messages/${characterId}`],
+          (oldMessages = []) => {
+            // Check if this message already exists
+            if (oldMessages && oldMessages.some(msg => msg.id === data.message.id)) {
+              return oldMessages; // Already have this message
+            }
+            
+            // Add the new message
+            const updatedMessages = [...oldMessages, data.message];
+            
+            // Sort by timestamp
+            return updatedMessages.sort((a, b) => {
+              const dateA = new Date(a.timestamp).getTime();
+              const dateB = new Date(b.timestamp).getTime();
+              return dateA - dateB;
+            });
+          }
+        );
+        
+        // Invalidate queries to ensure UI shows the message
+        queryClient.invalidateQueries({ queryKey: [`/api/messages/${characterId}`] });
+        
+        // Auto-scroll to show the new content
+        setTimeout(scrollToBottom, 100);
       }
     };
     

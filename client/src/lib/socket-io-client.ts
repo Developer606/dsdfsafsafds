@@ -153,6 +153,9 @@ class SocketIOManager {
         const queryKey = [`/api/messages/${data.message.characterId}`];
         const existingMessages = queryClient.getQueryData<any[]>(queryKey) || [];
         
+        // Track if this is a new message for logging
+        const isNewMessage = !existingMessages.some(msg => msg.id === data.message.id);
+        
         // Update the message or add it if it doesn't exist
         const updatedMessages = existingMessages.map(msg => 
           msg.id === data.message.id ? data.message : msg
@@ -160,7 +163,7 @@ class SocketIOManager {
         
         // If the message wasn't found, this was probably a new message 
         // (either first chunk of progressive update or a follow-up message)
-        if (!existingMessages.some(msg => msg.id === data.message.id)) {
+        if (isNewMessage) {
           updatedMessages.push(data.message);
           
           // Sort messages by timestamp to ensure they appear in the correct order
@@ -170,13 +173,55 @@ class SocketIOManager {
             return dateA - dateB;
           });
           
-          console.log('Adding new message to chat:', data.message.id, data.isProgressiveUpdate ? '(progressive update)' : '(follow-up message)');
+          console.log('Adding new message to chat:', data.message.id, 
+            data.isProgressiveUpdate ? '(progressive update)' : 
+            data.isFollowUpMessage ? '(follow-up message)' : '(regular message)');
         }
         
         // Update the query cache with the new message list
         queryClient.setQueryData(queryKey, updatedMessages);
         
-        // Also invalidate the conversation list to show the latest message
+        // For non-progressive updates (complete messages) and follow-up messages, 
+        // also invalidate queries to force UI refresh
+        if (!data.isProgressiveUpdate || data.isFollowUpMessage) {
+          // Invalidate the messages query to force a refresh
+          queryClient.invalidateQueries({ queryKey: [`/api/messages/${data.message.characterId}`] });
+          
+          // Also invalidate the conversation list to show the latest message in the conversations list
+          queryClient.invalidateQueries({ queryKey: ['/api/user/conversations'] });
+        }
+      }
+    });
+    
+    // Also handle the new_message event which is triggered for follow-up messages
+    this.socket.on('new_message', (data) => {
+      console.log('Received new_message event:', data);
+      this.notifyListeners('new_message', data);
+      
+      // If this is a character message, ensure it appears in the UI
+      if (data.message && data.message.characterId && !data.message.isUser) {
+        // Get the existing query data
+        const queryKey = [`/api/messages/${data.message.characterId}`];
+        const existingMessages = queryClient.getQueryData<any[]>(queryKey) || [];
+        
+        // If the message isn't already in our list, add it
+        if (!existingMessages.some(msg => msg.id === data.message.id)) {
+          const updatedMessages = [...existingMessages, data.message];
+          
+          // Sort messages by timestamp
+          updatedMessages.sort((a, b) => {
+            const dateA = new Date(a.timestamp).getTime();
+            const dateB = new Date(b.timestamp).getTime();
+            return dateA - dateB;
+          });
+          
+          // Update the query cache with the new message list
+          queryClient.setQueryData(queryKey, updatedMessages);
+          console.log('Added follow-up message from new_message event:', data.message.id);
+        }
+        
+        // Force invalidate related queries to ensure UI updates
+        queryClient.invalidateQueries({ queryKey: [`/api/messages/${data.message.characterId}`] });
         queryClient.invalidateQueries({ queryKey: ['/api/user/conversations'] });
       }
     });
