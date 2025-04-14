@@ -417,17 +417,77 @@ export default function Chat() {
       handleTypingIndicator
     );
     
-    // Also fetch the latest messages directly as a fallback
-    console.log("Fetching latest messages for character", characterId);
-    fetch(`/api/messages/${characterId}`)
-      .then(res => res.json())
-      .then(messages => {
-        if (Array.isArray(messages) && messages.length > 0) {
-          // Update the query cache with the latest messages
-          queryClient.setQueryData([`/api/messages/${characterId}`], messages);
-        }
-      })
-      .catch(err => console.error("Error fetching latest messages:", err));
+    // CRITICAL FIX: Aggressive polling for follow-up messages
+    console.log("CRITICAL FIX: Setting up aggressive polling for follow-up messages");
+    
+    // Fetch immediately to get latest messages
+    const fetchLatestMessages = () => {
+      console.log("CRITICAL: Polling for new messages for character", characterId);
+      
+      fetch(`/api/messages/${characterId}`)
+        .then(res => res.json())
+        .then(messages => {
+          if (Array.isArray(messages) && messages.length > 0) {
+            // Get existing messages from cache
+            const existingMessages = queryClient.getQueryData<Message[]>([`/api/messages/${characterId}`]) || [];
+            
+            // Check if there are new messages
+            if (messages.length > existingMessages.length) {
+              console.log("CRITICAL: Found new messages in polling response!", messages.length - existingMessages.length);
+              
+              // Update the messages in the query cache
+              queryClient.setQueryData([`/api/messages/${characterId}`], messages);
+              
+              // CRITICAL: Also directly update the state for immediate UI update
+              setMessages(messages);
+              
+              // Force scroll to bottom to show new messages
+              scrollToBottom();
+              setTimeout(scrollToBottom, 100);
+              
+              // Check if any of the new messages are follow-ups
+              const newMessages = messages.filter(newMsg => 
+                !existingMessages.some(existingMsg => existingMsg.id === newMsg.id)
+              );
+              
+              for (const newMsg of newMessages) {
+                const content = newMsg.content || '';
+                const isFollowUp = content.includes("As promised") || 
+                                  content.includes("I'm back") || 
+                                  content.includes("Just as I said") || 
+                                  content.includes("As I promised");
+                                  
+                if (isFollowUp && !newMsg.isUser) {
+                  console.log("CRITICAL: Detected follow-up message via polling:", newMsg.id);
+                  console.log("Follow-up message content:", content.substring(0, 50));
+                }
+              }
+            }
+          }
+        })
+        .catch(err => console.error("Error fetching latest messages:", err));
+    };
+    
+    // Fetch immediately
+    fetchLatestMessages();
+    
+    // Set up aggressive polling (every 2 seconds) for follow-up messages
+    const pollingInterval = setInterval(fetchLatestMessages, 2000);
+    
+    // Create a cleanup function that includes all necessary cleanup
+    const cleanupFunction = () => {
+      // Call all the original socket cleanup functions
+      removeCharacterMessageListener();
+      removeNewMessageListener();
+      removeTypingIndicatorListener();
+      
+      // Also clear our polling interval
+      clearInterval(pollingInterval);
+      console.log("CRITICAL: Cleared aggressive polling interval");
+      
+      // Notify server we're closing the chat page
+      socketManager.notifyChatPageClose(characterId);
+    };
     
     // Clean up listeners when component unmounts
     return () => {
