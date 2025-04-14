@@ -770,13 +770,16 @@ function scheduleFollowUpWithPattern(
   setTimeout(async () => {
     try {
       // Check if Socket.IO is available
-      const io = socketService.getIO();
+      const socketIO = socketService.getIO();
       
       // Skip follow-up if the socket.io instance isn't available
-      if (!io) {
+      if (!socketIO) {
         console.log('[FollowUpMessages] Socket.IO not available, skipping follow-up');
         return;
       }
+      
+      // Store io in a variable accessible throughout this function
+      const io = socketIO;
       
       // Get user's profile for context
       const user = await storage.getUserById(userId);
@@ -989,7 +992,7 @@ Character: ${message}`;
       // This is crucial for making follow-up messages appear immediately without page refresh
       console.log(`[FollowUpMessages] Also emitting direct message notification for follow-up: ${followUpMessage.id}`);
       
-      const io = socketService.getIO();
+      // Use the already-initialized io from above
       if (io) {
         // Send an immediate event to any connected clients for this user
         io.to(`user_${userId}`).emit('new_message', {

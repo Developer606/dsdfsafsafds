@@ -70,6 +70,22 @@ class SocketIOManager {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
       }
+      
+      // When we reconnect, check if we need to re-join any character chat rooms
+      const currentUrl = window.location.pathname;
+      if (currentUrl.startsWith('/chat/')) {
+        const characterId = currentUrl.split('/').pop();
+        if (characterId) {
+          console.log(`Reconnected - auto-joining chat for character ${characterId}`);
+          this.notifyChatPageOpen(characterId);
+          
+          // Also force refresh messages for this character
+          queryClient.invalidateQueries({ 
+            queryKey: [`/api/messages/${characterId}`],
+            refetchType: 'all'
+          });
+        }
+      }
     });
     
     this.socket.on('disconnect', (reason) => {
