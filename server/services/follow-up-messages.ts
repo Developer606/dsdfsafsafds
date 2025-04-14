@@ -988,13 +988,15 @@ Character: ${message}`;
         characterAvatar
       );
       
-      // ALSO emit a direct message notification for clients that might miss the progressive updates
-      // This is crucial for making follow-up messages appear immediately without page refresh
-      console.log(`[FollowUpMessages] Also emitting direct message notification for follow-up: ${followUpMessage.id}`);
+      // CRITICAL FIX: Multiple socket emissions to ensure follow-up message appears
+      console.log(`[FollowUpMessages] CRITICAL FIX: Sending follow-up message via multiple channels: ${followUpMessage.id}`);
       
       // Use the already-initialized io from above
       if (io) {
-        // Send an immediate event to any connected clients for this user
+        // Send BOTH character_message and new_message events for redundancy
+        // This ensures at least one will be received by the client
+        
+        // 1. Send to user's room with new_message event
         io.to(`user_${userId}`).emit('new_message', {
           message: followUpMessage,
           character: {
@@ -1004,6 +1006,33 @@ Character: ${message}`;
           },
           isFollowUpMessage: true
         });
+        
+        // 2. Send with character_message event which has different handlers
+        io.to(`user_${userId}`).emit('character_message', {
+          message: followUpMessage,
+          character: {
+            id: characterId,
+            name: characterName,
+            avatar: characterAvatar
+          },
+          isFollowUpMessage: true,
+          isProgressiveUpdate: false
+        });
+        
+        // 3. Broadcast to all clients (not just rooms) as fallback
+        io.emit('follow_up_message', {
+          userId: userId,
+          characterId: characterId,
+          message: followUpMessage,
+          character: {
+            id: characterId,
+            name: characterName,
+            avatar: characterAvatar
+          }
+        });
+        
+        // 4. Log this critical emission for debugging
+        console.log(`[FollowUpMessages] CRITICAL: Emitted follow-up message ${followUpMessage.id} via all available channels`);
       }
       
     } catch (error) {

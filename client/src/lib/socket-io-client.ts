@@ -242,6 +242,39 @@ class SocketIOManager {
       }
     });
     
+    // CRITICAL FIX: Add dedicated handler for follow_up_message event
+    this.socket.on('follow_up_message', (data) => {
+      console.log('CRITICAL: Received follow_up_message event:', data);
+      
+      // Notify listeners of this special event type
+      this.notifyListeners('follow_up_message', data);
+      
+      if (data.message && data.characterId) {
+        // Direct cache update to ensure message appears immediately
+        const queryKey = [`/api/messages/${data.characterId}`];
+        const existingMessages = queryClient.getQueryData<any[]>(queryKey) || [];
+        
+        // Check if this message already exists
+        if (!existingMessages.some(msg => msg.id === data.message.id)) {
+          // Add the message to the existing messages
+          const updatedMessages = [...existingMessages, data.message];
+          
+          // Sort by timestamp to ensure correct order
+          const sortedMessages = updatedMessages.sort((a, b) => {
+            return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+          });
+          
+          // CRITICAL: Update the query cache directly
+          console.log('CRITICAL FIX: Adding follow-up message directly to messages list:', data.message.id);
+          queryClient.setQueryData(queryKey, sortedMessages);
+        }
+        
+        // Force invalidate all related queries
+        queryClient.invalidateQueries({ queryKey });
+        queryClient.invalidateQueries({ queryKey: ['/api/user/conversations'] });
+      }
+    });
+    
     // Handle message sent confirmation
     this.socket.on('message_sent', (data) => {
       console.log('Message sent confirmation:', data);

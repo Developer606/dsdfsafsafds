@@ -262,16 +262,52 @@ export async function deliverProgressiveMessage(
         isFollowUpMessage: accumulatedMessage.includes("As promised") // Help client identify follow-ups
       });
       
-      // Also specifically notify the client that a new message has arrived
-      // This triggers additional client-side logic to refresh the UI if needed
-      io.to(`user_${userId}`).emit('new_message', {
-        message: finalMessage,
-        character: {
-          id: characterId,
-          name: characterName,
-          avatar: characterAvatar
-        }
-      });
+      // CRITICAL FIX: Enhanced notification for follow-up messages to ensure they display immediately
+      // Check if this is a follow-up message (contains specific phrases)
+      const isFollowUp = 
+        accumulatedMessage.includes("As promised") || 
+        accumulatedMessage.includes("I'm back") || 
+        accumulatedMessage.includes("Just as I said") || 
+        accumulatedMessage.includes("As I promised") || 
+        accumulatedMessage.includes("Here's what");
+      
+      // Extra handling for follow-up messages to ensure they display properly
+      if (isFollowUp) {
+        // Log follow-up message detection
+        console.log(`[ProgressiveDelivery] CRITICAL: Detected follow-up message with ID ${messageId}, ensuring immediate display`);
+        
+        // Emit new_message event with follow-up flag to trigger special handling
+        io.to(`user_${userId}`).emit('new_message', {
+          message: finalMessage,
+          character: {
+            id: characterId,
+            name: characterName,
+            avatar: characterAvatar
+          },
+          isFollowUpMessage: true
+        });
+        
+        // Broadcast to all connected clients as a fallback
+        io.emit('new_message', {
+          message: finalMessage,
+          character: {
+            id: characterId,
+            name: characterName,
+            avatar: characterAvatar
+          },
+          isFollowUpMessage: true
+        });
+      } else {
+        // Standard notification for regular messages
+        io.to(`user_${userId}`).emit('new_message', {
+          message: finalMessage,
+          character: {
+            id: characterId,
+            name: characterName,
+            avatar: characterAvatar
+          }
+        });
+      }
       
       console.log(`[ProgressiveDelivery] Delivered complete message ${messageId} to user ${userId}`);
     }
