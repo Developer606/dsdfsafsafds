@@ -445,7 +445,7 @@ export default function Chat() {
               queryClient.setQueryData([`/api/messages/${characterId}`], messages);
               
               // CRITICAL: Also directly update the state for immediate UI update
-              setMessages(messages);
+              setMessageList(messages);
               
               // Force scroll to bottom to show new messages
               scrollToBottom();

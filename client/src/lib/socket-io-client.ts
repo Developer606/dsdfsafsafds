@@ -542,13 +542,78 @@ class SocketIOManager {
       this.connect();
     }
     
+    // Notify the server
     this.socket?.emit('chat_page_open', {
       characterId
     });
+    
+    // CRITICAL FIX: Set up aggressive polling for follow-up messages
+    // This ensures messages appear even if socket connection is unstable
+    if (this.activePollingIntervals.has(characterId)) {
+      // Clear existing interval if there is one
+      clearInterval(this.activePollingIntervals.get(characterId)!);
+    }
+    
+    // Get current timestamp to check for new messages
+    this.lastMessageTimestamps.set(characterId, Date.now());
+    
+    // Create polling interval (every 2 seconds) for this character
+    const pollingInterval = setInterval(() => {
+      // Direct fetch to bypass socket system
+      console.log(`CRITICAL FIX: Polling for follow-up messages from ${characterId}`);
+      
+      fetch(`/api/messages/${characterId}`)
+        .then(res => res.json())
+        .then(messages => {
+          if (Array.isArray(messages) && messages.length > 0) {
+            // Get existing messages from the query cache
+            const existingMessages = queryClient.getQueryData<any[]>([`/api/messages/${characterId}`]) || [];
+            
+            // If we have more messages now, process them
+            if (messages.length > existingMessages.length) {
+              console.log(`CRITICAL: Polling found ${messages.length - existingMessages.length} new messages`);
+              
+              // Find new messages that aren't in our existing set
+              const newMessages = messages.filter(newMsg => 
+                !existingMessages.some(existingMsg => existingMsg.id === newMsg.id)
+              );
+              
+              // Check if any are follow-up messages
+              for (const newMsg of newMessages) {
+                const content = newMsg.content || '';
+                const isFollowUp = 
+                  content.includes("As promised") || 
+                  content.includes("I'm back") || 
+                  content.includes("Just as I said") || 
+                  content.includes("As I promised") ||
+                  content.includes("As mentioned") ||
+                  content.includes("Like I said") ||
+                  content.includes("As I said");
+                  
+                if (isFollowUp && !newMsg.isUser) {
+                  console.log(`CRITICAL: Polling detected follow-up message: "${content.substring(0, 50)}..."`);
+                }
+              }
+              
+              // Always update the query cache with the latest messages
+              queryClient.setQueryData([`/api/messages/${characterId}`], messages);
+              
+              // Also force invalidation to ensure UI refreshes
+              queryClient.invalidateQueries({ queryKey: [`/api/messages/${characterId}`] });
+            }
+          }
+        })
+        .catch(err => console.error("CRITICAL: Error polling for follow-up messages:", err));
+    }, 2000); // Poll every 2 seconds
+    
+    // Store the interval for cleanup later
+    this.activePollingIntervals.set(characterId, pollingInterval);
+    console.log(`CRITICAL FIX: Started aggressive polling for follow-up messages from ${characterId}`);
   }
   
   /**
    * Notify the server when a chat page with a character is closed
+   * Also cleans up polling intervals for follow-up messages
    * @param characterId The ID of the character being chatted with
    */
   public notifyChatPageClose(characterId: string): void {
@@ -556,9 +621,17 @@ class SocketIOManager {
       this.connect();
     }
     
+    // Notify the server
     this.socket?.emit('chat_page_close', {
       characterId
     });
+    
+    // CRITICAL FIX: Clean up polling interval if it exists
+    if (this.activePollingIntervals.has(characterId)) {
+      clearInterval(this.activePollingIntervals.get(characterId)!);
+      this.activePollingIntervals.delete(characterId);
+      console.log(`CRITICAL FIX: Stopped polling for follow-up messages from ${characterId}`);
+    }
   }
   
   /**
