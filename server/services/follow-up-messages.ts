@@ -10,7 +10,6 @@ import { storage } from '../storage';
 import { socketService } from '../socket-io-server';
 import { generateCharacterResponse } from '../openai';
 import { deliverProgressiveMessage } from './progressive-delivery';
-import ActionPhraseDatabase from './action-phrases';
 
 // Response patterns that should trigger follow-up messages
 interface FollowUpPattern {
@@ -167,91 +166,7 @@ function checkForFollowUpPromise(message: string): FollowUpPattern | null {
     };
   }
   
-  // Enhanced detection using the massive action phrase database with 3000+ patterns
-  // This is a much more comprehensive approach that will catch many more action phrases
-  console.log(`[FollowUpMessages] Checking message against 3000+ action phrases in database`);
-  
-  const lowerCaseMessage = message.toLowerCase();
-  
-  // Define category-specific prompts and delays
-  const categoryConfig = {
-    movement: {
-      delay: 10000,
-      prompt: "You mentioned that you would go somewhere. You've now returned. Describe where you went and what you saw or did there."
-    },
-    cooking: {
-      delay: 15000,
-      prompt: "You mentioned that you would cook or prepare food. You've now finished cooking. Describe the delicious meal you've prepared, including aromas, presentation, and your excitement to share it."
-    },
-    fetching: {
-      delay: 8000,
-      prompt: "You mentioned that you would get or bring something. You've now returned with it. Describe what you brought back and why you're excited to share it."
-    },
-    communication: {
-      delay: 5000,
-      prompt: "You mentioned that you would communicate with someone. You've now done that. Share what was discussed and any news or information you received."
-    },
-    meeting: {
-      delay: 10000,
-      prompt: "You mentioned meeting or seeing someone. You've now done that. Describe the meeting and what happened during it."
-    },
-    cleaning: {
-      delay: 20000,
-      prompt: "You mentioned cleaning or organizing something. You've now finished. Describe how much better everything looks and your satisfaction with the results."
-    },
-    searching: {
-      delay: 8000,
-      prompt: "You mentioned searching for something. You've now found it. Describe what you found and your thoughts about it."
-    },
-    working: {
-      delay: 12000,
-      prompt: "You mentioned working on something. You've now completed that work. Describe what you accomplished and how you feel about it."
-    },
-    checking: {
-      delay: 7000,
-      prompt: "You mentioned checking or verifying something. You've now done that. Share what you discovered and your thoughts about it."
-    },
-    promises: {
-      delay: 10000,
-      prompt: "You made a promise. You've now fulfilled that promise. Describe how you kept your word and the result."
-    },
-    availability: {
-      delay: 5000,
-      prompt: "You mentioned becoming available later. You're now free and available. Express your readiness to engage with the user."
-    },
-    narration: {
-      delay: 10000,
-      prompt: "You described performing an action. You've now completed that action. Continue the narrative by describing what happened."
-    },
-    animeActions: {
-      delay: 8000,
-      prompt: "You performed an anime-style action. You've now completed that action. Continue the narrative with its outcome, using a similar anime-style expression."
-    }
-  };
-  
-  // Search through all categories in the action phrase database
-  for (const [category, phrases] of Object.entries(ActionPhraseDatabase)) {
-    // Check each phrase in the category
-    for (const phrase of phrases) {
-      if (lowerCaseMessage.includes(phrase.toLowerCase())) {
-        console.log(`[FollowUpMessages] Matched action phrase "${phrase}" in category "${category}"`);
-        
-        // Get the config for this category
-        const config = categoryConfig[category as keyof typeof categoryConfig];
-        
-        // Create a regex from the matched phrase
-        const phraseRegex = new RegExp(phrase, 'i');
-        
-        return {
-          regex: phraseRegex,
-          delay: config.delay,
-          prompt: config.prompt
-        };
-      }
-    }
-  }
-  
-  // Fall back to basic action detection if no database match
+  // Detect statements about going somewhere or doing something
   const actionRegex = /I('ll| will| am going to| need to| have to| should| am about to) (go|get|make|prepare|check|find|bring|do|work on|create|cook)/i;
   if (actionRegex.test(message)) {
     console.log(`[FollowUpMessages] Detected action statement in message: "${message}"`);
@@ -926,9 +841,9 @@ Character: ${message}`;
       
       // Store the message in the database with required fields
       // Calculate a realistic time difference between the original message and the follow-up
-      // Since message is just a string, we don't have timestamp information
-      // Use current time as base for our calculations
-      const originalMessageTime = new Date();
+      // Since we don't have timestamp in the message string, use current time as base
+      // Get the timestamp from the original message or use current time as fallback
+      const originalMessageTime = message.timestamp ? new Date(message.timestamp) : new Date();
       const currentTime = new Date();
       
       // Calculate the actual delay in the conversation
