@@ -769,9 +769,8 @@ function scheduleFollowUpWithPattern(
   // Schedule the follow-up message after the specified delay
   setTimeout(async () => {
     try {
-      // Check if the user is still active in the chat
+      // Check if Socket.IO is available
       const io = socketService.getIO();
-      const userSocketId = `user_${userId}`;
       
       // Skip follow-up if the socket.io instance isn't available
       if (!io) {
@@ -785,6 +784,19 @@ function scheduleFollowUpWithPattern(
         console.log(`[FollowUpMessages] User ${userId} not found, skipping follow-up`);
         return;
       }
+      
+      // Check if the user has any active socket connections
+      // Note: We'll proceed with delivering the message even if they're not connected
+      // so the message shows up when they refresh or reconnect
+      const userSocketRoom = `user_${userId}`;
+      const roomSockets = io.sockets.adapter.rooms.get(userSocketRoom);
+      const userIsActive = !!roomSockets && roomSockets.size > 0;
+      
+      console.log(`[FollowUpMessages] User ${userId} is ${userIsActive ? 'active' : 'inactive'} for follow-up message`);
+      
+      // Log that we're proceeding regardless of user activity status
+      console.log(`[FollowUpMessages] Delivering follow-up message for character ${characterId} to user ${userId} (active: ${userIsActive})`);
+      
       
       // Prepare character's persona and style information
       let character;
@@ -841,9 +853,8 @@ Character: ${message}`;
       
       // Store the message in the database with required fields
       // Calculate a realistic time difference between the original message and the follow-up
-      // Since we don't have timestamp in the message string, use current time as base
-      // Get the timestamp from the original message or use current time as fallback
-      const originalMessageTime = message.timestamp ? new Date(message.timestamp) : new Date();
+      // Use current time as the base for timestamp calculation
+      const originalMessageTime = new Date();
       const currentTime = new Date();
       
       // Calculate the actual delay in the conversation

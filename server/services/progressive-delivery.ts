@@ -174,6 +174,13 @@ export async function deliverProgressiveMessage(
     // Add some initial typing delay before first message chunk
     await new Promise(resolve => setTimeout(resolve, 800));
     
+    // Check if user has active connections - we'll emit events regardless to ensure data is synchronized
+    const userSocketRoom = `user_${userId}`;
+    const roomSockets = io.sockets.adapter.rooms.get(userSocketRoom);
+    const userIsActive = !!roomSockets && roomSockets.size > 0;
+    
+    console.log(`[ProgressiveDelivery] Delivering message to user ${userId}, active connections: ${userIsActive ? roomSockets?.size : 0}`);
+    
     // Send each message chunk with a delay
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
@@ -198,7 +205,9 @@ export async function deliverProgressiveMessage(
         isPartial: i < chunks.length - 1
       };
       
-      // Emit the partial message to the user
+      // Emit the partial message to the user - even if they're offline
+      // This ensures the data is sent to any existing connections,
+      // and will be properly synchronized when the user returns
       io.to(`user_${userId}`).emit('character_message', {
         message: partialMessage,
         character: {
@@ -206,7 +215,8 @@ export async function deliverProgressiveMessage(
           name: characterName,
           avatar: characterAvatar
         },
-        isProgressiveUpdate: true
+        isProgressiveUpdate: i < chunks.length - 1, // Mark last chunk as not progressive for client reference
+        isFollowUpMessage: i === chunks.length - 1 && accumulatedMessage.includes("As promised") // Help client identify follow-ups
       });
       
       // If this is not the last chunk, show typing indicator again with a pause
@@ -224,6 +234,46 @@ export async function deliverProgressiveMessage(
         // Simulate typing the next chunk
         await new Promise(resolve => setTimeout(resolve, typingDelay));
       }
+    }
+    
+    // For the final message, also emit a specialized non-progressive event
+    // to ensure the message is captured by client-side listeners
+    // This is particularly important for follow-up messages
+    if (chunks.length > 0) {
+      const finalMessage = {
+        id: messageId,
+        userId,
+        characterId,
+        content: accumulatedMessage,
+        isUser: false,
+        timestamp: new Date(),
+        isPartial: false
+      };
+      
+      // Emit the complete message again to ensure it's captured by any reconnecting clients
+      io.to(`user_${userId}`).emit('character_message', {
+        message: finalMessage,
+        character: {
+          id: characterId,
+          name: characterName,
+          avatar: characterAvatar
+        },
+        isProgressiveUpdate: false,
+        isFollowUpMessage: accumulatedMessage.includes("As promised") // Help client identify follow-ups
+      });
+      
+      // Also specifically notify the client that a new message has arrived
+      // This triggers additional client-side logic to refresh the UI if needed
+      io.to(`user_${userId}`).emit('new_message', {
+        message: finalMessage,
+        character: {
+          id: characterId,
+          name: characterName,
+          avatar: characterAvatar
+        }
+      });
+      
+      console.log(`[ProgressiveDelivery] Delivered complete message ${messageId} to user ${userId}`);
     }
     
     // Ensure typing indicator is off after full message is delivered

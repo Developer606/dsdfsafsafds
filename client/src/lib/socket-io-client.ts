@@ -142,18 +142,12 @@ class SocketIOManager {
       }
     });
     
-    // Handle progressive character messages
+    // Handle progressive character messages and follow-up messages
     this.socket.on('character_message', (data) => {
       console.log('Received character message:', data);
       this.notifyListeners('character_message', data);
       
-      // If this is not a progressive update, we don't need to do anything special
-      if (!data.isProgressiveUpdate) {
-        return;
-      }
-      
-      // For progressive updates, we want to update the message in place
-      // without triggering a full refetch from the server
+      // For both progressive updates and follow-up messages, update the UI immediately
       if (data.message && data.message.characterId) {
         // Get the existing query data
         const queryKey = [`/api/messages/${data.message.characterId}`];
@@ -164,14 +158,26 @@ class SocketIOManager {
           msg.id === data.message.id ? data.message : msg
         );
         
-        // If the message wasn't found, this was probably the first chunk
-        // so we add it to the list
+        // If the message wasn't found, this was probably a new message 
+        // (either first chunk of progressive update or a follow-up message)
         if (!existingMessages.some(msg => msg.id === data.message.id)) {
           updatedMessages.push(data.message);
+          
+          // Sort messages by timestamp to ensure they appear in the correct order
+          updatedMessages.sort((a, b) => {
+            const dateA = new Date(a.timestamp).getTime();
+            const dateB = new Date(b.timestamp).getTime();
+            return dateA - dateB;
+          });
+          
+          console.log('Adding new message to chat:', data.message.id, data.isProgressiveUpdate ? '(progressive update)' : '(follow-up message)');
         }
         
         // Update the query cache with the new message list
         queryClient.setQueryData(queryKey, updatedMessages);
+        
+        // Also invalidate the conversation list to show the latest message
+        queryClient.invalidateQueries({ queryKey: ['/api/user/conversations'] });
       }
     });
     

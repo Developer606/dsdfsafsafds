@@ -243,16 +243,20 @@ export default function Chat() {
     }
   }, [characterId, user?.id]);
   
-  // Handle progressive character messages
+  // Handle progressive character messages and follow-up messages
   useEffect(() => {
     if (!characterId) return;
     
-    // Listen for character_message events to handle progressive message delivery
+    // Listen for character_message events to handle both progressive updates and follow-up messages
     const handleCharacterMessage = (data: any) => {
-      if (!data.isProgressiveUpdate) return;
+      // Process all character messages including follow-up messages
+      // Even for non-progressive updates, we want to update the UI immediately
       
-      // Update the query data to reflect the progressive message update
+      // Update the query data to reflect the message update
       if (data.message && data.message.characterId === characterId) {
+        console.log('Handling message in chat component:', data.message.id, 
+          data.isProgressiveUpdate ? '(progressive)' : '(regular/follow-up)');
+        
         // Trigger message update animation
         queryClient.setQueryData<Message[]>(
           [`/api/messages/${characterId}`],
@@ -266,14 +270,33 @@ export default function Chat() {
                 msg.id === data.message.id ? data.message : msg
               );
             } else {
-              // This is a new message, add it to the list
-              return [...oldMessages, data.message];
+              // This is a new message (either first progressive chunk or follow-up message)
+              const newMessages = [...oldMessages, data.message];
+              
+              // Sort by timestamp to ensure correct ordering
+              return newMessages.sort((a, b) => {
+                const dateA = new Date(a.timestamp).getTime();
+                const dateB = new Date(b.timestamp).getTime();
+                return dateA - dateB;
+              });
             }
           }
         );
         
-        // Auto-scroll to show the updated content - slight delay for smoother experience
+        // Auto-scroll to show the new content - slight delay for smoother experience
         setTimeout(scrollToBottom, 30);
+        
+        // If this is a new message (not progressive update), play a sound notification
+        if (!data.isProgressiveUpdate && !document.hasFocus()) {
+          // Try to play a notification sound
+          try {
+            const audio = new Audio('/sounds/message.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log('Could not play notification sound:', e));
+          } catch (error) {
+            console.log('Error playing notification sound:', error);
+          }
+        }
       }
     };
     
