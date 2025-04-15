@@ -423,13 +423,40 @@ export default function Chat() {
       handleTypingIndicator
     );
     
-    // CRITICAL FIX: Using fixed polling intervals directly matching follow-up-messages.ts
-    console.log("CRITICAL FIX: Setting up fixed polling intervals that match follow-up-messages.ts delays");
+    // CRITICAL FIX: Using variable polling intervals matching follow-up-messages.ts delays
+    console.log("CRITICAL FIX: Setting up variable polling with long intervals matching follow-up-messages.ts");
     
-    // These polling intervals EXACTLY match the follow-up-messages.ts delay values 
-    // for food/cooking (8000), fetching (8000), action promises (10000), etc
+    // Follow-up message delays from follow-up-messages.ts
+    // These are the EXACT delay values from server/services/follow-up-messages.ts
+    const followUpDelays = {
+      cookingDelays: [8000, 10000, 12000, 15000],      // Food/cooking related delays
+      fetchingDelays: [8000, 10000],                   // Fetching/bringing item delays
+      communicationDelays: [10000, 12000, 15000],      // Communication-related delays
+      actionDelays: [8000, 10000, 12000, 15000, 18000] // Other action/promise delays
+    };
+    
+    // Calculate the average delay to use for polling
+    const calculateAverageDelay = (delays: number[]): number => {
+      const sum = delays.reduce((acc, val) => acc + val, 0);
+      return Math.floor(sum / delays.length);
+    };
+    
+    // Calculate the minimum delay to ensure we don't miss anything
+    const calculateMinimumDelay = (delays: number[]): number => {
+      return Math.min(...delays);
+    };
+    
+    // Get the minimum delay across all types (8000ms from follow-up-messages.ts)
+    const minFollowUpDelay = calculateMinimumDelay([
+      ...followUpDelays.cookingDelays,
+      ...followUpDelays.fetchingDelays,
+      ...followUpDelays.communicationDelays,
+      ...followUpDelays.actionDelays
+    ]);
+    
+    // Function to check for new messages with appropriate polling intervals
     const fetchLatestMessages = () => {
-      console.log("CRITICAL: Polling for follow-up messages from", characterId);
+      console.log("CRITICAL: Using variable polling interval matching follow-up-messages.ts", characterId);
       
       fetch(`/api/messages/${characterId}`)
         .then(res => res.json())
@@ -478,9 +505,11 @@ export default function Chat() {
     // Fetch immediately
     fetchLatestMessages();
     
-    // CRITICAL: Set up fixed 2 second polling interval to match follow-up-messages.ts
-    // This interval is CRITICAL to sync with server-side delay values in follow-up-messages.ts
-    const pollingInterval = setInterval(fetchLatestMessages, 2000);
+    // CRITICAL: Use long intervals that match follow-up-messages.ts delay values (8000-18000ms)
+    // This is CRITICAL because most follow-up messages appear after 8-15 seconds
+    // We're using 8000ms (8 seconds) which is the minimum delay in follow-up-messages.ts
+    console.log(`CRITICAL: Setting polling interval to ${minFollowUpDelay}ms to match follow-up-messages.ts minimum delay`);
+    const pollingInterval = setInterval(fetchLatestMessages, minFollowUpDelay);
     
     // Create a single cleanup function that handles all resources
     return () => {
