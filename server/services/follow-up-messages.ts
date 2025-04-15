@@ -978,15 +978,31 @@ Character: ${message}`;
       const followUpMessage = await storage.createMessage(messageData);
       console.log(`[FollowUpMessages] Created follow-up message: ${followUpMessage.id}`);
       
-      // Deliver the message progressively with typing indicators
-      console.log(`[FollowUpMessages] Delivering follow-up message as progressive message: ${followUpMessage.id}`);
+      // Deliver the message progressively with typing indicators and enhanced follow-up animation
+      console.log(`[FollowUpMessages] Delivering follow-up message as progressive message with enhanced animation: ${followUpMessage.id}`);
+      
+      // Use custom config to ensure follow-up messages have proper typing animation
+      const followUpTypingConfig = {
+        // Use slightly faster typing speed for follow-ups to make them more engaging
+        typingSpeed: 250, // characters per minute (slightly faster than normal)
+        // Min/max delays still present but shorter to keep engagement
+        minDelay: 500,    // minimum 500ms between chunks
+        maxDelay: 1500,   // maximum 1.5s between chunks
+        // Smaller chunks for more natural-feeling typing
+        targetChunkSize: 15,
+        // Add follow-up flag so client knows to treat this differently
+        isFollowUpMessage: true
+      };
+      
+      // Deliver the progressive message with enhanced follow-up configuration
       deliverProgressiveMessage(
         userId,
         characterId,
         aiResponse,
         followUpMessage.id,
         characterName,
-        characterAvatar
+        characterAvatar,
+        followUpTypingConfig
       );
       
       // CRITICAL FIX: Multiple socket emissions to ensure follow-up message appears INSTANTLY

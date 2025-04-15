@@ -20,6 +20,8 @@ interface ProgressiveDeliveryConfig {
   targetChunkSize: number;
   // Natural variation in chunk size (percentage)
   chunkSizeVariation: number;
+  // Flag to indicate this is a follow-up message (optional)
+  isFollowUpMessage?: boolean;
 }
 
 // Default settings for a natural typing experience
@@ -29,6 +31,7 @@ const defaultConfig: ProgressiveDeliveryConfig = {
   maxDelay: 1800, // maximum 1.8s between chunks
   targetChunkSize: 20, // aim for smaller ~20 character chunks
   chunkSizeVariation: 0.4, // 40% variation in chunk size for more natural delivery
+  isFollowUpMessage: false // Default to not being a follow-up message
 };
 
 /**
@@ -205,6 +208,19 @@ export async function deliverProgressiveMessage(
         isPartial: i < chunks.length - 1
       };
       
+      // Check if this is a follow-up message (either from config or content detection)
+      const isFollowUpDetected = 
+        config.isFollowUpMessage || 
+        accumulatedMessage.includes("As promised") || 
+        accumulatedMessage.includes("I'm back") || 
+        accumulatedMessage.includes("Just as I said") || 
+        accumulatedMessage.includes("As I promised");
+      
+      // Log special handling for follow-up messages
+      if (isFollowUpDetected && i === 0) {
+        console.log(`[ProgressiveDelivery] Special animation handling for follow-up message ${messageId}`);
+      }
+      
       // Emit the partial message to the user - even if they're offline
       // This ensures the data is sent to any existing connections,
       // and will be properly synchronized when the user returns
@@ -216,7 +232,9 @@ export async function deliverProgressiveMessage(
           avatar: characterAvatar
         },
         isProgressiveUpdate: i < chunks.length - 1, // Mark last chunk as not progressive for client reference
-        isFollowUpMessage: i === chunks.length - 1 && accumulatedMessage.includes("As promised") // Help client identify follow-ups
+        isFollowUpMessage: isFollowUpDetected, // Explicitly flag follow-up messages
+        chunkIndex: i, // Send chunk index to help client with animation timing
+        totalChunks: chunks.length // Total chunks info helps client optimize animations
       });
       
       // If this is not the last chunk, show typing indicator again with a pause
@@ -250,6 +268,18 @@ export async function deliverProgressiveMessage(
         isPartial: false
       };
       
+      // Use the same follow-up detection logic for consistency
+      const isFollowUp = 
+        config.isFollowUpMessage || 
+        accumulatedMessage.includes("As promised") || 
+        accumulatedMessage.includes("I'm back") || 
+        accumulatedMessage.includes("Just as I said") || 
+        accumulatedMessage.includes("As I promised") || 
+        accumulatedMessage.includes("Here's what") ||
+        accumulatedMessage.includes("As mentioned") ||
+        accumulatedMessage.includes("Like I said") ||
+        accumulatedMessage.includes("As I said");
+      
       // Emit the complete message again to ensure it's captured by any reconnecting clients
       io.to(`user_${userId}`).emit('character_message', {
         message: finalMessage,
@@ -259,20 +289,10 @@ export async function deliverProgressiveMessage(
           avatar: characterAvatar
         },
         isProgressiveUpdate: false,
-        isFollowUpMessage: accumulatedMessage.includes("As promised") // Help client identify follow-ups
+        isFollowUpMessage: isFollowUp, // Use consistent follow-up detection
+        totalChunks: chunks.length,    // Include total chunks info for client animation
+        chunkIndex: chunks.length - 1  // Final chunk index
       });
-      
-      // ULTRA PRIORITY FIX: Enhanced follow-up message handling to guarantee they appear without refresh
-      // Check if this is a follow-up message (contains specific phrases)
-      const isFollowUp = 
-        accumulatedMessage.includes("As promised") || 
-        accumulatedMessage.includes("I'm back") || 
-        accumulatedMessage.includes("Just as I said") || 
-        accumulatedMessage.includes("As I promised") || 
-        accumulatedMessage.includes("Here's what") ||
-        accumulatedMessage.includes("As mentioned") ||
-        accumulatedMessage.includes("Like I said") ||
-        accumulatedMessage.includes("As I said");
       
       // Ultra-aggressive handling for follow-up messages to guarantee immediate display
       if (isFollowUp) {
