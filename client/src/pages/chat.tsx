@@ -423,40 +423,17 @@ export default function Chat() {
       handleTypingIndicator
     );
     
-    // CRITICAL FIX: Using variable polling intervals matching follow-up-messages.ts delays
-    console.log("CRITICAL FIX: Setting up variable polling with long intervals matching follow-up-messages.ts");
+    // CRITICAL FIX: Using EXACT 8 SECOND polling interval to match follow-up-messages.ts
+    console.log("CRITICAL FIX: Setting polling to EXACT 8 SECOND intervals from follow-up-messages.ts");
     
-    // Follow-up message delays from follow-up-messages.ts
-    // These are the EXACT delay values from server/services/follow-up-messages.ts
-    const followUpDelays = {
-      cookingDelays: [8000, 10000, 12000, 15000],      // Food/cooking related delays
-      fetchingDelays: [8000, 10000],                   // Fetching/bringing item delays
-      communicationDelays: [10000, 12000, 15000],      // Communication-related delays
-      actionDelays: [8000, 10000, 12000, 15000, 18000] // Other action/promise delays
-    };
+    // EXACT delay of 8000ms from follow-up-messages.ts (food/fetching items delay)
+    // This is the precise delay value from the first pattern in follow-up-messages.ts:
+    // "I'll be (right )?back with (your|the|some) (food|tempura|yakitori|meal|dinner|breakfast|lunch|snack)"
+    const FOLLOW_UP_EXACT_DELAY = 8000; // 8 seconds - EXACT match from server code
     
-    // Calculate the average delay to use for polling
-    const calculateAverageDelay = (delays: number[]): number => {
-      const sum = delays.reduce((acc, val) => acc + val, 0);
-      return Math.floor(sum / delays.length);
-    };
-    
-    // Calculate the minimum delay to ensure we don't miss anything
-    const calculateMinimumDelay = (delays: number[]): number => {
-      return Math.min(...delays);
-    };
-    
-    // Get the minimum delay across all types (8000ms from follow-up-messages.ts)
-    const minFollowUpDelay = calculateMinimumDelay([
-      ...followUpDelays.cookingDelays,
-      ...followUpDelays.fetchingDelays,
-      ...followUpDelays.communicationDelays,
-      ...followUpDelays.actionDelays
-    ]);
-    
-    // Function to check for new messages with appropriate polling intervals
+    // Simple function to check for new messages with the EXACT same delay as server
     const fetchLatestMessages = () => {
-      console.log("CRITICAL: Using variable polling interval matching follow-up-messages.ts", characterId);
+      console.log("CRITICAL: Checking for follow-up messages with EXACT 8-SECOND polling", characterId);
       
       fetch(`/api/messages/${characterId}`)
         .then(res => res.json())
@@ -467,7 +444,7 @@ export default function Chat() {
             
             // Check if there are new messages
             if (messages.length > existingMessages.length) {
-              console.log("CRITICAL: Found new messages in polling response!", messages.length - existingMessages.length);
+              console.log("CRITICAL: Found new messages using 8-SECOND polling!", messages.length - existingMessages.length);
               
               // Update the messages in the query cache
               queryClient.setQueryData([`/api/messages/${characterId}`], messages);
@@ -492,7 +469,7 @@ export default function Chat() {
                                   content.includes("As I promised");
                                   
                 if (isFollowUp && !newMsg.isUser) {
-                  console.log("CRITICAL: Detected follow-up message via polling:", newMsg.id);
+                  console.log("CRITICAL: Detected follow-up message via 8-SECOND polling:", newMsg.id);
                   console.log("Follow-up message content:", content.substring(0, 50));
                 }
               }
@@ -502,14 +479,16 @@ export default function Chat() {
         .catch(err => console.error("Error fetching latest messages:", err));
     };
     
-    // Fetch immediately
+    // Fetch immediately once
     fetchLatestMessages();
     
-    // CRITICAL: Use long intervals that match follow-up-messages.ts delay values (8000-18000ms)
-    // This is CRITICAL because most follow-up messages appear after 8-15 seconds
-    // We're using 8000ms (8 seconds) which is the minimum delay in follow-up-messages.ts
-    console.log(`CRITICAL: Setting polling interval to ${minFollowUpDelay}ms to match follow-up-messages.ts minimum delay`);
-    const pollingInterval = setInterval(fetchLatestMessages, minFollowUpDelay);
+    // CRITICAL: Use EXACT 8 SECOND (8000ms) intervals to match follow-up-messages.ts
+    // This directly uses the same 8000ms delay value as in the server code
+    console.log("CRITICAL: Setting polling to EXACT 8 SECONDS (8000ms) to match follow-up-messages.ts");
+    
+    // Force to use exactly 8000 milliseconds (8 seconds)
+    const POLLING_INTERVAL_MS = 8000; // EXACT 8 SECONDS
+    const pollingInterval = setInterval(fetchLatestMessages, POLLING_INTERVAL_MS);
     
     // Create a single cleanup function that handles all resources
     return () => {
