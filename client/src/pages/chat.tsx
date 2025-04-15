@@ -423,62 +423,12 @@ export default function Chat() {
       handleTypingIndicator
     );
     
-    // Improved polling for follow-up messages with dynamic timing based on server configuration
-    console.log("Setting up intelligent polling for follow-up messages with dynamic timing");
+    // CRITICAL FIX: Setting up aggressive polling for follow-up messages
+    console.log("CRITICAL FIX: Setting up aggressive polling for follow-up messages");
     
-    // Define delay configuration based on server config (synced with server/services/follow-up-messages.ts)
-    // These values match the actual delay times used by the server
-    const delayConfig = {
-      // Match server-side action categories
-      cooking: 15 * 60 * 1000,       // 15 minutes
-      fetching: 5 * 60 * 1000,       // 5 minutes
-      searching: 8 * 60 * 1000,      // 8 minutes
-      communication: 3 * 60 * 1000,  // 3 minutes
-      meeting: 10 * 60 * 1000,       // 10 minutes
-      cleaning: 20 * 60 * 1000,      // 20 minutes
-      household: 12 * 60 * 1000,     // 12 minutes
-      promise: 7 * 60 * 1000,        // 7 minutes
-      availability: 5 * 60 * 1000,   // 5 minutes
-      general: 5 * 60 * 1000,        // 5 minutes
-      // Default polling interval if no category is detected
-      default: 30 * 1000             // 30 seconds
-    };
-    
-    // Helper function to detect the likely category of the latest message
-    const detectMessageCategory = (message: string): keyof typeof delayConfig => {
-      if (!message) return 'default';
-      
-      const lowerMsg = message.toLowerCase();
-      
-      // Use the same detection logic as the server
-      if (/cook|food|meal|kitchen|prepare|bake|dinner|lunch|breakfast|dish|recipe|ingredients/i.test(lowerMsg)) {
-        return 'cooking';
-      } else if (/get|bring|fetch|grab|pick up|retrieve|take|carry|deliver/i.test(lowerMsg)) {
-        return 'fetching';
-      } else if (/find|search|look for|seek|hunt|locate|discover/i.test(lowerMsg)) {
-        return 'searching';
-      } else if (/message|text|call|email|chat|contact|respond|reply|get back|reach out/i.test(lowerMsg)) {
-        return 'communication';
-      } else if (/meet|see you|visit|come over|hang out|spend time|do something|activity|together/i.test(lowerMsg)) {
-        return 'meeting';
-      } else if (/clean|tidy|organize|wash|dust|vacuum|sweep|mop|scrub|declutter/i.test(lowerMsg)) {
-        return 'cleaning';
-      } else if (/free time|available|when i'm free|moment i'm free|not busy|have time/i.test(lowerMsg)) {
-        return 'availability';
-      } else if (/promise|swear|guarantee|definitely|absolutely|certainly|surely/i.test(lowerMsg)) {
-        return 'promise';
-      }
-      
-      return 'general';
-    };
-    
-    // Initialize polling with default timing
-    let currentPollingDelay = delayConfig.default;
-    let timeoutId: NodeJS.Timeout | null = null;
-    
-    // Fetch latest messages with dynamic timing
+    // Fetch immediately to get latest messages
     const fetchLatestMessages = () => {
-      console.log(`Checking for follow-up messages for character ${characterId} (current interval: ${currentPollingDelay/1000}s)`);
+      console.log("CRITICAL: Polling for follow-up messages from", characterId);
       
       fetch(`/api/messages/${characterId}`)
         .then(res => res.json())
@@ -489,12 +439,12 @@ export default function Chat() {
             
             // Check if there are new messages
             if (messages.length > existingMessages.length) {
-              console.log("Found new messages in polling response!", messages.length - existingMessages.length);
+              console.log("CRITICAL: Found new messages in polling response!", messages.length - existingMessages.length);
               
               // Update the messages in the query cache
               queryClient.setQueryData([`/api/messages/${characterId}`], messages);
               
-              // Also directly update the state for immediate UI update
+              // CRITICAL: Also directly update the state for immediate UI update
               setMessageList(messages);
               
               // Force scroll to bottom to show new messages
@@ -514,63 +464,36 @@ export default function Chat() {
                                   content.includes("As I promised");
                                   
                 if (isFollowUp && !newMsg.isUser) {
-                  console.log("Detected follow-up message via polling:", newMsg.id);
+                  console.log("CRITICAL: Detected follow-up message via polling:", newMsg.id);
                   console.log("Follow-up message content:", content.substring(0, 50));
                 }
               }
             }
-            
-            // Dynamically adjust polling interval based on the latest character message
-            const latestCharacterMsg = [...messages]
-              .filter(msg => !msg.isUser)
-              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
-            
-            if (latestCharacterMsg && latestCharacterMsg.content) {
-              const category = detectMessageCategory(latestCharacterMsg.content);
-              const newDelay = delayConfig[category] || delayConfig.default;
-              
-              // Only log if delay changes
-              if (newDelay !== currentPollingDelay) {
-                console.log(`Adjusting polling interval: ${currentPollingDelay/1000}s → ${newDelay/1000}s (category: ${category})`);
-                currentPollingDelay = newDelay;
-              }
-            }
           }
-          
-          // Schedule next poll using dynamic timing
-          if (timeoutId) clearTimeout(timeoutId);
-          timeoutId = setTimeout(fetchLatestMessages, currentPollingDelay);
         })
-        .catch(err => {
-          console.error("Error fetching latest messages:", err);
-          // On error, still schedule next poll but with a shorter interval
-          if (timeoutId) clearTimeout(timeoutId);
-          timeoutId = setTimeout(fetchLatestMessages, Math.min(30000, currentPollingDelay)); // Max 30s on error
-        });
+        .catch(err => console.error("Error fetching latest messages:", err));
     };
     
-    // Fetch immediately for the first time
+    // Fetch immediately
     fetchLatestMessages();
     
-    // Create a cleanup function that includes all necessary cleanup
-    const cleanupFunction = () => {
+    // Set up aggressive polling (every 2 seconds) for follow-up messages
+    const pollingInterval = setInterval(fetchLatestMessages, 2000);
+    
+    // Create a single cleanup function that handles all resources
+    return () => {
       // Call all the original socket cleanup functions
       removeCharacterMessageListener();
       removeNewMessageListener();
       removeTypingIndicatorListener();
       
-      // Clear our dynamic timeout if it exists
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        console.log("Cleared dynamic polling timeout");
-      }
+      // Also clear our polling interval
+      clearInterval(pollingInterval);
+      console.log("CRITICAL: Stopped polling for follow-up messages from", characterId);
       
       // Notify server we're closing the chat page
       socketManager.notifyChatPageClose(characterId);
     };
-    
-    // Use our comprehensive cleanup function that properly handles all resources
-    return cleanupFunction;
   }, [characterId, queryClient]);
 
   const sendMessage = useMutation({
