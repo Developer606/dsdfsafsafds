@@ -423,17 +423,88 @@ export default function Chat() {
       handleTypingIndicator
     );
     
-    // CRITICAL FIX: Using EXACT 8 SECOND polling interval to match follow-up-messages.ts
-    console.log("CRITICAL FIX: Setting polling to EXACT 8 SECOND intervals from follow-up-messages.ts");
+    // CRITICAL FIX: Dynamic adaptive polling that syncs with follow-up-messages.ts categories
+    console.log("CRITICAL FIX: Setting up dynamic adaptive polling synchronized with follow-up-messages.ts categories");
     
-    // EXACT delay of 8000ms from follow-up-messages.ts (food/fetching items delay)
-    // This is the precise delay value from the first pattern in follow-up-messages.ts:
-    // "I'll be (right )?back with (your|the|some) (food|tempura|yakitori|meal|dinner|breakfast|lunch|snack)"
-    const FOLLOW_UP_EXACT_DELAY = 8000; // 8 seconds - EXACT match from server code
+    // Define all delay categories from follow-up-messages.ts with their exact values
+    const followUpDelaysByCategory = {
+      // Food related delays (8-20 seconds)
+      food: {
+        quickFood: 8000,       // "I'll be back with food" - 8 seconds
+        cooking: 10000,        // "I'll get cooking" - 10 seconds
+        kitchen: 12000,        // "heads to the kitchen" - 12 seconds
+        mealPrep: 15000,       // More complex cooking - 15 seconds
+        fullCooking: 20000     // Complete meal preparation - 20 seconds
+      },
+      // Action related delays (8-18 seconds)
+      actions: {
+        quick: 8000,           // Simple actions "wait a second" - 8 seconds
+        basic: 10000,          // Standard actions "I'll be right back" - 10 seconds
+        moderate: 12000,       // Information gathering "I'll check" - 12 seconds
+        complex: 15000,        // "I need to go for a moment" - 15 seconds
+        extended: 18000        // Most complex actions - 18 seconds
+      }
+    };
     
-    // Simple function to check for new messages with the EXACT same delay as server
+    // Calculate the minimum polling interval based on the fastest follow-up category
+    // This ensures we don't miss any follow-up messages
+    const getMinPollingInterval = () => {
+      const allDelays = [
+        ...Object.values(followUpDelaysByCategory.food),
+        ...Object.values(followUpDelaysByCategory.actions)
+      ];
+      return Math.min(...allDelays); // 8000ms from follow-up-messages.ts
+    };
+    
+    // Analyze message content to identify action category for dynamic polling
+    const identifyMessageCategory = (content: string): { category: string; delay: number } => {
+      const lowerContent = content.toLowerCase();
+      
+      // Food related categories
+      if (/back with (your|the|some) (food|meal|dinner|breakfast|lunch|snack)/i.test(lowerContent)) {
+        return { category: 'quickFood', delay: followUpDelaysByCategory.food.quickFood };
+      }
+      if (/cook|make food|prepare meal|bake/i.test(lowerContent)) {
+        return { category: 'cooking', delay: followUpDelaysByCategory.food.cooking };
+      }
+      if (/heads to the kitchen|goes to kitchen|walks to kitchen/i.test(lowerContent)) {
+        return { category: 'kitchen', delay: followUpDelaysByCategory.food.kitchen };
+      }
+      if (/prepare dinner|make breakfast|full meal/i.test(lowerContent)) {
+        return { category: 'mealPrep', delay: followUpDelaysByCategory.food.mealPrep };
+      }
+      if (/gourmet|elaborate meal|special dinner/i.test(lowerContent)) {
+        return { category: 'fullCooking', delay: followUpDelaysByCategory.food.fullCooking };
+      }
+      
+      // Action related categories
+      if (/wait|hold on|give me a second|quick|brb/i.test(lowerContent)) {
+        return { category: 'quick', delay: followUpDelaysByCategory.actions.quick };
+      }
+      if (/be right back|i'll return|coming back/i.test(lowerContent)) {
+        return { category: 'basic', delay: followUpDelaysByCategory.actions.basic };
+      }
+      if (/check|find out|look up|search|find information/i.test(lowerContent)) {
+        return { category: 'moderate', delay: followUpDelaysByCategory.actions.moderate };
+      }
+      if (/need to go|leave for a moment|be gone/i.test(lowerContent)) {
+        return { category: 'complex', delay: followUpDelaysByCategory.actions.complex };
+      }
+      if (/long process|takes time|careful work|detailed task/i.test(lowerContent)) {
+        return { category: 'extended', delay: followUpDelaysByCategory.actions.extended };
+      }
+      
+      // Default to the minimum polling interval to ensure we don't miss anything
+      return { category: 'default', delay: getMinPollingInterval() };
+    };
+    
+    // Initialize with default/minimum polling interval
+    const [currentPollingDelay, setCurrentPollingDelay] = useState(getMinPollingInterval());
+    const [lastMessageCategory, setLastMessageCategory] = useState<string>('default');
+    
+    // Advanced function to check for new messages with dynamic polling intervals
     const fetchLatestMessages = () => {
-      console.log("CRITICAL: Checking for follow-up messages with EXACT 8-SECOND polling", characterId);
+      console.log(`CRITICAL: Adaptive polling (${currentPollingDelay}ms) for category: ${lastMessageCategory}`, characterId);
       
       fetch(`/api/messages/${characterId}`)
         .then(res => res.json())
@@ -444,7 +515,8 @@ export default function Chat() {
             
             // Check if there are new messages
             if (messages.length > existingMessages.length) {
-              console.log("CRITICAL: Found new messages using 8-SECOND polling!", messages.length - existingMessages.length);
+              console.log(`CRITICAL: Found new messages with adaptive polling (${currentPollingDelay}ms)!`, 
+                messages.length - existingMessages.length);
               
               // Update the messages in the query cache
               queryClient.setQueryData([`/api/messages/${characterId}`], messages);
@@ -469,26 +541,47 @@ export default function Chat() {
                                   content.includes("As I promised");
                                   
                 if (isFollowUp && !newMsg.isUser) {
-                  console.log("CRITICAL: Detected follow-up message via 8-SECOND polling:", newMsg.id);
+                  console.log("CRITICAL: Detected follow-up message via adaptive polling:", newMsg.id);
                   console.log("Follow-up message content:", content.substring(0, 50));
                 }
               }
             }
+            
+            // CRITICAL: Dynamically adjust polling interval based on latest character message
+            const latestCharacterMsg = messages
+              .filter(msg => !msg.isUser)
+              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+            
+            if (latestCharacterMsg && latestCharacterMsg.content) {
+              const { category, delay } = identifyMessageCategory(latestCharacterMsg.content);
+              
+              // Only update if category changed
+              if (category !== lastMessageCategory) {
+                console.log(`CRITICAL: Updating polling interval from ${currentPollingDelay}ms to ${delay}ms based on category: ${category}`);
+                setCurrentPollingDelay(delay);
+                setLastMessageCategory(category);
+                
+                // Reset polling interval with new delay
+                clearInterval(pollingIntervalRef.current!);
+                pollingIntervalRef.current = setInterval(fetchLatestMessages, delay);
+              }
+            }
           }
         })
-        .catch(err => console.error("Error fetching latest messages:", err));
+        .catch(err => console.error("Error in adaptive follow-up message polling:", err));
     };
     
     // Fetch immediately once
     fetchLatestMessages();
     
-    // CRITICAL: Use EXACT 8 SECOND (8000ms) intervals to match follow-up-messages.ts
-    // This directly uses the same 8000ms delay value as in the server code
-    console.log("CRITICAL: Setting polling to EXACT 8 SECONDS (8000ms) to match follow-up-messages.ts");
+    // Initialize polling with minimum interval from follow-up-messages.ts
+    // This ensures we catch even the quickest follow-ups (8 second food-related)
+    const minPollingInterval = getMinPollingInterval(); // 8000ms from follow-up-messages.ts
+    console.log(`CRITICAL: Starting adaptive polling at ${minPollingInterval}ms matched to follow-up-messages.ts`);
     
-    // Force to use exactly 8000 milliseconds (8 seconds)
-    const POLLING_INTERVAL_MS = 8000; // EXACT 8 SECONDS
-    const pollingInterval = setInterval(fetchLatestMessages, POLLING_INTERVAL_MS);
+    // Use ref to allow dynamically changing the interval
+    pollingIntervalRef.current = setInterval(fetchLatestMessages, minPollingInterval);
+    const pollingInterval = pollingIntervalRef.current;
     
     // Create a single cleanup function that handles all resources
     return () => {
