@@ -48,6 +48,9 @@ export default function Chat() {
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
   const [chatStyle, setChatStyle] = useState<"whatsapp" | "chatgpt" | "messenger">("whatsapp");
   const [messageList, setMessageList] = useState<Message[]>([]);
+  // For dynamic polling intervals
+  const [currentPollingDelay, setCurrentPollingDelay] = useState<number>(8000); // Default to 8 seconds (minimum delay)
+  const [lastMessageCategory, setLastMessageCategory] = useState<string>('default');
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -249,6 +252,63 @@ export default function Chat() {
     }
   }, [characterId, user?.id]);
   
+  // Helper function outside of hooks to calculate the minimum polling interval
+  const getMinPollingInterval = () => {
+    // These values are synchronized with the server follow-up-messages.ts delays
+    const allDelays = [
+      8000,  // Quick food-related messages
+      10000, // Standard messages
+      12000, // Medium delay messages
+      15000, // Complex actions
+      18000, // Most complex actions
+      20000, // Full cooking
+    ];
+    return Math.min(...allDelays); // Return 8000 (8 seconds)
+  };
+  
+  // Helper function to identify message categories
+  const identifyMessageCategory = (content: string) => {
+    // Message category detection - determine polling interval by message content
+    // This matches the logic in server/services/follow-up-messages.ts
+    const lowerContent = content.toLowerCase();
+    
+    // Check for cooking-related content
+    if (/cook|food|meal|kitchen|prepare|bake|dinner|lunch|breakfast|dish|recipe|ingredients/i.test(lowerContent)) {
+      return { category: 'cooking', delay: 20000 }; // 20 seconds
+    }
+    // Check for fetching-related content
+    else if (/get|bring|fetch|grab|pick up|retrieve|take|carry|deliver/i.test(lowerContent)) {
+      return { category: 'fetching', delay: 10000 }; // 10 seconds
+    }
+    // Check for searching-related content
+    else if (/find|search|look for|seek|hunt|locate|discover/i.test(lowerContent)) {
+      return { category: 'searching', delay: 12000 }; // 12 seconds
+    }
+    // Check for communication-related content
+    else if (/message|text|call|email|chat|contact|respond|reply|get back|reach out/i.test(lowerContent)) {
+      return { category: 'communication', delay: 10000 }; // 10 seconds
+    }
+    // Check for meeting-related content
+    else if (/meet|see you|visit|come over|hang out|spend time|do something|activity|together/i.test(lowerContent)) {
+      return { category: 'meeting', delay: 15000 }; // 15 seconds
+    }
+    // Check for cleaning-related content
+    else if (/clean|tidy|organize|wash|dust|vacuum|sweep|mop|scrub|declutter/i.test(lowerContent)) {
+      return { category: 'cleaning', delay: 18000 }; // 18 seconds
+    }
+    // Check for availability-related content
+    else if (/free time|available|when i'm free|moment i'm free|not busy|have time/i.test(lowerContent)) {
+      return { category: 'availability', delay: 10000 }; // 10 seconds
+    }
+    // General promise fallback
+    else if (/promise|swear|guarantee|definitely|absolutely|certainly|surely/i.test(lowerContent)) {
+      return { category: 'promise', delay: 12000 }; // 12 seconds
+    }
+    
+    // Default to the minimum polling interval to ensure we don't miss anything
+    return { category: 'default', delay: getMinPollingInterval() };
+  };
+
   // Handle progressive character messages and follow-up messages
   useEffect(() => {
     if (!characterId) return;
@@ -446,15 +506,7 @@ export default function Chat() {
       }
     };
     
-    // Calculate the minimum polling interval based on the fastest follow-up category
-    // This ensures we don't miss any follow-up messages
-    const getMinPollingInterval = () => {
-      const allDelays = [
-        ...Object.values(followUpDelaysByCategory.food),
-        ...Object.values(followUpDelaysByCategory.actions)
-      ];
-      return Math.min(...allDelays); // 8000ms from follow-up-messages.ts
-    };
+    // Use the getMinPollingInterval function defined at component level
     
     // Analyze message content to identify action category for dynamic polling
     const identifyMessageCategory = (content: string): { category: string; delay: number } => {
@@ -498,9 +550,7 @@ export default function Chat() {
       return { category: 'default', delay: getMinPollingInterval() };
     };
     
-    // Initialize with default/minimum polling interval
-    const [currentPollingDelay, setCurrentPollingDelay] = useState(getMinPollingInterval());
-    const [lastMessageCategory, setLastMessageCategory] = useState<string>('default');
+    // Use the state initialized at component level
     
     // Advanced function to check for new messages with dynamic polling intervals
     const fetchLatestMessages = () => {
