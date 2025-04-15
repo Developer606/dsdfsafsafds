@@ -423,12 +423,89 @@ export default function Chat() {
       handleTypingIndicator
     );
     
-    // CRITICAL FIX: Setting up aggressive polling for follow-up messages
-    console.log("CRITICAL FIX: Setting up aggressive polling for follow-up messages");
+    // CRITICAL FIX: Setting up server-synchronized polling for follow-up messages
+    console.log("CRITICAL FIX: Setting up synchronized server-side polling for follow-up messages");
     
-    // Fetch immediately to get latest messages
-    const fetchLatestMessages = () => {
-      console.log("CRITICAL: Polling for follow-up messages from", characterId);
+    // First fetch the server's follow-up message configuration to synchronize polling
+    const [pollingConfig, setPollingConfig] = useState<{
+      delays?: {
+        cooking: number;
+        fetching: number;
+        searching: number;
+        communication: number;
+        meeting: number;
+        cleaning: number;
+        household: number;
+        promise: number;
+        availability: number;
+        general: number;
+        minPollingInterval: number;
+        maxPollingInterval: number;
+        defaultPollingInterval: number;
+      }
+    }>({});
+    
+    // Initial fetch of server config
+    useEffect(() => {
+      console.log("CRITICAL: Fetching server follow-up config for synchronized polling");
+      fetch('/api/follow-up-messages/config')
+        .then(res => res.json())
+        .then(config => {
+          console.log("CRITICAL: Received server follow-up config:", config);
+          setPollingConfig(config);
+        })
+        .catch(err => {
+          console.error("Error fetching follow-up config:", err);
+          // Use default config if fetch fails
+          setPollingConfig({
+            delays: {
+              cooking: 15000,
+              fetching: 8000,
+              searching: 12000,
+              communication: 10000,
+              meeting: 15000,
+              cleaning: 20000,
+              household: 12000,
+              promise: 15000,
+              availability: 10000,
+              general: 12000,
+              minPollingInterval: 2000,
+              maxPollingInterval: 5000,
+              defaultPollingInterval: 2000
+            }
+          });
+        });
+    }, []);
+    
+    // Advanced message classifier to determine action category for adaptive polling
+    const classifyMessageActionCategory = (message: string): string => {
+      const lowerMessage = message.toLowerCase();
+      
+      // Use the same category detection as the server
+      if (/cook|food|meal|kitchen|prepare|bake|dinner|lunch|breakfast/i.test(lowerMessage)) {
+        return 'cooking';
+      } else if (/get|bring|fetch|grab|pick up|retrieve|take|carry/i.test(lowerMessage)) {
+        return 'fetching';
+      } else if (/find|search|look for|seek|hunt|locate|discover/i.test(lowerMessage)) {
+        return 'searching';
+      } else if (/message|text|call|email|chat|contact|respond|reply/i.test(lowerMessage)) {
+        return 'communication';
+      } else if (/meet|see you|visit|come over|hang out|spend time/i.test(lowerMessage)) {
+        return 'meeting';
+      } else if (/clean|tidy|organize|wash|dust|vacuum|sweep|mop/i.test(lowerMessage)) {
+        return 'cleaning';
+      } else if (/promise|swear|guarantee|definitely|absolutely|certainly/i.test(lowerMessage)) {
+        return 'promise';
+      } else if (/free time|available|when i'm free|moment i'm free/i.test(lowerMessage)) {
+        return 'availability';
+      }
+      
+      return 'general';
+    };
+    
+    // Fetch latest messages with synchronized timing based on server config
+    const fetchLatestMessages = useCallback(() => {
+      console.log("CRITICAL: Synchronized polling for follow-up messages from", characterId);
       
       fetch(`/api/messages/${characterId}`)
         .then(res => res.json())
@@ -439,12 +516,12 @@ export default function Chat() {
             
             // Check if there are new messages
             if (messages.length > existingMessages.length) {
-              console.log("CRITICAL: Found new messages in polling response!", messages.length - existingMessages.length);
+              console.log("CRITICAL: Found new messages in synchronized polling!", messages.length - existingMessages.length);
               
               // Update the messages in the query cache
               queryClient.setQueryData([`/api/messages/${characterId}`], messages);
               
-              // CRITICAL: Also directly update the state for immediate UI update
+              // Also directly update the state for immediate UI update
               setMessageList(messages);
               
               // Force scroll to bottom to show new messages
@@ -464,21 +541,56 @@ export default function Chat() {
                                   content.includes("As I promised");
                                   
                 if (isFollowUp && !newMsg.isUser) {
-                  console.log("CRITICAL: Detected follow-up message via polling:", newMsg.id);
+                  console.log("CRITICAL: Detected follow-up message via synchronized polling:", newMsg.id);
                   console.log("Follow-up message content:", content.substring(0, 50));
                 }
               }
             }
+            
+            // Adjust polling interval based on latest character message and server config
+            if (pollingConfig.delays) {
+              const latestCharacterMsg = messages
+                .filter(msg => !msg.isUser)
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+              
+              if (latestCharacterMsg && latestCharacterMsg.content) {
+                const category = classifyMessageActionCategory(latestCharacterMsg.content);
+                const serverDelay = pollingConfig.delays[category as keyof typeof pollingConfig.delays] || 
+                                   pollingConfig.delays.defaultPollingInterval;
+                
+                // Log the server's recommended polling interval based on the message category
+                console.log(`CRITICAL: Server recommends ${serverDelay}ms polling interval for '${category}' messages`);
+              }
+            }
           }
         })
-        .catch(err => console.error("Error fetching latest messages:", err));
-    };
+        .catch(err => console.error("Error in synchronized follow-up message polling:", err));
+    }, [characterId, queryClient, pollingConfig]);
     
-    // Fetch immediately
-    fetchLatestMessages();
+    // Set up polling with server-synchronized intervals (initially conservative at 2s)
+    const pollingInterval = useRef<NodeJS.Timeout | null>(null);
     
-    // Set up aggressive polling (every 2 seconds) for follow-up messages
-    const pollingInterval = setInterval(fetchLatestMessages, 2000);
+    useEffect(() => {
+      // Clear any existing interval when config changes
+      if (pollingInterval.current) {
+        clearInterval(pollingInterval.current);
+      }
+      
+      // Fetch immediately
+      fetchLatestMessages();
+      
+      // Get the recommended polling interval from server config
+      const interval = pollingConfig.delays?.defaultPollingInterval || 2000;
+      
+      console.log(`CRITICAL: Setting up synchronized polling at ${interval}ms intervals`);
+      pollingInterval.current = setInterval(fetchLatestMessages, interval);
+      
+      return () => {
+        if (pollingInterval.current) {
+          clearInterval(pollingInterval.current);
+        }
+      };
+    }, [fetchLatestMessages, pollingConfig]);
     
     // Create a single cleanup function that handles all resources
     return () => {

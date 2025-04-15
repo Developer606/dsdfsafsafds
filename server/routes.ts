@@ -3728,6 +3728,31 @@ export async function registerRoutes(app: Express, existingServer?: Server): Pro
       res.status(500).json({ error: "Failed to delete news" });
     }
   });
+  
+  // CRITICAL FIX: Add endpoint to expose follow-up message configuration to client
+  app.get('/api/follow-up-messages/config', authenticateJWT, async (req, res) => {
+    // Return the standard follow-up message delays that match those in follow-up-messages.ts
+    return res.json({
+      delays: {
+        // Action categories with their delay values (in milliseconds)
+        cooking: 15 * 1000,         // 15 seconds
+        fetching: 8 * 1000,         // 8 seconds
+        searching: 12 * 1000,       // 12 seconds
+        communication: 10 * 1000,   // 10 seconds
+        meeting: 15 * 1000,         // 15 seconds
+        cleaning: 20 * 1000,        // 20 seconds
+        household: 12 * 1000,       // 12 seconds
+        promise: 15 * 1000,         // 15 seconds
+        availability: 10 * 1000,    // 10 seconds
+        general: 12 * 1000,         // 12 seconds
+        
+        // Polling configuration (for client use)
+        minPollingInterval: 2 * 1000,    // 2 seconds minimum polling interval
+        maxPollingInterval: 5 * 1000,    // 5 seconds maximum polling interval
+        defaultPollingInterval: 2 * 1000 // 2 seconds default polling interval
+      }
+    });
+  });
 
   return httpServer;
 }
