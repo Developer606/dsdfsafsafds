@@ -543,6 +543,23 @@ export default function Chat() {
                 if (isFollowUp && !newMsg.isUser) {
                   console.log("CRITICAL: Detected follow-up message via adaptive polling:", newMsg.id);
                   console.log("Follow-up message content:", content.substring(0, 50));
+                  
+                  // CRITICAL FIX: Simulate typing indicator before displaying follow-up message
+                  // This ensures the typing animation appears before the follow-up message
+                  // Set typing indicator to true for 2 seconds before message appears
+                  setIsTyping(true);
+                  
+                  // Log the typing animation trigger
+                  console.log("CRITICAL: Showing typing animation for follow-up message");
+                  
+                  // Keep typing indicator on for 2 seconds before delivering the message
+                  // We're using setTimeout to create a realistic typing flow
+                  setTimeout(() => {
+                    console.log("CRITICAL: Typing animation completed for follow-up message");
+                    
+                    // After 2 seconds, allow the message to appear and turn off the indicator
+                    setIsTyping(false);
+                  }, 2000);
                 }
               }
             }
